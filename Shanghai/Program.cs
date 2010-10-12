@@ -55,6 +55,8 @@ namespace Shanghai
 
             var cameraShotTask = TaskParameter.Periodic("camera", /*30*/0, toHour(1),
                 cameraTask.TakePictureTask);
+            var uploadPictureTask = TaskParameter.Periodic("uploadpic", /*40*/0, toMin(10),
+                cameraTask.UploadPictureTask);
 
             return new TaskParameter[] {
                 bootMsgTask, healthCheckTask,
