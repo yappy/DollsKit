@@ -48,17 +48,40 @@ namespace Shanghai
             string thPath = Path.Combine(PicDir, dirName, thName);
 
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                "Take a picture: {0}", filePath);
+                "[{0}] Take a picture: {1}", taskName, filePath);
 
             Directory.CreateDirectory(dirPath);
             var p = Process.Start("raspistill",
                 string.Format(@"-o ""{0}"" -th {1}", filePath, ThumOption));
             p.WaitForExit();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "[{0}] Result: {1}", taskName, p.ExitCode);
 
             // Create thumb
             var image = Image.FromFile(filePath);
             var thumb = image.GetThumbnailImage(ThumbX, ThumbY, null, IntPtr.Zero);
             thumb.Save(thPath, ImageFormat.Jpeg);
+        }
+
+        public void UploadPictureTask(TaskServer server, string taskName)
+        {
+            string[] files = Directory.GetFiles(TweetDir, "*.jpg");
+            if (files.Length > 0)
+            {
+                Array.Sort(files);
+                string upfile = files[0];
+
+                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                    "[{0}] Upload: {1}", taskName, upfile);
+                TwitterManager.UpdateWithImage(Path.GetFileName(upfile), upfile);
+
+                // delete if succeeded
+                File.Delete(upfile);
+            }
+            else {
+                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                    "[{0}] No upload files", taskName);
+            }
         }
     }
 }
