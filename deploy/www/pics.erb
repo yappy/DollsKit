@@ -2,16 +2,26 @@ Content-Type: text/html; charset=utf-8
 
 <%
 require 'cgi'
+require 'fileutils'
 load 'common.rb'
 
 $date = nil
+$upid = nil
 $ths = nil
 
 def init()
 	cgi = CGI.new
-	$date = cgi['date'].gsub(/[\D]/, '')
+	$date = cgi['date'].gsub(/[\D]/, '') if cgi.has_key?('date')
+	$upid = cgi['upid'].gsub(/[^_\d]/, '') if cgi.has_key?('upid')
+
 	pat = sprintf(Const::TH_FILES, $date)
 	$ths = Dir::glob(pat).sort!
+end
+
+def upload()
+	srcfile = sprintf(Const::PIC_FILE, $date, $upid)
+	dstfile = sprintf(Const::UP_FILE, $upid)
+	FileUtils.cp(srcfile, dstfile)
 end
 
 init()
@@ -29,14 +39,28 @@ init()
 <body>
 <h1>Pictures</h1>
 
-% $ths.each do |th|
-% datetime = th.match(Const::TH_PATTERN)[1]
-% file = sprintf(Const::PIC_FILE, $date, datetime)
+<%
+if $upid
+	upload()
+%>
+<p>Uploaded.</p>
+% end
+
+<%
+$ths.each do |th|
+	datetime = th.match(Const::TH_PATTERN)[1]
+	file = sprint(Const::PIC_FILE, $date, datetime)
+%>
 <p>
-	<a href="<%= file %>">
-		<img src="<%= th %>" alt="<%= file %>"/>
-		<%= file %>
+	<a href="<%= file %>"><%= file %>
+		<img src="<%= th %>" alt="<%= date %>"/>
 	</a>
+	<%= file %>
+	<form action="" method="get">
+		<input type="hidden" name="date" value="<%= $date %>"/>
+		<input type="hidden" name="upid" value="<%= datetime %>"/>
+		<input type="submit" value="Upload"/>
+	</form>
 </p>
 % end
 
