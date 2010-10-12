@@ -49,7 +49,7 @@ if $upid
 <%
 $ths.each do |th|
 	datetime = th.match(Const::TH_PATTERN)[1]
-	file = sprint(Const::PIC_FILE, $date, datetime)
+	file = sprintf(Const::PIC_FILE, $date, datetime)
 %>
 <p>
 	<a href="<%= file %>"><%= file %>

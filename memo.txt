@@ -84,6 +84,11 @@ sudo apt-get install php-cgi
 sudo apt-get install mecab mecab-ipadic-utf8
 
 
+- lighttpd
+CGI の stderr
+server.breakagelog = "/var/log/lighttpd/stderr.log"
+
+
 - カメラモジュールの有効化
 sudo raspi-config
 Enable Camera
