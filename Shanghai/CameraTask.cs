@@ -17,6 +17,9 @@ namespace Shanghai
         private static readonly string PicDir = Path.Combine(WebDir, "pics");
         private static readonly string TweetDir = Path.Combine(WebDir, "twque");
 
+        // 1024×768
+        private static readonly int ImgW = 1024;
+        private static readonly int ImgH = 768;
         // x:y:quality
         private static readonly int ThumbX = 160;
         private static readonly int ThumbY = 120;
@@ -52,7 +55,8 @@ namespace Shanghai
 
             Directory.CreateDirectory(dirPath);
             var p = Process.Start("raspistill",
-                string.Format(@"-o ""{0}"" -th {1}", filePath, ThumOption));
+                string.Format(@"-o ""{0}"" -w {1} -h {2} -th {3}",
+                    filePath, ImgW, ImgH, ThumOption));
             p.WaitForExit();
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                 "[{0}] Result: {1}", taskName, p.ExitCode);
