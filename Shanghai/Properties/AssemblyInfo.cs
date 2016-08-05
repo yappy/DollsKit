@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // アセンブリに関連付けられている情報を変更するには、
 // これらの属性値を変更してください。
 [assembly: AssemblyTitle("Shanghai")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("House management server program")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Shanghai")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("Copyright © 2016 yappy")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
