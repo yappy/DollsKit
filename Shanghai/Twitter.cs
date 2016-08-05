@@ -8,6 +8,7 @@ namespace Shanghai
     public class TwitterSettings
     {
         public static readonly string DefaultSetting = "please fill here";
+        public bool Enabled { get; set; } = false;
         public string ConsumerKey { get; set; } = DefaultSetting;
         public string ConsumerSecret { get; set; } = DefaultSetting;
         public string AccessToken { get; set; } = DefaultSetting;
@@ -37,20 +38,34 @@ namespace Shanghai
             using (var stream = new FileStream(SettingFileName, FileMode.Open, FileAccess.Read))
             {
                 settings = (TwitterSettings)xml.Deserialize(stream);
+                Log.Trace.TraceInformation("Twitter settings loaded");
             }
             if (settings.ConsumerKey == TwitterSettings.DefaultSetting)
             {
                 Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                    "Twitter settings seems to be empty. Twitter APIs will fail.", SettingFileName);
+                    "Twitter settings seems to be not set. Twitter APIs will fail.", SettingFileName);
             }
 
             tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
                 settings.AccessToken, settings.AccessSecret);
         }
 
+        public static void Terminate()
+        {
+            settings = null;
+            tokens = null;
+        }
+
         public static void Update(string msg)
         {
-            tokens.Statuses.Update(status: msg);
+            if (settings.Enabled)
+            {
+                tokens.Statuses.Update(status: msg);
+            }
+            else
+            {
+                Log.Trace.TraceInformation("Twitter update: {0}", msg);
+            }
         }
     }
 }
