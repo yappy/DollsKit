@@ -25,6 +25,8 @@ namespace Shanghai
             while (true)
             {
                 {
+                    TwitterManager.Initialize();
+
                     var taskServer = new TaskServer();
 
                     var printTask = TaskParameter.Periodic("print", 0, 1,
