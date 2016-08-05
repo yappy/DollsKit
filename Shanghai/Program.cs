@@ -4,13 +4,12 @@ using System.Threading;
 
 namespace Shanghai
 {
-    class Log
+    static class Log
     {
         public static TraceSource Trace { get; private set; }
         static Log()
         {
             Trace = new TraceSource("TaskServer");
-            var x = Trace.Listeners;
         }
     }
 
