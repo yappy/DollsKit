@@ -62,6 +62,10 @@ namespace Shanghai
             {
                 tokens.Statuses.Update(status: msg);
             }
+            else
+            {
+                Log.Trace.TraceInformation("Faked twitter update");
+            }
             Log.Trace.TraceInformation("Twitter update: {0}", msg);
         }
     }
