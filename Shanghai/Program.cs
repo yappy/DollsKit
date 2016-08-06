@@ -21,9 +21,40 @@ namespace Shanghai
         {
             TwitterManager.Initialize();
         }
+
         static void TerminateSystems()
         {
             TwitterManager.Terminate();
+        }
+
+        static TaskParameter[] SetupTasks()
+        {
+#if !DEBUG
+            Func<int, int> toHour = (sec) => sec * 60 * 60;
+            var testTweetTask = TaskParameter.Periodic("tweet", 1, toHour(1),
+                (TaskServer server, String taskName) =>
+                {
+                    TwitterManager.Update("Tweet test: " + DateTime.Now);
+                });
+            return new TaskParameter[] { testTweetTask };
+#else
+            var printTask = TaskParameter.Periodic("print", 0, 1,
+                (TaskServer server, String taskName) =>
+                {
+                    Console.WriteLine("test");
+                });
+            var exitTask = TaskParameter.OneShot("shutdown", 5,
+                (TaskServer server, String taskName) =>
+                {
+                    server.Shutdown(ServerResult.ErrorReboot);
+                });
+            var deadTestTask = TaskParameter.Periodic("takenoko", 0, 0,
+                (TaskServer server, String taskName) =>
+                {
+                    Thread.Sleep(20 * 1000);
+                });
+            return new TaskParameter[] { printTask, exitTask, deadTestTask };
+#endif
         }
 
         static void Main(string[] args)
@@ -38,28 +69,10 @@ namespace Shanghai
                     InitializeSystems();
                     {
                         var taskServer = new TaskServer();
-
-                        var printTask = TaskParameter.Periodic("print", 0, 1,
-                            (TaskServer server, String taskName) =>
-                            {
-                                Console.WriteLine("test");
-                            }
-                        );
-                        var exitTask = TaskParameter.OneShot("shutdown", 5,
-                            (TaskServer server, String taskName) =>
-                            {
-                                server.Shutdown(ServerResult.ErrorReboot);
-                            }
-                        );
-                        var deadTestTask = TaskParameter.Periodic("takenoko", 0, 0,
-                            (TaskServer server, String taskName) =>
-                            {
-                                Thread.Sleep(20 * 1000);
-                            }
-                        );
+                        TaskParameter[] tasks = SetupTasks();
 
                         Log.Trace.TraceInformation("Task server start");
-                        ServerResult result = taskServer.Run(printTask, exitTask, deadTestTask);
+                        ServerResult result = taskServer.Run(tasks);
                         Log.Trace.TraceInformation("Task server exit");
 
                         bool exit;
