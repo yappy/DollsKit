@@ -1,0 +1,55 @@
+- raspbian の img を落とす
+- Win32DiskImager を (zipで) 落とす
+- microSD に焼く
+- メモカを本体に入れてから電源をつなぐ
+-- あと有線 LAN も
+- マウスと HDMI をつないでネットワーク設定を見るか、なんかほかの方法で
+  IP addr を特定する
+- ssh <IP addr>
+-- user, pass = pi, raspberry
+-- インターネット公開前にはポートを変えておいたほうがよい
+
+
+$sudo raspi-config
+1. Expand Filesystem
+  SDカード全体を使うようにする
+2. Change User Password
+  パスワードを raspberry から変更する
+4. Internationalization Options
+  タイムゾーンは東京にしておいたほうがいいかも
+  wifi は日本にしておいたほうがいいかも
+  (変な設定にすると法規制に触れたりするの？？？)
+9. Advanced Options
+  hostname とか
+  raspi-config 自体のアップデートが一番下にある
+
+
+# パッケージリストの更新
+sudo apt-get update
+# インストールされてるパッケージの更新
+sudo apt-get upgrade
+# Raspberry Piのファームウェア更新
+sudo rpi-update
+↓
+This update bumps to rpi-4.4.y linux tree
+Be aware there could be compatibility issues with some drivers
+は？？？
+
+
+- git は入ってた
+-- エディタの変更
+git config --global core.editor emacs
+- mono は古い
+-- 公開鍵取得
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+-- サーバー追加
+echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.lis
+-- update
+sudo apt-get update
+-- install とか upgrade とか擦るといける
+sudo apt-get update
+sudo apt-get install mono-complete
+- nuget もこれでいける(多分)
+sudo apt-get install nuget
+-- 自己アップデート
+sudo nuget update -self
