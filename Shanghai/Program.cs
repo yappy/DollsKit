@@ -15,7 +15,14 @@ namespace Shanghai
 
     class Program
     {
-        static readonly int MaxErrorReboot = 8;
+#if !DEBUG
+        private static readonly int MaxTasks = 4;
+        private static readonly int HeartBeatSec = 60;
+#else
+        private static readonly int MaxTasks = 4;
+        private static readonly int HeartBeatSec = 3;
+#endif
+        private static readonly int MaxErrorReboot = 8;
 
         static void InitializeSystems()
         {
@@ -68,7 +75,7 @@ namespace Shanghai
                 {
                     InitializeSystems();
                     {
-                        var taskServer = new TaskServer();
+                        var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
                         TaskParameter[] tasks = SetupTasks();
 
                         Log.Trace.TraceInformation("Task server start");

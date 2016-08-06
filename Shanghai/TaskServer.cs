@@ -48,8 +48,8 @@ namespace Shanghai
 
     sealed class TaskServer
     {
-        private static readonly int MaxTasks = 8;
-        private static readonly int HeartBeatSec = 3;
+        private readonly int MaxTasks;
+        private readonly int HeartBeatSec;
 
         private ServerResult runResult = ServerResult.None;
         private CancellationTokenSource cancelTokenSource;
@@ -60,8 +60,11 @@ namespace Shanghai
             get { return cancelTokenSource.Token; }
         }
 
-        public TaskServer()
+        public TaskServer(int maxTasks, int heartBeatSec)
         {
+            MaxTasks = maxTasks;
+            HeartBeatSec = heartBeatSec;
+
             cancelTokenSource = new CancellationTokenSource();
             taskSema = new SemaphoreSlim(MaxTasks);
         }
