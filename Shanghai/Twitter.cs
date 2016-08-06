@@ -40,10 +40,10 @@ namespace Shanghai
                 settings = (TwitterSettings)xml.Deserialize(stream);
                 Log.Trace.TraceInformation("Twitter settings loaded");
             }
-            if (settings.ConsumerKey == TwitterSettings.DefaultSetting)
+            if (!settings.Enabled)
             {
                 Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                    "Twitter settings seems to be not set. Twitter APIs will fail.", SettingFileName);
+                    "Twitter feature is disabled. Only to log.");
             }
 
             tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
@@ -62,10 +62,7 @@ namespace Shanghai
             {
                 tokens.Statuses.Update(status: msg);
             }
-            else
-            {
-                Log.Trace.TraceInformation("Twitter update: {0}", msg);
-            }
+            Log.Trace.TraceInformation("Twitter update: {0}", msg);
         }
     }
 }
