@@ -17,10 +17,10 @@ namespace Shanghai
         public TwitterCheck()
         { }
 
-        private bool IsBlack(Status status)
+        private bool IsBlack(Status status, long masterId)
         {
             // not master
-            if (status.User.Id == TwitterManager.MasterTokens.UserId)
+            if (status.User.Id == masterId)
             {
                 return false;
             }
@@ -76,7 +76,7 @@ namespace Shanghai
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
             foreach (var status in timeline)
             {
-                if (IsBlack(status))
+                if (IsBlack(status, masterId))
                 {
                     if (!(status.IsFavorited ?? false))
                     {

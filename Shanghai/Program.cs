@@ -50,7 +50,7 @@ namespace Shanghai
             var mentionCheckTask = TaskParameter.Periodic("mention", 2, toMin(2),
                 twitterCheck.CheckMention);
 
-            return new TaskParameter[] { healthCheckTask, blackCheckTask };
+            return new TaskParameter[] { healthCheckTask, blackCheckTask, mentionCheckTask };
 #else
             var printTask = TaskParameter.Periodic("print", 0, 1,
                 (TaskServer server, String taskName) =>
