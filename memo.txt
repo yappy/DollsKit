@@ -53,3 +53,7 @@ sudo apt-get install mono-complete
 sudo apt-get install nuget
 -- 自己アップデート
 sudo nuget update -self
+
+
+- nohup だと ssh 切れた後プロセスが死んでしまう(原因は不明)
+sudo apt-get install screen
