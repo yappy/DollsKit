@@ -82,7 +82,7 @@ namespace Shanghai
                     {
                         Log.Trace.TraceEvent(TraceEventType.Information, 0,
                             "[{0}] Find black: {1} - {2}", taskName, status.User.Name, status.Text);
-                        TwitterManager.Tokens.Favorites.Create(status.Id);
+                        TwitterManager.Favorite(status.Id);
                         TwitterManager.Update(
                             string.Format("@{0} ブラック", status.User.Name),
                             status.Id);
@@ -106,7 +106,7 @@ namespace Shanghai
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find mention: {1} - {2}", taskName, status.User.Name, status.Text);
-                    TwitterManager.Tokens.Favorites.Create(status.Id);
+                    TwitterManager.Favorite(status.Id);
                     TwitterManager.Update(
                         string.Format("@{0} バカジャネーノ", status.User.Name),
                         status.Id);

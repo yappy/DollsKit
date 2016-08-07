@@ -75,5 +75,18 @@ namespace Shanghai
             }
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update: {0}", msg);
         }
+
+        public static void Favorite(long id)
+        {
+            if (settings.WriteEnabled)
+            {
+                TwitterManager.Tokens.Favorites.Create(id);
+            }
+            else
+            {
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter favorite");
+            }
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter favorite: {0}", id);
+        }
     }
 }
