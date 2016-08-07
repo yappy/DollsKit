@@ -40,15 +40,10 @@ namespace Shanghai
             Func<int, int> toHour = (sec) => sec * 60 * 60;
             var healthCheck = new HealthCheck();
 
-            var testTweetTask = TaskParameter.Periodic("tweet", 1, toHour(1),
-                (TaskServer server, String taskName) =>
-                {
-                    TwitterManager.Update("Tweet test: " + DateTime.Now);
-                });
             var healthCheckTask = TaskParameter.Periodic("health", 2, toHour(1),
                 healthCheck.Proc);
 
-            return new TaskParameter[] { testTweetTask, healthCheckTask };
+            return new TaskParameter[] { healthCheckTask };
 #else
             var printTask = TaskParameter.Periodic("print", 0, 1,
                 (TaskServer server, String taskName) =>
