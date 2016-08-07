@@ -20,16 +20,21 @@ namespace Shanghai
             msg.AppendFormat("CPU Temp: {0:F3}\n", GetCpuTemp());
 
             List<CpuUsage> cpuUsage = GetCpuUsage(server.CancelToken);
-            cpuUsage.ForEach((usage)=>
+            cpuUsage.ForEach((usage) =>
             {
                 msg.AppendFormat("{0}:{1:F1}% ", usage.Name, usage.UsagePercent);
             });
             msg.Append('\n');
 
-            double free, total;
-            GetDiskInfoG(out free, out total);
-            msg.AppendFormat("Disk: {0:F1}G / {1:F1}G Free ({2}%)",
-                free, total, (int)(free * 100.0 / total));
+            double memTotal = 0.0, memFree = 0.0, memAvail = 0.0;
+            GetMemInfoM(ref memTotal, ref memFree, ref memAvail);
+            msg.AppendFormat("Memory: {0:F1}M Total, {1:F1}M Free ({2:F1}%), {3:F1}M Avail ({4:F1}%)\n",
+                memTotal, memFree, memFree * 100.0 / memTotal, memAvail, memAvail * 100.0 / memTotal);
+
+            double diskFree, diskTotal;
+            GetDiskInfoG(out diskFree, out diskTotal);
+            msg.AppendFormat("Disk: {0:F1}G / {1:F1}G Free ({2}%)\n",
+                diskFree, diskTotal, (int)(diskFree * 100.0 / diskTotal));
 
             TwitterManager.Update(msg.ToString());
         }
@@ -45,7 +50,8 @@ namespace Shanghai
             return int.Parse(src) / 1000.0;
         }
 
-        private struct CpuUsage {
+        private struct CpuUsage
+        {
             public string Name;
             public double UsagePercent;
         }
@@ -80,18 +86,52 @@ namespace Shanghai
             getStat(stat2);
 
             var result = new List<CpuUsage>();
-            for (int i = 0; i < Math.Min(stat1.Count, stat2.Count); i++) {
+            for (int i = 0; i < Math.Min(stat1.Count, stat2.Count); i++)
+            {
                 long total1 = stat1[i].Skip(1).Select(long.Parse).Sum();
                 long total2 = stat2[i].Skip(1).Select(long.Parse).Sum();
                 long idle1 = stat1[i].Skip(4).Take(1).Select(long.Parse).Sum();
                 long idle2 = stat2[i].Skip(4).Take(1).Select(long.Parse).Sum();
                 double usage = 1.0 - (double)(idle2 - idle1) / (total2 - total1);
-                result.Add(new CpuUsage() {
+                result.Add(new CpuUsage()
+                {
                     Name = stat1[i][0],
                     UsagePercent = usage * 100.0,
                 });
             }
             return result;
+        }
+
+        private static void GetMemInfoM(ref double total, ref double free, ref double available)
+        {
+            const string DevFilePath = "/proc/meminfo";
+            using (var reader = new StreamReader(DevFilePath))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] elems = line.Split(new char[] { ' ' },
+                            StringSplitOptions.RemoveEmptyEntries);
+                    if (elems.Length != 3 || elems[2] != "kB")
+                    {
+                        continue;
+                    }
+                    // kB -> mB
+                    double value = long.Parse(elems[1]) / 1024.0;
+                    switch (elems[0])
+                    {
+                        case "MemTotal:":
+                            total = value;
+                            break;
+                        case "MemFree":
+                            free = value;
+                            break;
+                        case "MemAvailable":
+                            available = value;
+                            break;
+                    }
+                }
+            }
         }
 
         private static void GetDiskInfoG(out double free, out double total)
