@@ -13,7 +13,7 @@ namespace Shanghai
         public HealthCheck()
         { }
 
-        public void Proc(TaskServer server, string taskName)
+        public void Check(TaskServer server, string taskName)
         {
             {
                 var msg = new StringBuilder("[Health Check]\n");
