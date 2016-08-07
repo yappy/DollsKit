@@ -123,10 +123,10 @@ namespace Shanghai
                         case "MemTotal:":
                             total = value;
                             break;
-                        case "MemFree":
+                        case "MemFree:":
                             free = value;
                             break;
-                        case "MemAvailable":
+                        case "MemAvailable:":
                             available = value;
                             break;
                     }
