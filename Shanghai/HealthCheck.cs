@@ -85,9 +85,10 @@ namespace Shanghai
                 long total2 = stat2[i].Skip(1).Select(long.Parse).Sum();
                 long idle1 = stat1[i].Skip(4).Take(1).Select(long.Parse).Sum();
                 long idle2 = stat2[i].Skip(4).Take(1).Select(long.Parse).Sum();
+                double usage = 1.0 - (double)(idle2 - idle1) / (total2 - total1);
                 result.Add(new CpuUsage() {
                     Name = stat1[i][0],
-                    UsagePercent = (idle2 - idle1) * 100.0 / (total2 - total1),
+                    UsagePercent = usage * 100.0,
                 });
             }
             return result;
