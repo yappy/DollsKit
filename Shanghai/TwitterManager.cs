@@ -8,11 +8,15 @@ namespace Shanghai
     public class TwitterSettings
     {
         public static readonly string DefaultSetting = "please fill here";
-        public bool Enabled { get; set; } = false;
+        public bool WriteEnabled { get; set; } = false;
         public string ConsumerKey { get; set; } = DefaultSetting;
         public string ConsumerSecret { get; set; } = DefaultSetting;
         public string AccessToken { get; set; } = DefaultSetting;
         public string AccessSecret { get; set; } = DefaultSetting;
+        public string MasterConsumerKey { get; set; } = DefaultSetting;
+        public string MasterConsumerSecret { get; set; } = DefaultSetting;
+        public string MasterAccessToken { get; set; } = DefaultSetting;
+        public string MasterAccessSecret { get; set; } = DefaultSetting;
     }
 
     static class TwitterManager
@@ -20,7 +24,8 @@ namespace Shanghai
         private static readonly string SettingFileName = "twitter.xml";
 
         private static TwitterSettings settings;
-        private static Tokens tokens;
+        public static Tokens Tokens { get; set; }
+        public static Tokens MasterTokens { get; set; }
 
         public static void Initialize()
         {
@@ -40,27 +45,29 @@ namespace Shanghai
                 settings = (TwitterSettings)xml.Deserialize(stream);
                 Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter settings loaded");
             }
-            if (!settings.Enabled)
+            if (!settings.WriteEnabled)
             {
                 Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                    "Twitter feature is disabled. Only to log.");
+                    "Twitter write feature is disabled. Only to log.");
             }
 
-            tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
+            Tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
                 settings.AccessToken, settings.AccessSecret);
+            MasterTokens = Tokens.Create(settings.MasterConsumerKey, settings.MasterConsumerSecret,
+                settings.MasterAccessToken, settings.MasterAccessSecret);
         }
 
         public static void Terminate()
         {
             settings = null;
-            tokens = null;
+            Tokens = null;
         }
 
-        public static void Update(string msg)
+        public static void Update(string msg, long? reply_to_status = null)
         {
-            if (settings.Enabled)
+            if (settings.WriteEnabled)
             {
-                tokens.Statuses.Update(status: msg);
+                Tokens.Statuses.Update(status: msg, in_reply_to_status_id: reply_to_status);
             }
             else
             {
