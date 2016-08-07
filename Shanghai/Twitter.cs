@@ -38,7 +38,7 @@ namespace Shanghai
             using (var stream = new FileStream(SettingFileName, FileMode.Open, FileAccess.Read))
             {
                 settings = (TwitterSettings)xml.Deserialize(stream);
-                Log.Trace.TraceInformation("Twitter settings loaded");
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter settings loaded");
             }
             if (!settings.Enabled)
             {
@@ -64,9 +64,9 @@ namespace Shanghai
             }
             else
             {
-                Log.Trace.TraceInformation("Faked twitter update");
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update");
             }
-            Log.Trace.TraceInformation("Twitter update: {0}", msg);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update: {0}", msg);
         }
     }
 }

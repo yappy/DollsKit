@@ -72,7 +72,7 @@ namespace Shanghai
         // thread safe
         public void RegisterTask(TaskParameter taskParam)
         {
-            Log.Trace.TraceInformation("[{0}] Register periodic task ({1}sec, T={2})", taskParam.Name, taskParam.StartSec, taskParam.PeriodSec);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Register periodic task ({1}sec, T={2})", taskParam.Name, taskParam.StartSec, taskParam.PeriodSec);
 
             // to be released from release thread
             Action taskProc = () =>
@@ -93,11 +93,11 @@ namespace Shanghai
                 }
                 catch (OperationCanceledException)
                 {
-                    Log.Trace.TraceInformation("[{0}] Task cancelled", taskParam.Name);
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Task cancelled", taskParam.Name);
                 }
                 catch (Exception e)
                 {
-                    Log.Trace.TraceInformation("[{0}] Exception", taskParam.Name);
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Exception", taskParam.Name);
                     Log.Trace.TraceData(TraceEventType.Error, 0, e);
                 }
                 finally
@@ -127,11 +127,11 @@ namespace Shanghai
                 }
                 catch (OperationCanceledException)
                 {
-                    Log.Trace.TraceInformation("[{0}-release-thread] Task cancelled", taskParam.Name);
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}-release-thread] Task cancelled", taskParam.Name);
                 }
                 catch (Exception e)
                 {
-                    Log.Trace.TraceInformation("[{0}-release-thread] Exception", taskParam.Name);
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}-release-thread] Exception", taskParam.Name);
                     Log.Trace.TraceData(TraceEventType.Error, 0, e);
                 }
             });
@@ -200,7 +200,7 @@ namespace Shanghai
             {
                 // thrown by cancelToken
                 // shutdown from an external task
-                Log.Trace.TraceInformation("Interrupted by others");
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Interrupted by others");
             }
             catch (Exception e)
             {

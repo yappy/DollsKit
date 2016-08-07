@@ -66,7 +66,7 @@ namespace Shanghai
 
         static void Main(string[] args)
         {
-            Log.Trace.TraceInformation("Start");
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Start");
 
             try
             {
@@ -78,28 +78,28 @@ namespace Shanghai
                         var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
                         TaskParameter[] tasks = SetupTasks();
 
-                        Log.Trace.TraceInformation("Task server start");
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server start");
                         ServerResult result = taskServer.Run(tasks);
-                        Log.Trace.TraceInformation("Task server exit");
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server exit");
 
                         bool exit;
                         switch (result)
                         {
                             case ServerResult.Reboot:
-                                Log.Trace.TraceInformation("Reboot");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot");
                                 exit = false;
                                 break;
                             case ServerResult.Shutdown:
-                                Log.Trace.TraceInformation("Shutdown");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Shutdown");
                                 exit = true;
                                 break;
                             case ServerResult.ErrorReboot:
                                 errorRebootCount++;
-                                Log.Trace.TraceInformation("Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
                                 exit = (errorRebootCount >= MaxErrorReboot);
                                 break;
                             case ServerResult.FatalShutdown:
-                                Log.Trace.TraceInformation("Fatal Shutdown");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Fatal Shutdown");
                                 exit = true;
                                 break;
                             default:
@@ -113,9 +113,9 @@ namespace Shanghai
                         }
                     }
                     TerminateSystems();
-                    Log.Trace.TraceInformation("GC...");
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC...");
                     GC.Collect();
-                    Log.Trace.TraceInformation("GC complete");
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC complete");
                 }
             }
             catch (Exception e)
@@ -123,7 +123,7 @@ namespace Shanghai
                 Log.Trace.TraceData(TraceEventType.Critical, 0, e);
             }
 
-            Log.Trace.TraceInformation("Terminate");
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Terminate");
         }
     }
 }
