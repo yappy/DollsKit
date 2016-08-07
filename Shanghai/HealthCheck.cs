@@ -16,7 +16,7 @@ namespace Shanghai
 
             double free, total;
             GetDiskInfoG(out free, out total);
-            msg.AppendFormat("Disk: {0:F3}G/{1:F3}G Free ({2}%)",
+            msg.AppendFormat("Disk: {0:F1}G / {1:F1}G Free ({2}%)",
                 free, total, (int)(free * 100.0 / total));
 
             TwitterManager.Update(msg.ToString());
