@@ -15,20 +15,58 @@ namespace Shanghai
 
     class Program
     {
-        static readonly int MaxErrorReboot = 8;
+#if !DEBUG
+        private static readonly int MaxTasks = 4;
+        private static readonly int HeartBeatSec = 60;
+#else
+        private static readonly int MaxTasks = 4;
+        private static readonly int HeartBeatSec = 3;
+#endif
+        private static readonly int MaxErrorReboot = 8;
 
         static void InitializeSystems()
         {
             TwitterManager.Initialize();
         }
+
         static void TerminateSystems()
         {
             TwitterManager.Terminate();
         }
 
+        static TaskParameter[] SetupTasks()
+        {
+#if !DEBUG
+            Func<int, int> toHour = (sec) => sec * 60 * 60;
+            var testTweetTask = TaskParameter.Periodic("tweet", 1, toHour(1),
+                (TaskServer server, String taskName) =>
+                {
+                    TwitterManager.Update("Tweet test: " + DateTime.Now);
+                });
+            return new TaskParameter[] { testTweetTask };
+#else
+            var printTask = TaskParameter.Periodic("print", 0, 1,
+                (TaskServer server, String taskName) =>
+                {
+                    Console.WriteLine("test");
+                });
+            var exitTask = TaskParameter.OneShot("shutdown", 5,
+                (TaskServer server, String taskName) =>
+                {
+                    server.Shutdown(ServerResult.ErrorReboot);
+                });
+            var deadTestTask = TaskParameter.Periodic("takenoko", 0, 0,
+                (TaskServer server, String taskName) =>
+                {
+                    Thread.Sleep(20 * 1000);
+                });
+            return new TaskParameter[] { printTask, exitTask, deadTestTask };
+#endif
+        }
+
         static void Main(string[] args)
         {
-            Log.Trace.TraceInformation("Start");
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Start");
 
             try
             {
@@ -37,49 +75,31 @@ namespace Shanghai
                 {
                     InitializeSystems();
                     {
-                        var taskServer = new TaskServer();
+                        var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
+                        TaskParameter[] tasks = SetupTasks();
 
-                        var printTask = TaskParameter.Periodic("print", 0, 1,
-                            (TaskServer server, String taskName) =>
-                            {
-                                Console.WriteLine("test");
-                            }
-                        );
-                        var exitTask = TaskParameter.OneShot("shutdown", 5,
-                            (TaskServer server, String taskName) =>
-                            {
-                                server.Shutdown(ServerResult.ErrorReboot);
-                            }
-                        );
-                        var deadTestTask = TaskParameter.Periodic("takenoko", 0, 0,
-                            (TaskServer server, String taskName) =>
-                            {
-                                Thread.Sleep(20 * 1000);
-                            }
-                        );
-
-                        Log.Trace.TraceInformation("Task server start");
-                        ServerResult result = taskServer.Run(printTask, exitTask, deadTestTask);
-                        Log.Trace.TraceInformation("Task server exit");
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server start");
+                        ServerResult result = taskServer.Run(tasks);
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server exit");
 
                         bool exit;
                         switch (result)
                         {
                             case ServerResult.Reboot:
-                                Log.Trace.TraceInformation("Reboot");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot");
                                 exit = false;
                                 break;
                             case ServerResult.Shutdown:
-                                Log.Trace.TraceInformation("Shutdown");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Shutdown");
                                 exit = true;
                                 break;
                             case ServerResult.ErrorReboot:
                                 errorRebootCount++;
-                                Log.Trace.TraceInformation("Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
                                 exit = (errorRebootCount >= MaxErrorReboot);
                                 break;
                             case ServerResult.FatalShutdown:
-                                Log.Trace.TraceInformation("Fatal Shutdown");
+                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Fatal Shutdown");
                                 exit = true;
                                 break;
                             default:
@@ -93,9 +113,9 @@ namespace Shanghai
                         }
                     }
                     TerminateSystems();
-                    Log.Trace.TraceInformation("GC...");
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC...");
                     GC.Collect();
-                    Log.Trace.TraceInformation("GC complete");
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC complete");
                 }
             }
             catch (Exception e)
@@ -103,7 +123,7 @@ namespace Shanghai
                 Log.Trace.TraceData(TraceEventType.Critical, 0, e);
             }
 
-            Log.Trace.TraceInformation("Terminate");
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Terminate");
         }
     }
 }
