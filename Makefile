@@ -1,4 +1,4 @@
-.PHONY: all build deploy clean
+.PHONY: default all nuget build deploy clean
 
 NUGET_DIR = packages
 DEPLOY_DIR = deploy
@@ -16,7 +16,7 @@ build:
 	xbuild DollsKit.sln /p:Configuration=Debug
 	xbuild DollsKit.sln /p:Configuration=Release
 
-deploy: build
+deploy:
 	mkdir -p $(DEPLOY_DIR)
 	cp $(DEPLOY_FILES) $(DEPLOY_DIR)
 
