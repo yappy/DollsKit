@@ -36,7 +36,7 @@ namespace Shanghai
 
         static TaskParameter[] SetupTasks()
         {
-#if !DEBUG
+#if true
             Func<int, int> toMin = (sec) => sec * 60;
             Func<int, int> toHour = (sec) => sec * 60 * 60;
             var healthCheck = new HealthCheck();
