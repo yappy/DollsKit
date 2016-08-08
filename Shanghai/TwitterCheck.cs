@@ -31,9 +31,9 @@ namespace Shanghai
 
             bool black = false;
             string[] Keywords = {
-                "白", "黒", "ホワイト", "ブラック",
+                "白", "黒", "ホワイト", "ブラック", "ほわ", "ぶらっく",
                 "定時", "退社", "帰",
-                "残業",
+                "残業", "代休",
             };
             Array.ForEach(Keywords, (word) =>
             {
