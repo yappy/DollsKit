@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -112,6 +113,25 @@ namespace Shanghai
                         status.Id);
                 }
             }
+        }
+
+        public void updateIpAddr(TaskServer server, string taskName)
+        {
+            const string Uri = "http://inet-ip.info";
+            const string UserAgent = "curl";
+            const int TimeoutSec = 10;
+
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", UserAgent);
+            httpClient.Timeout = TimeSpan.FromSeconds(TimeoutSec);
+
+            Task<string> task = httpClient.GetStringAsync(Uri);
+            task.Wait(server.CancelToken);
+
+            string ipAddr = task.Result.Trim();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "IP addr: {0}", ipAddr);
+            TwitterManager.UpdateProfileUrl(string.Format("http://{0}/", ipAddr));
         }
     }
 }

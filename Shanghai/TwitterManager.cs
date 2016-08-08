@@ -26,6 +26,10 @@ namespace Shanghai
         private static TwitterSettings settings;
         public static Tokens Tokens { get; set; }
         public static Tokens MasterTokens { get; set; }
+        public static bool WriteEnabled
+        {
+            get { return settings.WriteEnabled; }
+        }
 
         public static void Initialize()
         {
@@ -80,13 +84,26 @@ namespace Shanghai
         {
             if (settings.WriteEnabled)
             {
-                TwitterManager.Tokens.Favorites.Create(id);
+                Tokens.Favorites.Create(id);
             }
             else
             {
                 Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter favorite");
             }
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter favorite: {0}", id);
+        }
+
+        public static void UpdateProfileUrl(string url)
+        {
+            if (settings.WriteEnabled)
+            {
+                Tokens.Account.UpdateProfile(url: url);
+            }
+            else
+            {
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter profile update");
+            }
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter profile URL: {0}", url);
         }
     }
 }
