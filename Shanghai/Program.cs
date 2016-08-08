@@ -37,18 +37,20 @@ namespace Shanghai
         static TaskParameter[] SetupTasks()
         {
 #if !DEBUG
+            Func<int, int> toMin = (sec) => sec * 60;
             Func<int, int> toHour = (sec) => sec * 60 * 60;
             var healthCheck = new HealthCheck();
+            var twitterCheck = new TwitterCheck();
 
-            var testTweetTask = TaskParameter.Periodic("tweet", 1, toHour(1),
-                (TaskServer server, String taskName) =>
-                {
-                    TwitterManager.Update("Tweet test: " + DateTime.Now);
-                });
-            var healthCheckTask = TaskParameter.Periodic("health", 2, toHour(1),
-                healthCheck.Proc);
+            var healthCheckTask = TaskParameter.Periodic("health", 60, toHour(1),
+                healthCheck.Check);
 
-            return new TaskParameter[] { testTweetTask, healthCheckTask };
+            var blackCheckTask = TaskParameter.Periodic("black", 1, toMin(10),
+                twitterCheck.CheckBlack);
+            var mentionCheckTask = TaskParameter.Periodic("mention", 2, toMin(2),
+                twitterCheck.CheckMention);
+
+            return new TaskParameter[] { healthCheckTask, blackCheckTask, mentionCheckTask };
 #else
             var printTask = TaskParameter.Periodic("print", 0, 1,
                 (TaskServer server, String taskName) =>
