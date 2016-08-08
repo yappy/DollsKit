@@ -57,3 +57,22 @@ sudo nuget update -self
 
 - nohup だと ssh 切れた後プロセスが死んでしまう(原因は不明)
 sudo apt-get install screen
+デタッチ: C-a d
+
+
+- root password
+-- sudo passwd root
+- ssh
+sudo vi /etc/ssh/sshd_config
+-- Change ssh port
+Port 22 <-変える
+-- disable root login
+PermitRootLogin no
+-- 公開鍵認証
+AuthorizedKeysFile  %h/.ssh/authorized_keys
+-- パスワード認証の無効化
+#PasswordAuthentication yes
+
+
+- http
+sudo apt-get install lighttp
