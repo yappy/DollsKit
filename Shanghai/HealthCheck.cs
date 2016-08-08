@@ -16,7 +16,7 @@ namespace Shanghai
         public void Check(TaskServer server, string taskName)
         {
             {
-                var msg = new StringBuilder("[Health Check]\n");
+                var msg = new StringBuilder("[Health Check 1]\n");
 
                 msg.AppendFormat("CPU Temp: {0:F3}\n", GetCpuTemp());
 
@@ -30,7 +30,7 @@ namespace Shanghai
                 TwitterManager.Update(msg.ToString());
             }
             {
-                var msg = new StringBuilder("[Health Check]\n");
+                var msg = new StringBuilder("[Health Check 2]\n");
 
                 double memTotal = 0.0, memFree = 0.0, memAvail = 0.0;
                 GetMemInfoM(ref memTotal, ref memFree, ref memAvail);

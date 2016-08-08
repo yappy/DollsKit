@@ -42,7 +42,7 @@ namespace Shanghai
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
 
-            var healthCheckTask = TaskParameter.Periodic("health", 60, toHour(1),
+            var healthCheckTask = TaskParameter.Periodic("health", 60, toHour(6),
                 healthCheck.Check);
 
             var blackCheckTask = TaskParameter.Periodic("black", 1, toMin(10),
