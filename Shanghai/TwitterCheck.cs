@@ -131,7 +131,7 @@ namespace Shanghai
             string ipAddr = task.Result.Trim();
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                 "IP addr: {0}", ipAddr);
-            TwitterManager.UpdateProfileUrl(string.Format("http://{0}/", ipAddr));
+            TwitterManager.UpdateProfileLocation(string.Format("http://{0}/", ipAddr));
         }
     }
 }

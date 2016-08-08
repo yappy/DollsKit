@@ -93,17 +93,17 @@ namespace Shanghai
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter favorite: {0}", id);
         }
 
-        public static void UpdateProfileUrl(string url)
+        public static void UpdateProfileLocation(string location)
         {
             if (settings.WriteEnabled)
             {
-                Tokens.Account.UpdateProfile(url: url);
+                Tokens.Account.UpdateProfile(location: location);
             }
             else
             {
                 Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter profile update");
             }
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter profile URL: {0}", url);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter profile location: {0}", location);
         }
     }
 }
