@@ -76,3 +76,5 @@ AuthorizedKeysFile  %h/.ssh/authorized_keys
 
 - http
 sudo apt-get install lighttp
+- php
+sudo apt-get install php-cgi
