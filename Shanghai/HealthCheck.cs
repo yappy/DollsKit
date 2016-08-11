@@ -31,7 +31,7 @@ namespace Shanghai
             {
                 double memTotal = 0.0, memFree = 0.0, memAvail = 0.0;
                 GetMemInfoM(ref memTotal, ref memFree, ref memAvail);
-                msg.AppendFormat("Mem: {0:F1}/{3:F1}M ({4:F1}%)\n",
+                msg.AppendFormat("Mem: {0:F1}/{1:F1}M ({2:F1}%)\n",
                     memAvail, memTotal, memAvail * 100.0 / memTotal);
             }
             {
