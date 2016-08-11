@@ -75,7 +75,11 @@ namespace Shanghai
             }
             else
             {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update");
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update ({0}", msg.Length);
+                if (msg.Length > 140)
+                {
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "Message too long: {0}", msg.Length);
+                }
             }
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update: {0}", msg);
         }
