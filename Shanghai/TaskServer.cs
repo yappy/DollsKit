@@ -72,7 +72,9 @@ namespace Shanghai
         // thread safe
         public void RegisterTask(TaskParameter taskParam)
         {
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Register periodic task ({1}sec, T={2})", taskParam.Name, taskParam.StartSec, taskParam.PeriodSec);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "[{0}] Register task ({1}sec, T={2}, count={3})",
+                taskParam.Name, taskParam.StartSec, taskParam.PeriodSec, taskParam.ReleaseCount);
 
             // to be released from release thread
             Action taskProc = () =>
