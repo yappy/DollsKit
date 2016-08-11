@@ -56,7 +56,7 @@ namespace Shanghai
             var updateIpAddrTask = TaskParameter.Periodic("ipaddr", 5, toHour(6),
                 twitterCheck.updateIpAddr);
 
-            return new TaskParameter[] { healthCheckTask,
+            return new TaskParameter[] { bootMsgTask, healthCheckTask,
                 blackCheckTask, mentionCheckTask, updateIpAddrTask };
 #else
             var printTask = TaskParameter.Periodic("print", 0, 1,
