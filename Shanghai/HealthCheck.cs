@@ -15,35 +15,32 @@ namespace Shanghai
 
         public void Check(TaskServer server, string taskName)
         {
+            var msg = new StringBuilder("[Health Check]\n");
             {
-                var msg = new StringBuilder("[Health Check 1]\n");
-
-                msg.AppendFormat("CPU Temp: {0:F3}\n", GetCpuTemp());
-
+                msg.AppendFormat("CPU Temp: {0:F1}\n", GetCpuTemp());
+            }
+            {
                 List<CpuUsage> cpuUsage = GetCpuUsage(server.CancelToken);
-                cpuUsage.ForEach((usage) =>
+                // use the total CPU usage only
+                foreach (var usage in cpuUsage.Take(1))
                 {
                     msg.AppendFormat("{0}:{1:F1}% ", usage.Name, usage.UsagePercent);
-                });
+                }
                 msg.Append('\n');
-
-                TwitterManager.Update(msg.ToString());
             }
             {
-                var msg = new StringBuilder("[Health Check 2]\n");
-
                 double memTotal = 0.0, memFree = 0.0, memAvail = 0.0;
                 GetMemInfoM(ref memTotal, ref memFree, ref memAvail);
-                msg.AppendFormat("Memory: {0:F1}M Total, {1:F1}M Free ({2:F1}%), {3:F1}M Avail ({4:F1}%)\n",
-                    memTotal, memFree, memFree * 100.0 / memTotal, memAvail, memAvail * 100.0 / memTotal);
-
+                msg.AppendFormat("Mem: {0:F1}/{1:F1}M Avail ({2:F1}%)\n",
+                    memAvail, memTotal, memAvail * 100.0 / memTotal);
+            }
+            {
                 double diskFree, diskTotal;
                 GetDiskInfoG(out diskFree, out diskTotal);
-                msg.AppendFormat("Disk: {0:F1}G / {1:F1}G Free ({2}%)\n",
+                msg.AppendFormat("Disk: {0:F1}/{1:F1}G Free ({2:F1}%)\n",
                     diskFree, diskTotal, (int)(diskFree * 100.0 / diskTotal));
-
-                TwitterManager.Update(msg.ToString());
             }
+            TwitterManager.Update(msg.ToString());
         }
 
         private static double GetCpuTemp()
