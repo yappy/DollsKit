@@ -34,7 +34,7 @@ namespace Shanghai
             TwitterManager.Terminate();
         }
 
-        static TaskParameter[] SetupTasks()
+        static TaskParameter[] SetupTasks(string bootMsg)
         {
 #if true
             Func<int, int> toMin = (sec) => sec * 60;
@@ -42,14 +42,18 @@ namespace Shanghai
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
 
-            var healthCheckTask = TaskParameter.Periodic("health", 0, toHour(6),
+            var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
+            {
+                TwitterManager.Update(bootMsg);
+            });
+            var healthCheckTask = TaskParameter.Periodic("health", 1, toHour(6),
                 healthCheck.Check);
 
-            var blackCheckTask = TaskParameter.Periodic("black", 1, toMin(10),
+            var blackCheckTask = TaskParameter.Periodic("black", 3, toMin(10),
                 twitterCheck.CheckBlack);
-            var mentionCheckTask = TaskParameter.Periodic("mention", 2, toMin(2),
+            var mentionCheckTask = TaskParameter.Periodic("mention", 4, toMin(5),
                 twitterCheck.CheckMention);
-            var updateIpAddrTask = TaskParameter.Periodic("ipaddr", 3, toHour(6),
+            var updateIpAddrTask = TaskParameter.Periodic("ipaddr", 5, toHour(6),
                 twitterCheck.updateIpAddr);
 
             return new TaskParameter[] { healthCheckTask,
@@ -82,12 +86,13 @@ namespace Shanghai
             try
             {
                 int errorRebootCount = 0;
+                string bootMsg = "Boot...";
                 while (true)
                 {
                     InitializeSystems();
                     {
                         var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
-                        TaskParameter[] tasks = SetupTasks();
+                        TaskParameter[] tasks = SetupTasks(bootMsg);
 
                         Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server start");
                         ServerResult result = taskServer.Run(tasks);
@@ -127,6 +132,7 @@ namespace Shanghai
                     Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC...");
                     GC.Collect();
                     Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC complete");
+                    bootMsg = "Reboot...";
                 }
             }
             catch (Exception e)
