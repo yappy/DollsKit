@@ -1,13 +1,11 @@
 ﻿using CoreTweet;
 using System.Diagnostics;
-using System.IO;
-using System.Xml.Serialization;
 
 namespace Shanghai
 {
     public class TwitterSettings
     {
-        public static readonly string DefaultSetting = "please fill here";
+        public static readonly string DefaultSetting = "FillHere";
         public bool WriteEnabled { get; set; } = false;
         public string ConsumerKey { get; set; } = DefaultSetting;
         public string ConsumerSecret { get; set; } = DefaultSetting;
@@ -21,8 +19,6 @@ namespace Shanghai
 
     static class TwitterManager
     {
-        private static readonly string SettingFileName = "twitter.xml";
-
         private static TwitterSettings settings;
         public static Tokens Tokens { get; set; }
         public static Tokens MasterTokens { get; set; }
@@ -33,28 +29,13 @@ namespace Shanghai
 
         public static void Initialize()
         {
-            var xml = new XmlSerializer(typeof(TwitterSettings));
-            if (!File.Exists(SettingFileName))
-            {
-                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                    "{0} not found. Create new.", SettingFileName);
-                using (var stream = new FileStream(SettingFileName, FileMode.Create, FileAccess.Write))
-                {
-                    var def = new TwitterSettings();
-                    xml.Serialize(stream, def);
-                }
-            }
-            using (var stream = new FileStream(SettingFileName, FileMode.Open, FileAccess.Read))
-            {
-                settings = (TwitterSettings)xml.Deserialize(stream);
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter settings loaded");
-            }
+            settings = SettingManager.Settings.Twitter;
+
             if (!settings.WriteEnabled)
             {
                 Log.Trace.TraceEvent(TraceEventType.Warning, 0,
                     "Twitter write feature is disabled. Only to log.");
             }
-
             Tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
                 settings.AccessToken, settings.AccessSecret);
             MasterTokens = Tokens.Create(settings.MasterConsumerKey, settings.MasterConsumerSecret,
@@ -75,7 +56,7 @@ namespace Shanghai
             }
             else
             {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update ({0}", msg.Length);
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update ({0})", msg.Length);
                 if (msg.Length > 140)
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0, "Message too long: {0}", msg.Length);
