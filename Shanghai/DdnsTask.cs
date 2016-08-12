@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +28,55 @@ namespace Shanghai
 
         public void UpdateTask(TaskServer server, string taskName)
         {
-            throw new NotImplementedException();
+            if (!settings.Enabled)
+            {
+                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                    "[{0}] DDNS update is disabled, skip", taskName);
+                return;
+            }
+
+            const string Uri = "http://www.mydns.jp/login.html";
+            const int TimeoutSec = 10;
+
+            var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(TimeoutSec);
+            byte[] byteArray = Encoding.ASCII.GetBytes(
+                string.Format("{0}:{1}", settings.User, settings.Pass));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Basic", Convert.ToBase64String(byteArray));
+
+            Task<HttpResponseMessage> task = client.GetAsync(Uri, server.CancelToken);
+            task.Wait(server.CancelToken);
+            if (task.Result.StatusCode == HttpStatusCode.OK)
+            {
+                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                    "[{0}] DDNS update succeeded", taskName);
+            }
+            else
+            {
+                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
+                    "[{0}] DDNS update failed", taskName);
+            }
+        }
+
+        [Obsolete]
+        public void updateIpAddr(TaskServer server, string taskName)
+        {
+            const string Uri = "http://inet-ip.info";
+            const string UserAgent = "curl";
+            const int TimeoutSec = 10;
+
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", UserAgent);
+            httpClient.Timeout = TimeSpan.FromSeconds(TimeoutSec);
+
+            Task<string> task = httpClient.GetStringAsync(Uri);
+            task.Wait(server.CancelToken);
+
+            string ipAddr = task.Result.Trim();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "[{0}] IP addr: {1}", taskName, ipAddr);
+            TwitterManager.UpdateProfileLocation(string.Format("http://{0}/", ipAddr));
         }
     }
 }

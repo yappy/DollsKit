@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 
 namespace Shanghai
 {
@@ -15,13 +14,8 @@ namespace Shanghai
 
     class Program
     {
-#if !DEBUG
         private static readonly int MaxTasks = 4;
         private static readonly int HeartBeatSec = 60;
-#else
-        private static readonly int MaxTasks = 4;
-        private static readonly int HeartBeatSec = 3;
-#endif
         private static readonly int MaxErrorReboot = 8;
 
         static void InitializeSystems()
@@ -38,11 +32,11 @@ namespace Shanghai
 
         static TaskParameter[] SetupTasks(string bootMsg)
         {
-#if true
             Func<int, int> toMin = (sec) => sec * 60;
             Func<int, int> toHour = (sec) => sec * 60 * 60;
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
+            var ddnsTask = new DdnsTask();
 
             var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
             {
@@ -55,30 +49,12 @@ namespace Shanghai
                 twitterCheck.CheckBlack);
             var mentionCheckTask = TaskParameter.Periodic("mention", 4, toMin(5),
                 twitterCheck.CheckMention);
-            var updateIpAddrTask = TaskParameter.Periodic("ipaddr", 5, toHour(6),
-                twitterCheck.updateIpAddr);
+
+            var updateDdnsTask = TaskParameter.Periodic("ddns", 5, toHour(1),
+                ddnsTask.UpdateTask);
 
             return new TaskParameter[] { bootMsgTask, healthCheckTask,
-                blackCheckTask, mentionCheckTask, updateIpAddrTask };
-#else
-            var printTask = TaskParameter.Periodic("print", 0, 1,
-                (TaskServer server, String taskName) =>
-                {
-                    Console.WriteLine("test");
-                });
-            var exitTask = TaskParameter.OneShot("shutdown", 5,
-                (TaskServer server, String taskName) =>
-                {
-                    server.Shutdown(ServerResult.ErrorReboot);
-                });
-            var deadTestTask = TaskParameter.Periodic("takenoko", 0, 0,
-                (TaskServer server, String taskName) =>
-                {
-                    Thread.Sleep(20 * 1000);
-                });
-
-            return new TaskParameter[] { printTask, exitTask, deadTestTask };
-#endif
+                blackCheckTask, mentionCheckTask, updateDdnsTask };
         }
 
         static void Main(string[] args)

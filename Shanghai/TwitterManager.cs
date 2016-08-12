@@ -1,7 +1,5 @@
 ﻿using CoreTweet;
 using System.Diagnostics;
-using System.IO;
-using System.Xml.Serialization;
 
 namespace Shanghai
 {
