@@ -45,12 +45,12 @@ namespace Shanghai
             var healthCheckTask = TaskParameter.Periodic("health", 1, toHour(6),
                 healthCheck.Check);
 
-            var blackCheckTask = TaskParameter.Periodic("black", 3, toMin(10),
+            var blackCheckTask = TaskParameter.Periodic("black", 10, toMin(10),
                 twitterCheck.CheckBlack);
-            var mentionCheckTask = TaskParameter.Periodic("mention", 4, toMin(5),
+            var mentionCheckTask = TaskParameter.Periodic("mention", 11, toMin(5),
                 twitterCheck.CheckMention);
 
-            var updateDdnsTask = TaskParameter.Periodic("ddns", 5, toHour(1),
+            var updateDdnsTask = TaskParameter.Periodic("ddns", 20, toHour(1),
                 ddnsTask.UpdateTask);
 
             return new TaskParameter[] { bootMsgTask, healthCheckTask,
