@@ -26,12 +26,14 @@ namespace Shanghai
 
         static void InitializeSystems()
         {
+            SettingManager.Initialize();
             TwitterManager.Initialize();
         }
 
         static void TerminateSystems()
         {
             TwitterManager.Terminate();
+            SettingManager.Terminate();
         }
 
         static TaskParameter[] SetupTasks(string bootMsg)
