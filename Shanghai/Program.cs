@@ -40,7 +40,7 @@ namespace Shanghai
 
             var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
             {
-                TwitterManager.Update(bootMsg);
+                TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
             });
             var healthCheckTask = TaskParameter.Periodic("health", 1, toHour(6),
                 healthCheck.Check);
