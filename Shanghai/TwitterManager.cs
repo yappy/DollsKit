@@ -5,30 +5,21 @@ namespace Shanghai
 {
     public class TwitterSettings
     {
-        public static readonly string DefaultSetting = "FillHere";
         public bool WriteEnabled { get; set; } = false;
-        public string ConsumerKey { get; set; } = DefaultSetting;
-        public string ConsumerSecret { get; set; } = DefaultSetting;
-        public string AccessToken { get; set; } = DefaultSetting;
-        public string AccessSecret { get; set; } = DefaultSetting;
-        public string MasterConsumerKey { get; set; } = DefaultSetting;
-        public string MasterConsumerSecret { get; set; } = DefaultSetting;
-        public string MasterAccessToken { get; set; } = DefaultSetting;
-        public string MasterAccessSecret { get; set; } = DefaultSetting;
+        public int DlNetTrainError { get; set; } = 0;
     }
 
     static class TwitterManager
     {
+        private static DollsLib.Twitter.AccountManager account;
         private static TwitterSettings settings;
-        public static Tokens Tokens { get; set; }
-        public static Tokens MasterTokens { get; set; }
-        public static bool WriteEnabled
-        {
-            get { return settings.WriteEnabled; }
-        }
+        public static Tokens Tokens { get { return account.Tokens; } }
+        public static Tokens MasterTokens { get { return account.MasterTokens; } }
+        public static bool WriteEnabled { get { return settings.WriteEnabled; } }
 
         public static void Initialize()
         {
+            account = new DollsLib.Twitter.AccountManager();
             settings = SettingManager.Settings.Twitter;
 
             if (!settings.WriteEnabled)
@@ -36,16 +27,12 @@ namespace Shanghai
                 Log.Trace.TraceEvent(TraceEventType.Warning, 0,
                     "Twitter write feature is disabled. Only to log.");
             }
-            Tokens = Tokens.Create(settings.ConsumerKey, settings.ConsumerSecret,
-                settings.AccessToken, settings.AccessSecret);
-            MasterTokens = Tokens.Create(settings.MasterConsumerKey, settings.MasterConsumerSecret,
-                settings.MasterAccessToken, settings.MasterAccessSecret);
         }
 
         public static void Terminate()
         {
+            account = null;
             settings = null;
-            Tokens = null;
         }
 
         public static void Update(string msg, long? reply_to_status = null)

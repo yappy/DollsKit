@@ -1,0 +1,10 @@
+﻿{
+	"ConsumerKey"			: "",
+	"ConsumerSecret"		: "",
+	"AccessToken"			: "",
+	"AccessSecret"			: "",
+	"MasterConsumerKey"		: "",
+	"MasterConsumerSecret"	: "",
+	"MasterAccessToken"		: "",
+	"MasterAccessSecret"	: ""
+}
