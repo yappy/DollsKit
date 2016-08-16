@@ -1,0 +1,9 @@
+﻿{
+	"ReplaceList":
+	[
+		{"Item1": "きたーく", "Item2": "帰宅"},
+		{"Item1": "とーちゃく", "Item2": "到着"}
+	],
+	"SkipWordClass": ["助詞", "助動詞", "記号"],
+	"HiddenNeurons": [1000, 1000, 1000],
+}

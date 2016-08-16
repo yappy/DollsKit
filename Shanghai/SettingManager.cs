@@ -10,7 +10,7 @@ namespace Shanghai
         public DdnsSettings Ddns { get; set; } = new DdnsSettings();
     };
 
-    static class SettingManager
+    public static class SettingManager
     {
         private static readonly string SettingFileName = "setting.xml";
 

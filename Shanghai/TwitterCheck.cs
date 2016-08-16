@@ -1,4 +1,5 @@
-﻿using CoreTweet;
+﻿using Accord.Neuro.Networks;
+using CoreTweet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,6 +17,8 @@ namespace Shanghai
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
         private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
+
+        private DeepBeliefNetwork dlNetwork;
 
         public TwitterCheck()
         {
@@ -59,6 +62,17 @@ namespace Shanghai
             ReplaceList = replaceList.AsReadOnly();
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                 "{0} replace entries loaded", ReplaceList.Count);
+
+            try
+            {
+                dlNetwork = DollsLib.Learning.DataManager.LoadDeepLearning(
+                    SettingManager.Settings.Twitter.DlNetTrainError);
+            }
+            catch (Exception)
+            {
+                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
+                "DlNwtwork {0} load failed", SettingManager.Settings.Twitter.DlNetTrainError);
+            }
         }
 
         private bool IsBlack(Status status, long masterId)
@@ -149,6 +163,19 @@ namespace Shanghai
                     TwitterManager.Update(
                         string.Format("@{0} ホワイト！", status.User.ScreenName),
                         status.Id);
+                }
+            }
+            if (dlNetwork != null)
+            {
+                var ln = new DollsLib.Learning.Learning();
+                var workDataList = ln.CreateWorkDataList(timeline);
+                var result = ln.Execute(dlNetwork, workDataList);
+                var list = (Collection<DollsLib.Learning.WorkDataEntry>)workDataList;
+                for (int i = 0; i < result.Count; i++)
+                {
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find black {1:F3}: @{2} - {3}",
+                        taskName, result[0], list[i].ScreenName, list[i].Text);
                 }
             }
         }
