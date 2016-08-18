@@ -9,8 +9,9 @@ namespace Shanghai
 {
     class TwitterCheck
     {
+        // @ScreenName
         private static readonly string[] BlackList = {
-            "Mewdra", "nippy", "metto0226",
+            "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
@@ -67,15 +68,21 @@ namespace Shanghai
             {
                 return false;
             }
-            if (Array.IndexOf(BlackList, status.User.Name) < 0)
+            if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
             {
                 return false;
+            }
+
+            string targetText = status.Text;
+            foreach (var replace in ReplaceList)
+            {
+                targetText = targetText.Replace(replace.Key, replace.Value);
             }
 
             bool black = false;
             foreach (var word in BlackWords)
             {
-                black = black || status.Text.Contains(word);
+                black = black || targetText.Contains(word);
             }
 
             const int AfterHour = 21;
