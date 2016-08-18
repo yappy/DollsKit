@@ -74,10 +74,10 @@ namespace Shanghai
             return black;
         }
 
-        private bool IsWhite(Status status)
+        private bool IsWhite(Status status, long masterId)
         {
             // master only
-            if (status.User.Id != TwitterManager.MasterTokens.UserId)
+            if (status.User.Id != masterId)
             {
                 return false;
             }
@@ -101,19 +101,35 @@ namespace Shanghai
             {
                 if (IsBlack(status, masterId))
                 {
-                    if (!(status.IsFavorited ?? false))
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find black: {1} - {2}", taskName, status.User.Name, status.Text);
+                    try
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                            "[{0}] Find black: {1} - {2}", taskName, status.User.Name, status.Text);
                         TwitterManager.Favorite(status.Id);
-                        TwitterManager.Update(
-                            string.Format("@{0} ブラック", status.User.Name),
-                            status.Id);
                     }
-                    else
+                    catch (TwitterException)
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Skip");
+                        continue;
                     }
+                    TwitterManager.Update(
+                        string.Format("@{0} ブラック", status.User.Name),
+                        status.Id);
+                }
+                else if (IsWhite(status, masterId))
+                {
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find white: {1} - {2}", taskName, status.User.Name, status.Text);
+                    try
+                    {
+                        TwitterManager.Favorite(status.Id);
+                    }
+                    catch (TwitterException)
+                    {
+                        continue;
+                    }
+                    TwitterManager.Update(
+                        string.Format("@{0} ホワイト！", status.User.Name),
+                        status.Id);
                 }
             }
         }
