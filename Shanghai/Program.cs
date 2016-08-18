@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Diagnostics;
 
 namespace Shanghai
@@ -110,6 +111,7 @@ namespace Shanghai
                     Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC...");
                     GC.Collect();
                     Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC complete");
+                    ConfigurationManager.RefreshSection("AppSettings");
                     bootMsg = "Reboot...";
                 }
             }

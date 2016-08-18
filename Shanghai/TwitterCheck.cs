@@ -1,5 +1,8 @@
 ﻿using CoreTweet;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Configuration;
 using System.Diagnostics;
 
 namespace Shanghai
@@ -9,9 +12,29 @@ namespace Shanghai
         private static readonly string[] BlackList = {
             "Mewdra", "nippy", "metto0226",
         };
+        private static readonly int SettingMax = 100;
+        private readonly ReadOnlyCollection<string> BlackWords;
 
         public TwitterCheck()
-        { }
+        {
+            var settings = ConfigurationManager.AppSettings;
+
+            var blackWords = new List<string>();
+            for (int i = 1; i <= SettingMax; i++)
+            {
+                string str = settings["twitter.blackwords." + i];
+                if (str != null)
+                {
+                    foreach (var elem in str.Split(','))
+                    {
+                        blackWords.Add(elem);
+                    }
+                }
+            }
+            BlackWords = blackWords.AsReadOnly();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "{0} black words loaded", BlackWords.Count);
+        }
 
         private bool IsBlack(Status status, long masterId)
         {
@@ -26,15 +49,10 @@ namespace Shanghai
             }
 
             bool black = false;
-            string[] Keywords = {
-                "白", "黒", "ホワイト", "ブラック", "ほわ", "ぶらっく",
-                "定時", "退社", "帰",
-                "残業", "終電", "代休",
-            };
-            Array.ForEach(Keywords, (word) =>
+            foreach (var word in BlackWords)
             {
                 black = black || status.Text.Contains(word);
-            });
+            }
 
             const int AfterHour = 21;
             const int BeforeHour = 5;
