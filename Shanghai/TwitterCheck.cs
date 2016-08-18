@@ -121,7 +121,7 @@ namespace Shanghai
                 if (IsBlack(status, masterId))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find black: {1} - {2}", taskName, status.User.Name, status.Text);
+                        "[{0}] Find black: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     try
                     {
                         TwitterManager.Favorite(status.Id);
@@ -131,13 +131,13 @@ namespace Shanghai
                         continue;
                     }
                     TwitterManager.Update(
-                        string.Format("@{0} ブラック", status.User.Name),
+                        string.Format("@{0} ブラック", status.User.ScreenName),
                         status.Id);
                 }
                 else if (IsWhite(status, masterId))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find white: {1} - {2}", taskName, status.User.Name, status.Text);
+                        "[{0}] Find white: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     try
                     {
                         TwitterManager.Favorite(status.Id);
@@ -147,7 +147,7 @@ namespace Shanghai
                         continue;
                     }
                     TwitterManager.Update(
-                        string.Format("@{0} ホワイト！", status.User.Name),
+                        string.Format("@{0} ホワイト！", status.User.ScreenName),
                         status.Id);
                 }
             }
@@ -163,10 +163,10 @@ namespace Shanghai
                 if (!(status.IsFavorited ?? false))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find mention: {1} - {2}", taskName, status.User.Name, status.Text);
+                        "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     TwitterManager.Favorite(status.Id);
                     TwitterManager.Update(
-                        string.Format("@{0} バカジャネーノ", status.User.Name),
+                        string.Format("@{0} バカジャネーノ", status.User.ScreenName),
                         status.Id);
                 }
             }
