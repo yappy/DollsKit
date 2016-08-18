@@ -14,6 +14,7 @@ namespace Shanghai
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
+        private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
 
         public TwitterCheck()
         {
@@ -24,20 +25,16 @@ namespace Shanghai
             for (int i = 1; i <= SettingMax; i++)
             {
                 string black = settings["twitter.blackwords." + i];
-                if (black != null)
+                if (black == null) continue;
+                foreach (var elem in black.Split(','))
                 {
-                    foreach (var elem in black.Split(','))
-                    {
-                        blackWords.Add(elem);
-                    }
+                    blackWords.Add(elem);
                 }
                 string white = settings["twitter.whitewords." + i];
-                if (white != null)
+                if (white == null) continue;
+                foreach (var elem in white.Split(','))
                 {
-                    foreach (var elem in white.Split(','))
-                    {
-                        whiteWords.Add(elem);
-                    }
+                    whiteWords.Add(elem);
                 }
             }
             BlackWords = blackWords.AsReadOnly();
@@ -46,6 +43,21 @@ namespace Shanghai
                 "{0} black words loaded", BlackWords.Count);
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                "{0} white words loaded", WhiteWords.Count);
+
+            var replaceList = new List<KeyValuePair<string, string>>();
+            for (int i = 1; i <= SettingMax; i++)
+            {
+                string str = settings["twitter.replace." + i];
+                if (str == null) continue;
+                foreach (var pair in str.Split(','))
+                {
+                    string[] kv = pair.Split('=');
+                    replaceList.Add(new KeyValuePair<string, string>(kv[0], kv[1]));
+                }
+            }
+            ReplaceList = replaceList.AsReadOnly();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "{0} replace entries loaded", ReplaceList.Count);
         }
 
         private bool IsBlack(Status status, long masterId)
