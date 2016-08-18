@@ -156,11 +156,12 @@ namespace Shanghai
         public void CheckMention(TaskServer server, string taskName)
         {
             const int SearchCount = 200;
+            long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
             foreach (var status in timeline)
             {
-                if (!(status.IsFavorited ?? false))
+                if (status.User.Id != masterId && !(status.IsFavorited ?? false))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
