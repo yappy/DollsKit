@@ -13,27 +13,39 @@ namespace Shanghai
             "Mewdra", "nippy", "metto0226",
         };
         private static readonly int SettingMax = 100;
-        private readonly ReadOnlyCollection<string> BlackWords;
+        private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
 
         public TwitterCheck()
         {
             var settings = ConfigurationManager.AppSettings;
 
             var blackWords = new List<string>();
+            var whiteWords = new List<string>();
             for (int i = 1; i <= SettingMax; i++)
             {
-                string str = settings["twitter.blackwords." + i];
-                if (str != null)
+                string black = settings["twitter.blackwords." + i];
+                if (black != null)
                 {
-                    foreach (var elem in str.Split(','))
+                    foreach (var elem in black.Split(','))
                     {
                         blackWords.Add(elem);
                     }
                 }
+                string white = settings["twitter.whitewords." + i];
+                if (white != null)
+                {
+                    foreach (var elem in white.Split(','))
+                    {
+                        whiteWords.Add(elem);
+                    }
+                }
             }
             BlackWords = blackWords.AsReadOnly();
+            WhiteWords = whiteWords.AsReadOnly();
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                 "{0} black words loaded", BlackWords.Count);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+               "{0} white words loaded", WhiteWords.Count);
         }
 
         private bool IsBlack(Status status, long masterId)
@@ -71,13 +83,10 @@ namespace Shanghai
             }
 
             bool white = false;
-            string[] Keywords = {
-                "白", "ホワイト", "退社", "帰",
-            };
-            Array.ForEach(Keywords, (word) =>
+            foreach (var word in WhiteWords)
             {
                 white = white || status.Text.Contains(word);
-            });
+            }
 
             return white;
         }
