@@ -1,17 +1,65 @@
 ﻿using CoreTweet;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Configuration;
 using System.Diagnostics;
 
 namespace Shanghai
 {
     class TwitterCheck
     {
+        // @ScreenName
         private static readonly string[] BlackList = {
-            "Mewdra", "nippy", "metto0226",
+            "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
         };
+        private static readonly int SettingMax = 100;
+        private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
+        private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
 
         public TwitterCheck()
-        { }
+        {
+            var settings = ConfigurationManager.AppSettings;
+
+            var blackWords = new List<string>();
+            var whiteWords = new List<string>();
+            for (int i = 1; i <= SettingMax; i++)
+            {
+                string black = settings["twitter.blackwords." + i];
+                if (black == null) continue;
+                foreach (var elem in black.Split(','))
+                {
+                    blackWords.Add(elem);
+                }
+                string white = settings["twitter.whitewords." + i];
+                if (white == null) continue;
+                foreach (var elem in white.Split(','))
+                {
+                    whiteWords.Add(elem);
+                }
+            }
+            BlackWords = blackWords.AsReadOnly();
+            WhiteWords = whiteWords.AsReadOnly();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "{0} black words loaded", BlackWords.Count);
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+               "{0} white words loaded", WhiteWords.Count);
+
+            var replaceList = new List<KeyValuePair<string, string>>();
+            for (int i = 1; i <= SettingMax; i++)
+            {
+                string str = settings["twitter.replace." + i];
+                if (str == null) continue;
+                foreach (var pair in str.Split(','))
+                {
+                    string[] kv = pair.Split('=');
+                    replaceList.Add(new KeyValuePair<string, string>(kv[0], kv[1]));
+                }
+            }
+            ReplaceList = replaceList.AsReadOnly();
+            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                "{0} replace entries loaded", ReplaceList.Count);
+        }
 
         private bool IsBlack(Status status, long masterId)
         {
@@ -20,21 +68,22 @@ namespace Shanghai
             {
                 return false;
             }
-            if (Array.IndexOf(BlackList, status.User.Name) < 0)
+            if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
             {
                 return false;
             }
 
-            bool black = false;
-            string[] Keywords = {
-                "白", "黒", "ホワイト", "ブラック", "ほわ", "ぶらっく",
-                "定時", "退社", "帰",
-                "残業", "終電", "代休",
-            };
-            Array.ForEach(Keywords, (word) =>
+            string targetText = status.Text;
+            foreach (var replace in ReplaceList)
             {
-                black = black || status.Text.Contains(word);
-            });
+                targetText = targetText.Replace(replace.Key, replace.Value);
+            }
+
+            bool black = false;
+            foreach (var word in BlackWords)
+            {
+                black = black || targetText.Contains(word);
+            }
 
             const int AfterHour = 21;
             const int BeforeHour = 5;
@@ -44,22 +93,19 @@ namespace Shanghai
             return black;
         }
 
-        private bool IsWhite(Status status)
+        private bool IsWhite(Status status, long masterId)
         {
             // master only
-            if (status.User.Id != TwitterManager.MasterTokens.UserId)
+            if (status.User.Id != masterId)
             {
                 return false;
             }
 
             bool white = false;
-            string[] Keywords = {
-                "白", "ホワイト", "退社", "帰",
-            };
-            Array.ForEach(Keywords, (word) =>
+            foreach (var word in WhiteWords)
             {
                 white = white || status.Text.Contains(word);
-            });
+            }
 
             return white;
         }
@@ -74,19 +120,35 @@ namespace Shanghai
             {
                 if (IsBlack(status, masterId))
                 {
-                    if (!(status.IsFavorited ?? false))
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find black: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                    try
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                            "[{0}] Find black: {1} - {2}", taskName, status.User.Name, status.Text);
                         TwitterManager.Favorite(status.Id);
-                        TwitterManager.Update(
-                            string.Format("@{0} ブラック", status.User.Name),
-                            status.Id);
                     }
-                    else
+                    catch (TwitterException)
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Skip");
+                        continue;
                     }
+                    TwitterManager.Update(
+                        string.Format("@{0} ブラック", status.User.ScreenName),
+                        status.Id);
+                }
+                else if (IsWhite(status, masterId))
+                {
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find white: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                    try
+                    {
+                        TwitterManager.Favorite(status.Id);
+                    }
+                    catch (TwitterException)
+                    {
+                        continue;
+                    }
+                    TwitterManager.Update(
+                        string.Format("@{0} ホワイト！", status.User.ScreenName),
+                        status.Id);
                 }
             }
         }
@@ -94,17 +156,18 @@ namespace Shanghai
         public void CheckMention(TaskServer server, string taskName)
         {
             const int SearchCount = 200;
+            long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
             foreach (var status in timeline)
             {
-                if (!(status.IsFavorited ?? false))
+                if (status.User.Id != masterId && !(status.IsFavorited ?? false))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find mention: {1} - {2}", taskName, status.User.Name, status.Text);
+                        "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     TwitterManager.Favorite(status.Id);
                     TwitterManager.Update(
-                        string.Format("@{0} バカジャネーノ", status.User.Name),
+                        string.Format("@{0} バカジャネーノ", status.User.ScreenName),
                         status.Id);
                 }
             }
