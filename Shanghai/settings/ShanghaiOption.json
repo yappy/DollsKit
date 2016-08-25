@@ -1,0 +1,13 @@
+﻿{
+	"Twitter":
+	{
+		"WriteEnabled"		: false, 
+		"DlNetTrainError"	: 0
+	},
+	"Ddns":
+	{
+		"Enabled"	: false,
+		"User"		: "",
+		"Pass"		: ""
+	}
+}
