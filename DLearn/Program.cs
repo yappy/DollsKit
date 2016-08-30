@@ -14,6 +14,8 @@ namespace DLearn
             Console.WriteLine("\tCreate Bag-of-words");
             Console.WriteLine("dl");
             Console.WriteLine("\tDeep Learning");
+            Console.WriteLine("eval <TrainError>");
+            Console.WriteLine("\tEvaluate by tweet data in WorkData");
         }
 
         static void Main(string[] args)
