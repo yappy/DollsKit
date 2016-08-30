@@ -21,6 +21,7 @@ namespace DollsLib.Learning
 
             public List<Tuple<string, string>> ReplaceList { get; set; }
             public List<string> SkipWordClass { get; set; }
+            public double CrossSplitRatio { get; set; }
             public List<int> HiddenNeurons { get; set; }
         }
 
@@ -342,6 +343,50 @@ namespace DollsLib.Learning
             return result.ToArray();
         }
 
+        private static double CrossValidate(DeepBeliefNetwork network,
+            List<WorkDataEntry> validationList, Dictionary<string, int> bag,
+            string outFileName)
+        {
+            double mse = 0.0;
+            using (var writer = new StreamWriter(outFileName))
+            {
+                foreach (var entry in validationList)
+                {
+                    double[] input = GetFeatureVector(bag, entry);
+                    double[] output = network.Compute(input);
+                    double teacher = (entry.Teacher == "o") ? 1.0 : 0.0;
+
+                    double error = output[0] - teacher;
+                    mse += error * error;
+
+                    bool dollsAns = output[0] > 0.5;
+                    bool mastersAns = entry.Teacher == "o";
+                    string kind;
+                    if (dollsAns && mastersAns)
+                    {
+                        kind = "OK(TP)";
+                    }
+                    else if(!dollsAns && !mastersAns)
+                    {
+                        kind = "OK(TN)";
+                    }
+                    else if (dollsAns && !mastersAns)
+                    {
+                        kind = "NG(FP)";
+                    }
+                    else
+                    {
+                        kind = "NG(FN)";
+                    }
+
+                    writer.WriteLine("{0} {1:F5}, {2} @{3} {4}",
+                        kind, output[0], entry.CreatedAt.ToLocalTime(), entry.ScreenName, entry.Text);
+                }
+                writer.WriteLine("MSE={0:F5}", mse);
+            }
+            return mse;
+        }
+
         /// <summary>
         /// 学習
         /// </summary>
@@ -349,6 +394,18 @@ namespace DollsLib.Learning
         {
             List<WorkDataEntry> workList = DataManager.LoadTeacheredWorkData();
             Dictionary<string, int> bag = DataManager.LoadBagOfWords();
+
+            // ガバガバランダムで教師付きデータを分割
+            Random rand = new Random();
+            int validationDataCount = (int)(workList.Count * option.CrossSplitRatio);
+            var validationList = new List<WorkDataEntry>(validationDataCount);
+            while (validationDataCount > 0)
+            {
+                int index = rand.Next(workList.Count);
+                validationList.Add(workList[index]);
+                workList.RemoveAt(index);
+                validationDataCount--;
+            }
 
             var hiddenNeurons = new List<int>(option.HiddenNeurons);
             hiddenNeurons.Add(1);
@@ -376,16 +433,27 @@ namespace DollsLib.Learning
             const int ErrorStep = 5;
             double error;
             int minError = int.MaxValue;
+            double bestGenError = Double.MaxValue;
+            int bestNumber = 0;
             do
             {
                 error = teacher.RunEpoch(inmat.ToArray(), outmat.ToArray());
-                Console.WriteLine("error={0}", error);
+                Console.WriteLine("error={0} (best={1})", error, bestNumber);
                 int intError = ((int)error + ErrorStep - 1) / ErrorStep * ErrorStep;
                 if (intError < minError)
                 {
                     network.UpdateVisibleWeights();
                     DataManager.SaveDeepLearning(network, intError);
                     Console.WriteLine("Save! ({0})", intError);
+                    double genError = CrossValidate(network, validationList, bag,
+                        string.Format("Result{0}.txt", intError));
+                    Console.WriteLine("Validate (error={0:F5})", genError);
+                    if (genError< bestGenError)
+                    {
+                        bestGenError = genError;
+                        bestNumber = intError;
+                    }
+
                     minError = intError;
                 }
             } while (error > 30.0);
