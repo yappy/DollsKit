@@ -63,18 +63,6 @@ namespace DollsLib.Learning
         }
     }
 
-    /// <summary>
-    /// 作業データのリスト
-    /// tweet id で辞書アクセス可
-    /// </summary>
-    public class IdKeyedWorkDataList : KeyedCollection<long, WorkDataEntry>
-    {
-        protected override long GetKeyForItem(WorkDataEntry item)
-        {
-            return item.Id;
-        }
-    }
-
     public static class DataManager
     {
         public static readonly string RawDataFileName = "RawData.json";
@@ -99,11 +87,11 @@ namespace DollsLib.Learning
             }
         }
 
-        public static IdKeyedWorkDataList LoadWorkData()
+        public static List<WorkDataEntry> LoadWorkData()
         {
             using (var reader = new StreamReader(WorkDataFileName))
             {
-                return JsonConvert.DeserializeObject<IdKeyedWorkDataList>(reader.ReadToEnd());
+                return JsonConvert.DeserializeObject<List<WorkDataEntry>>(reader.ReadToEnd());
             }
         }
 
@@ -114,7 +102,7 @@ namespace DollsLib.Learning
             return new List<WorkDataEntry>(filtered);
         }
 
-        public static void SaveWorkData(IdKeyedWorkDataList list)
+        public static void SaveWorkData(List<WorkDataEntry> list)
         {
             using (var writer = new StreamWriter(WorkDataFileName))
             {

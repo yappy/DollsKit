@@ -170,12 +170,11 @@ namespace Shanghai
                 var ln = new DollsLib.Learning.Learning();
                 var workDataList = ln.CreateWorkDataList(timeline);
                 var result = ln.Execute(dlNetwork, workDataList);
-                var list = (Collection<DollsLib.Learning.WorkDataEntry>)workDataList;
                 for (int i = 0; i < result.Count; i++)
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find black {1:F3}: @{2} - {3}",
-                        taskName, result[0], list[i].ScreenName, list[i].Text);
+                        taskName, result[0], workDataList[i].ScreenName, workDataList[i].Text);
                 }
             }
         }
