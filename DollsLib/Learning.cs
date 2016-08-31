@@ -35,9 +35,9 @@ namespace DollsLib.Learning
             }
         }
 
-        public IdKeyedWorkDataList CreateWorkDataList(IEnumerable<Status> statusList)
+        public List<WorkDataEntry> CreateWorkDataList(IEnumerable<Status> statusList)
         {
-            var result = new IdKeyedWorkDataList();
+            var result = new List<WorkDataEntry>();
             foreach (var status in statusList)
             {
                 var workData = new WorkDataEntry();
@@ -63,7 +63,7 @@ namespace DollsLib.Learning
             // RawData と WorkData をロード
             // WorkData は存在しなければ空で開始
             IdKeyedTweetList rawList = DataManager.LoadRawData();
-            IdKeyedWorkDataList workList;
+            List<WorkDataEntry> workList;
             try
             {
                 workList = DataManager.LoadWorkData();
@@ -71,7 +71,7 @@ namespace DollsLib.Learning
             catch (FileNotFoundException)
             {
                 Console.WriteLine("File not found, create new.");
-                workList = new IdKeyedWorkDataList();
+                workList = new List<WorkDataEntry>();
             }
             // Raw->Work に必要なデータを移す
             // WorkDataEntry のメンバが増えた時のため、上書きしておく
@@ -80,9 +80,10 @@ namespace DollsLib.Learning
             foreach (var raw in rawList)
             {
                 WorkDataEntry workData;
-                if (workList.Contains(raw.Id))
+                int index = workList.FindIndex(entry => entry.Id == raw.Id);
+                if (index >= 0)
                 {
-                    workData = workList[raw.Id];
+                    workData = workList[index];
                     StatusToWorkData(workData, raw);
                 }
                 else
@@ -104,6 +105,18 @@ namespace DollsLib.Learning
             {
                 Console.WriteLine("csv file for edit not found");
             }
+
+            // ソート
+            workList.Sort((a, b) =>
+            {
+                int cmp1 = a.ScreenName.CompareTo(b.ScreenName);
+                if (cmp1 != 0)
+                {
+                    return cmp1;
+                }
+                return -a.CreatedAt.CompareTo(b.CreatedAt);
+            });
+
             // WorkDataList を保存
             DataManager.SaveWorkData(workList);
             // csv シートを更新
@@ -143,7 +156,7 @@ namespace DollsLib.Learning
         /// <summary>
         /// Text を形態素解析して AnalyzedText にセット
         /// </summary>
-        private void AnalyzeText(IdKeyedWorkDataList workList)
+        private void AnalyzeText(List<WorkDataEntry> workList)
         {
             const string InFile = "mecabin.txt";
             const string OutFile = "mecabout.txt";
@@ -189,7 +202,7 @@ namespace DollsLib.Learning
         /// WorkData を教師データ記入用の csv に展開
         /// </summary>
         /// <param name="workList"></param>
-        private void WorkDataToCsv(IdKeyedWorkDataList workList)
+        private void WorkDataToCsv(List<WorkDataEntry> workList)
         {
             // UTF8 +BOM (for Excel)
             using (var writer = new StreamWriter(DataManager.EditDataFileName, false, Encoding.UTF8))
@@ -210,7 +223,7 @@ namespace DollsLib.Learning
         /// csv から 教師データを WorkData に取り込む
         /// </summary>
         /// <param name="workList"></param>
-        private void CsvToWorkData(IdKeyedWorkDataList workList)
+        private void CsvToWorkData(List<WorkDataEntry> workList)
         {
             using (var reader = new StreamReader(DataManager.EditDataFileName))
             {
@@ -224,7 +237,8 @@ namespace DollsLib.Learning
                     string[] tokens = line.Split(',');
                     long tid = long.Parse(tokens[idCol].Split(' ')[1]);
                     string teacher = tokens[blackCol];
-                    workList[tid].Teacher = teacher;
+                    int index = workList.FindIndex(entry => entry.Id == tid);
+                    workList[index].Teacher = teacher;
                 }
             }
         }
@@ -463,7 +477,7 @@ namespace DollsLib.Learning
         public void Eval(int trainError)
         {
             DeepBeliefNetwork network = DataManager.LoadDeepLearning(trainError);
-            IdKeyedWorkDataList workList = DataManager.LoadWorkData();
+            List<WorkDataEntry> workList = DataManager.LoadWorkData();
             Dictionary<string, int> bag = DataManager.LoadBagOfWords();
 
             using (var writer = new StreamWriter("result.txt"))
@@ -485,7 +499,7 @@ namespace DollsLib.Learning
             }
         }
 
-        public List<double> Execute(DeepBeliefNetwork network, IdKeyedWorkDataList workList)
+        public List<double> Execute(DeepBeliefNetwork network, List<WorkDataEntry> workList)
         {
             var result = new List<double>();
             Dictionary<string, int> bag = DataManager.LoadBagOfWords();
