@@ -145,19 +145,23 @@ namespace Shanghai
                 var result = ln.Execute(dlNetwork, workDataList);
                 for (int i = 0; i < result.Count; i++)
                 {
-                    var status = timeline[i];
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find black by net {1:F3}: @{2} - {3}",
-                        taskName, result[0], status.User.ScreenName, status.Text);
-                    try
+                    if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
                     {
-                        TwitterManager.Favorite(workDataList[i].Id);
-                        TwitterManager.Update(
-                            string.Format("@{0} ブラック #DollsLearning", status.User.ScreenName),
-                            status.Id);
-                    }
-                    catch (TwitterException e) {
-                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                        var status = timeline[i];
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                            "[{0}] Find by dl net {1:F3}: @{2} - {3}",
+                            taskName, result[0], status.User.ScreenName, status.Text);
+                        try
+                        {
+                            TwitterManager.Favorite(workDataList[i].Id);
+                            TwitterManager.Update(
+                                string.Format("@{0} ブラック #DollsLearning", status.User.ScreenName),
+                                status.Id);
+                        }
+                        catch (TwitterException e)
+                        {
+                            Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                        }
                     }
                 }
             }

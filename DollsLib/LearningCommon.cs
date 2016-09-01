@@ -10,6 +10,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace DollsLib.Learning
 {
+    public static class LearningCommon
+    {
+        public static readonly double Threshold = 0.5;
+    }
+
     /// <summary>
     /// 形態素解析済みの語句データ
     /// </summary>
