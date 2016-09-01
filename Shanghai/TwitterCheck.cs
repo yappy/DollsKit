@@ -75,6 +75,12 @@ namespace Shanghai
             }
         }
 
+        /// <summary>
+        /// 最先端のヒューリスティクスによるブラック判定
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="masterId"></param>
+        /// <returns></returns>
         private bool IsBlack(Status status, long masterId)
         {
             // not master
@@ -124,12 +130,38 @@ namespace Shanghai
             return white;
         }
 
-        public void CheckBlack(TaskServer server, string taskName)
+        private void CheckMasterTimeline(string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
-            var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
+            var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
+
+            // 判定器を使う
+            if (dlNetwork != null)
+            {
+                var ln = new DollsLib.Learning.Learning();
+                var workDataList = ln.CreateWorkDataList(timeline);
+                var result = ln.Execute(dlNetwork, workDataList);
+                for (int i = 0; i < result.Count; i++)
+                {
+                    var status = timeline[i];
+                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        "[{0}] Find black by net {1:F3}: @{2} - {3}",
+                        taskName, result[0], status.User.ScreenName, status.Text);
+                    try
+                    {
+                        TwitterManager.Favorite(workDataList[i].Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} ブラック #DollsLearning", status.User.ScreenName),
+                            status.Id);
+                    }
+                    catch (TwitterException e) {
+                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                    }
+                }
+            }
+            // ヒューリスティクスを使う
             foreach (var status in timeline)
             {
                 if (IsBlack(status, masterId))
@@ -139,14 +171,14 @@ namespace Shanghai
                     try
                     {
                         TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} ブラック", status.User.ScreenName),
+                            status.Id);
                     }
-                    catch (TwitterException)
+                    catch (TwitterException e)
                     {
-                        continue;
+                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
                     }
-                    TwitterManager.Update(
-                        string.Format("@{0} ブラック", status.User.ScreenName),
-                        status.Id);
                 }
                 else if (IsWhite(status, masterId))
                 {
@@ -155,31 +187,19 @@ namespace Shanghai
                     try
                     {
                         TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} ホワイト！", status.User.ScreenName),
+                            status.Id);
                     }
-                    catch (TwitterException)
+                    catch (TwitterException e)
                     {
-                        continue;
+                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
                     }
-                    TwitterManager.Update(
-                        string.Format("@{0} ホワイト！", status.User.ScreenName),
-                        status.Id);
-                }
-            }
-            if (dlNetwork != null)
-            {
-                var ln = new DollsLib.Learning.Learning();
-                var workDataList = ln.CreateWorkDataList(timeline);
-                var result = ln.Execute(dlNetwork, workDataList);
-                for (int i = 0; i < result.Count; i++)
-                {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find black {1:F3}: @{2} - {3}",
-                        taskName, result[0], workDataList[i].ScreenName, workDataList[i].Text);
                 }
             }
         }
 
-        public void CheckMention(TaskServer server, string taskName)
+        private void CheckMentionTimeline(string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
@@ -197,6 +217,12 @@ namespace Shanghai
                         status.Id);
                 }
             }
+        }
+
+        public void CheckTwitter(TaskServer server, string taskName)
+        {
+            CheckMasterTimeline(taskName);
+            CheckMentionTimeline(taskName);
         }
     }
 }
