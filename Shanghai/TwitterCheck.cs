@@ -155,7 +155,7 @@ namespace Shanghai
                         {
                             TwitterManager.Favorite(workDataList[i].Id);
                             TwitterManager.Update(
-                                string.Format("@{0} ブラック #DollsLearning", status.User.ScreenName),
+                                string.Format("@{0} ブラック #DollsLearning #試験中", status.User.ScreenName),
                                 status.Id);
                         }
                         catch (TwitterException e)
