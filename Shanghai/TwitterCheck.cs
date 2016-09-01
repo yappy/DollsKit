@@ -150,7 +150,7 @@ namespace Shanghai
                         var status = timeline[i];
                         Log.Trace.TraceEvent(TraceEventType.Information, 0,
                             "[{0}] Find by dl net {1:F3}: @{2} - {3}",
-                            taskName, result[0], status.User.ScreenName, status.Text);
+                            taskName, result[i], status.User.ScreenName, status.Text);
                         try
                         {
                             TwitterManager.Favorite(workDataList[i].Id);
