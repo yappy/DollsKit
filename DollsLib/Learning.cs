@@ -373,7 +373,7 @@ namespace DollsLib.Learning
                     double error = output[0] - teacher;
                     mse += error * error;
 
-                    bool dollsAns = output[0] > 0.5;
+                    bool dollsAns = output[0] > LearningCommon.Threshold;
                     bool mastersAns = entry.Teacher == "o";
                     string kind;
                     if (dollsAns && mastersAns)
@@ -491,7 +491,7 @@ namespace DollsLib.Learning
                     double[] input = GetFeatureVector(bag, entry);
                     var output = network.Compute(input);
 
-                    bool ans = output[0] > 0.5;
+                    bool ans = output[0] > LearningCommon.Threshold;
 
                     writer.WriteLine("{0:F5}, ans={1}, @{2} {3}",
                         output[0], ans, entry.ScreenName, entry.Text);
