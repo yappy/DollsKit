@@ -13,6 +13,7 @@ namespace Shanghai
         // @ScreenName
         private static readonly string[] BlackList = {
             "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
+            "superpokan", "joinjoinginYa", "Kuraot",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
@@ -83,11 +84,7 @@ namespace Shanghai
         /// <returns></returns>
         private bool IsBlack(Status status, long masterId)
         {
-            // not master
-            if (status.User.Id == masterId)
-            {
-                return false;
-            }
+            // BlackList filter
             if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
             {
                 return false;
@@ -145,9 +142,14 @@ namespace Shanghai
                 var result = ln.Execute(dlNetwork, workDataList);
                 for (int i = 0; i < result.Count; i++)
                 {
+                    var status = timeline[i];
+                    // Black List filter
+                    if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
+                    {
+                        continue;
+                    }
                     if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
                     {
-                        var status = timeline[i];
                         Log.Trace.TraceEvent(TraceEventType.Information, 0,
                             "[{0}] Find by dl net {1:F3}: @{2} - {3}",
                             taskName, result[i], status.User.ScreenName, status.Text);
