@@ -135,7 +135,7 @@ namespace Shanghai
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
-            var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
+            var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
 
             // 判定器を使う
             if (dlNetwork != null)
