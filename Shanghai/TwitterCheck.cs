@@ -160,7 +160,7 @@ namespace Shanghai
                         }
                         catch (TwitterException e)
                         {
-                            Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                            Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                         }
                     }
                 }
@@ -181,7 +181,7 @@ namespace Shanghai
                     }
                     catch (TwitterException e)
                     {
-                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                     }
                 }
                 else if (IsWhite(status, masterId))
@@ -197,7 +197,7 @@ namespace Shanghai
                     }
                     catch (TwitterException e)
                     {
-                        Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                     }
                 }
             }
@@ -215,10 +215,17 @@ namespace Shanghai
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
-                    TwitterManager.Favorite(status.Id);
-                    TwitterManager.Update(
-                        string.Format("@{0} バカジャネーノ", status.User.ScreenName),
-                        status.Id);
+                    try
+                    {
+                        TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} バカジャネーノ", status.User.ScreenName),
+                            status.Id);
+                    }
+                    catch (TwitterException e)
+                    {
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                    }
                 }
             }
         }
