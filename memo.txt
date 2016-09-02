@@ -78,3 +78,7 @@ AuthorizedKeysFile  %h/.ssh/authorized_keys
 sudo apt-get install lighttp
 - php
 sudo apt-get install php-cgi
+
+
+- 形態素解析 MeCab
+sudo apt-get install mecab mecab-ipadic-utf8
