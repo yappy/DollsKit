@@ -1,4 +1,5 @@
-﻿using CoreTweet;
+﻿using Accord.Neuro.Networks;
+using CoreTweet;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,10 +13,13 @@ namespace Shanghai
         // @ScreenName
         private static readonly string[] BlackList = {
             "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
+            "superpokan", "joinjoinginYa", "Kuraot",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
         private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
+
+        private DeepBeliefNetwork dlNetwork;
 
         public TwitterCheck()
         {
@@ -59,15 +63,28 @@ namespace Shanghai
             ReplaceList = replaceList.AsReadOnly();
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
                 "{0} replace entries loaded", ReplaceList.Count);
+
+            try
+            {
+                dlNetwork = DollsLib.Learning.DataManager.LoadDeepLearning(
+                    SettingManager.Settings.Twitter.DlNetTrainError);
+            }
+            catch (Exception)
+            {
+                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
+                "DlNwtwork {0} load failed", SettingManager.Settings.Twitter.DlNetTrainError);
+            }
         }
 
+        /// <summary>
+        /// 最先端のヒューリスティクスによるブラック判定
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="masterId"></param>
+        /// <returns></returns>
         private bool IsBlack(Status status, long masterId)
         {
-            // not master
-            if (status.User.Id == masterId)
-            {
-                return false;
-            }
+            // BlackList filter
             if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
             {
                 return false;
@@ -110,12 +127,47 @@ namespace Shanghai
             return white;
         }
 
-        public void CheckBlack(TaskServer server, string taskName)
+        private void CheckMasterTimeline(string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
+
+            // 判定器を使う
+            if (dlNetwork != null)
+            {
+                var ln = new DollsLib.Learning.Learning();
+                var workDataList = ln.CreateWorkDataList(timeline);
+                var result = ln.Execute(dlNetwork, workDataList);
+                for (int i = 0; i < result.Count; i++)
+                {
+                    var status = timeline[i];
+                    // Black List filter
+                    if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
+                    {
+                        continue;
+                    }
+                    if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
+                    {
+                        Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                            "[{0}] Find by dl net {1:F3}: @{2} - {3}",
+                            taskName, result[i], status.User.ScreenName, status.Text);
+                        try
+                        {
+                            TwitterManager.Favorite(workDataList[i].Id);
+                            TwitterManager.Update(
+                                string.Format("@{0} ブラック #DollsLearning #試験中", status.User.ScreenName),
+                                status.Id);
+                        }
+                        catch (TwitterException e)
+                        {
+                            Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                        }
+                    }
+                }
+            }
+            // ヒューリスティクスを使う
             foreach (var status in timeline)
             {
                 if (IsBlack(status, masterId))
@@ -125,14 +177,14 @@ namespace Shanghai
                     try
                     {
                         TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} ブラック", status.User.ScreenName),
+                            status.Id);
                     }
-                    catch (TwitterException)
+                    catch (TwitterException e)
                     {
-                        continue;
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                     }
-                    TwitterManager.Update(
-                        string.Format("@{0} ブラック", status.User.ScreenName),
-                        status.Id);
                 }
                 else if (IsWhite(status, masterId))
                 {
@@ -141,19 +193,19 @@ namespace Shanghai
                     try
                     {
                         TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} ホワイト！", status.User.ScreenName),
+                            status.Id);
                     }
-                    catch (TwitterException)
+                    catch (TwitterException e)
                     {
-                        continue;
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                     }
-                    TwitterManager.Update(
-                        string.Format("@{0} ホワイト！", status.User.ScreenName),
-                        status.Id);
                 }
             }
         }
 
-        public void CheckMention(TaskServer server, string taskName)
+        private void CheckMentionTimeline(string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
@@ -165,12 +217,25 @@ namespace Shanghai
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
-                    TwitterManager.Favorite(status.Id);
-                    TwitterManager.Update(
-                        string.Format("@{0} バカジャネーノ", status.User.ScreenName),
-                        status.Id);
+                    try
+                    {
+                        TwitterManager.Favorite(status.Id);
+                        TwitterManager.Update(
+                            string.Format("@{0} バカジャネーノ", status.User.ScreenName),
+                            status.Id);
+                    }
+                    catch (TwitterException e)
+                    {
+                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                    }
                 }
             }
+        }
+
+        public void CheckTwitter(TaskServer server, string taskName)
+        {
+            CheckMasterTimeline(taskName);
+            CheckMentionTimeline(taskName);
         }
     }
 }
