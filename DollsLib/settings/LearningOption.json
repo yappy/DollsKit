@@ -2,7 +2,8 @@
 	"ReplaceList":
 	[
 		{"Item1": "きたーく", "Item2": "帰宅"},
-		{"Item1": "とーちゃく", "Item2": "到着"}
+		{"Item1": "とーちゃく", "Item2": "到着"},
+		{"Item1": "ただーいま", "Item2": "ただいま"},
 	],
 	"SkipWordClass": ["助詞", "助動詞", "記号"],
 	"CrossSplitRatio": 0.1,
