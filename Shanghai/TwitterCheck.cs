@@ -13,7 +13,7 @@ namespace Shanghai
         // @ScreenName
         private static readonly string[] BlackList = {
             "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
-            "superpokan", "joinjoinginYa", "Kuraot",
+            "superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
