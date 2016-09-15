@@ -40,3 +40,4 @@ tar -C $workdir -apcf $ardst $rsyncdstdir
 echo "Complete!"
 
 date
+echo "Backup has completed successfully"
