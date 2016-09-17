@@ -1,4 +1,4 @@
 # min hour day month dayoftheweek
 
-# 4:00 every day (test)
-00 04 * * 1-7 /root/DollsKit/autobkup/bkup.sh
+# Wednesday 4:00
+00 04 * * 3 /root/DollsKit/autobkup/bkup.sh
