@@ -2,12 +2,18 @@
 #set -x
 set -ue -o pipefail
 
+# USB memory mountpoint
 workdir="/media/usbbkup"
+# backup source dir
 rsyncsrc="/"
-rsyncdstdir="backup"
-rsyncdst="${workdir}/${rsyncdstdir}"
+# backup destination dir
+rsyncdst="${workdir}/backup"
+# backup archive file path
 ardst="${workdir}/bkup"`date +%Y%m%d_%H%M%S`".tar.bz2"
+# backup archive limit (days)
+arlimit="+30"
 
+# exclude
 exc=""
 exc="${exc} --exclude=/proc"
 exc="${exc} --exclude=/sys"
@@ -27,6 +33,11 @@ echo "Backup media mount check..."
 mountpoint $workdir
 echo "OK"
 
+echo "Delete old backup archives..."
+find  ${workdir} -maxdepth 1 -name "*.tar.bz2" -mtime ${arlimit} | \
+    xargs rm -fv
+echo "Complete!"
+
 date
 
 echo "rsync..."
@@ -35,7 +46,7 @@ echo "Complete!"
 
 date
 
-echo "archive to ${ardst} ..."
+echo "Archive to ${ardst} ..."
 tar -C $workdir -apcf $ardst $rsyncdstdir
 echo "Complete!"
 
