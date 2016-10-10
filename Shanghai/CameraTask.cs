@@ -29,6 +29,7 @@ namespace Shanghai
             {
                 return;
             }
+
             var now = DateTime.Now;
             string dirName = now.ToString("yyyyMMDD");
             string dirPath = Path.Combine(PicDir, dirName);
