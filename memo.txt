@@ -90,3 +90,14 @@ Enable Camera
 
 - 静止画撮影(要 video グループ)
 raspistill -t 1 -o pic.jpg
+
+-t 指定すると真っ黒になってしまうことがあるらしい？
+https://mizukama.sakura.ne.jp/blog/archives/4022
+
+- サイズ
+3280x2464
+- exif のサムネイル
+64x48
+
+C# からサムネイルの取り出し
+GetThumbnailImage()
