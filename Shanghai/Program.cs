@@ -53,7 +53,7 @@ namespace Shanghai
             var updateDdnsTask = TaskParameter.Periodic("ddns", 20, toHour(1),
                 ddnsTask.UpdateTask);
 
-            var cameraShotTask = TaskParameter.Periodic("camera", 30, toHour(1),
+            var cameraShotTask = TaskParameter.Periodic("camera", /*30*/0, toHour(1),
                 cameraTask.TakePictureTask);
 
             return new TaskParameter[] {

@@ -31,9 +31,9 @@ namespace Shanghai
             }
 
             var now = DateTime.Now;
-            string dirName = now.ToString("yyyyMMDD");
+            string dirName = now.ToString("yyyyMMdd");
             string dirPath = Path.Combine(PicDir, dirName);
-            string fileName = now.ToString("yyyyMMDD_HHMM.jpg");
+            string fileName = now.ToString("yyyyMMdd_HHmm.jpg");
             string filePath = Path.Combine(PicDir, dirName, fileName);
 
             Log.Trace.TraceEvent(TraceEventType.Information, 0,
