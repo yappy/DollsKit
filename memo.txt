@@ -82,3 +82,11 @@ sudo apt-get install php-cgi
 
 - 形態素解析 MeCab
 sudo apt-get install mecab mecab-ipadic-utf8
+
+
+- カメラモジュールの有効化
+sudo raspi-config
+Enable Camera
+
+- 静止画撮影(要 video グループ)
+raspistill -t 1 -o pic.jpg
