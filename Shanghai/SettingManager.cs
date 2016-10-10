@@ -8,6 +8,7 @@ namespace Shanghai
     {
         public TwitterSettings Twitter { get; set; } = new TwitterSettings();
         public DdnsSettings Ddns { get; set; } = new DdnsSettings();
+        public CameraSettings camera { get; set; } = new CameraSettings();
     };
 
     public static class SettingManager
