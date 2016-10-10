@@ -9,5 +9,9 @@
 		"Enabled"	: false,
 		"User"		: "",
 		"Pass"		: ""
+	},
+	"Camera":
+	{
+		"Enabled"	: false
 	}
 }

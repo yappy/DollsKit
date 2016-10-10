@@ -78,6 +78,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CameraTask.cs" />
     <Compile Include="DdnsTask.cs" />
     <Compile Include="HealthCheck.cs" />
     <Compile Include="Program.cs" />
