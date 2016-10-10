@@ -47,7 +47,7 @@ echo "Complete!"
 date
 
 echo "Archive to ${ardst} ..."
-tar -C $workdir -apcf $ardst $rsyncdstdir
+tar -C $workdir -apcf $ardst $rsyncdst
 echo "Complete!"
 
 date
