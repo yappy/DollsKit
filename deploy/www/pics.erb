@@ -10,7 +10,7 @@ $ths = nil
 def init()
 	cgi = CGI.new
 	$date = cgi['date'].gsub(/[\D]/, '')
-	pat = sprintf(Const::TH_FILES, date)
+	pat = sprintf(Const::TH_FILES, $date)
 	$ths = Dir::glob(pat).sort!
 end
 
@@ -31,14 +31,16 @@ init()
 
 % $ths.each do |th|
 % datetime = th.match(Const::TH_PATTERN)[1]
-% file = sprint(Const::PIC_FILE, $date, datetime)
+% file = sprintf(Const::PIC_FILE, $date, datetime)
 <p>
-	<a href="<%= file %>"><%= file %>
-		<img src="<%= th %>" alt="<%= date %>"/><br>
+	<a href="<%= file %>">
+		<img src="<%= th %>" alt="<%= file %>"/>
 		<%= file %>
 	</a>
 </p>
 % end
+
+<hr>
 
 <footer>
   <p>
