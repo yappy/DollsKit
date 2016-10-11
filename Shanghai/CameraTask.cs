@@ -52,7 +52,7 @@ namespace Shanghai
 
             Directory.CreateDirectory(dirPath);
             var p = Process.Start("raspistill",
-                string.Format(@"-o ""{0}"" -thumb {1}", filePath, ThumOption));
+                string.Format(@"-o ""{0}"" -th {1}", filePath, ThumOption));
             p.WaitForExit();
 
             // Create thumb
