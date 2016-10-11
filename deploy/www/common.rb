@@ -1,5 +1,7 @@
 module Const
 	PIC_DIRS = "pics/*".freeze
 	PIC_PATTERN = /pics\/(\d+)/.freeze
-	PIC_FILES = "pics/%s/*.jpg".freeze
+	TH_FILES = "pics/%s/*_th.jpg".freeze
+	TH_PATTERN = "pics/.*/(\d+)_th.jpg".freeze
+	PIC_FILE = "pics/%s/%s.jpg".freeze
 end
