@@ -1,0 +1,35 @@
+Content-Type: text/html; charset=utf-8
+
+<%
+require 'cgi'
+load 'common.rb'
+
+PIC_W = 640
+PIC_H = 480
+TIMEOUT_MS = 500
+ARGS = "-o #{Const::TEST_PIC} -n -w #{PIC_W} -h #{PIC_H} -t #{TIMEOUT_MS}".freeze
+
+result = system(ARGS)
+%>
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<meta charset="utf-8"/>
+<title>Camera Test</title>
+</head>
+
+<body>
+<h1>Camera Test</h1>
+
+<p><img src="<%= Const::TEST_PIC %>"/></p>
+
+<p><form action="" method="GET">
+	<input type="submit" value="Update"/>
+</form></p>
+
+</body>
+
+</html>
