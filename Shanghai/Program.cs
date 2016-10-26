@@ -60,7 +60,7 @@ namespace Shanghai
 
             return new TaskParameter[] {
                 bootMsgTask, healthCheckTask,
-                twitterCheckTask, updateDdnsTask, cameraShotTask
+                twitterCheckTask, updateDdnsTask, cameraShotTask, uploadPictureTask,
             };
         }
 
