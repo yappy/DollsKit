@@ -7,9 +7,10 @@ load 'common.rb'
 PIC_W = 640
 PIC_H = 480
 TIMEOUT_MS = 500
-ARGS = "-o #{Const::TEST_PIC} -n -w #{PIC_W} -h #{PIC_H} -t #{TIMEOUT_MS}".freeze
+CMD = "raspistill -o #{Const::TEST_PIC} -n -w #{PIC_W} -h #{PIC_H} -t #{TIMEOUT_MS}".freeze
 
-result = system(ARGS)
+execres = system(CMD)
+exitcode = $?
 %>
 
 <!DOCTYPE html>
@@ -25,6 +26,9 @@ result = system(ARGS)
 <h1>Camera Test</h1>
 
 <p><img src="<%= Const::TEST_PIC %>"/></p>
+<p>command=<%= CMD %></p>
+<p>exec=<%= execres ? "OK" : "NG" %></p>
+<p>exitcode=<%= exitcode %></p>
 
 <p><form action="" method="GET">
 	<input type="submit" value="Update"/>
