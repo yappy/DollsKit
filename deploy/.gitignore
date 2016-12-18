@@ -1,6 +1,8 @@
 *
 !.gitignore
-!console.bat
-!RawData.json
-!WorkData.json
-!Bag.json
+!/www/
+!/www/**
+!/console.bat
+!/RawData.json
+!/WorkData.json
+!/Bag.json

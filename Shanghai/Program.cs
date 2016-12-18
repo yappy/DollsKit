@@ -38,12 +38,13 @@ namespace Shanghai
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
             var ddnsTask = new DdnsTask();
+            var cameraTask = new CameraTask();
 
             var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
             {
                 TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
             });
-            var healthCheckTask = TaskParameter.Periodic("health", 1, toHour(6),
+            var healthCheckTask = TaskParameter.Periodic("health", 5, toHour(6),
                 healthCheck.Check);
 
             var twitterCheckTask = TaskParameter.Periodic("twitter", 10, toMin(10),
@@ -52,9 +53,14 @@ namespace Shanghai
             var updateDdnsTask = TaskParameter.Periodic("ddns", 20, toHour(1),
                 ddnsTask.UpdateTask);
 
+            var cameraShotTask = TaskParameter.Periodic("camera", /*30*/0, toHour(1),
+                cameraTask.TakePictureTask);
+            var uploadPictureTask = TaskParameter.Periodic("uploadpic", /*40*/0, toMin(10),
+                cameraTask.UploadPictureTask);
+
             return new TaskParameter[] {
                 bootMsgTask, healthCheckTask,
-                twitterCheckTask, updateDdnsTask,
+                twitterCheckTask, updateDdnsTask, cameraShotTask, uploadPictureTask,
             };
         }
 
