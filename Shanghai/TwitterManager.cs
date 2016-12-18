@@ -1,4 +1,5 @@
 ﻿using CoreTweet;
+using System.IO;
 using System.Diagnostics;
 
 namespace Shanghai
@@ -50,6 +51,23 @@ namespace Shanghai
                 }
             }
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update: {0}", msg);
+        }
+
+        public static void UpdateWithImage(string msg, string imgPath)
+        {
+            if (settings.WriteEnabled)
+            {
+                MediaUploadResult media = Tokens.Media.Upload(
+                    media: new FileInfo(imgPath));
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter upload: {0}", media.MediaId);
+                Tokens.Statuses.Update(status: msg,
+                    media_ids: new long[] { media.MediaId });
+                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update with media: {0}", msg);
+            }
+            else
+            {
+                Update(msg);
+            }
         }
 
         public static void Favorite(long id)
