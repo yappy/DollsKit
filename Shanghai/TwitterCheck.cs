@@ -129,7 +129,7 @@ namespace Shanghai
 
         private void CheckMasterTimeline(string taskName)
         {
-            const int SearchCount = 200;
+            const int SearchCount = 50;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
@@ -207,7 +207,7 @@ namespace Shanghai
 
         private void CheckMentionTimeline(string taskName)
         {
-            const int SearchCount = 200;
+            const int SearchCount = 50;
             long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
