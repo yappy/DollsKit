@@ -47,15 +47,15 @@ namespace Shanghai
             var healthCheckTask = TaskParameter.Periodic("health", 5, toHour(6),
                 healthCheck.Check);
 
-            var twitterCheckTask = TaskParameter.Periodic("twitter", 10, toMin(10),
+            var twitterCheckTask = TaskParameter.Periodic("twitter", 10, toMin(20),
                 twitterCheck.CheckTwitter);
 
             var updateDdnsTask = TaskParameter.Periodic("ddns", 20, toHour(1),
                 ddnsTask.UpdateTask);
 
-            var cameraShotTask = TaskParameter.Periodic("camera", /*30*/0, toHour(1),
+            var cameraShotTask = TaskParameter.Periodic("camera", 30, toHour(4),
                 cameraTask.TakePictureTask);
-            var uploadPictureTask = TaskParameter.Periodic("uploadpic", /*40*/0, toMin(10),
+            var uploadPictureTask = TaskParameter.Periodic("uploadpic", 40, toMin(20),
                 cameraTask.UploadPictureTask);
 
             return new TaskParameter[] {
