@@ -129,7 +129,7 @@ namespace Shanghai
 
         private void CheckMasterTimeline(string taskName)
         {
-            const int SearchCount = 200;
+            const int SearchCount = 50;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
@@ -207,13 +207,18 @@ namespace Shanghai
 
         private void CheckMentionTimeline(string taskName)
         {
-            const int SearchCount = 200;
+            const int SearchCount = 50;
+            long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
             foreach (var status in timeline)
             {
-                if (status.User.Id != masterId && !(status.IsFavorited ?? false))
+                if (status.User.Id == selfId || status.User.Id == masterId)
+                {
+                    continue;
+                }
+                if (status.IsFavorited ?? false)
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
                         "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
