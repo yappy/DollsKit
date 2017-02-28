@@ -150,6 +150,11 @@ namespace Shanghai
                     {
                         continue;
                     }
+                    // リツイートは除外
+                    if (status.RetweetedStatus != null)
+                    {
+                        continue;
+                    }
                     if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
                     {
                         Log.Trace.TraceEvent(TraceEventType.Information, 0,
@@ -171,6 +176,11 @@ namespace Shanghai
             // ヒューリスティクスを使う
             foreach (var status in timeline)
             {
+                // リツイートは除外
+                if (status.RetweetedStatus != null)
+                {
+                    continue;
+                }
                 if (IsBlack(status, masterId))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
