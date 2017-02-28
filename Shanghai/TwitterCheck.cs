@@ -14,6 +14,9 @@ namespace Shanghai
         private static readonly string[] BlackList = {
             "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
             "superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
+            "kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
+            "ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
+            "satoukakeru",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
