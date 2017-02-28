@@ -19,6 +19,8 @@ namespace Shanghai
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
         private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
 
+        private long? sinceId = null;
+
         private DeepBeliefNetwork dlNetwork;
 
         public TwitterCheck()
@@ -129,7 +131,7 @@ namespace Shanghai
 
         private void CheckMasterTimeline(string taskName)
         {
-            const int SearchCount = 50;
+            const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
@@ -155,7 +157,6 @@ namespace Shanghai
                             taskName, result[i], status.User.ScreenName, status.Text);
                         try
                         {
-                            TwitterManager.Favorite(workDataList[i].Id);
                             TwitterManager.Update(
                                 string.Format("@{0} ブラック #DollsLearning #試験中", status.User.ScreenName),
                                 status.Id);
@@ -176,7 +177,6 @@ namespace Shanghai
                         "[{0}] Find black: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     try
                     {
-                        TwitterManager.Favorite(status.Id);
                         TwitterManager.Update(
                             string.Format("@{0} ブラック", status.User.ScreenName),
                             status.Id);
@@ -192,7 +192,6 @@ namespace Shanghai
                         "[{0}] Find white: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
                     try
                     {
-                        TwitterManager.Favorite(status.Id);
                         TwitterManager.Update(
                             string.Format("@{0} ホワイト！", status.User.ScreenName),
                             status.Id);
@@ -207,38 +206,48 @@ namespace Shanghai
 
         private void CheckMentionTimeline(string taskName)
         {
-            const int SearchCount = 50;
+            const int SearchCount = 200;
             long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
-            var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(count: SearchCount);
+            var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(
+                count: SearchCount, since_id: sinceId);
             foreach (var status in timeline)
             {
                 if (status.User.Id == selfId || status.User.Id == masterId)
                 {
                     continue;
                 }
-                if (status.IsFavorited ?? false)
+                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                    "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                try
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
-                    try
-                    {
-                        TwitterManager.Favorite(status.Id);
-                        TwitterManager.Update(
-                            string.Format("@{0} バカジャネーノ", status.User.ScreenName),
-                            status.Id);
-                    }
-                    catch (TwitterException e)
-                    {
-                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
-                    }
+                    TwitterManager.Update(
+                        string.Format("@{0} バカジャネーノ", status.User.ScreenName),
+                        status.Id);
                 }
+                catch (TwitterException e)
+                {
+                    Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                }
+            }
+        }
+
+        private void UpdateSinceId()
+        {
+            const int SearchCount = 200;
+            var timeline = TwitterManager.Tokens.Statuses.UserTimeline(
+                count: SearchCount, since_id: sinceId, exclude_replies: false, include_rts: false);
+            foreach (var status in timeline)
+            {
+                sinceId = Math.Max(sinceId ?? 0, status.Id);
             }
         }
 
         public void CheckTwitter(TaskServer server, string taskName)
         {
+            UpdateSinceId();
+
             CheckMasterTimeline(taskName);
             CheckMentionTimeline(taskName);
         }
