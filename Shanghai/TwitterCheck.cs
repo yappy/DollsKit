@@ -14,6 +14,9 @@ namespace Shanghai
         private static readonly string[] BlackList = {
             "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
             "superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
+            "kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
+            "ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
+            "satoukakeru",
         };
         private static readonly int SettingMax = 100;
         private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
@@ -129,11 +132,12 @@ namespace Shanghai
             return white;
         }
 
-        private void CheckMasterTimeline(string taskName)
+        private long CheckMasterTimeline(string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
+            long nextSinceId = 0;
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
 
             // 判定器を使う
@@ -150,6 +154,11 @@ namespace Shanghai
                     {
                         continue;
                     }
+                    // リツイートは除外
+                    if (status.RetweetedStatus != null)
+                    {
+                        continue;
+                    }
                     if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
                     {
                         Log.Trace.TraceEvent(TraceEventType.Information, 0,
@@ -160,6 +169,7 @@ namespace Shanghai
                             TwitterManager.Update(
                                 string.Format("@{0} ブラック #DollsLearning #試験中", status.User.ScreenName),
                                 status.Id);
+                            nextSinceId = Math.Max(status.Id, nextSinceId);
                         }
                         catch (TwitterException e)
                         {
@@ -171,6 +181,11 @@ namespace Shanghai
             // ヒューリスティクスを使う
             foreach (var status in timeline)
             {
+                // リツイートは除外
+                if (status.RetweetedStatus != null)
+                {
+                    continue;
+                }
                 if (IsBlack(status, masterId))
                 {
                     Log.Trace.TraceEvent(TraceEventType.Information, 0,
@@ -180,6 +195,7 @@ namespace Shanghai
                         TwitterManager.Update(
                             string.Format("@{0} ブラック", status.User.ScreenName),
                             status.Id);
+                        nextSinceId = Math.Max(status.Id, nextSinceId);
                     }
                     catch (TwitterException e)
                     {
@@ -195,6 +211,7 @@ namespace Shanghai
                         TwitterManager.Update(
                             string.Format("@{0} ホワイト！", status.User.ScreenName),
                             status.Id);
+                        nextSinceId = Math.Max(status.Id, nextSinceId);
                     }
                     catch (TwitterException e)
                     {
@@ -202,16 +219,19 @@ namespace Shanghai
                     }
                 }
             }
+            return nextSinceId;
         }
 
-        private void CheckMentionTimeline(string taskName)
+        private long CheckMentionTimeline(string taskName)
         {
             const int SearchCount = 200;
             long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
+            long nextSinceId = 0;
             var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(
                 count: SearchCount, since_id: sinceId);
+
             foreach (var status in timeline)
             {
                 if (status.User.Id == selfId || status.User.Id == masterId)
@@ -225,15 +245,17 @@ namespace Shanghai
                     TwitterManager.Update(
                         string.Format("@{0} バカジャネーノ", status.User.ScreenName),
                         status.Id);
+                    nextSinceId = Math.Max(status.Id, nextSinceId);
                 }
                 catch (TwitterException e)
                 {
                     Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
                 }
             }
+            return nextSinceId;
         }
 
-        private void UpdateSinceId()
+        private void SetInitialSinceId()
         {
             const int SearchCount = 200;
             var timeline = TwitterManager.Tokens.Statuses.UserTimeline(
@@ -246,10 +268,19 @@ namespace Shanghai
 
         public void CheckTwitter(TaskServer server, string taskName)
         {
-            UpdateSinceId();
-
-            CheckMasterTimeline(taskName);
-            CheckMentionTimeline(taskName);
+            // 最初は自分の最後のツイートIDにセット
+            if (sinceId == null)
+            {
+                SetInitialSinceId();
+            }
+            // リプライしたIDの最大値を次の sinceId とする
+            long nextSinceId = 0;
+            nextSinceId = Math.Max(CheckMasterTimeline(taskName), nextSinceId);
+            nextSinceId = Math.Max(CheckMentionTimeline(taskName), nextSinceId);
+            if (nextSinceId > 0)
+            {
+                sinceId = nextSinceId;
+            }
         }
     }
 }
