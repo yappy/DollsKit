@@ -2,49 +2,66 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Shanghai
 {
+    public enum LogLevel
+    {
+        Trace,
+        Info,
+        Warning,
+        Error,
+        Fatal,
+    }
+
     public static class Logger
     {
-        [Flags]
-        public enum Option
-        {
-            None = 0x0,
-            Console = 0x1,
-            File = 0x2,
-        }
-
         private static object syncObj = new object();
         private static List<LogTarget> targets = new List<LogTarget>();
 
-        public static void Initialize(Option option,
-            string fileName = "log{0}.txt",
-            long rotateSize = 10 * 1024 * 1024, int rotateNum = 2)
+        public static void AddConsole(LogLevel filterLevel)
         {
-            Terminate();
             lock (syncObj)
             {
-                if (option.HasFlag(Option.Console))
-                {
-                    targets.Add(new ConsoleLogger());
-                }
-                if (option.HasFlag(Option.File))
-                {
-                    targets.Add(new FileLogger(fileName, rotateSize, rotateNum));
-                }
+                targets.Add(new ConsoleLogger(filterLevel));
             }
         }
 
-        public static void WriteLine(object value)
+        public static void AddFile(LogLevel filterLevel,
+            string fileName = "log{0}.txt",
+            long rotateSize = 10 * 1024 * 1024, int rotateNum = 2)
         {
+            lock (syncObj)
+            {
+                targets.Add(new FileLogger(filterLevel,
+                    fileName, rotateSize, rotateNum));
+            }
+        }
+
+        public static void Log(LogLevel level, string value)
+        {
+            int thId = Thread.CurrentThread.ManagedThreadId;
+            DateTime timestamp = DateTime.Now;
+
             lock (syncObj)
             {
                 foreach (var target in targets)
                 {
-                    target.WriteLine(value.ToString());
+                    if (target.CheckLogLevel(level)) {
+                        target.Write(value.ToString(), level, thId, timestamp);
+                    }
                 }
             }
+        }
+
+        public static void Log(LogLevel level, object value)
+        {
+            Log(level, value.ToString());
+        }
+
+        public static void Log(LogLevel level, string format, params object[] args){
+            Log(level, string.Format(format, args));
         }
 
         public static void Flush()
@@ -81,21 +98,39 @@ namespace Shanghai
         }
     }
 
-    interface LogTarget
+    abstract class LogTarget
     {
-        void WriteLine(string msg);
-        void Flush();
-        void Dispose();
+        private LogLevel filterLevel;
+        protected LogTarget(LogLevel filterLevel)
+        {
+            this.filterLevel = filterLevel;
+        }
+
+        public bool CheckLogLevel(LogLevel level)
+        {
+            return (int)level >= (int)filterLevel;
+        }
+
+        public abstract void Write(string msg,
+            LogLevel level, int threadId, DateTime timestamp);
+        public abstract void Flush();
+        public abstract void Dispose();
     }
 
     class ConsoleLogger : LogTarget
     {
-        public void WriteLine(string msg)
+        public ConsoleLogger(LogLevel filterLevel) : base(filterLevel)
+        {}
+
+        public override void Write(string msg,
+            LogLevel level, int threadId, DateTime timestamp)
         {
-            Console.WriteLine(msg);
+            Console.WriteLine(
+                "{0} ({1}) [{2}]: {3}",
+                timestamp, threadId, level, msg);
         }
-        public void Flush() { }
-        public void Dispose() { }
+        public override void Flush() { }
+        public override void Dispose() { }
     }
 
     class FileLogger : LogTarget
@@ -108,23 +143,32 @@ namespace Shanghai
 
         private StringBuilder buffer = new StringBuilder(BufferMax);
 
-        public FileLogger(string fileName, long rotateSize, int rotateNum)
+        public FileLogger(LogLevel filterLevel,
+            string fileName, long rotateSize, int rotateNum)
+            : base(filterLevel)
         {
             this.fileName = fileName;
             this.rotateSize = rotateSize;
             this.rotateNum = rotateNum;
         }
 
-        public void WriteLine(string msg)
+        public override void Write(string msg,
+            LogLevel level, int threadId, DateTime timestamp)
         {
-            if (buffer.Length + msg.Length > BufferMax)
+            // バッファ最大長を超えそうならフラッシュする
+            string data = string.Format(
+                "{0} ({1}) [{2}]: {3}",
+                timestamp, threadId, level, msg);
+            if (buffer.Length + data.Length > BufferMax)
             {
                 Flush();
             }
-            buffer.AppendLine(msg);
+            // 改行文字の分超えることがあるが気にしない
+            // バッファ最大長を超えるログメッセージが来るとやはりはみ出すが気にしない
+            buffer.AppendLine(data);
         }
 
-        public void Flush() {
+        public override void Flush() {
             // 以降で例外が発生したとしてもバッファはクリアする
             string data = buffer.ToString();
             buffer.Clear();
@@ -154,6 +198,6 @@ namespace Shanghai
             File.AppendAllText(mainFile, data);
         }
 
-        public void Dispose() { }
+        public override void Dispose() { }
     }
 }
