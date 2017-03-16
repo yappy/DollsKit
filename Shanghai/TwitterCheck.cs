@@ -9,10 +9,10 @@ namespace Shanghai
 {
     public class WhiteSettings
     {
-        public List<string> BlackList { get; set; }
-        public List<string> BlackWords { get; set; }
-        public List<string> WhiteWords { get; set; }
-        public Dictionary<string, string> ReplaceList { get; set; } 
+        public List<string> BlackList { get; set; } = new List<string>();
+        public List<string> BlackWords { get; set; } = new List<string>();
+        public List<string> WhiteWords { get; set; } = new List<string>();
+        public Dictionary<string, string> ReplaceList { get; set; } = new Dictionary<string, string>();
     }
 
     class TwitterCheck
