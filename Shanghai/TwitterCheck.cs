@@ -247,6 +247,7 @@ namespace Shanghai
             if (SinceId == null)
             {
                 SetInitialSinceId();
+                Logger.Log(LogLevel.Info, "SinceId: {0}", SinceId);
             }
             // リプライしたIDの最大値を次の sinceId とする
             long nextSinceId = 0;
