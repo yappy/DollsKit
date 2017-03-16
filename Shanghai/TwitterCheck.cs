@@ -2,76 +2,50 @@
 using CoreTweet;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Configuration;
-using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace Shanghai
 {
+    public class WhiteSettings
+    {
+        public List<string> BlackList { get; set; }
+        public List<string> BlackWords { get; set; }
+        public List<string> WhiteWords { get; set; }
+        public Dictionary<string, string> ReplaceList { get; set; } 
+    }
+
     class TwitterCheck
     {
-        // @ScreenName
-        private static readonly string[] BlackList = {
-            "Mewdra", "nippy2284", "metto0226", "CucumberDragon",
-            "superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
-            "kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
-            "ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
-            "satoukakeru",
-        };
-        private static readonly int SettingMax = 100;
-        private readonly ReadOnlyCollection<string> BlackWords, WhiteWords;
-        private readonly ReadOnlyCollection<KeyValuePair<string, string>> ReplaceList;
+        private WhiteSettings Setting;
+        private long? SinceId = null;
 
-        private long? sinceId = null;
-
-        private DeepBeliefNetwork dlNetwork;
+        private DeepBeliefNetwork DlNetwork;
 
         public TwitterCheck()
         {
-            var settings = ConfigurationManager.AppSettings;
-
-            var blackWords = new List<string>();
-            var whiteWords = new List<string>();
-            for (int i = 1; i <= SettingMax; i++)
-            {
-                string black = settings["twitter.blackwords." + i];
-                if (black == null) continue;
-                foreach (var elem in black.Split(','))
-                {
-                    blackWords.Add(elem);
-                }
-                string white = settings["twitter.whitewords." + i];
-                if (white == null) continue;
-                foreach (var elem in white.Split(','))
-                {
-                    whiteWords.Add(elem);
-                }
-            }
-            BlackWords = blackWords.AsReadOnly();
-            WhiteWords = whiteWords.AsReadOnly();
+            Setting = SettingManager.Settings.White;
+            
             Logger.Log(LogLevel.Info,
-                "{0} black words loaded", BlackWords.Count);
+                "{0} black list loaded", Setting.BlackList.Count);
+            Logger.Log(LogLevel.Trace,
+                string.Join(",", Setting.BlackList));
             Logger.Log(LogLevel.Info,
-               "{0} white words loaded", WhiteWords.Count);
-
-            var replaceList = new List<KeyValuePair<string, string>>();
-            for (int i = 1; i <= SettingMax; i++)
-            {
-                string str = settings["twitter.replace." + i];
-                if (str == null) continue;
-                foreach (var pair in str.Split(','))
-                {
-                    string[] kv = pair.Split('=');
-                    replaceList.Add(new KeyValuePair<string, string>(kv[0], kv[1]));
-                }
-            }
-            ReplaceList = replaceList.AsReadOnly();
+                "{0} black words loaded", Setting.BlackWords.Count);
+            Logger.Log(LogLevel.Trace,
+                string.Join(",", Setting.BlackWords));
             Logger.Log(LogLevel.Info,
-                "{0} replace entries loaded", ReplaceList.Count);
+                "{0} white words loaded", Setting.WhiteWords.Count);
+            Logger.Log(LogLevel.Trace,
+                string.Join(",", Setting.WhiteWords));
+            Logger.Log(LogLevel.Info,
+               "{0} replace list loaded", Setting.ReplaceList.Count);
+            Logger.Log(LogLevel.Trace, Setting.ReplaceList.Aggregate(new StringBuilder(),
+                (sb, kvp) => sb.AppendFormat(" {0}={1}", kvp.Key, kvp.Value)).ToString());
 
             try
             {
-                dlNetwork = DollsLib.Learning.DataManager.LoadDeepLearning(
+                DlNetwork = DollsLib.Learning.DataManager.LoadDeepLearning(
                     SettingManager.Settings.Twitter.DlNetTrainError);
             }
             catch (Exception)
@@ -91,19 +65,19 @@ namespace Shanghai
         private bool IsBlack(Status status, long masterId)
         {
             // BlackList filter
-            if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
+            if (!Setting.BlackList.Contains(status.User.ScreenName))
             {
                 return false;
             }
 
             string targetText = status.Text;
-            foreach (var replace in ReplaceList)
+            foreach (var replace in Setting.ReplaceList)
             {
                 targetText = targetText.Replace(replace.Key, replace.Value);
             }
 
             bool black = false;
-            foreach (var word in BlackWords)
+            foreach (var word in Setting.BlackWords)
             {
                 black = black || targetText.Contains(word);
             }
@@ -125,7 +99,7 @@ namespace Shanghai
             }
 
             bool white = false;
-            foreach (var word in WhiteWords)
+            foreach (var word in Setting.WhiteWords)
             {
                 white = white || status.Text.Contains(word);
             }
@@ -142,16 +116,16 @@ namespace Shanghai
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
 
             // 判定器を使う
-            if (dlNetwork != null)
+            if (DlNetwork != null)
             {
                 var ln = new DollsLib.Learning.Learning();
                 var workDataList = ln.CreateWorkDataList(timeline);
-                var result = ln.Execute(dlNetwork, workDataList);
+                var result = ln.Execute(DlNetwork, workDataList);
                 for (int i = 0; i < result.Count; i++)
                 {
                     var status = timeline[i];
                     // Black List filter
-                    if (Array.IndexOf(BlackList, status.User.ScreenName) < 0)
+                    if (!Setting.BlackList.Contains(status.User.ScreenName))
                     {
                         continue;
                     }
@@ -231,7 +205,7 @@ namespace Shanghai
 
             long nextSinceId = 0;
             var timeline = TwitterManager.Tokens.Statuses.MentionsTimeline(
-                count: SearchCount, since_id: sinceId);
+                count: SearchCount, since_id: SinceId);
 
             foreach (var status in timeline)
             {
@@ -260,17 +234,17 @@ namespace Shanghai
         {
             const int SearchCount = 200;
             var timeline = TwitterManager.Tokens.Statuses.UserTimeline(
-                count: SearchCount, since_id: sinceId, exclude_replies: false, include_rts: false);
+                count: SearchCount, since_id: SinceId, exclude_replies: false, include_rts: false);
             foreach (var status in timeline)
             {
-                sinceId = Math.Max(sinceId ?? 0, status.Id);
+                SinceId = Math.Max(SinceId ?? 0, status.Id);
             }
         }
 
         public void CheckTwitter(TaskServer server, string taskName)
         {
             // 最初は自分の最後のツイートIDにセット
-            if (sinceId == null)
+            if (SinceId == null)
             {
                 SetInitialSinceId();
             }
@@ -280,7 +254,7 @@ namespace Shanghai
             nextSinceId = Math.Max(CheckMentionTimeline(taskName), nextSinceId);
             if (nextSinceId > 0)
             {
-                sinceId = nextSinceId;
+                SinceId = nextSinceId;
             }
         }
     }

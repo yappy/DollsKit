@@ -29,7 +29,7 @@ namespace Shanghai
 
         private static CameraSettings settings
         {
-            get {  return SettingManager.Settings.camera; }
+            get {  return SettingManager.Settings.Camera; }
         }
 
         public CameraTask()
