@@ -38,8 +38,10 @@ namespace Shanghai
             const string Uri = "http://www.mydns.jp/login.html";
             const int TimeoutSec = 10;
 
-            var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(TimeoutSec);
+            var client = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(TimeoutSec)
+            };
             byte[] byteArray = Encoding.ASCII.GetBytes(
                 string.Format("{0}:{1}", settings.User, settings.Pass));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -60,7 +62,7 @@ namespace Shanghai
         }
 
         [Obsolete]
-        public void updateIpAddr(TaskServer server, string taskName)
+        public void UpdateIpAddr(TaskServer server, string taskName)
         {
             const string Uri = "http://inet-ip.info";
             const string UserAgent = "curl";
