@@ -69,9 +69,10 @@ namespace Shanghai
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Start");
 
             // TODO: TEST
-            Logger.Initialize(Logger.Option.File);
+            Logger.AddConsole(LogLevel.Trace);
+            Logger.AddFile(LogLevel.Info);
             for (int i = 0; i < 1000 * 1000; i++) {
-                Logger.WriteLine(i);
+                Logger.Log(LogLevel.Info, i);
             }
             Logger.Terminate();
 
