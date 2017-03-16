@@ -35,7 +35,8 @@ namespace Shanghai
                     memAvail, memTotal, memAvail * 100.0 / memTotal);
             }
             {
-                GetDiskInfoG(out double diskFree, out double diskTotal);
+                double diskFree, diskTotal;
+                GetDiskInfoG(out diskFree, out diskTotal);
                 msg.AppendFormat("Disk: {0:F1}/{1:F1}G Free ({2:F1}%)\n",
                     diskFree, diskTotal, (int)(diskFree * 100.0 / diskTotal));
             }
