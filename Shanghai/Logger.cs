@@ -6,6 +6,8 @@ using System.Threading;
 
 namespace Shanghai
 {
+    // ログレベル
+    // フィルタレベルより下ならば出力されない
     public enum LogLevel
     {
         Trace,
@@ -15,16 +17,20 @@ namespace Shanghai
         Fatal,
     }
 
+    // ロギングシステム
+    // thread-safe
     public static class Logger
     {
-        private static object syncObj = new object();
-        private static List<LogTarget> targets = new List<LogTarget>();
+        // 同期用オブジェクト
+        private static object SyncObj = new object();
+        // 出力先のリスト
+        private static List<LogTarget> Targets = new List<LogTarget>();
 
         public static void AddConsole(LogLevel filterLevel)
         {
-            lock (syncObj)
+            lock (SyncObj)
             {
-                targets.Add(new ConsoleLogger(filterLevel));
+                Targets.Add(new ConsoleLogger(filterLevel));
             }
         }
 
@@ -32,9 +38,9 @@ namespace Shanghai
             string fileName = "log{0}.txt",
             long rotateSize = 10 * 1024 * 1024, int rotateNum = 2)
         {
-            lock (syncObj)
+            lock (SyncObj)
             {
-                targets.Add(new FileLogger(filterLevel,
+                Targets.Add(new FileLogger(filterLevel,
                     fileName, rotateSize, rotateNum));
             }
         }
@@ -44,9 +50,9 @@ namespace Shanghai
             int thId = Thread.CurrentThread.ManagedThreadId;
             DateTime timestamp = DateTime.Now;
 
-            lock (syncObj)
+            lock (SyncObj)
             {
-                foreach (var target in targets)
+                foreach (var target in Targets)
                 {
                     if (target.CheckLogLevel(level)) {
                         target.Write(value.ToString(), level, thId, timestamp);
@@ -66,9 +72,9 @@ namespace Shanghai
 
         public static void Flush()
         {
-            lock (syncObj)
+            lock (SyncObj)
             {
-                foreach (var target in targets)
+                foreach (var target in Targets)
                 {
                     try
                     {
@@ -84,20 +90,22 @@ namespace Shanghai
 
         public static void Terminate()
         {
-            lock (syncObj)
+            lock (SyncObj)
             {
-                foreach (var target in targets)
+                foreach (var target in Targets)
                 {
                     try { target.Flush(); }
                     catch (Exception e) { Console.Error.WriteLine(e); }
                     try { target.Dispose(); }
                     catch (Exception e) { Console.Error.WriteLine(e); }
                 }
-                targets.Clear();
+                Targets.Clear();
             }
         }
     }
 
+    // ログの出力先
+    // 各メソッドは同期が取られた状態で呼び出される
     abstract class LogTarget
     {
         private LogLevel filterLevel;
@@ -106,14 +114,18 @@ namespace Shanghai
             this.filterLevel = filterLevel;
         }
 
+        // 与えられたレベルがフィルタより上ならtrue
         public bool CheckLogLevel(LogLevel level)
         {
             return (int)level >= (int)filterLevel;
         }
 
+        // ログの1エントリを書き込む
         public abstract void Write(string msg,
             LogLevel level, int threadId, DateTime timestamp);
+        // バッファリングしている場合はフラッシュする
         public abstract void Flush();
+        // 後処理があるなら行う
         public abstract void Dispose();
     }
 
