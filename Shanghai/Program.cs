@@ -31,10 +31,16 @@ namespace Shanghai
             var ddnsTask = new DdnsTask();
             var cameraTask = new CameraTask();
 
-            var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
-            {
-                TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
-            });
+            var flushLogTask = TaskParameter.Periodic("flushlog", toHour(1), toHour(1),
+                (taskServer, taskName) =>
+                {
+                    Logger.Flush();
+                });
+            var bootMsgTask = TaskParameter.OneShot("boot", 0,
+                (taskServer, taskName) =>
+                {
+                    TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
+                });
             var healthCheckTask = TaskParameter.Periodic("health", 5, toHour(6),
                 healthCheck.Check);
 
@@ -50,7 +56,7 @@ namespace Shanghai
                 cameraTask.UploadPictureTask);
 
             return new TaskParameter[] {
-                bootMsgTask, healthCheckTask,
+                flushLogTask, bootMsgTask, healthCheckTask,
                 twitterCheckTask, updateDdnsTask, cameraShotTask, uploadPictureTask,
             };
         }
