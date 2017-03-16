@@ -20,7 +20,7 @@ namespace Shanghai
 
         public static void Initialize(Option option,
             string fileName = "log{0}.txt",
-            long rotateSize = 5 * 1024 * 1024, int rotateNum = 2)
+            long rotateSize = 10 * 1024 * 1024, int rotateNum = 2)
         {
             Terminate();
             lock (syncObj)
@@ -32,6 +32,17 @@ namespace Shanghai
                 if (option.HasFlag(Option.File))
                 {
                     targets.Add(new FileLogger(fileName, rotateSize, rotateNum));
+                }
+            }
+        }
+
+        public static void WriteLine(object value)
+        {
+            lock (syncObj)
+            {
+                foreach (var target in targets)
+                {
+                    target.WriteLine(value.ToString());
                 }
             }
         }
@@ -64,8 +75,8 @@ namespace Shanghai
                     catch (Exception e) { Console.Error.WriteLine(e); }
                     try { target.Dispose(); }
                     catch (Exception e) { Console.Error.WriteLine(e); }
-                    targets.Clear();
                 }
+                targets.Clear();
             }
         }
     }
@@ -110,27 +121,37 @@ namespace Shanghai
             {
                 Flush();
             }
-            buffer.Append(msg);
+            buffer.AppendLine(msg);
         }
 
         public void Flush() {
+            // 以降で例外が発生したとしてもバッファはクリアする
+            string data = buffer.ToString();
+            buffer.Clear();
+
             string mainFile = string.Format(fileName, 0);
             if (File.Exists(mainFile))
             {
                 var info = new FileInfo(mainFile);
-                if (info.Length + buffer.Length > rotateSize)
+                // このまま書くとローテーションサイズを超える場合
+                if (info.Length + data.Length > rotateSize)
                 {
-                    // n-2 -> n-1, n-3 -> n-2, ..., 0 -> 1
+                    // 最後のを消す(存在しない場合はエラーにならない)
+                    string lastFile = string.Format(fileName, rotateNum - 1);
+                    File.Delete(lastFile);
+                    // 1つずつ後ろにリネーム(上書きはできずエラーになるのでうまくやる)
                     for (int i = rotateNum - 2; i >= 0; i--)
                     {
                         string src = string.Format(fileName, i);
                         string dst = string.Format(fileName, i + 1);
-                        File.Copy(src, dst, true);
+                        if (File.Exists(src)) {
+                            File.Move(src, dst);
+                        }
                     }
                 }
             }
-            File.AppendAllText(mainFile, buffer.ToString());
-            buffer.Clear();
+            // 追記オープンして書き込む(ファイルがない場合は新規作成)
+            File.AppendAllText(mainFile, data);
         }
 
         public void Dispose() { }
