@@ -25,24 +25,26 @@ namespace Shanghai
 
         public static TaskParameter Periodic(string name, int startSec, int periodSec, Action<TaskServer, string> proc)
         {
-            var param = new TaskParameter();
-            param.Name = name;
-            param.StartSec = startSec;
-            param.PeriodSec = periodSec;
-            param.ReleaseCount = -1;
-            param.Proc = proc;
-            return param;
+            return new TaskParameter()
+            {
+                Name = name,
+                StartSec = startSec,
+                PeriodSec = periodSec,
+                ReleaseCount = -1,
+                Proc = proc,
+            };
         }
 
         public static TaskParameter OneShot(string name, int startSec, Action<TaskServer, string> proc)
         {
-            var param = new TaskParameter();
-            param.Name = name;
-            param.StartSec = startSec;
-            param.PeriodSec = 0;
-            param.ReleaseCount = 1;
-            param.Proc = proc;
-            return param;
+            return new TaskParameter()
+            {
+                Name = name,
+                StartSec = startSec,
+                PeriodSec = 0,
+                ReleaseCount = 1,
+                Proc = proc,
+            };
         }
     }
 

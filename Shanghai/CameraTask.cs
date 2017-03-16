@@ -27,7 +27,7 @@ namespace Shanghai
         private static readonly string ThumOption = string.Format(
             "{0}:{1}:{2}", ThumbX, ThumbY, ThumbQuality);
 
-        private static CameraSettings settings
+        private static CameraSettings Settings
         {
             get {  return SettingManager.Settings.Camera; }
         }
@@ -37,7 +37,7 @@ namespace Shanghai
 
         public void TakePictureTask(TaskServer server, string taskName)
         {
-            if (!settings.Enabled)
+            if (!Settings.Enabled)
             {
                 return;
             }
