@@ -68,6 +68,13 @@ namespace Shanghai
         {
             Log.Trace.TraceEvent(TraceEventType.Information, 0, "Start");
 
+            // TODO: TEST
+            Logger.Initialize(Logger.Option.File);
+            for (int i = 0; i < 1000 * 1000; i++) {
+                Logger.WriteLine(i);
+            }
+            Logger.Terminate();
+
             try
             {
                 int errorRebootCount = 0;
