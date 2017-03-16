@@ -49,9 +49,9 @@ namespace Shanghai
             }
             BlackWords = blackWords.AsReadOnly();
             WhiteWords = whiteWords.AsReadOnly();
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "{0} black words loaded", BlackWords.Count);
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                "{0} white words loaded", WhiteWords.Count);
 
             var replaceList = new List<KeyValuePair<string, string>>();
@@ -66,7 +66,7 @@ namespace Shanghai
                 }
             }
             ReplaceList = replaceList.AsReadOnly();
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "{0} replace entries loaded", ReplaceList.Count);
 
             try
@@ -76,8 +76,9 @@ namespace Shanghai
             }
             catch (Exception)
             {
-                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                "DlNwtwork {0} load failed", SettingManager.Settings.Twitter.DlNetTrainError);
+                Logger.Log(LogLevel.Info,
+                    "DlNwtwork {0} load failed",
+                    SettingManager.Settings.Twitter.DlNetTrainError);
             }
         }
 
@@ -161,7 +162,7 @@ namespace Shanghai
                     }
                     if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                        Logger.Log(LogLevel.Info,
                             "[{0}] Find by dl net {1:F3}: @{2} - {3}",
                             taskName, result[i], status.User.ScreenName, status.Text);
                         try
@@ -173,7 +174,7 @@ namespace Shanghai
                         }
                         catch (TwitterException e)
                         {
-                            Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                            Logger.Log(LogLevel.Error, e.Message);
                         }
                     }
                 }
@@ -188,8 +189,8 @@ namespace Shanghai
                 }
                 if (IsBlack(status, masterId))
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find black: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                    Logger.Log(LogLevel.Info, "[{0}] Find black: @{1} - {2}",
+                        taskName, status.User.ScreenName, status.Text);
                     try
                     {
                         TwitterManager.Update(
@@ -199,13 +200,13 @@ namespace Shanghai
                     }
                     catch (TwitterException e)
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                        Logger.Log(LogLevel.Error, e.Message);
                     }
                 }
                 else if (IsWhite(status, masterId))
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                        "[{0}] Find white: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                    Logger.Log(LogLevel.Info, "[{0}] Find white: @{1} - {2}",
+                        taskName, status.User.ScreenName, status.Text);
                     try
                     {
                         TwitterManager.Update(
@@ -215,7 +216,7 @@ namespace Shanghai
                     }
                     catch (TwitterException e)
                     {
-                        Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                        Logger.Log(LogLevel.Error, e.Message);
                     }
                 }
             }
@@ -238,8 +239,8 @@ namespace Shanghai
                 {
                     continue;
                 }
-                Log.Trace.TraceEvent(TraceEventType.Information, 0,
-                    "[{0}] Find mention: @{1} - {2}", taskName, status.User.ScreenName, status.Text);
+                Logger.Log(LogLevel.Info, "[{0}] Find mention: @{1} - {2}",
+                    taskName, status.User.ScreenName, status.Text);
                 try
                 {
                     TwitterManager.Update(
@@ -249,7 +250,7 @@ namespace Shanghai
                 }
                 catch (TwitterException e)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Error, 0, e.Message);
+                    Logger.Log(LogLevel.Error, e.Message);
                 }
             }
             return nextSinceId;

@@ -1,6 +1,5 @@
 ﻿using CoreTweet;
 using System.IO;
-using System.Diagnostics;
 
 namespace Shanghai
 {
@@ -25,8 +24,8 @@ namespace Shanghai
 
             if (!settings.WriteEnabled)
             {
-                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
-                    "Twitter write feature is disabled. Only to log.");
+                Logger.Log(LogLevel.Warning,
+                    "Twitter write feature is disabled. Logging only.");
             }
         }
 
@@ -44,13 +43,13 @@ namespace Shanghai
             }
             else
             {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter update ({0})", msg.Length);
+                Logger.Log(LogLevel.Info, "Faked twitter update ({0})", msg.Length);
                 if (msg.Length > 140)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "Message too long: {0}", msg.Length);
+                    Logger.Log(LogLevel.Info, "Message too long: {0}", msg.Length);
                 }
             }
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update: {0}", msg);
+            Logger.Log(LogLevel.Info, "Twitter update: {0}", msg);
         }
 
         public static void UpdateWithImage(string msg, string imgPath)
@@ -59,41 +58,15 @@ namespace Shanghai
             {
                 MediaUploadResult media = Tokens.Media.Upload(
                     media: new FileInfo(imgPath));
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter upload: {0}", media.MediaId);
+                Logger.Log(LogLevel.Info, "Twitter upload: {0}", media.MediaId);
                 Tokens.Statuses.Update(status: msg,
                     media_ids: new long[] { media.MediaId });
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter update with media: {0}", msg);
+                Logger.Log(LogLevel.Info, "Twitter update with media: {0}", msg);
             }
             else
             {
                 Update(msg);
             }
-        }
-
-        public static void Favorite(long id)
-        {
-            if (settings.WriteEnabled)
-            {
-                Tokens.Favorites.Create(id);
-            }
-            else
-            {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter favorite");
-            }
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter favorite: {0}", id);
-        }
-
-        public static void UpdateProfileLocation(string location)
-        {
-            if (settings.WriteEnabled)
-            {
-                Tokens.Account.UpdateProfile(location: location);
-            }
-            else
-            {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Faked twitter profile update");
-            }
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Twitter profile location: {0}", location);
         }
     }
 }

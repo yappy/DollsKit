@@ -50,7 +50,7 @@ namespace Shanghai
             string thName = now.ToString("yyyyMMdd_HHmm") + "_th.jpg";
             string thPath = Path.Combine(PicDir, dirName, thName);
 
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "[{0}] Take a picture: {1}", taskName, filePath);
 
             Directory.CreateDirectory(dirPath);
@@ -58,7 +58,7 @@ namespace Shanghai
                 string.Format(@"-o ""{0}"" -w {1} -h {2} -th {3}",
                     filePath, ImgW, ImgH, ThumOption));
             p.WaitForExit();
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "[{0}] Result: {1}", taskName, p.ExitCode);
 
             // Create thumb
@@ -75,7 +75,7 @@ namespace Shanghai
                 Array.Sort(files);
                 string upfile = files[0];
 
-                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                Logger.Log(LogLevel.Info,
                     "[{0}] Upload: {1}", taskName, upfile);
                 TwitterManager.UpdateWithImage(Path.GetFileName(upfile), upfile);
 
@@ -83,7 +83,7 @@ namespace Shanghai
                 File.Delete(upfile);
             }
             else {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                Logger.Log(LogLevel.Info,
                     "[{0}] No upload files", taskName);
             }
         }

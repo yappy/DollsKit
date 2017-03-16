@@ -24,7 +24,7 @@ namespace Shanghai
             {
                 settings = JsonConvert.DeserializeObject<Settings>(
                     reader.ReadToEnd());
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Settings loaded");
+                Logger.Log(LogLevel.Info, "Settings loaded");
             }
         }
 
