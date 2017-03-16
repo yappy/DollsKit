@@ -59,6 +59,10 @@ namespace Shanghai
         {
             Logger.AddConsole(LogLevel.Trace);
             Logger.AddFile(LogLevel.Info);
+            Console.CancelKeyPress += (sender, eventArgs) => {
+                Logger.Log(LogLevel.Info, "Interrupted");
+                Logger.Flush();
+            };
 
             Logger.Log(LogLevel.Info, "Start");
 
