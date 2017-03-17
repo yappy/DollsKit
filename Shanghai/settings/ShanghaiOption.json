@@ -8,34 +8,34 @@
 	{
 		"Enabled"	: false,
 		"User"		: "",
-		"Pass"		: ""
+		"Pass"		: "",
 	},
 	"Camera":
 	{
-		"Enabled"	: false
+		"Enabled"	: false,
 	},
 	"White":
 	{
 		"BlackList":[
 			"Mewdra", "nippy2284", "metto0226", "CucumberDragon",
-            "superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
-            "kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
-            "ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
-            "satoukakeru"
+			"superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
+			"kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
+			"ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
+			"satoukakeru",
 		],
 		"BlackWords": [
 			"ホワイト", "ブラック", "ほわ", "ぶらっく",
-			"定時", "退社", "帰宅", "到着", "ただいま", "残業", "終電", "代休"
+			"定時", "退社", "帰宅", "到着", "ただいま", "残業", "終電", "代休",
 		],
 		"WhiteWords": [
-			"ホワイト", "ほわいと", "退社", "帰宅"
+			"ホワイト", "ほわいと", "退社", "帰宅",
 		],
 		"ReplaceList": {
 			"きたーく": "帰宅",
 			"とーちゃく": "到着",
 			"おうち": "お家",
 			"ただーいま": "ただいま",
-			"たーだいま": "ただいま"
-		}
-	}
+			"たーだいま": "ただいま",
+		},
+	},
 }
