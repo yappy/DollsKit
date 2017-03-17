@@ -1,14 +1,14 @@
 ﻿using Newtonsoft.Json;
-using System.Diagnostics;
 using System.IO;
 
 namespace Shanghai
 {
     public class Settings
     {
-        public TwitterSettings Twitter { get; set; } = new TwitterSettings();
-        public DdnsSettings Ddns { get; set; } = new DdnsSettings();
-        public CameraSettings camera { get; set; } = new CameraSettings();
+        public TwitterSettings Twitter { get; set; }
+        public DdnsSettings Ddns { get; set; }
+        public CameraSettings Camera { get; set; }
+        public WhiteSettings White { get; set; }
     };
 
     public static class SettingManager
@@ -24,7 +24,7 @@ namespace Shanghai
             {
                 settings = JsonConvert.DeserializeObject<Settings>(
                     reader.ReadToEnd());
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Settings loaded");
+                Logger.Log(LogLevel.Info, "Settings loaded");
             }
         }
 

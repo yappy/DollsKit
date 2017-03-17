@@ -30,7 +30,7 @@ namespace Shanghai
         {
             if (!settings.Enabled)
             {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                Logger.Log(LogLevel.Info,
                     "[{0}] DDNS update is disabled, skip", taskName);
                 return;
             }
@@ -38,8 +38,10 @@ namespace Shanghai
             const string Uri = "http://www.mydns.jp/login.html";
             const int TimeoutSec = 10;
 
-            var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(TimeoutSec);
+            var client = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(TimeoutSec)
+            };
             byte[] byteArray = Encoding.ASCII.GetBytes(
                 string.Format("{0}:{1}", settings.User, settings.Pass));
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
@@ -49,18 +51,18 @@ namespace Shanghai
             task.Wait(server.CancelToken);
             if (task.Result.StatusCode == HttpStatusCode.OK)
             {
-                Log.Trace.TraceEvent(TraceEventType.Information, 0,
+                Logger.Log(LogLevel.Info,
                     "[{0}] DDNS update succeeded", taskName);
             }
             else
             {
-                Log.Trace.TraceEvent(TraceEventType.Warning, 0,
+                Logger.Log(LogLevel.Warning,
                     "[{0}] DDNS update failed", taskName);
             }
         }
 
         [Obsolete]
-        public void updateIpAddr(TaskServer server, string taskName)
+        public void UpdateIpAddr(TaskServer server, string taskName)
         {
             const string Uri = "http://inet-ip.info";
             const string UserAgent = "curl";
@@ -74,9 +76,8 @@ namespace Shanghai
             task.Wait(server.CancelToken);
 
             string ipAddr = task.Result.Trim();
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "[{0}] IP addr: {1}", taskName, ipAddr);
-            TwitterManager.UpdateProfileLocation(string.Format("http://{0}/", ipAddr));
         }
     }
 }
