@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Configuration;
 
 namespace Shanghai
 {
@@ -115,7 +114,6 @@ namespace Shanghai
                     Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
-                    ConfigurationManager.RefreshSection("AppSettings");
                     bootMsg = "Reboot...";
                 }
             }
