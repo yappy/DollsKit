@@ -227,9 +227,10 @@ namespace Shanghai
             }
             catch (OperationCanceledException)
             {
-                Logger.Log(LogLevel.Info, "Server interrupted");
+                Logger.Log(LogLevel.Info, "Server shutdown sequence");
                 // シャットダウン要求が入った
                 // 各タスクにもキャンセル要求が入っているので全て終了するまで待つ
+                Logger.Log(LogLevel.Info, "Wait for all of tasks...");
                 Task[] runningTasks = periodicTaskArray.Where((task) => task != null).ToArray();
                 if (runningTasks.Length != 0) {
                     try {
@@ -237,20 +238,26 @@ namespace Shanghai
                         if (complete)
                         {
                             // case 1: 全て正常終了した
-                            Logger.Log(LogLevel.Info, "");
+                            Logger.Log(LogLevel.Info, "OK: succeeded all");
                         }
                         else
                         {
                             // case 3: WaitAll がタイムアウトした
                             // 実行中のタスクが残っている プロセス終了しかない
-                            Logger.Log(LogLevel.Fatal, "Timeout: waiting for all tasks");
+                            Logger.Log(LogLevel.Fatal, "Timeout: waiting for all of tasks");
                             return ServerResult.FatalShutdown;
                         }
                     }
                     catch (AggregateException e)
                     {
                         // case 2: 全て完了したが1つ以上がキャンセルまたは例外で終わった
-                        Logger.Log(LogLevel.Info, e.Flatten());
+                        Logger.Log(LogLevel.Info, "OK: one or more tasks are canceled or failed");
+                        e.Flatten().Handle((inner) => {
+                            if (!(inner is OperationCanceledException)) {
+                                Logger.Log(LogLevel.Info, inner);
+                            }
+                            return true;
+                        });
                     }
                 }
                 lock (SyncObj) {
