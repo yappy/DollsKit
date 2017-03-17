@@ -1,18 +1,9 @@
 ﻿using System;
-using System.Configuration;
 using System.Diagnostics;
+using System.Configuration;
 
 namespace Shanghai
 {
-    static class Log
-    {
-        public static TraceSource Trace { get; private set; }
-        static Log()
-        {
-            Trace = new TraceSource("TaskServer");
-        }
-    }
-
     class Program
     {
         private static readonly int MaxTasks = 4;
@@ -40,10 +31,16 @@ namespace Shanghai
             var ddnsTask = new DdnsTask();
             var cameraTask = new CameraTask();
 
-            var bootMsgTask = TaskParameter.OneShot("boot", 0, (taskServer, taskName) =>
-            {
-                TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
-            });
+            var flushLogTask = TaskParameter.Periodic("flushlog", toHour(1), toHour(1),
+                (taskServer, taskName) =>
+                {
+                    Logger.Flush();
+                });
+            var bootMsgTask = TaskParameter.OneShot("boot", 0,
+                (taskServer, taskName) =>
+                {
+                    TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
+                });
             var healthCheckTask = TaskParameter.Periodic("health", 5, toHour(6),
                 healthCheck.Check);
 
@@ -59,14 +56,21 @@ namespace Shanghai
                 cameraTask.UploadPictureTask);
 
             return new TaskParameter[] {
-                bootMsgTask, healthCheckTask,
+                flushLogTask, bootMsgTask, healthCheckTask,
                 twitterCheckTask, updateDdnsTask, cameraShotTask, uploadPictureTask,
             };
         }
 
         static void Main(string[] args)
         {
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Start");
+            Logger.AddConsole(LogLevel.Trace);
+            Logger.AddFile(LogLevel.Info);
+            Console.CancelKeyPress += (sender, eventArgs) => {
+                Logger.Log(LogLevel.Info, "Interrupted");
+                Logger.Flush();
+            };
+
+            Logger.Log(LogLevel.Info, "Start");
 
             try
             {
@@ -79,28 +83,28 @@ namespace Shanghai
                         var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
                         TaskParameter[] tasks = SetupTasks(bootMsg);
 
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server start");
+                        Logger.Log(LogLevel.Info, "Task server start");
                         ServerResult result = taskServer.Run(tasks);
-                        Log.Trace.TraceEvent(TraceEventType.Information, 0, "Task server exit");
+                        Logger.Log(LogLevel.Info, "Task server exit");
 
                         bool exit;
                         switch (result)
                         {
                             case ServerResult.Reboot:
-                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot");
+                                Logger.Log(LogLevel.Info, "Reboot");
                                 exit = false;
                                 break;
                             case ServerResult.Shutdown:
-                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Shutdown");
+                                Logger.Log(LogLevel.Info, "Shutdown");
                                 exit = true;
                                 break;
                             case ServerResult.ErrorReboot:
                                 errorRebootCount++;
-                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
+                                Logger.Log(LogLevel.Info, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
                                 exit = (errorRebootCount >= MaxErrorReboot);
                                 break;
                             case ServerResult.FatalShutdown:
-                                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Fatal Shutdown");
+                                Logger.Log(LogLevel.Info, "Fatal Shutdown");
                                 exit = true;
                                 break;
                             default:
@@ -114,19 +118,20 @@ namespace Shanghai
                         }
                     }
                     TerminateSystems();
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC...");
+                    Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "GC complete");
+                    Logger.Log(LogLevel.Info, "GC complete");
                     ConfigurationManager.RefreshSection("AppSettings");
                     bootMsg = "Reboot...";
                 }
             }
             catch (Exception e)
             {
-                Log.Trace.TraceData(TraceEventType.Critical, 0, e);
+                Logger.Log(LogLevel.Fatal, e);
             }
 
-            Log.Trace.TraceEvent(TraceEventType.Information, 0, "Terminate");
+            Logger.Log(LogLevel.Info, "Terminate");
+            Logger.Terminate();
         }
     }
 }

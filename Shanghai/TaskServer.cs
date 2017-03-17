@@ -25,24 +25,26 @@ namespace Shanghai
 
         public static TaskParameter Periodic(string name, int startSec, int periodSec, Action<TaskServer, string> proc)
         {
-            var param = new TaskParameter();
-            param.Name = name;
-            param.StartSec = startSec;
-            param.PeriodSec = periodSec;
-            param.ReleaseCount = -1;
-            param.Proc = proc;
-            return param;
+            return new TaskParameter()
+            {
+                Name = name,
+                StartSec = startSec,
+                PeriodSec = periodSec,
+                ReleaseCount = -1,
+                Proc = proc,
+            };
         }
 
         public static TaskParameter OneShot(string name, int startSec, Action<TaskServer, string> proc)
         {
-            var param = new TaskParameter();
-            param.Name = name;
-            param.StartSec = startSec;
-            param.PeriodSec = 0;
-            param.ReleaseCount = 1;
-            param.Proc = proc;
-            return param;
+            return new TaskParameter()
+            {
+                Name = name,
+                StartSec = startSec,
+                PeriodSec = 0,
+                ReleaseCount = 1,
+                Proc = proc,
+            };
         }
     }
 
@@ -72,7 +74,7 @@ namespace Shanghai
         // thread safe
         public void RegisterTask(TaskParameter taskParam)
         {
-            Log.Trace.TraceEvent(TraceEventType.Information, 0,
+            Logger.Log(LogLevel.Info,
                 "[{0}] Register task ({1}sec, T={2}, count={3})",
                 taskParam.Name, taskParam.StartSec, taskParam.PeriodSec, taskParam.ReleaseCount);
 
@@ -84,23 +86,23 @@ namespace Shanghai
                 if (!enter)
                 {
                     // Max count tasks are running, give up
-                    Log.Trace.TraceEvent(TraceEventType.Warning, 0, "[{0}] Task count full, give up", taskParam.Name);
+                    Logger.Log(LogLevel.Warning, "[{0}] Task count full, give up", taskParam.Name);
                     return;
                 }
                 try
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Start", taskParam.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] Start", taskParam.Name);
                     taskParam.Proc(this, taskParam.Name);
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Completed successfully", taskParam.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] Completed successfully", taskParam.Name);
                 }
                 catch (OperationCanceledException)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Task cancelled", taskParam.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] Task cancelled", taskParam.Name);
                 }
                 catch (Exception e)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}] Exception", taskParam.Name);
-                    Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                    Logger.Log(LogLevel.Error, "[{0}] Exception", taskParam.Name);
+                    Logger.Log(LogLevel.Error, e);
                 }
                 finally
                 {
@@ -129,12 +131,12 @@ namespace Shanghai
                 }
                 catch (OperationCanceledException)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}-release-thread] Task cancelled", taskParam.Name);
+                    Logger.Log(LogLevel.Info, "[{0}-release-thread] Task cancelled", taskParam.Name);
                 }
                 catch (Exception e)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Information, 0, "[{0}-release-thread] Exception", taskParam.Name);
-                    Log.Trace.TraceData(TraceEventType.Error, 0, e);
+                    Logger.Log(LogLevel.Error, "[{0}-release-thread] Exception", taskParam.Name);
+                    Logger.Log(LogLevel.Error, e);
                 }
             });
         }
@@ -175,14 +177,14 @@ namespace Shanghai
             {
                 while (true)
                 {
-                    Log.Trace.TraceEvent(TraceEventType.Verbose, 0, "Heartbeat check...");
+                    Logger.Log(LogLevel.Trace, "Heartbeat check...");
                     var start = DateTime.Now;
                     bool hasSema = taskSema.Wait(HeartBeatSec * 1000, CancelToken);
                     if (!hasSema)
                     {
                         // cannot take a semaphore for HeartBeatSec
                         // break a loop and goto finally
-                        Log.Trace.TraceEvent(TraceEventType.Error, 0, "Heartbeat check NG");
+                        Logger.Log(LogLevel.Error, "Heartbeat check NG");
                         SetResult(ServerResult.ErrorReboot);
                         break;
                     }
@@ -190,7 +192,7 @@ namespace Shanghai
                     {
                         // release immediately and sleep for rest time
                         taskSema.Release();
-                        Log.Trace.TraceEvent(TraceEventType.Verbose, 0, "Heartbeat check OK");
+                        Logger.Log(LogLevel.Trace, "Heartbeat check OK");
                         var end = DateTime.Now;
                         int rest = HeartBeatSec - (int)(end - start).TotalSeconds;
                         rest = Math.Max(rest, 0);
@@ -202,12 +204,12 @@ namespace Shanghai
             {
                 // thrown by cancelToken
                 // shutdown from an external task
-                Log.Trace.TraceEvent(TraceEventType.Information, 0, "Interrupted by others");
+                Logger.Log(LogLevel.Info, "Interrupted by others");
             }
             catch (Exception e)
             {
                 // unknown
-                Log.Trace.TraceData(TraceEventType.Critical, 0, e);
+                Logger.Log(LogLevel.Error, e);
                 SetResult(ServerResult.ErrorReboot);
             }
 
@@ -222,7 +224,7 @@ namespace Shanghai
                 {
                     // timeout
                     // probably dead-locked thread is alive, so reboot is dangerous
-                    Log.Trace.TraceEvent(TraceEventType.Critical, 0, "Timeout: Tasks still remain");
+                    Logger.Log(LogLevel.Fatal, "Timeout: Tasks still remain");
                     return ServerResult.FatalShutdown;
                 }
             }
