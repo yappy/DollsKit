@@ -19,10 +19,17 @@ namespace Shanghai
     struct PeriodicTask
     {
         public string Name;
-
         // (hour, min) => bool
         public Func<int, int, bool> Condition;
-        // (serverm, taskName)
+        // (server, taskName)
+        public Action<TaskServer, string> Proc;
+    }
+
+    struct OneShotTask
+    {
+        public string Name;
+        public DateTime TargetTime;
+        // (server, taskName)
         public Action<TaskServer, string> Proc;
     }
 
@@ -37,6 +44,7 @@ namespace Shanghai
         private ServerResult RunResult = ServerResult.None;
         private CancellationTokenSource CancelTokenSource;
         private List<PeriodicTask> PeriodicTaskList;
+        private List<OneShotTask> OneShotTaskList;
 
         // タスクはこのトークンで RequestShutdown を検知できる
         public CancellationToken CancelToken
@@ -49,6 +57,7 @@ namespace Shanghai
         public TaskServer()
         {
             PeriodicTaskList = new List<PeriodicTask>();
+            OneShotTaskList = new List<OneShotTask>();
             CancelTokenSource = new CancellationTokenSource();
         }
 
@@ -69,6 +78,25 @@ namespace Shanghai
                     Proc = proc,
                 });
             }
+            Logger.Log(LogLevel.Info, "Register periodic task: [{0}]", name);
+        }
+
+        // 単発タスクの登録
+        // サーバ実行中も可能
+        public void RegisterOneShotTask(string name,
+            TimeSpan delay, Action<TaskServer, string> proc)
+        {
+            DateTime targetTime = DateTime.Now + delay;
+            lock (SyncObj)
+            {
+                OneShotTaskList.Add(new OneShotTask
+                {
+                    Name = name,
+                    TargetTime = targetTime,
+                    Proc = proc,
+                });
+            }
+            Logger.Log(LogLevel.Info, "Register one-shot task: [{0}] ({1})", name, targetTime);
         }
 
         // 外部からのリブートやシャットダウン要求を受け付ける
@@ -95,25 +123,25 @@ namespace Shanghai
             }
         }
 
-        // 周期タスク開始時のサーバログ
-        private void OnPeriodicTaskStart(PeriodicTask param)
+        // タスク開始時のサーバログ
+        private void OnTaskStart(string taskName)
         {
-            Logger.Log(LogLevel.Info, "[{0}] Start", param.Name);
+            Logger.Log(LogLevel.Info, "[{0}] Start", taskName);
         }
 
-        // 周期タスク終了時のサーバログ
-        private void OnPeriodicTaskEnd(PeriodicTask param, Task task)
+        // タスク終了時のサーバログ
+        private void OnTaskEnd(string taskName, Task task)
         {
             switch (task.Status)
             {
                 case TaskStatus.RanToCompletion:
-                    Logger.Log(LogLevel.Info, "[{0}] End (Success)", param.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] End (Success)", taskName);
                     break;
                 case TaskStatus.Canceled:
-                    Logger.Log(LogLevel.Info, "[{0}] End (Canceled)", param.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] End (Canceled)", taskName);
                     break;
                 case TaskStatus.Faulted:
-                    Logger.Log(LogLevel.Info, "[{0}] End (Failed)", param.Name);
+                    Logger.Log(LogLevel.Info, "[{0}] End (Failed)", taskName);
                     task.Exception.Flatten().Handle((e) =>
                     {
                         Logger.Log(LogLevel.Error, e);
@@ -130,21 +158,26 @@ namespace Shanghai
         {
             // 周期タスクパラメータをロックしてからコピーして以降固定する
             PeriodicTask[] periodicTaskParams;
-            Task[] periodicTaskArray;
+            Task[] periodicTaskExec;
             lock (SyncObj) {
                 if (Started) {
-                    throw new InvalidOperationException("Server is started");
+                    throw new InvalidOperationException("Server is already started");
                 }
                 Started = true;
                 periodicTaskParams = PeriodicTaskList.ToArray();
-                periodicTaskArray = new Task[periodicTaskParams.Length];
+                periodicTaskExec = new Task[periodicTaskParams.Length];
             }
+            // 実行中の単発タスク
+            var oneShotTaskParams = new List<OneShotTask>();
+            var oneShotTaskExec = new List<Task>();
 
             // Task Server main
             try
             {
                 while (true)
                 {
+                    Debug.Assert(oneShotTaskParams.Count == oneShotTaskExec.Count);
+
                     // 現在時間を取得
                     var now = DateTime.Now;
                     // 次の分 (秒以下は0)
@@ -158,8 +191,11 @@ namespace Shanghai
                         // timeout = timeoutTarget までの時間
                         now = DateTime.Now;
                         int timeout = Math.Max((int)(timeoutTarget - now).TotalMilliseconds, 0);
-                        // WaitAny のため periodicTaskArray から null を除いた配列を作成
-                        Task[] runningTasks = periodicTaskArray.Where((task) => task != null).ToArray();
+
+                        // WaitAny のため全実行中タスクからなる配列を作成
+                        // periodicTaskArray から null を除いたもの + oneShotTaskExec
+                        Task[] runningTasks = periodicTaskExec.Where((task) => task != null).Concat(
+                            oneShotTaskExec).ToArray();
                         if (runningTasks.Length != 0)
                         {
                             // どれかのタスクが終了するか timeout 時間が経過するまで待機
@@ -167,12 +203,21 @@ namespace Shanghai
                             Task.WaitAny(runningTasks, timeout, CancelToken);
                             // 全部について終わっているか調べる
                             // 終わっているものについてはログを出して削除
-                            for (int i = 0; i < periodicTaskArray.Length; i++)
+                            for (int i = 0; i < periodicTaskExec.Length; i++)
                             {
-                                if (periodicTaskArray[i] != null && periodicTaskArray[i].IsCompleted)
+                                if (periodicTaskExec[i] != null && periodicTaskExec[i].IsCompleted)
                                 {
-                                    OnPeriodicTaskEnd(periodicTaskParams[i], periodicTaskArray[i]);
-                                    periodicTaskArray[i] = null;
+                                    OnTaskEnd(periodicTaskParams[i].Name, periodicTaskExec[i]);
+                                    periodicTaskExec[i] = null;
+                                }
+                            }
+                            for (int i = 0; i < oneShotTaskExec.Count; i++)
+                            {
+                                if (oneShotTaskExec[i].IsCompleted)
+                                {
+                                    OnTaskEnd(oneShotTaskParams[i].Name, oneShotTaskExec[i]);
+                                    oneShotTaskParams.RemoveAt(i);
+                                    oneShotTaskExec.RemoveAt(i);
                                 }
                             }
                         }
@@ -196,19 +241,20 @@ namespace Shanghai
                     } while (now < target);
 
                     // (2) タスクのリリース条件のチェックと実行開始
+                    // 周期タスク
                     for (int i = 0; i < periodicTaskParams.Length; i++)
                     {
                         // 時/分 で判定
                         if (periodicTaskParams[i].Condition(now.Hour, now.Minute))
                         {
-                            if (periodicTaskArray[i] == null)
+                            if (periodicTaskExec[i] == null)
                             {
                                 // コピーしてからスレッドへキャプチャ
                                 var param = periodicTaskParams[i];
-                                // サーバログを出してから実行開始し Task を tasks[i] に入れる
+                                // サーバログを出してから実行開始し Task を periodicTaskExec[i] に入れる
                                 // ! OperationCanceledException !
-                                OnPeriodicTaskStart(param);
-                                periodicTaskArray[i] = Task.Run(
+                                OnTaskStart(param.Name);
+                                periodicTaskExec[i] = Task.Run(
                                     () => param.Proc(this, param.Name),
                                     CancelToken);
                             }
@@ -223,6 +269,21 @@ namespace Shanghai
                             }
                         }
                     }
+                    // 単発タスク
+                    lock (SyncObj)
+                    {
+                        Func<OneShotTask, bool> cond = (elem) => now > elem.TargetTime;
+                        foreach (var param in OneShotTaskList.Where(cond))
+                        {
+                            // サーバログを出してから実行開始し Task を oneShotTaskExec に入れる
+                            // ! OperationCanceledException !
+                            OnTaskStart(param.Name);
+                            oneShotTaskParams.Add(param);
+                            oneShotTaskExec.Add(Task.Run(
+                                () => param.Proc(this, param.Name),
+                                CancelToken));
+                        }
+                    }
                 } // while (true)
             }
             catch (OperationCanceledException)
@@ -231,7 +292,7 @@ namespace Shanghai
                 // シャットダウン要求が入った
                 // 各タスクにもキャンセル要求が入っているので全て終了するまで待つ
                 Logger.Log(LogLevel.Info, "Wait for all of tasks...");
-                Task[] runningTasks = periodicTaskArray.Where((task) => task != null).ToArray();
+                Task[] runningTasks = periodicTaskExec.Where((task) => task != null).ToArray();
                 if (runningTasks.Length != 0) {
                     try {
                         bool complete = Task.WaitAll(runningTasks, ShutdownTimeout);

@@ -26,7 +26,12 @@ namespace Shanghai
             var ddnsTask = new DdnsTask();
             var cameraTask = new CameraTask();
 
-            // TODO: boot one-shot task
+            server.RegisterOneShotTask("bootmsg", TimeSpan.FromMinutes(0),
+                (taskServer, taskName) =>
+                {
+                    TwitterManager.Update(bootMsg);
+                });
+
             server.RegisterPeriodicTask("flushlog",
                 (hour, min) => min == 55,
                 (taskServer, taskName) =>
