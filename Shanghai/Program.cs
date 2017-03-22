@@ -29,7 +29,7 @@ namespace Shanghai
             server.RegisterOneShotTask("bootmsg", TimeSpan.FromMinutes(0),
                 (taskServer, taskName) =>
                 {
-                    TwitterManager.Update(bootMsg);
+                    TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
                 });
 
             server.RegisterPeriodicTask("flushlog",
