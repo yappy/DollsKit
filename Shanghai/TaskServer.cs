@@ -273,6 +273,8 @@ namespace Shanghai
                     lock (SyncObj)
                     {
                         Func<OneShotTask, bool> cond = (elem) => now > elem.TargetTime;
+                        Predicate<OneShotTask> delCond = (elem) => cond(elem);
+                        // 開始条件を満たしたものを実行開始
                         foreach (var param in OneShotTaskList.Where(cond))
                         {
                             // サーバログを出してから実行開始し Task を oneShotTaskExec に入れる
@@ -283,6 +285,8 @@ namespace Shanghai
                                 () => param.Proc(this, param.Name),
                                 CancelToken));
                         }
+                        // 開始条件を満たしたものを削除
+                        OneShotTaskList.RemoveAll(delCond);
                     }
                 } // while (true)
             }
