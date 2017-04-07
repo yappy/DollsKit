@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Configuration;
 
 namespace Shanghai
 {
     class Program
     {
-        private static readonly int MaxTasks = 4;
-        private static readonly int HeartBeatSec = 60;
-        private static readonly int MaxErrorReboot = 8;
+        private static readonly int MaxErrorReboot = 3;
 
         static void InitializeSystems()
         {
@@ -22,43 +19,44 @@ namespace Shanghai
             SettingManager.Terminate();
         }
 
-        static TaskParameter[] SetupTasks(string bootMsg)
+        static void SetupTasks(TaskServer server, string bootMsg)
         {
-            Func<int, int> toMin = (sec) => sec * 60;
-            Func<int, int> toHour = (sec) => sec * 60 * 60;
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
             var ddnsTask = new DdnsTask();
             var cameraTask = new CameraTask();
 
-            var flushLogTask = TaskParameter.Periodic("flushlog", toHour(1), toHour(1),
-                (taskServer, taskName) =>
-                {
-                    Logger.Flush();
-                });
-            var bootMsgTask = TaskParameter.OneShot("boot", 0,
+            server.RegisterOneShotTask("bootmsg", TimeSpan.FromMinutes(0),
                 (taskServer, taskName) =>
                 {
                     TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
                 });
-            var healthCheckTask = TaskParameter.Periodic("health", 5, toHour(6),
+
+            server.RegisterPeriodicTask("flushlog",
+                (hour, min) => min == 55,
+                (taskServer, taskName) =>
+                {
+                    Logger.Flush();
+                });
+
+            server.RegisterPeriodicTask("health",
+                (hour, min) => (Array.IndexOf(new int[] { 0, 6, 12, 18 }, hour) >= 0) && (min == 0),
                 healthCheck.Check);
 
-            var twitterCheckTask = TaskParameter.Periodic("twitter", 10, toMin(20),
+            server.RegisterPeriodicTask("twitter",
+                (hour, min) => Array.IndexOf(new int[] { 5, 25, 45 }, min) >= 0,
                 twitterCheck.CheckTwitter);
 
-            var updateDdnsTask = TaskParameter.Periodic("ddns", 20, toHour(1),
+            server.RegisterPeriodicTask("ddns",
+                (hour, min) => min == 30,
                 ddnsTask.UpdateTask);
 
-            var cameraShotTask = TaskParameter.Periodic("camera", 30, toHour(4),
+            server.RegisterPeriodicTask("camera",
+                (hour, min) => (Array.IndexOf(new int[] {  }, hour) >= 0) && (min == 0),
                 cameraTask.TakePictureTask);
-            var uploadPictureTask = TaskParameter.Periodic("uploadpic", 40, toMin(20),
+            server.RegisterPeriodicTask("uploadpic",
+                (hour, min) => Array.IndexOf(new int[] { 10, 30, 50 }, min) >= 0,
                 cameraTask.UploadPictureTask);
-
-            return new TaskParameter[] {
-                flushLogTask, bootMsgTask, healthCheckTask,
-                twitterCheckTask, updateDdnsTask, cameraShotTask, uploadPictureTask,
-            };
         }
 
         static void Main(string[] args)
@@ -80,11 +78,11 @@ namespace Shanghai
                 {
                     InitializeSystems();
                     {
-                        var taskServer = new TaskServer(MaxTasks, HeartBeatSec);
-                        TaskParameter[] tasks = SetupTasks(bootMsg);
+                        var taskServer = new TaskServer();
+                        SetupTasks(taskServer, bootMsg);
 
                         Logger.Log(LogLevel.Info, "Task server start");
-                        ServerResult result = taskServer.Run(tasks);
+                        ServerResult result = taskServer.Run();
                         Logger.Log(LogLevel.Info, "Task server exit");
 
                         bool exit;
@@ -121,7 +119,6 @@ namespace Shanghai
                     Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
-                    ConfigurationManager.RefreshSection("AppSettings");
                     bootMsg = "Reboot...";
                 }
             }
