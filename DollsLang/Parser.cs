@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DollsLang
 {
-    class Parser
+    public class Parser
     {
         private List<Token> tokenList;
         private int readPtr;
