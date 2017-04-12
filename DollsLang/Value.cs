@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
-
-namespace DollsLang
+﻿namespace DollsLang
 {
     public enum ValueType
     {
