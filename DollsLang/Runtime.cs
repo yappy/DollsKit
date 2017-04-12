@@ -6,12 +6,10 @@ namespace DollsLang
     public class Runtime
     {
         private Dictionary<string, Value> VarTable;
-        private Dictionary<string, Func<Value[], Value>> FuncTable;
 
         public Runtime()
         {
             VarTable = new Dictionary<string, Value>();
-            FuncTable = new Dictionary<string, Func<Value[], Value>>();
         }
 
         public void LoadDefaultFunctions()
@@ -22,7 +20,7 @@ namespace DollsLang
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
         {
-            FuncTable[funcName] = func;
+            VarTable[funcName] = new NativeFunctionValue(func);
         }
 
         public void Execute(AstProgram program)
@@ -37,23 +35,6 @@ namespace DollsLang
         {
             switch (stat.Type)
             {
-                case NodeType.ASSIGN:
-                    {
-                        var node = (AstAssign)stat;
-                        Assign(node.VariableName, EvalExpression(node.Expression));
-                    }
-                    break;
-                case NodeType.FUNCCALL:
-                    {
-                        var node = (AstFuncCall)stat;
-                        var args = new List<Value>(node.ExpressionList.Count);
-                        foreach (var expr in node.ExpressionList)
-                        {
-                            args.Add(EvalExpression(expr));
-                        }
-                        CallFunction(node, node.FuncName, args.ToArray());
-                    }
-                    break;
                 case NodeType.IF:
                     {
                         var node = (AstIf)stat;
@@ -67,7 +48,11 @@ namespace DollsLang
                     }
                     break;
                 default:
-                    throw new FatalLangException();
+                    {
+                        var node = (AstExpression)stat;
+                        EvalExpression(node);
+                    }
+                    break;
             }
         }
 
@@ -76,17 +61,13 @@ namespace DollsLang
             VarTable[varName] = value;
         }
 
-        private Value CallFunction(AstNode at, string funcName, Value[] args)
+        private Value CallFunction(AstNode at, Value funcValue, Value[] args)
         {
-            Func<Value[], Value> func;
-            if (FuncTable.TryGetValue(funcName, out func))
+            if (funcValue.Type != ValueType.FUNCTION)
             {
-                return FuncTable[funcName](args);
+                throw CreateRuntimeError(at, "Not a function: " + funcValue.ToString());
             }
-            else
-            {
-                throw CreateRuntimeError(at, "Function not found: " + funcName);
-            }
+            return ((FunctionValue)funcValue).Call(args);
         }
 
         private void ExecuteIf(List<AstIf.CondAndBody> list)
@@ -107,6 +88,7 @@ namespace DollsLang
                 {
                     ExecuteStatement(stat);
                 }
+                break;
             }
         }
 
@@ -147,6 +129,24 @@ namespace DollsLang
                     {
                         var node = (AstOperation)expr;
                         return EvalOperation(node);
+                    }
+                case NodeType.ASSIGN:
+                    {
+                        var node = (AstAssign)expr;
+                        Value value = EvalExpression(node.Expression);
+                        Assign(node.VariableName, value);
+                        return value;
+                    }
+                case NodeType.FUNCCALL:
+                    {
+                        var node = (AstFuncCall)expr;
+                        var funcValue = EvalExpression(node.Func);
+                        var args = new List<Value>(node.ExpressionList.Count);
+                        foreach (var arg in node.ExpressionList)
+                        {
+                            args.Add(EvalExpression(arg));
+                        }
+                        return CallFunction(node, funcValue, args.ToArray());
                     }
                 default:
                     throw new FatalLangException();
@@ -311,7 +311,7 @@ namespace DollsLang
 
         private Exception CreateRuntimeError(AstNode at, string message = "")
         {
-            return new Exception(string.Format("Runtime Error at line {0}, column {1} {2}",
+            return new RuntimeLangException(string.Format("Runtime Error at line {0}, column {1} {2}",
                 at.Line, at.Column, message));
         }
 

@@ -28,6 +28,19 @@ namespace DollsLang
         { }
     }
 
+    public class SyntaxLangException : Exception
+    {
+        public SyntaxLangException() : this("Syntax error") { }
+
+        public SyntaxLangException(string message)
+            : base(message)
+        { }
+
+        public SyntaxLangException(string message, Exception inner)
+            : base(message, inner)
+        { }
+    }
+
     public class RuntimeLangException : Exception
     {
         public RuntimeLangException() : this("Runtime error") { }

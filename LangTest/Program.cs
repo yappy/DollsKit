@@ -10,25 +10,27 @@ namespace LangTest
         {
             var lexer = new Lexer();
 
-            string test1 = "t = 3 s = 3.14 u = 1e10\n";
-            test1 += "x = 5 + t * -2 \n";
-            test1 += "s = \"this is string\" \n";
-            test1 += "p(nil) p(false) p(true)\n";
-            test1 += "print(t x s) \n";
-            test1 += "if(x>0){print(1)}elif(x<-10){print(2)}else{print(3)}\n";
-            test1 += "i=5 while(i>0){print(i) i=i-1}\n";
+            string test1 = @"
+a = 3
+b = c = 3.14
+x = 1.0 y = 2.0
+e = 1e-15
+s = ""this is \""string\""""
 
-            StringBuilder test2 = new StringBuilder("a=");
-            const int depth = 100;
-            for (int i = 0; i < depth; i++)
-            {
-                test2.Append('(');
-            }
-            test2.Append('1');
-            for (int i = 0; i < depth; i++)
-            {
-                test2.Append(')');
-            }
+p(nil) p(false) p(true)
+print(a b c)
+print(x y e)
+print(s)
+
+if(x>0){print(1)}elif(x<-10){print(2)}else{print(3)}
+
+while (y - x > e) {
+  m = (y + x) / 2
+  if (m * m > 2) { y = m }
+  else { x = m }
+}
+p(m)
+";
 
             var tokenList = lexer.Process(test1);
             foreach (var token in tokenList)
@@ -46,12 +48,6 @@ namespace LangTest
             var runtime = new Runtime();
             runtime.LoadDefaultFunctions();
             runtime.Execute(program);
-
-            tokenList = lexer.Process(test2.ToString());
-            program = parser.Parse(tokenList);
-            buf.Clear();
-            program.Print(buf, 0);
-            Console.WriteLine(buf);
 
             Console.Read();
         }
