@@ -1,8 +1,10 @@
-﻿namespace DollsLang
+﻿using System;
+
+namespace DollsLang
 {
     public enum ValueType
     {
-        NIL, BOOL, INT, FLOAT, STRING,
+        NIL, BOOL, INT, FLOAT, STRING, FUNCTION,
     }
 
     public abstract class Value
@@ -215,6 +217,51 @@
         public override string ToString()
         {
             return RawValue;
+        }
+    }
+
+    public abstract class FunctionValue : Value
+    {
+        public FunctionValue()
+            : base(ValueType.FUNCTION)
+        { }
+
+        public abstract Value Call(Value[] args);
+    }
+
+    public class NativeFunctionValue : FunctionValue
+    {
+        public Func<Value[], Value> NativeFunc { get; private set; }
+
+        public NativeFunctionValue(Func<Value[], Value> value)
+            : base()
+        {
+            NativeFunc = value;
+        }
+
+        public override Value Call(Value[] args)
+        {
+            return NativeFunc(args);
+        }
+
+        public override bool ToBool()
+        {
+            return true;
+        }
+
+        public override int ToInt()
+        {
+            throw new RuntimeLangException("Cannot convert function to int");
+        }
+
+        public override double ToFloat()
+        {
+            throw new RuntimeLangException("Cannot convert function to float");
+        }
+
+        public override string ToString()
+        {
+            return "<FUNC>";
         }
     }
 }

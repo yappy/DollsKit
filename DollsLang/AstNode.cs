@@ -3,7 +3,6 @@ using System.Text;
 
 namespace DollsLang
 {
-
     public enum NodeType
     {
         PROGRAM,
@@ -70,7 +69,7 @@ namespace DollsLang
         { }
     }
 
-    public abstract class AstExpression : AstNode
+    public abstract class AstExpression : AstStatement
     {
         protected AstExpression(Token from, NodeType type)
             : base(from, type)
@@ -90,55 +89,6 @@ namespace DollsLang
         protected override void PrintChildren(StringBuilder buf, int depth)
         {
             foreach (var child in Statements)
-            {
-                child.Print(buf, depth);
-            }
-        }
-    }
-
-    class AstAssign : AstStatement
-    {
-        public string VariableName { get; private set; }
-        public AstExpression Expression { get; private set; }
-
-        public AstAssign(Token from, string variableName, AstExpression expression)
-            : base(from, NodeType.ASSIGN)
-        {
-            VariableName = variableName;
-            Expression = expression;
-        }
-
-        public override string ToString()
-        {
-            return base.ToString() + " " + VariableName;
-        }
-
-        protected override void PrintChildren(StringBuilder buf, int depth)
-        {
-            Expression.Print(buf, depth);
-        }
-    }
-
-    class AstFuncCall : AstStatement
-    {
-        public string FuncName { get; private set; }
-        public List<AstExpression> ExpressionList { get; private set; }
-
-        public AstFuncCall(Token from, string funcName, List<AstExpression> expressionList)
-            : base(from, NodeType.FUNCCALL)
-        {
-            FuncName = funcName;
-            ExpressionList = expressionList;
-        }
-
-        public override string ToString()
-        {
-            return base.ToString() + " " + FuncName;
-        }
-
-        protected override void PrintChildren(StringBuilder buf, int depth)
-        {
-            foreach (var child in ExpressionList)
             {
                 child.Print(buf, depth);
             }
@@ -234,6 +184,51 @@ namespace DollsLang
         protected override void PrintChildren(StringBuilder buf, int depth)
         {
             foreach (var child in Operands)
+            {
+                child.Print(buf, depth);
+            }
+        }
+    }
+
+    class AstAssign : AstExpression
+    {
+        public string VariableName { get; private set; }
+        public AstExpression Expression { get; private set; }
+
+        public AstAssign(Token from, string variableName, AstExpression expression)
+            : base(from, NodeType.ASSIGN)
+        {
+            VariableName = variableName;
+            Expression = expression;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " + VariableName;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            Expression.Print(buf, depth);
+        }
+    }
+
+    class AstFuncCall : AstExpression
+    {
+        public AstExpression Func { get; private set; }
+        public List<AstExpression> ExpressionList { get; private set; }
+
+        public AstFuncCall(Token from, AstExpression func, List<AstExpression> expressionList)
+            : base(from, NodeType.FUNCCALL)
+        {
+            Func = func;
+            ExpressionList = expressionList;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            Func.Print(buf, depth);
+            foreach (var child in ExpressionList)
             {
                 child.Print(buf, depth);
             }

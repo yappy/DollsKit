@@ -34,68 +34,21 @@ namespace DollsLang
         }
 
         /*
-         * Statement ::= Assign
-         * Statement ::= FuncCall
          * Statement ::= IfElifElse
          * Statement ::= While
+         * Statement ::= Expression
          */
         private AstStatement Statement()
         {
             switch (Peek(0))
             {
-                case TokenType.ID:
-                    switch (Peek(1))
-                    {
-                        case TokenType.ASSIGN:
-                            return Assign();
-                        case TokenType.LPAREN:
-                            return FuncCall();
-                        default:
-                            throw CreateSyntaxError();
-                    }
                 case TokenType.IF:
                     return IfElifElse();
                 case TokenType.WHILE:
                     return WhileLoop();
                 default:
-                    throw CreateSyntaxError();
+                    return Expression();
             }
-        }
-
-        /*
-         * Assign ::= <ID> <ASSIGN> Expression
-         */
-        private AstAssign Assign()
-        {
-            Token idToken = Next(TokenType.ID);
-            string varName = idToken.Text;
-            Next(TokenType.ASSIGN);
-            AstExpression expr = Expression();
-
-            return new AstAssign(idToken, varName, expr);
-        }
-
-        /*
-         * FuncCall ::= <ID> <LPAREN> ExpressionList <RPAREN>
-         * ExpressionList ::= (Expression <COMMA>?)*
-         */
-        private AstFuncCall FuncCall()
-        {
-            Token idToken = Next(TokenType.ID);
-            string funcName = idToken.Text;
-            Next(TokenType.LPAREN);
-            var exprList = new List<AstExpression>();
-            while (Peek() != TokenType.RPAREN)
-            {
-                exprList.Add(Expression());
-                if (Peek() == TokenType.COMMA)
-                {
-                    Next(TokenType.COMMA);
-                }
-            }
-            Next(TokenType.RPAREN);
-
-            return new AstFuncCall(idToken, funcName, exprList);
         }
 
         /*
@@ -182,7 +135,28 @@ namespace DollsLang
          */
         private AstExpression Expression()
         {
-            return Or();
+            return Assign();
+        }
+
+        /*
+         * Expression ::= <ID> <ASSIGN> Expression
+         * Expression ::= Or
+         */
+        private AstExpression Assign()
+        {
+            if (Peek(0) == TokenType.ID && Peek(1) == TokenType.ASSIGN)
+            {
+                Token idToken = Next(TokenType.ID);
+                string varName = idToken.Text;
+                Next(TokenType.ASSIGN);
+                AstExpression expr = Expression();
+
+                return new AstAssign(idToken, varName, expr);
+            }
+            else
+            {
+                return Or();
+            }
         }
 
         /*
@@ -328,7 +302,7 @@ namespace DollsLang
 
         /*
          * Unary ::= (<PLUS> | <MINUS>) Unary
-         * Unary ::= Value
+         * Unary ::= Postfixed
          */
         private AstExpression Unary()
         {
@@ -341,13 +315,40 @@ namespace DollsLang
                     Token minusToken = Next(TokenType.MINUS);
                     return new AstOperation(minusToken, OperationType.NEGATIVE, Unary());
                 default:
-                    return Value();
+                    return Postfixed();
             }
         }
 
         /*
+         * Postfixed ::= Value (<LPAREN> ExpressionList <RPAREN>)*
+         * ExpressionList ::= (Expression <COMMA>?)*
+         */
+        private AstExpression Postfixed()
+        {
+            var value = Value();
+            while (Peek() == TokenType.LPAREN)
+            {
+                var exprList = new List<AstExpression>();
+                Token lparenToken = Next(TokenType.LPAREN);
+                while (Peek() != TokenType.RPAREN)
+                {
+                    exprList.Add(Expression());
+                    if (Peek() == TokenType.COMMA)
+                    {
+                        Next(TokenType.COMMA);
+                    }
+                }
+                Next(TokenType.RPAREN);
+
+                value = new AstFuncCall(lparenToken, value, exprList);
+            }
+
+            return value;
+        }
+
+        /*
          * Value ::= <LPAREN> Expression <RPAREN>
-         * Value ::= <ID> | <STRING> | <NUMBER>
+         * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
          */
         private AstExpression Value()
         {
@@ -474,7 +475,8 @@ namespace DollsLang
         private Exception CreateSyntaxError(string message = "")
         {
             Token token = tokenList[readPtr];
-            return new Exception(string.Format("Syntax Error at line {0}, column {1} {2}",
+            return new SyntaxLangException(
+                string.Format("Syntax Error at line {0}, column {1} {2}",
                 token.Line, token.Column, message));
         }
     }
