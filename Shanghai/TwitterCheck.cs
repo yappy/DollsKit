@@ -1,9 +1,11 @@
 ﻿using Accord.Neuro.Networks;
 using CoreTweet;
+using DollsLang;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Shanghai
 {
@@ -107,13 +109,84 @@ namespace Shanghai
             return white;
         }
 
-        private long CheckMasterTimeline(string taskName)
+        private bool IsProgram(Status status)
+        {
+            return status.Entities.HashTags.Any((ent) => ent.Text == "人形語");
+        }
+
+        private string ExecuteProgram(TaskServer server, string src)
+        {
+            var lexer = new Lexer();
+            var parser = new Parser();
+            var timeoutSource = new CancellationTokenSource();
+            var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
+                server.CancelToken, timeoutSource.Token);
+            var runtime = new Runtime(linkedSource.Token);
+            string output = "";
+            try
+            {
+                var tokenList = lexer.Process(src);
+                var program = parser.Parse(tokenList);
+
+                runtime.LoadDefaultFunctions();
+                // TODO: timeout
+                timeoutSource.CancelAfter(1000);
+                output = runtime.Execute(program);
+            }
+            catch (LangException e)
+            {
+                output = e.Message;
+            }
+            catch (OperationCanceledException)
+            {
+                if (timeoutSource.IsCancellationRequested)
+                {
+                    // 実行タイムアウト
+                    output = "Time Limit Exceeded";
+                }
+                else
+                {
+                    // サーバに対するキャンセルは外へリスロー
+                    throw;
+                }
+            }
+            return output;
+        }
+
+        private long CheckMasterTimeline(TaskServer server, string taskName)
         {
             const int SearchCount = 200;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             long nextSinceId = 0;
             var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
+
+            // プログラム判定
+            foreach (var status in timeline)
+            {
+                // リツイートは除外
+                if (status.RetweetedStatus != null)
+                {
+                    continue;
+                }
+                if (IsProgram(status))
+                {
+                    Logger.Log(LogLevel.Info, "[{0}] Find program: @{1} - {2}",
+                        taskName, status.User.ScreenName, status.Text);
+                    string output = ExecuteProgram(server, status.Text);
+                    string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
+                    tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
+                    try
+                    {
+                        TwitterManager.Update(tweet, status.Id);
+                        nextSinceId = Math.Max(status.Id, nextSinceId);
+                    }
+                    catch (TwitterException e)
+                    {
+                        Logger.Log(LogLevel.Error, e.Message);
+                    }
+                }
+            }
 
             // 判定器を使う
             if (DlNetwork != null)
@@ -251,7 +324,7 @@ namespace Shanghai
             }
             // リプライしたIDの最大値を次の sinceId とする
             long nextSinceId = 0;
-            nextSinceId = Math.Max(CheckMasterTimeline(taskName), nextSinceId);
+            nextSinceId = Math.Max(CheckMasterTimeline(server, taskName), nextSinceId);
             nextSinceId = Math.Max(CheckMentionTimeline(taskName), nextSinceId);
             if (nextSinceId > 0)
             {
