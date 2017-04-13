@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace DollsLang
 {
     public class Runtime
     {
         private Dictionary<string, Value> VarTable;
+        private CancellationToken Cancel;
 
-        public Runtime()
+        public Runtime(CancellationToken cancel)
         {
             VarTable = new Dictionary<string, Value>();
+            Cancel = cancel;
         }
 
         public void LoadDefaultFunctions()
@@ -25,8 +28,16 @@ namespace DollsLang
 
         public void Execute(AstProgram program)
         {
-            foreach (var stat in program.Statements)
+            ExecuteStatementList(program.Statements);
+        }
+
+        private void ExecuteStatementList(List<AstStatement> statList)
+        {
+            // for 0-length list
+            Cancel.ThrowIfCancellationRequested();
+            foreach (var stat in statList)
             {
+                Cancel.ThrowIfCancellationRequested();
                 ExecuteStatement(stat);
             }
         }
@@ -84,10 +95,7 @@ namespace DollsLang
                     }
                 }
                 // Execute block and break
-                foreach (var stat in condBody.Body)
-                {
-                    ExecuteStatement(stat);
-                }
+                ExecuteStatementList(condBody.Body);
                 break;
             }
         }
@@ -96,10 +104,7 @@ namespace DollsLang
         {
             while (EvalExpression(cond).ToBool())
             {
-                foreach (var stat in body)
-                {
-                    ExecuteStatement(stat);
-                }
+                ExecuteStatementList(body);
             }
         }
 
