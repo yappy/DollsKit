@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Web;
 
 namespace Shanghai
 {
@@ -171,10 +172,12 @@ namespace Shanghai
                 }
                 if (IsProgram(status))
                 {
+                    string src = HttpUtility.HtmlDecode(status.Text);
                     Logger.Log(LogLevel.Info, "[{0}] Find program: @{1} - {2}",
-                        taskName, status.User.ScreenName, status.Text);
-                    string output = ExecuteProgram(server, status.Text);
+                        taskName, status.User.ScreenName, src);
+                    string output = ExecuteProgram(server, src);
                     string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
+                    // TODO max_tweet
                     tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
                     try
                     {
