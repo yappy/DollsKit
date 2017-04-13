@@ -160,7 +160,8 @@ namespace Shanghai
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             long nextSinceId = 0;
-            var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(count: SearchCount);
+            var timeline = TwitterManager.MasterTokens.Statuses.HomeTimeline(
+                count: SearchCount, since_id: SinceId);
 
             // プログラム判定
             foreach (var status in timeline)
