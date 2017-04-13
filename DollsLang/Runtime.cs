@@ -1,18 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 
 namespace DollsLang
 {
     public class Runtime
     {
-        private Dictionary<string, Value> VarTable;
+        private const int OutputSize = 140;
+
         private CancellationToken Cancel;
+        private Dictionary<string, Value> VarTable;
+        private StringBuilder OutputBuffer;
 
         public Runtime(CancellationToken cancel)
         {
             VarTable = new Dictionary<string, Value>();
             Cancel = cancel;
+            OutputBuffer = new StringBuilder(OutputSize);
         }
 
         public void LoadDefaultFunctions()
@@ -26,9 +31,11 @@ namespace DollsLang
             VarTable[funcName] = new NativeFunctionValue(func);
         }
 
-        public void Execute(AstProgram program)
+        public string Execute(AstProgram program)
         {
+            OutputBuffer.Clear();
             ExecuteStatementList(program.Statements);
+            return OutputBuffer.ToString();
         }
 
         private void ExecuteStatementList(List<AstStatement> statList)
@@ -327,12 +334,13 @@ namespace DollsLang
             {
                 if (!first)
                 {
-                    Console.Write(' ');
+                    OutputBuffer.Append(' ');
                 }
                 first = false;
-                Console.Write(value.ToString());
+                OutputBuffer.Append(value.ToString());
             }
-            Console.WriteLine();
+            OutputBuffer.Append('\n');
+            OutputBuffer.Length = Math.Min(OutputBuffer.Length, OutputSize);
 
             return NilValue.Nil;
         }

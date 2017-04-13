@@ -100,6 +100,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DollsLang\DollsLang.csproj">
+      <Project>{b83c6de2-f2dd-40a1-a4f3-020c2bce6fdd}</Project>
+      <Name>DollsLang</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DollsLib\DollsLib.csproj">
       <Project>{251a5ced-d6fb-41f8-935d-9cccdfca4dd4}</Project>
       <Name>DollsLib</Name>

@@ -2,7 +2,20 @@
 
 namespace DollsLang
 {
-    public class FatalLangException : Exception
+    public class LangException : Exception
+    {
+        public LangException() : this("Language error") { }
+
+        public LangException(string message)
+            : base(message)
+        { }
+
+        public LangException(string message, Exception inner)
+            : base(message, inner)
+        { }
+    }
+
+    public class FatalLangException : LangException
     {
         public FatalLangException() : this("Language system fatal error") { }
 
@@ -15,7 +28,7 @@ namespace DollsLang
         { }
     }
 
-    public class LexicalLangException : Exception
+    public class LexicalLangException : LangException
     {
         public LexicalLangException() : this("Lexical error") { }
 
@@ -28,7 +41,7 @@ namespace DollsLang
         { }
     }
 
-    public class SyntaxLangException : Exception
+    public class SyntaxLangException : LangException
     {
         public SyntaxLangException() : this("Syntax error") { }
 
@@ -41,7 +54,7 @@ namespace DollsLang
         { }
     }
 
-    public class RuntimeLangException : Exception
+    public class RuntimeLangException : LangException
     {
         public RuntimeLangException() : this("Runtime error") { }
 
