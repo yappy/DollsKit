@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
 using DollsLang;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LangTest
 {
@@ -30,6 +32,8 @@ while (y - x > e) {
   else { x = m }
 }
 p(m)
+
+while (true) {}
 ";
 
             var tokenList = lexer.Process(test1);
@@ -45,9 +49,18 @@ p(m)
             program.Print(buf, 0);
             Console.WriteLine(buf);
 
-            var runtime = new Runtime();
+            var cancelSource = new CancellationTokenSource();
+            var runtime = new Runtime(cancelSource.Token);
             runtime.LoadDefaultFunctions();
-            runtime.Execute(program);
+            cancelSource.CancelAfter(1000);
+            try
+            {
+                runtime.Execute(program);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("cancel!");
+            }
 
             Console.Read();
         }
