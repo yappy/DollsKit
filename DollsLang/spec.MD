@@ -86,7 +86,10 @@ e以下は10のn乗を表します。
 
 ## If-Statement
 if文。
+以下の連結。
 * "if" "(" Expression ")" Statement-List
+* ("elif" "(" Expression ")" Statement-List)*
+* ("else" Statement-List)?
 
 ## While-Statement
 while文。
