@@ -31,11 +31,9 @@ while (y - x > e) {
 }
 p(m)
 
-f = |g h i|{
-  p(i h g)
-  ""OK""
-}
-p(f(1 2 3))
+for (1 10 |i|{
+  p(i)
+})
 ";
 
             var tokenList = lexer.Process(test1);
