@@ -321,7 +321,7 @@ namespace DollsLang
 
         /*
          * Postfixed ::= Value (<LPAREN> ExpressionList <RPAREN>)*
-         * ExpressionList ::= (Expression <COMMA>?)*
+         * ExpressionList ::= Expression*
          */
         private AstExpression Postfixed()
         {
@@ -333,10 +333,6 @@ namespace DollsLang
                 while (Peek() != TokenType.RPAREN)
                 {
                     exprList.Add(Expression());
-                    if (Peek() == TokenType.COMMA)
-                    {
-                        Next(TokenType.COMMA);
-                    }
                 }
                 Next(TokenType.RPAREN);
 
