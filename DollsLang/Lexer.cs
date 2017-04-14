@@ -30,8 +30,8 @@ namespace DollsLang
             targetList.Add(new Target { regex = new Regex(@"\G=="), type = TokenType.EQ });
             targetList.Add(new Target { regex = new Regex(@"\G!="), type = TokenType.NE });
 
-            targetList.Add(new Target { regex = new Regex(@"\G\&"), type = TokenType.AND });
-            targetList.Add(new Target { regex = new Regex(@"\G\|"), type = TokenType.OR });
+            targetList.Add(new Target { regex = new Regex(@"\G\&\&"), type = TokenType.AND });
+            targetList.Add(new Target { regex = new Regex(@"\G\|\|"), type = TokenType.OR });
             targetList.Add(new Target { regex = new Regex(@"\G\!"), type = TokenType.NOT });
 
             targetList.Add(new Target { regex = new Regex(@"\G\="), type = TokenType.ASSIGN });
