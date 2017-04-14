@@ -11,9 +11,9 @@ namespace DollsLang
             public TokenType type;
         }
 
-        private readonly char lineComment = '#';
-        private readonly Regex skipRegex = new Regex(@"\G\s*");
-        private readonly List<Target> targetList = new List<Target>();
+        private static readonly char lineComment = '#';
+        private static readonly Regex skipRegex = new Regex(@"\G\s*");
+        private static readonly List<Target> targetList = new List<Target>();
 
         public Lexer()
         {
@@ -39,7 +39,7 @@ namespace DollsLang
             targetList.Add(new Target { regex = new Regex(@"\G\)"), type = TokenType.RPAREN });
             targetList.Add(new Target { regex = new Regex(@"\G\{"), type = TokenType.LBRACE });
             targetList.Add(new Target { regex = new Regex(@"\G\}"), type = TokenType.RBRACE });
-            targetList.Add(new Target { regex = new Regex(@"\G\,"), type = TokenType.COMMA });
+            targetList.Add(new Target { regex = new Regex(@"\G\|"), type = TokenType.BAR });
 
             string idPat = @"\G[_a-zA-Z][_a-zA-Z0-9]*";
             targetList.Add(new Target { regex = new Regex(idPat), type = TokenType.ID });
@@ -135,8 +135,6 @@ namespace DollsLang
                     return TokenType.ELSE;
                 case "while":
                     return TokenType.WHILE;
-                case "for":
-                    return TokenType.FOR;
                 default:
                     return orgType;
             }

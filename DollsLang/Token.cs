@@ -3,9 +3,9 @@
     public enum TokenType
     {
         EOF,
-        IF, ELIF, ELSE, WHILE, FOR,
+        IF, ELIF, ELSE, WHILE,
         ASSIGN,
-        LPAREN, RPAREN, LBRACE, RBRACE, COMMA,
+        LPAREN, RPAREN, LBRACE, RBRACE, BAR,
         PLUS, MINUS, MUL, DIV, MOD,
         LT, LE, GT, GE, EQ, NE,
         AND, OR, NOT,
