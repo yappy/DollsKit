@@ -262,13 +262,13 @@ namespace DollsLang
     public class UserFunctionValue : FunctionValue
     {
         public List<string> ParamList { get; private set; }
-        public AstNode RawNode { get; private set; }
+        public List<AstStatement> Body { get; private set; }
 
-        public UserFunctionValue(List<string> paramList, AstNode rawNode)
+        public UserFunctionValue(List<string> paramList, List<AstStatement> body)
             : base(ValueType.UserFunction)
         {
             ParamList = paramList;
-            RawNode = rawNode;
+            Body = body;
         }
 
         public override string ToString()
