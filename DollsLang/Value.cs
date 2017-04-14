@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace DollsLang
 {
     public enum ValueType
     {
-        NIL, BOOL, INT, FLOAT, STRING, FUNCTION,
+        Nil, Bool, Int, Float, String, NativeFunction, UserFunction,
     }
 
     public abstract class Value
@@ -33,7 +34,7 @@ namespace DollsLang
         }
 
         private NilValue()
-            : base(ValueType.NIL)
+            : base(ValueType.Nil)
         { }
 
         public override bool ToBool()
@@ -85,7 +86,7 @@ namespace DollsLang
         }
 
         private BoolValue(bool b)
-            : base(ValueType.BOOL)
+            : base(ValueType.Bool)
         {
             RawValue = b;
         }
@@ -116,7 +117,7 @@ namespace DollsLang
         public int RawValue { get; private set; }
 
         public IntValue(int value)
-            : base(ValueType.INT)
+            : base(ValueType.Int)
         {
             RawValue = value;
         }
@@ -147,7 +148,7 @@ namespace DollsLang
         public double RawValue { get; private set; }
 
         public FloatValue(double value)
-            : base(ValueType.FLOAT)
+            : base(ValueType.Float)
         {
             RawValue = value;
         }
@@ -178,7 +179,7 @@ namespace DollsLang
         public string RawValue { get; private set; }
 
         public StringValue(string value)
-            : base(ValueType.STRING)
+            : base(ValueType.String)
         {
             RawValue = value;
         }
@@ -222,27 +223,9 @@ namespace DollsLang
 
     public abstract class FunctionValue : Value
     {
-        public FunctionValue()
-            : base(ValueType.FUNCTION)
+        protected FunctionValue(ValueType type)
+            : base(type)
         { }
-
-        public abstract Value Call(Value[] args);
-    }
-
-    public class NativeFunctionValue : FunctionValue
-    {
-        public Func<Value[], Value> NativeFunc { get; private set; }
-
-        public NativeFunctionValue(Func<Value[], Value> value)
-            : base()
-        {
-            NativeFunc = value;
-        }
-
-        public override Value Call(Value[] args)
-        {
-            return NativeFunc(args);
-        }
 
         public override bool ToBool()
         {
@@ -258,10 +241,39 @@ namespace DollsLang
         {
             throw new RuntimeLangException("Cannot convert function to float");
         }
+    }
+
+    public class NativeFunctionValue : FunctionValue
+    {
+        public Func<Value[], Value> NativeFunc { get; private set; }
+
+        public NativeFunctionValue(Func<Value[], Value> value)
+            : base(ValueType.NativeFunction)
+        {
+            NativeFunc = value;
+        }
 
         public override string ToString()
         {
-            return "<FUNC>";
+            return "<NFUNC>";
+        }
+    }
+
+    public class UserFunctionValue : FunctionValue
+    {
+        public List<string> ParamList { get; private set; }
+        public AstNode RawNode { get; private set; }
+
+        public UserFunctionValue(List<string> paramList, AstNode rawNode)
+            : base(ValueType.UserFunction)
+        {
+            ParamList = paramList;
+            RawNode = rawNode;
+        }
+
+        public override string ToString()
+        {
+            return "<UFUNC>";
         }
     }
 }
