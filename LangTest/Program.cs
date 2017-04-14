@@ -24,8 +24,6 @@ print(a b c)
 print(x y e)
 print(s)
 
-if(x>0){print(1)}elif(x<-10){print(2)}else{print(3)}
-
 while (y - x > e) {
   m = (y + x) / 2
   if (m * m > 2) { y = m }
@@ -33,8 +31,9 @@ while (y - x > e) {
 }
 p(m)
 
-s = ""abcde""
-while (true) { s = s + s }
+f = |g h i|{
+  p(i h g)
+}
 ";
 
             var tokenList = lexer.Process(test1);

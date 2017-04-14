@@ -52,10 +52,27 @@ namespace DollsLang
         }
 
         /*
+         * Block ::= <LBRACE> Statement* <RBRACE>
+         */
+        private List<AstStatement> Block()
+        {
+            var statList = new List<AstStatement>();
+
+            Next(TokenType.LBRACE);
+            while (Peek() != TokenType.RBRACE)
+            {
+                statList.Add(Statement());
+            }
+            Next(TokenType.RBRACE);
+
+            return statList;
+        }
+
+        /*
          * IfElifElse ::= If Elif* Else?
-         * If ::= <IF> <LPAREN> Expression <RPAREN> <LBRACE> Statement* <RBRACE>
-         * Elif ::= <ELIF> <LPAREN> Expression <RPAREN> <LBRACE> Statement* <RBRACE>
-         * Else ::= <ELSE> <LBRACE> Statement* <RBRACE>
+         * If ::= <IF> <LPAREN> Expression <RPAREN> Block
+         * Elif ::= <ELIF> <LPAREN> Expression <RPAREN> Block
+         * Else ::= <ELSE> Block
          */
         private AstIf IfElifElse()
         {
@@ -66,13 +83,7 @@ namespace DollsLang
             Next(TokenType.LPAREN);
             AstExpression ifCond = Expression();
             Next(TokenType.RPAREN);
-            Next(TokenType.LBRACE);
-            var ifStatList = new List<AstStatement>();
-            while (Peek() != TokenType.RBRACE)
-            {
-                ifStatList.Add(Statement());
-            }
-            Next(TokenType.RBRACE);
+            var ifStatList = Block();
             condBodyList.Add(new AstIf.CondAndBody(ifCond, ifStatList));
 
             // Elif*
@@ -82,13 +93,7 @@ namespace DollsLang
                 Next(TokenType.LPAREN);
                 AstExpression elifCond = Expression();
                 Next(TokenType.RPAREN);
-                Next(TokenType.LBRACE);
-                var elifStatList = new List<AstStatement>();
-                while (Peek() != TokenType.RBRACE)
-                {
-                    elifStatList.Add(Statement());
-                }
-                Next(TokenType.RBRACE);
+                var elifStatList = Block();
                 condBodyList.Add(new AstIf.CondAndBody(elifCond, elifStatList));
             }
 
@@ -96,13 +101,7 @@ namespace DollsLang
             if (Peek() == TokenType.ELSE)
             {
                 Next(TokenType.ELSE);
-                Next(TokenType.LBRACE);
-                var elseStatList = new List<AstStatement>();
-                while (Peek() != TokenType.RBRACE)
-                {
-                    elseStatList.Add(Statement());
-                }
-                Next(TokenType.RBRACE);
+                var elseStatList = Block();
                 condBodyList.Add(new AstIf.CondAndBody(null, elseStatList));
             }
 
@@ -344,6 +343,8 @@ namespace DollsLang
 
         /*
          * Value ::= <LPAREN> Expression <RPAREN>
+         * Value ::= Function
+         * Value ::= <NIL> | <FALSE> | <TRUE>
          * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
          */
         private AstExpression Value()
@@ -356,6 +357,9 @@ namespace DollsLang
                     Next(TokenType.LPAREN);
                     result = Expression();
                     Next(TokenType.RPAREN);
+                    break;
+                case TokenType.BAR:
+                    result = Function();
                     break;
                 case TokenType.NIL:
                     token = Next(TokenType.NIL);
@@ -392,6 +396,25 @@ namespace DollsLang
                     throw CreateSyntaxError();
             }
             return result;
+        }
+
+        /*
+         * Function ::= <BAR> <ID>* <BAR> Block
+         */
+        private AstConstant Function()
+        {
+            var paramList = new List<string>();
+            Token startingToken = Next(TokenType.BAR);
+            while (Peek() != TokenType.BAR)
+            {
+                paramList.Add(Next(TokenType.ID).Text);
+            }
+            Next(TokenType.BAR);
+
+            var body = Block();
+
+            return new AstConstant(startingToken,
+                new UserFunctionValue(paramList, body));
         }
 
         private TokenType Peek(int offset = 0)
