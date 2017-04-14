@@ -33,7 +33,8 @@ while (y - x > e) {
 }
 p(m)
 
-while (true) {}
+s = ""abcde""
+while (true) { s = s + s }
 ";
 
             var tokenList = lexer.Process(test1);
@@ -60,6 +61,10 @@ while (true) {}
             catch (OperationCanceledException)
             {
                 Console.WriteLine("cancel!");
+            }
+            catch (LangException e)
+            {
+                Console.WriteLine(e);
             }
 
             Console.Read();

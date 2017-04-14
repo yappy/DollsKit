@@ -56,6 +56,9 @@ namespace DollsLang
 
     public class RuntimeLangException : LangException
     {
+        public int Line { get; set; } = -1;
+        public int Column { get; set; } = -1;
+
         public RuntimeLangException() : this("Runtime error") { }
 
         public RuntimeLangException(string message)
@@ -65,5 +68,9 @@ namespace DollsLang
         public RuntimeLangException(string message, Exception inner)
             : base(message, inner)
         { }
+
+        public override string Message => string.Format(
+            "Runtime Error at line {0}, column {1} {2}",
+            Line, Column, base.Message);
     }
 }
