@@ -7,7 +7,8 @@ namespace DollsLang
 {
     public class Runtime
     {
-        private const int OutputSize = 140;
+        private static readonly int OutputSize = 140;
+        private static readonly int StringMax = 256;
 
         private CancellationToken Cancel;
         private Dictionary<string, Value> VarTable;
@@ -211,7 +212,12 @@ namespace DollsLang
                 case OperationType.ADD:
                     if (args[0].Type == ValueType.STRING || args[1].Type == ValueType.STRING)
                     {
-                        return new StringValue(args[0].ToString() + args[1].ToString());
+                        var result = args[0].ToString() + args[1].ToString();
+                        if (result.Length > StringMax)
+                        {
+                            throw CreateRuntimeError(node, "String size over");
+                        }
+                        return new StringValue(result);
                     }
                     else if (args[0].Type == ValueType.FLOAT || args[1].Type == ValueType.FLOAT)
                     {
