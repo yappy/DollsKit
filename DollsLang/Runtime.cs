@@ -13,6 +13,8 @@ namespace DollsLang
         private CancellationToken Cancel;
         private Dictionary<string, Value> VarTable;
         private StringBuilder OutputBuffer;
+        // Error position info
+        private AstNode LastRecord;
 
         public Runtime(CancellationToken cancel)
         {
@@ -35,8 +37,21 @@ namespace DollsLang
         public string Execute(AstProgram program)
         {
             OutputBuffer.Clear();
-            ExecuteStatementList(program.Statements);
-            return OutputBuffer.ToString();
+            LastRecord = null;
+            try
+            {
+                ExecuteStatementList(program.Statements);
+                return OutputBuffer.ToString();
+            }
+            catch (RuntimeLangException e)
+            {
+                if (LastRecord != null)
+                {
+                    e.Line = LastRecord.Line;
+                    e.Column = LastRecord.Column;
+                }
+                throw;
+            }
         }
 
         private void ExecuteStatementList(List<AstStatement> statList)
@@ -45,13 +60,14 @@ namespace DollsLang
             Cancel.ThrowIfCancellationRequested();
             foreach (var stat in statList)
             {
-                Cancel.ThrowIfCancellationRequested();
                 ExecuteStatement(stat);
+                Cancel.ThrowIfCancellationRequested();
             }
         }
 
         private void ExecuteStatement(AstStatement stat)
         {
+            LastRecord = stat;
             switch (stat.Type)
             {
                 case NodeType.IF:
@@ -63,7 +79,7 @@ namespace DollsLang
                 case NodeType.WHILE:
                     {
                         var node = (AstWhile)stat;
-                        executeWhile(node.Cond, node.Body);
+                        ExecuteWhile(node.Cond, node.Body);
                     }
                     break;
                 default:
@@ -80,11 +96,11 @@ namespace DollsLang
             VarTable[varName] = value;
         }
 
-        private Value CallFunction(AstNode at, Value funcValue, Value[] args)
+        private Value CallFunction(Value funcValue, Value[] args)
         {
             if (funcValue.Type != ValueType.FUNCTION)
             {
-                throw CreateRuntimeError(at, "Not a function: " + funcValue.ToString());
+                throw new RuntimeLangException("Not a function: " + funcValue.ToString());
             }
             return ((FunctionValue)funcValue).Call(args);
         }
@@ -108,7 +124,7 @@ namespace DollsLang
             }
         }
 
-        private void executeWhile(AstExpression cond, List<AstStatement> body)
+        private void ExecuteWhile(AstExpression cond, List<AstStatement> body)
         {
             while (EvalExpression(cond).ToBool())
             {
@@ -118,6 +134,7 @@ namespace DollsLang
 
         private Value EvalExpression(AstExpression expr)
         {
+            LastRecord = expr;
             switch (expr.Type)
             {
                 case NodeType.CONSTANT:
@@ -159,7 +176,7 @@ namespace DollsLang
                         {
                             args.Add(EvalExpression(arg));
                         }
-                        return CallFunction(node, funcValue, args.ToArray());
+                        return CallFunction(funcValue, args.ToArray());
                     }
                 default:
                     throw new FatalLangException();
@@ -168,8 +185,12 @@ namespace DollsLang
 
         private Value EvalOperation(AstOperation node)
         {
+            LastRecord = node;
+
             var args = new Value[node.Operands.Length];
             args[0] = EvalExpression(node.Operands[0]);
+
+            LastRecord = node;
 
             // short circuit
             switch (node.Operaton)
@@ -192,6 +213,8 @@ namespace DollsLang
             {
                 args[i] = EvalExpression(node.Operands[i]);
             }
+
+            LastRecord = node;
             switch (node.Operaton)
             {
                 case OperationType.NEGATIVE:
@@ -202,7 +225,7 @@ namespace DollsLang
                         case ValueType.FLOAT:
                             return new FloatValue(-args[0].ToFloat());
                         default:
-                            throw CreateRuntimeError(node,
+                            throw new RuntimeLangException(
                                 string.Format("Cannot apply {0} operator: {1}",
                                     node.Operaton, args[0].Type));
                     }
@@ -215,7 +238,7 @@ namespace DollsLang
                         var result = args[0].ToString() + args[1].ToString();
                         if (result.Length > StringMax)
                         {
-                            throw CreateRuntimeError(node, "String size over");
+                            throw new RuntimeLangException("String size over");
                         }
                         return new StringValue(result);
                     }
@@ -229,9 +252,9 @@ namespace DollsLang
                     }
                     else
                     {
-                        throw CreateRuntimeError(node, string.Format(
-                            "Cannot apply + operator: {0}, {1}",
-                            args[0].Type, args[1].Type));
+                        throw new RuntimeLangException(
+                            string.Format("Cannot apply + operator: {0}, {1}",
+                                args[0].Type, args[1].Type));
                     }
                 case OperationType.SUB:
                 case OperationType.MUL:
@@ -287,13 +310,13 @@ namespace DollsLang
                             case OperationType.DIV:
                                 if (rh == 0)
                                 {
-                                    throw CreateRuntimeError(node, "Divide by 0");
+                                    throw new RuntimeLangException("Divide by 0");
                                 }
                                 return new IntValue(lh / rh);
                             case OperationType.MOD:
                                 if (rh == 0)
                                 {
-                                    throw CreateRuntimeError(node, "Divide by 0");
+                                    throw new RuntimeLangException("Divide by 0");
                                 }
                                 return new IntValue(lh % rh);
                             case OperationType.LT:
@@ -314,9 +337,9 @@ namespace DollsLang
                     }
                     else
                     {
-                        throw CreateRuntimeError(node, string.Format(
-                            "Cannot apply {0} operator: {1}, {2}",
-                            node.Operaton, args[0].Type, args[1].Type));
+                        throw new RuntimeLangException(
+                            string.Format("Cannot apply {0} operator: {1}, {2}",
+                                node.Operaton, args[0].Type, args[1].Type));
                     }
                 // simply returns rh (short circuit passed)
                 case OperationType.AND:
@@ -325,12 +348,6 @@ namespace DollsLang
                     return args[1];
             }
             throw new FatalLangException();
-        }
-
-        private Exception CreateRuntimeError(AstNode at, string message = "")
-        {
-            return new RuntimeLangException(string.Format("Runtime Error at line {0}, column {1} {2}",
-                at.Line, at.Column, message));
         }
 
         private Value Print(Value[] args)
