@@ -54,18 +54,21 @@ namespace DollsLang
             }
         }
 
-        private void ExecuteStatementList(List<AstStatement> statList)
+        private Value ExecuteStatementList(List<AstStatement> statList)
         {
+            Value result = NilValue.Nil;
+
             // for 0-length list
             Cancel.ThrowIfCancellationRequested();
             foreach (var stat in statList)
             {
-                ExecuteStatement(stat);
+                result = ExecuteStatement(stat);
                 Cancel.ThrowIfCancellationRequested();
             }
+            return result;
         }
 
-        private void ExecuteStatement(AstStatement stat)
+        private Value ExecuteStatement(AstStatement stat)
         {
             LastRecord = stat;
             switch (stat.Type)
@@ -74,20 +77,19 @@ namespace DollsLang
                     {
                         var node = (AstIf)stat;
                         ExecuteIf(node.CondBobyList);
+                        return NilValue.Nil;
                     }
-                    break;
                 case NodeType.WHILE:
                     {
                         var node = (AstWhile)stat;
                         ExecuteWhile(node.Cond, node.Body);
+                        return NilValue.Nil;
                     }
-                    break;
                 default:
                     {
                         var node = (AstExpression)stat;
-                        EvalExpression(node);
+                        return EvalExpression(node);
                     }
-                    break;
             }
         }
 
@@ -143,7 +145,13 @@ namespace DollsLang
 
         private Value CallUserFunction(UserFunctionValue funcValue, params Value[] args)
         {
-            throw new FatalLangException("not implemented");
+            List<string> paramList = funcValue.ParamList;
+            int min = Math.Min(paramList.Count, args.Length);
+            for (int i = 0; i < min; i++)
+            {
+                Assign(paramList[i], args[i]);
+            }
+            return ExecuteStatementList(funcValue.Body);
         }
 
         private Value EvalExpression(AstExpression expr)

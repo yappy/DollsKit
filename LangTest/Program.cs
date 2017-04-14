@@ -33,7 +33,9 @@ p(m)
 
 f = |g h i|{
   p(i h g)
+  ""OK""
 }
+p(f(1 2 3))
 ";
 
             var tokenList = lexer.Process(test1);
@@ -55,7 +57,8 @@ f = |g h i|{
             cancelSource.CancelAfter(1000);
             try
             {
-                runtime.Execute(program);
+                string output = runtime.Execute(program);
+                Console.WriteLine(output);
             }
             catch (OperationCanceledException)
             {
