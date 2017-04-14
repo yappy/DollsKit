@@ -27,6 +27,7 @@ namespace DollsLang
         {
             LoadFunction("print", Print);
             LoadFunction("p", Print);
+            LoadFunction("for", For);
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
@@ -372,6 +373,16 @@ namespace DollsLang
             throw new FatalLangException();
         }
 
+        private Value GetParam(Value[] args, int index)
+        {
+            if (index >= args.Length)
+            {
+                throw new RuntimeLangException(
+                    string.Format("Parameter #{0} is required", index + 1));
+            }
+            return args[index];
+        }
+
         private Value Print(Value[] args)
         {
             bool first = true;
@@ -386,6 +397,22 @@ namespace DollsLang
             }
             OutputBuffer.Append('\n');
             OutputBuffer.Length = Math.Min(OutputBuffer.Length, OutputSize);
+
+            return NilValue.Nil;
+        }
+
+        private Value For(Value[] args)
+        {
+            int start = GetParam(args, 0).ToInt();
+            int end = GetParam(args, 1).ToInt();
+            Value func = GetParam(args, 2);
+
+            Value[] callArgs = new Value[1];
+            for (int i = start; i <= end; i++)
+            {
+                callArgs[0] = new IntValue(i);
+                CallFunction(func, callArgs);
+            }
 
             return NilValue.Nil;
         }
