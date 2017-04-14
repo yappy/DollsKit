@@ -91,20 +91,6 @@ namespace DollsLang
             }
         }
 
-        private void Assign(string varName, Value value)
-        {
-            VarTable[varName] = value;
-        }
-
-        private Value CallFunction(Value funcValue, Value[] args)
-        {
-            if (funcValue.Type != ValueType.FUNCTION)
-            {
-                throw new RuntimeLangException("Not a function: " + funcValue.ToString());
-            }
-            return ((FunctionValue)funcValue).Call(args);
-        }
-
         private void ExecuteIf(List<AstIf.CondAndBody> list)
         {
             foreach (var condBody in list)
@@ -130,6 +116,34 @@ namespace DollsLang
             {
                 ExecuteStatementList(body);
             }
+        }
+
+        private void Assign(string varName, Value value)
+        {
+            VarTable[varName] = value;
+        }
+
+        private Value CallFunction(Value funcValue, params Value[] args)
+        {
+            switch (funcValue.Type)
+            {
+                case ValueType.NativeFunction:
+                    return CallNativeFunction((NativeFunctionValue)funcValue, args);
+                case ValueType.UserFunction:
+                    return CallUserFunction((UserFunctionValue)funcValue, args);
+                default:
+                    throw new RuntimeLangException("Not a function: " + funcValue.ToString());
+            }
+        }
+
+        private Value CallNativeFunction(NativeFunctionValue funcValue, params Value[] args)
+        {
+            return funcValue.NativeFunc(args);
+        }
+
+        private Value CallUserFunction(UserFunctionValue funcValue, params Value[] args)
+        {
+            throw new FatalLangException("not implemented");
         }
 
         private Value EvalExpression(AstExpression expr)
@@ -220,9 +234,9 @@ namespace DollsLang
                 case OperationType.NEGATIVE:
                     switch (args[0].Type)
                     {
-                        case ValueType.INT:
+                        case ValueType.Int:
                             return new IntValue(-args[0].ToInt());
-                        case ValueType.FLOAT:
+                        case ValueType.Float:
                             return new FloatValue(-args[0].ToFloat());
                         default:
                             throw new RuntimeLangException(
@@ -233,7 +247,7 @@ namespace DollsLang
                     return BoolValue.Of(!args[0].ToBool());
 
                 case OperationType.ADD:
-                    if (args[0].Type == ValueType.STRING || args[1].Type == ValueType.STRING)
+                    if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
                     {
                         var result = args[0].ToString() + args[1].ToString();
                         if (result.Length > StringMax)
@@ -242,11 +256,11 @@ namespace DollsLang
                         }
                         return new StringValue(result);
                     }
-                    else if (args[0].Type == ValueType.FLOAT || args[1].Type == ValueType.FLOAT)
+                    else if (args[0].Type == ValueType.Float || args[1].Type == ValueType.Float)
                     {
                         return new FloatValue(args[0].ToFloat() + args[1].ToFloat());
                     }
-                    else if (args[0].Type == ValueType.INT || args[1].Type == ValueType.INT)
+                    else if (args[0].Type == ValueType.Int || args[1].Type == ValueType.Int)
                     {
                         return new IntValue(args[0].ToInt() + args[1].ToInt());
                     }
@@ -266,7 +280,7 @@ namespace DollsLang
                 case OperationType.GE:
                 case OperationType.EQ:
                 case OperationType.NE:
-                    if (args[0].Type == ValueType.FLOAT || args[1].Type == ValueType.FLOAT)
+                    if (args[0].Type == ValueType.Float || args[1].Type == ValueType.Float)
                     {
                         double lh = args[0].ToFloat();
                         double rh = args[1].ToFloat();
@@ -297,7 +311,7 @@ namespace DollsLang
                         }
 
                     }
-                    else if (args[0].Type == ValueType.INT || args[1].Type == ValueType.INT)
+                    else if (args[0].Type == ValueType.Int || args[1].Type == ValueType.Int)
                     {
                         int lh = args[0].ToInt();
                         int rh = args[1].ToInt();
