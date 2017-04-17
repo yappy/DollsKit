@@ -186,6 +186,9 @@ namespace Shanghai
                     string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
                     // TODO max_tweet
                     tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
+                    // @ と # は禁止する
+                    tweet.Replace('@', ' ');
+                    tweet.Replace('#', ' ');
                     try
                     {
                         TwitterManager.Update(tweet, status.Id);
