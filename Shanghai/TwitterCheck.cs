@@ -182,13 +182,16 @@ namespace Shanghai
                     string src = HttpUtility.HtmlDecode(status.Text);
                     Logger.Log(LogLevel.Info, "[{0}] Find program: @{1} - {2}",
                         taskName, status.User.ScreenName, src);
+
                     string output = ExecuteProgram(server, src);
+                    // @ と # は禁止する
+                    output = output.Replace('@', ' ');
+                    output = output.Replace('#', ' ');
+
+                    // リプライ先を付与した後文字数制限で切り詰める
                     string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
                     // TODO max_tweet
                     tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
-                    // @ と # は禁止する
-                    tweet.Replace('@', ' ');
-                    tweet.Replace('#', ' ');
                     try
                     {
                         TwitterManager.Update(tweet, status.Id);
