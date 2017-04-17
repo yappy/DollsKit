@@ -187,6 +187,9 @@ namespace Shanghai
                     // @ と # は禁止する
                     output = output.Replace('@', ' ');
                     output = output.Replace('#', ' ');
+                    // 全角も禁止する
+                    output = output.Replace('＠', ' ');
+                    output = output.Replace('＃', ' ');
 
                     // リプライ先を付与した後文字数制限で切り詰める
                     string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
