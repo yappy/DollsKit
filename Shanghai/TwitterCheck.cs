@@ -157,6 +157,7 @@ namespace Shanghai
         private long CheckMasterTimeline(TaskServer server, string taskName)
         {
             const int SearchCount = 200;
+            long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             long nextSinceId = 0;
@@ -166,6 +167,11 @@ namespace Shanghai
             // プログラム判定
             foreach (var status in timeline)
             {
+                // 自分のツイートには反応しない
+                if (status.User.Id == selfId)
+                {
+                    continue;
+                }
                 // リツイートは除外
                 if (status.RetweetedStatus != null)
                 {
