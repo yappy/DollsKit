@@ -5,11 +5,11 @@ namespace DollsLang
 {
     public enum NodeType
     {
-        PROGRAM,
-        ASSIGN,
-        FUNCCALL,
-        IF, WHILE,
-        OPERATION, VARIABLE, CONSTANT,
+        Program,
+        Assign,
+        FunctionCall, ConstructArray,
+        If, While,
+        Operation, Variable, Constant,
     }
 
     public enum OperationType
@@ -81,7 +81,7 @@ namespace DollsLang
         public List<AstStatement> Statements { get; private set; }
 
         public AstProgram(Token from, List<AstStatement> statements)
-            : base(from, NodeType.PROGRAM)
+            : base(from, NodeType.Program)
         {
             Statements = statements;
         }
@@ -113,7 +113,7 @@ namespace DollsLang
         public List<CondAndBody> CondBobyList { get; private set; }
 
         public AstIf(Token from, List<CondAndBody> condBodyList)
-            : base(from, NodeType.IF)
+            : base(from, NodeType.If)
         {
             CondBobyList = condBodyList;
         }
@@ -148,7 +148,7 @@ namespace DollsLang
         public List<AstStatement> Body { get; private set; }
 
         public AstWhile(Token from, AstExpression cond, List<AstStatement> body)
-            : base(from, NodeType.WHILE)
+            : base(from, NodeType.While)
         {
             Cond = cond;
             Body = body;
@@ -170,7 +170,7 @@ namespace DollsLang
         public AstExpression[] Operands;
 
         public AstOperation(Token from, OperationType operation, params AstExpression[] operands)
-            : base(from, NodeType.OPERATION)
+            : base(from, NodeType.Operation)
         {
             Operaton = operation;
             Operands = operands;
@@ -196,7 +196,7 @@ namespace DollsLang
         public AstExpression Expression { get; private set; }
 
         public AstAssign(Token from, string variableName, AstExpression expression)
-            : base(from, NodeType.ASSIGN)
+            : base(from, NodeType.Assign)
         {
             VariableName = variableName;
             Expression = expression;
@@ -213,13 +213,13 @@ namespace DollsLang
         }
     }
 
-    class AstFuncCall : AstExpression
+    class AstFunctionCall : AstExpression
     {
         public AstExpression Func { get; private set; }
         public List<AstExpression> ExpressionList { get; private set; }
 
-        public AstFuncCall(Token from, AstExpression func, List<AstExpression> expressionList)
-            : base(from, NodeType.FUNCCALL)
+        public AstFunctionCall(Token from, AstExpression func, List<AstExpression> expressionList)
+            : base(from, NodeType.FunctionCall)
         {
             Func = func;
             ExpressionList = expressionList;
@@ -235,12 +235,31 @@ namespace DollsLang
         }
     }
 
+    class AstConstructArray : AstExpression
+    {
+        public List<AstExpression> ExpressionList { get; private set; }
+
+        public AstConstructArray(Token from, List<AstExpression> expressionList)
+            : base(from, NodeType.ConstructArray)
+        {
+            ExpressionList = expressionList;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            foreach (var child in ExpressionList)
+            {
+                child.Print(buf, depth);
+            }
+        }
+    }
+
     class AstVariable : AstExpression
     {
         public string Name { get; private set; }
 
         public AstVariable(Token from, string name)
-            : base(from, NodeType.VARIABLE)
+            : base(from, NodeType.Variable)
         {
             Name = name;
         }
@@ -256,7 +275,7 @@ namespace DollsLang
         public Value Value { get; private set; }
 
         public AstConstant(Token from, Value value)
-            : base(from, NodeType.CONSTANT)
+            : base(from, NodeType.Constant)
         {
             Value = value;
         }

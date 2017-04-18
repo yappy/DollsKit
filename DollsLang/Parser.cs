@@ -341,7 +341,7 @@ namespace DollsLang
                 }
                 Next(TokenType.RPAREN);
 
-                value = new AstFuncCall(lparenToken, value, exprList);
+                value = new AstFunctionCall(lparenToken, value, exprList);
             }
 
             return value;
@@ -349,6 +349,7 @@ namespace DollsLang
 
         /*
          * Value ::= <LPAREN> Expression <RPAREN>
+         * Value ::= Array
          * Value ::= Function
          * Value ::= <NIL> | <FALSE> | <TRUE>
          * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
@@ -363,6 +364,9 @@ namespace DollsLang
                     Next(TokenType.LPAREN);
                     result = Expression();
                     Next(TokenType.RPAREN);
+                    break;
+                case TokenType.LBRACKET:
+                    result = Array();
                     break;
                 case TokenType.BAR:
                     result = Function();
@@ -402,6 +406,30 @@ namespace DollsLang
                     throw CreateSyntaxError();
             }
             return result;
+        }
+
+        /*
+         * Array ::= <LBRACKET> ExpressionListOrEmpty <RBRACKET>
+         * ExpressionListOrEmpty ::= eps | ExpressionList
+         * ExpressionList ::= Expression (<COMMA> Expression)*
+         */
+        private AstExpression Array()
+        {
+            var exprList = new List<AstExpression>();
+
+            Token startingToken = Next(TokenType.LBRACKET);
+            if (Peek() != TokenType.RBRACKET)
+            {
+                exprList.Add(Expression());
+                while (Peek() == TokenType.COMMA)
+                {
+                    Next(TokenType.COMMA);
+                    exprList.Add(Expression());
+                }
+            }
+            Next(TokenType.RBRACKET);
+
+            return new AstConstructArray(startingToken, exprList);
         }
 
         /*

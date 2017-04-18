@@ -77,13 +77,13 @@ namespace DollsLang
             LastRecord = stat;
             switch (stat.Type)
             {
-                case NodeType.IF:
+                case NodeType.If:
                     {
                         var node = (AstIf)stat;
                         ExecuteIf(node.CondBobyList);
                         return NilValue.Nil;
                     }
-                case NodeType.WHILE:
+                case NodeType.While:
                     {
                         var node = (AstWhile)stat;
                         ExecuteWhile(node.Cond, node.Body);
@@ -182,12 +182,12 @@ namespace DollsLang
 
                 switch (expr.Type)
                 {
-                    case NodeType.CONSTANT:
+                    case NodeType.Constant:
                         {
                             var node = (AstConstant)expr;
                             return node.Value;
                         }
-                    case NodeType.VARIABLE:
+                    case NodeType.Variable:
                         {
                             var node = (AstVariable)expr;
                             Value value;
@@ -200,21 +200,21 @@ namespace DollsLang
                                 return NilValue.Nil;
                             }
                         }
-                    case NodeType.OPERATION:
+                    case NodeType.Operation:
                         {
                             var node = (AstOperation)expr;
                             return EvalOperation(node);
                         }
-                    case NodeType.ASSIGN:
+                    case NodeType.Assign:
                         {
                             var node = (AstAssign)expr;
                             Value value = EvalExpression(node.Expression);
                             Assign(node.VariableName, value);
                             return value;
                         }
-                    case NodeType.FUNCCALL:
+                    case NodeType.FunctionCall:
                         {
-                            var node = (AstFuncCall)expr;
+                            var node = (AstFunctionCall)expr;
                             var funcValue = EvalExpression(node.Func);
                             var args = new List<Value>(node.ExpressionList.Count);
                             foreach (var arg in node.ExpressionList)
