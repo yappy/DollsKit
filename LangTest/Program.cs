@@ -34,6 +34,9 @@ p(m)
 for (1 10 |i|{
   p(i)
 })
+
+f = | | { f() }
+f()
 ";
 
             var tokenList = lexer.Process(test1);
@@ -52,7 +55,7 @@ for (1 10 |i|{
             var cancelSource = new CancellationTokenSource();
             var runtime = new Runtime(cancelSource.Token);
             runtime.LoadDefaultFunctions();
-            cancelSource.CancelAfter(1000);
+            cancelSource.CancelAfter(10 * 1000);
             try
             {
                 string output = runtime.Execute(program);
@@ -64,7 +67,7 @@ for (1 10 |i|{
             }
             catch (LangException e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine(e.Message);
             }
 
             Console.Read();
