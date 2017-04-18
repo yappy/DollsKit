@@ -39,7 +39,10 @@ namespace DollsLang
             targetList.Add(new Target { regex = new Regex(@"\G\)"), type = TokenType.RPAREN });
             targetList.Add(new Target { regex = new Regex(@"\G\{"), type = TokenType.LBRACE });
             targetList.Add(new Target { regex = new Regex(@"\G\}"), type = TokenType.RBRACE });
+            targetList.Add(new Target { regex = new Regex(@"\G\["), type = TokenType.LBRACKET });
+            targetList.Add(new Target { regex = new Regex(@"\G\]"), type = TokenType.RBRACKET });
             targetList.Add(new Target { regex = new Regex(@"\G\|"), type = TokenType.BAR });
+            targetList.Add(new Target { regex = new Regex(@"\G\,"), type = TokenType.COMMA });
 
             string idPat = @"\G[_a-zA-Z][_a-zA-Z0-9]*";
             targetList.Add(new Target { regex = new Regex(idPat), type = TokenType.ID });
