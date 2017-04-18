@@ -319,8 +319,9 @@ namespace DollsLang
         }
 
         /*
-         * Postfixed ::= Value (<LPAREN> ExpressionList <RPAREN>)*
-         * ExpressionList ::= Expression*
+         * Postfixed ::= Value (<LPAREN> ExpressionListOrEmpty <RPAREN>)*
+         * ExpressionListOrEmpty ::= eps | ExpressionList
+         * ExpressionList ::= Expression (<COMMA> Expression)*
          */
         private AstExpression Postfixed()
         {
@@ -329,9 +330,14 @@ namespace DollsLang
             {
                 var exprList = new List<AstExpression>();
                 Token lparenToken = Next(TokenType.LPAREN);
-                while (Peek() != TokenType.RPAREN)
+                if (Peek() != TokenType.RPAREN)
                 {
                     exprList.Add(Expression());
+                    while (Peek() != TokenType.RPAREN)
+                    {
+                        Next(TokenType.COMMA);
+                        exprList.Add(Expression());
+                    }
                 }
                 Next(TokenType.RPAREN);
 
@@ -399,15 +405,22 @@ namespace DollsLang
         }
 
         /*
-         * Function ::= <BAR> <ID>* <BAR> Block
+         * Function ::= <BAR> ParamListOrEmpty <BAR> Block
+         * ParamListOrEmpty ::= eps | ParamList
+         * ParamList ::= <ID> (<COMMA> <ID>)*
          */
         private AstConstant Function()
         {
             var paramList = new List<string>();
             Token startingToken = Next(TokenType.BAR);
-            while (Peek() != TokenType.BAR)
+            if (Peek() != TokenType.BAR)
             {
                 paramList.Add(Next(TokenType.ID).Text);
+                while (Peek() == TokenType.COMMA)
+                {
+                    Next(TokenType.COMMA);
+                    paramList.Add(Next(TokenType.ID).Text);
+                }
             }
             Next(TokenType.BAR);
 
