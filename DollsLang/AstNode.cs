@@ -14,6 +14,7 @@ namespace DollsLang
 
     public enum OperationType
     {
+        READ_ARRAY,
         NEGATIVE, NOT,
         MUL, DIV, MOD,
         ADD, SUB,

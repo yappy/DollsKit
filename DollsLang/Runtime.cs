@@ -170,6 +170,21 @@ namespace DollsLang
             return ExecuteStatementList(funcValue.Body);
         }
 
+        private Value ReadArray(Value arrayValue, Value indexValue)
+        {
+            if (arrayValue.Type != ValueType.Array)
+            {
+                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
+            }
+            List<Value> list = ((ArrayValue)arrayValue).ValueList;
+            int index = indexValue.ToInt();
+            if (index < 0 || index >= list.Count)
+            {
+                return NilValue.Nil;
+            }
+            return list[index];
+        }
+
         private Value EvalExpression(AstExpression expr)
         {
             CallDepth++;
@@ -277,6 +292,9 @@ namespace DollsLang
             LastRecord = node;
             switch (node.Operaton)
             {
+                case OperationType.READ_ARRAY:
+                    return ReadArray(args[0], args[1]);
+
                 case OperationType.NEGATIVE:
                     switch (args[0].Type)
                     {

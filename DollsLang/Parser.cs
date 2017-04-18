@@ -319,42 +319,61 @@ namespace DollsLang
         }
 
         /*
+         * [Call function]
          * Postfixed ::= Value (<LPAREN> ExpressionListOrEmpty <RPAREN>)*
          * ExpressionListOrEmpty ::= eps | ExpressionList
          * ExpressionList ::= Expression (<COMMA> Expression)*
+         *
+         * [Read array]
+         * Postfixed ::= Value (<LBRACKET> Expression <RBRACKET>)*
          */
         private AstExpression Postfixed()
         {
             var value = Value();
-            while (Peek() == TokenType.LPAREN)
+            while (Peek() == TokenType.LPAREN || Peek() == TokenType.LBRACKET)
             {
-                var exprList = new List<AstExpression>();
-                Token lparenToken = Next(TokenType.LPAREN);
-                if (Peek() != TokenType.RPAREN)
+                if (Peek() == TokenType.LPAREN)
                 {
-                    exprList.Add(Expression());
-                    while (Peek() != TokenType.RPAREN)
+                    var exprList = new List<AstExpression>();
+                    Token lparenToken = Next(TokenType.LPAREN);
+                    if (Peek() != TokenType.RPAREN)
                     {
-                        Next(TokenType.COMMA);
                         exprList.Add(Expression());
+                        while (Peek() == TokenType.COMMA)
+                        {
+                            Next(TokenType.COMMA);
+                            exprList.Add(Expression());
+                        }
                     }
+                    Next(TokenType.RPAREN);
+
+                    value = new AstFunctionCall(lparenToken, value, exprList);
                 }
-                Next(TokenType.RPAREN);
+                else if (Peek() == TokenType.LBRACKET)
+                {
+                    Token lbracketToken = Next(TokenType.LBRACKET);
+                    var index = Expression();
+                    Next(TokenType.RBRACKET);
 
-                value = new AstFunctionCall(lparenToken, value, exprList);
+                    value = new AstOperation(lbracketToken,
+                        OperationType.READ_ARRAY, value, index);
+                }
+                else
+                {
+                    throw new FatalLangException();
+                }
             }
-
             return value;
         }
 
-        /*
-         * Value ::= <LPAREN> Expression <RPAREN>
-         * Value ::= Array
-         * Value ::= Function
-         * Value ::= <NIL> | <FALSE> | <TRUE>
-         * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
-         */
-        private AstExpression Value()
+            /*
+             * Value ::= <LPAREN> Expression <RPAREN>
+             * Value ::= Array
+             * Value ::= Function
+             * Value ::= <NIL> | <FALSE> | <TRUE>
+             * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
+             */
+            private AstExpression Value()
         {
             AstExpression result;
             Token token;
