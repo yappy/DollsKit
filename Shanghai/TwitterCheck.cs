@@ -157,6 +157,7 @@ namespace Shanghai
         private long CheckMasterTimeline(TaskServer server, string taskName)
         {
             const int SearchCount = 200;
+            long selfId = TwitterManager.Tokens.Account.VerifyCredentials().Id ?? 0;
             long masterId = TwitterManager.MasterTokens.Account.VerifyCredentials().Id ?? 0;
 
             long nextSinceId = 0;
@@ -166,6 +167,11 @@ namespace Shanghai
             // プログラム判定
             foreach (var status in timeline)
             {
+                // 自分のツイートには反応しない
+                if (status.User.Id == selfId)
+                {
+                    continue;
+                }
                 // リツイートは除外
                 if (status.RetweetedStatus != null)
                 {
@@ -176,7 +182,16 @@ namespace Shanghai
                     string src = HttpUtility.HtmlDecode(status.Text);
                     Logger.Log(LogLevel.Info, "[{0}] Find program: @{1} - {2}",
                         taskName, status.User.ScreenName, src);
+
                     string output = ExecuteProgram(server, src);
+                    // @ と # は禁止する
+                    output = output.Replace('@', ' ');
+                    output = output.Replace('#', ' ');
+                    // 全角も禁止する
+                    output = output.Replace('＠', ' ');
+                    output = output.Replace('＃', ' ');
+
+                    // リプライ先を付与した後文字数制限で切り詰める
                     string tweet = string.Format("@{0}\n{1}", status.User.ScreenName, output);
                     // TODO max_tweet
                     tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
