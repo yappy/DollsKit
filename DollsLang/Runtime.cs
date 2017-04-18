@@ -223,6 +223,16 @@ namespace DollsLang
                             }
                             return CallFunction(funcValue, args.ToArray());
                         }
+                    case NodeType.ConstructArray:
+                        {
+                            var node = (AstConstructArray)expr;
+                            var valueList = new List<Value>();
+                            foreach (var elem in node.ExpressionList)
+                            {
+                                valueList.Add(EvalExpression(elem));
+                            }
+                            return new ArrayValue(valueList);
+                        }
                     default:
                         throw new FatalLangException();
                 }
