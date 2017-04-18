@@ -20,8 +20,8 @@ e = 1e-15
 s = ""this is \""string\""""
 
 p(nil) p(false) p(true)
-print(a b c)
-print(x y e)
+print(a, b, c)
+print(x, y, e)
 print(s)
 
 while (y - x > e) {
@@ -31,12 +31,9 @@ while (y - x > e) {
 }
 p(m)
 
-for (1 10 |i|{
+for (1, 10, |i|{
   p(i)
 })
-
-f = | | { f() }
-f()
 ";
 
             var tokenList = lexer.Process(test1);
