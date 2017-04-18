@@ -9,8 +9,10 @@ namespace DollsLang
     {
         private static readonly int OutputSize = 140;
         private static readonly int StringMax = 256;
+        private static readonly int DepthMax = 1024;
 
         private CancellationToken Cancel;
+        private int CallDepth;
         private Dictionary<string, Value> VarTable;
         private StringBuilder OutputBuffer;
         // Error position info
@@ -18,8 +20,9 @@ namespace DollsLang
 
         public Runtime(CancellationToken cancel)
         {
-            VarTable = new Dictionary<string, Value>();
             Cancel = cancel;
+            CallDepth = 0;
+            VarTable = new Dictionary<string, Value>();
             OutputBuffer = new StringBuilder(OutputSize);
         }
 
@@ -128,14 +131,26 @@ namespace DollsLang
 
         private Value CallFunction(Value funcValue, params Value[] args)
         {
-            switch (funcValue.Type)
+            CallDepth++;
+            try {
+                if (CallDepth > DepthMax)
+                {
+                    throw new RuntimeLangException("Stack overflow");
+                }
+
+                switch (funcValue.Type)
+                {
+                    case ValueType.NativeFunction:
+                        return CallNativeFunction((NativeFunctionValue)funcValue, args);
+                    case ValueType.UserFunction:
+                        return CallUserFunction((UserFunctionValue)funcValue, args);
+                    default:
+                        throw new RuntimeLangException("Not a function: " + funcValue.ToString());
+                }
+            }
+            finally
             {
-                case ValueType.NativeFunction:
-                    return CallNativeFunction((NativeFunctionValue)funcValue, args);
-                case ValueType.UserFunction:
-                    return CallUserFunction((UserFunctionValue)funcValue, args);
-                default:
-                    throw new RuntimeLangException("Not a function: " + funcValue.ToString());
+                CallDepth--;
             }
         }
 
@@ -157,52 +172,64 @@ namespace DollsLang
 
         private Value EvalExpression(AstExpression expr)
         {
-            LastRecord = expr;
-            switch (expr.Type)
-            {
-                case NodeType.CONSTANT:
-                    {
-                        var node = (AstConstant)expr;
-                        return node.Value;
-                    }
-                case NodeType.VARIABLE:
-                    {
-                        var node = (AstVariable)expr;
-                        Value value;
-                        if (VarTable.TryGetValue(node.Name, out value))
+            CallDepth++;
+            try {
+                if (CallDepth > DepthMax)
+                {
+                    throw new RuntimeLangException("Stack overflow");
+                }
+                LastRecord = expr;
+
+                switch (expr.Type)
+                {
+                    case NodeType.CONSTANT:
                         {
+                            var node = (AstConstant)expr;
+                            return node.Value;
+                        }
+                    case NodeType.VARIABLE:
+                        {
+                            var node = (AstVariable)expr;
+                            Value value;
+                            if (VarTable.TryGetValue(node.Name, out value))
+                            {
+                                return value;
+                            }
+                            else
+                            {
+                                return NilValue.Nil;
+                            }
+                        }
+                    case NodeType.OPERATION:
+                        {
+                            var node = (AstOperation)expr;
+                            return EvalOperation(node);
+                        }
+                    case NodeType.ASSIGN:
+                        {
+                            var node = (AstAssign)expr;
+                            Value value = EvalExpression(node.Expression);
+                            Assign(node.VariableName, value);
                             return value;
                         }
-                        else
+                    case NodeType.FUNCCALL:
                         {
-                            return NilValue.Nil;
+                            var node = (AstFuncCall)expr;
+                            var funcValue = EvalExpression(node.Func);
+                            var args = new List<Value>(node.ExpressionList.Count);
+                            foreach (var arg in node.ExpressionList)
+                            {
+                                args.Add(EvalExpression(arg));
+                            }
+                            return CallFunction(funcValue, args.ToArray());
                         }
-                    }
-                case NodeType.OPERATION:
-                    {
-                        var node = (AstOperation)expr;
-                        return EvalOperation(node);
-                    }
-                case NodeType.ASSIGN:
-                    {
-                        var node = (AstAssign)expr;
-                        Value value = EvalExpression(node.Expression);
-                        Assign(node.VariableName, value);
-                        return value;
-                    }
-                case NodeType.FUNCCALL:
-                    {
-                        var node = (AstFuncCall)expr;
-                        var funcValue = EvalExpression(node.Func);
-                        var args = new List<Value>(node.ExpressionList.Count);
-                        foreach (var arg in node.ExpressionList)
-                        {
-                            args.Add(EvalExpression(arg));
-                        }
-                        return CallFunction(funcValue, args.ToArray());
-                    }
-                default:
-                    throw new FatalLangException();
+                    default:
+                        throw new FatalLangException();
+                }
+            }
+            finally
+            {
+                CallDepth--;
             }
         }
 
