@@ -35,6 +35,7 @@ arr1 = []
 arr2 = [1, 3.14, ""hello"", print]
 print(arr1, arr2)
 print([arr1, arr2])
+print(arr2[2])
 ";
 
             var tokenList = lexer.Process(test1);
