@@ -5,7 +5,9 @@ namespace DollsLang
 {
     public enum ValueType
     {
-        Nil, Bool, Int, Float, String, NativeFunction, UserFunction,
+        Nil, Bool, Int, Float, String,
+        Array,
+        NativeFunction, UserFunction,
     }
 
     public abstract class Value
@@ -218,6 +220,37 @@ namespace DollsLang
         public override string ToString()
         {
             return RawValue;
+        }
+    }
+
+    public class ArrayValue : Value
+    {
+        public List<Value> ValueList { get; private set; }
+
+        public ArrayValue(List<Value> valueList)
+            : base(ValueType.Array)
+        {
+            ValueList = valueList;
+        }
+
+        public override bool ToBool()
+        {
+            return true;
+        }
+
+        public override int ToInt()
+        {
+            throw new RuntimeLangException("Cannot convert array to int");
+        }
+
+        public override double ToFloat()
+        {
+            throw new RuntimeLangException("Cannot convert array to float");
+        }
+
+        public override string ToString()
+        {
+            return "[" + string.Join(",", ValueList) +"]";
         }
     }
 
