@@ -130,7 +130,7 @@ namespace DollsLang
         }
 
         /*
-         * Expression ::= Or
+         * Expression ::= Assign
          */
         private AstExpression Expression()
         {
@@ -138,24 +138,35 @@ namespace DollsLang
         }
 
         /*
-         * Expression ::= <ID> <ASSIGN> Expression
-         * Expression ::= Or
+         * Assign ::= Or <ASSIGN> Assign
+         * Assign ::= Or
          */
         private AstExpression Assign()
         {
-            if (Peek(0) == TokenType.ID && Peek(1) == TokenType.ASSIGN)
+            var left = Or();
+            if (Peek() == TokenType.ASSIGN)
             {
-                Token idToken = Next(TokenType.ID);
-                string varName = idToken.Text;
-                Next(TokenType.ASSIGN);
-                AstExpression expr = Expression();
-
-                return new AstAssign(idToken, varName, expr);
+                Token assignToken = Next(TokenType.ASSIGN);
+                if (left.Type == NodeType.Variable)
+                {
+                    // <ID> = Expression
+                    var right = Assign();
+                    string varName = ((AstVariable)left).Name;
+                    return new AstAssign(assignToken, varName, right);
+                }
+                else if (left.Type == NodeType.ReadArray)
+                {
+                    // Expression [Expression] = Expression
+                    var right = Assign();
+                    var ltmp = (AstReadArray)left;
+                    return new AstAssignArray(assignToken, ltmp.Array, ltmp.Index, right);
+                }
+                else
+                {
+                    throw CreateSyntaxError("Invalid assign");
+                }
             }
-            else
-            {
-                return Or();
-            }
+            return left;
         }
 
         /*
@@ -355,8 +366,7 @@ namespace DollsLang
                     var index = Expression();
                     Next(TokenType.RBRACKET);
 
-                    value = new AstOperation(lbracketToken,
-                        OperationType.READ_ARRAY, value, index);
+                    value = new AstReadArray(lbracketToken, value, index);
                 }
                 else
                 {

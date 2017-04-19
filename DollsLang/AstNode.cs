@@ -6,15 +6,14 @@ namespace DollsLang
     public enum NodeType
     {
         Program,
-        Assign,
-        FunctionCall, ConstructArray,
+        Assign, AssignArray,
+        ReadArray, ConstructArray, FunctionCall,
         If, While,
         Operation, Variable, Constant,
     }
 
     public enum OperationType
     {
-        READ_ARRAY,
         NEGATIVE, NOT,
         MUL, DIV, MOD,
         ADD, SUB,
@@ -214,25 +213,45 @@ namespace DollsLang
         }
     }
 
-    class AstFunctionCall : AstExpression
+    class AstAssignArray : AstExpression
     {
-        public AstExpression Func { get; private set; }
-        public List<AstExpression> ExpressionList { get; private set; }
+        public AstExpression Array { get; private set; }
+        public AstExpression Index { get; private set; }
+        public AstExpression Expression { get; private set; }
 
-        public AstFunctionCall(Token from, AstExpression func, List<AstExpression> expressionList)
-            : base(from, NodeType.FunctionCall)
+        public AstAssignArray(Token from, AstExpression array, AstExpression index,
+            AstExpression expression)
+            : base(from, NodeType.AssignArray)
         {
-            Func = func;
-            ExpressionList = expressionList;
+            Array = array;
+            Index = index;
+            Expression = expression;
         }
 
         protected override void PrintChildren(StringBuilder buf, int depth)
         {
-            Func.Print(buf, depth);
-            foreach (var child in ExpressionList)
-            {
-                child.Print(buf, depth);
-            }
+            Array.Print(buf, depth);
+            Index.Print(buf, depth);
+            Expression.Print(buf, depth);
+        }
+    }
+
+    class AstReadArray : AstExpression
+    {
+        public AstExpression Array { get; private set; }
+        public AstExpression Index { get; private set; }
+
+        public AstReadArray(Token from, AstExpression array, AstExpression index)
+            : base(from, NodeType.ReadArray)
+        {
+            Array = array;
+            Index = index;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            Array.Print(buf, depth);
+            Index.Print(buf, depth);
         }
     }
 
@@ -248,6 +267,28 @@ namespace DollsLang
 
         protected override void PrintChildren(StringBuilder buf, int depth)
         {
+            foreach (var child in ExpressionList)
+            {
+                child.Print(buf, depth);
+            }
+        }
+    }
+
+    class AstFunctionCall : AstExpression
+    {
+        public AstExpression Func { get; private set; }
+        public List<AstExpression> ExpressionList { get; private set; }
+
+        public AstFunctionCall(Token from, AstExpression func, List<AstExpression> expressionList)
+            : base(from, NodeType.FunctionCall)
+        {
+            Func = func;
+            ExpressionList = expressionList;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            Func.Print(buf, depth);
             foreach (var child in ExpressionList)
             {
                 child.Print(buf, depth);
