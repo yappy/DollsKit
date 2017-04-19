@@ -325,13 +325,13 @@ namespace DollsLang
             // short circuit
             switch (node.Operaton)
             {
-                case OperationType.AND:
+                case OperationType.And:
                     if (!args[0].ToBool())
                     {
                         return args[0];
                     }
                     break;
-                case OperationType.OR:
+                case OperationType.Or:
                     if (args[0].ToBool())
                     {
                         return args[0];
@@ -347,7 +347,7 @@ namespace DollsLang
             LastRecord = node;
             switch (node.Operaton)
             {
-                case OperationType.NEGATIVE:
+                case OperationType.Negative:
                     switch (args[0].Type)
                     {
                         case ValueType.Int:
@@ -359,10 +359,10 @@ namespace DollsLang
                                 string.Format("Cannot apply {0} operator: {1}",
                                     node.Operaton, args[0].Type));
                     }
-                case OperationType.NOT:
+                case OperationType.Not:
                     return BoolValue.Of(!args[0].ToBool());
 
-                case OperationType.ADD:
+                case OperationType.Add:
                     if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
                     {
                         var result = args[0].ToString() + args[1].ToString();
@@ -386,10 +386,10 @@ namespace DollsLang
                             string.Format("Cannot apply + operator: {0}, {1}",
                                 args[0].Type, args[1].Type));
                     }
-                case OperationType.SUB:
-                case OperationType.MUL:
-                case OperationType.DIV:
-                case OperationType.MOD:
+                case OperationType.Sub:
+                case OperationType.Mul:
+                case OperationType.Div:
+                case OperationType.Mod:
                 case OperationType.LT:
                 case OperationType.LE:
                 case OperationType.GT:
@@ -402,13 +402,13 @@ namespace DollsLang
                         double rh = args[1].ToFloat();
                         switch (node.Operaton)
                         {
-                            case OperationType.SUB:
+                            case OperationType.Sub:
                                 return new FloatValue(lh - rh);
-                            case OperationType.MUL:
+                            case OperationType.Mul:
                                 return new FloatValue(lh * rh);
-                            case OperationType.DIV:
+                            case OperationType.Div:
                                 return new FloatValue(lh / rh);
-                            case OperationType.MOD:
+                            case OperationType.Mod:
                                 return new FloatValue(lh % rh);
                             case OperationType.LT:
                                 return BoolValue.Of(lh < rh);
@@ -433,17 +433,17 @@ namespace DollsLang
                         int rh = args[1].ToInt();
                         switch (node.Operaton)
                         {
-                            case OperationType.SUB:
+                            case OperationType.Sub:
                                 return new IntValue(lh - rh);
-                            case OperationType.MUL:
+                            case OperationType.Mul:
                                 return new IntValue(lh * rh);
-                            case OperationType.DIV:
+                            case OperationType.Div:
                                 if (rh == 0)
                                 {
                                     throw new RuntimeLangException("Divide by 0");
                                 }
                                 return new IntValue(lh / rh);
-                            case OperationType.MOD:
+                            case OperationType.Mod:
                                 if (rh == 0)
                                 {
                                     throw new RuntimeLangException("Divide by 0");
@@ -472,9 +472,9 @@ namespace DollsLang
                                 node.Operaton, args[0].Type, args[1].Type));
                     }
                 // simply returns rh (short circuit passed)
-                case OperationType.AND:
+                case OperationType.And:
                     return args[1];
-                case OperationType.OR:
+                case OperationType.Or:
                     return args[1];
             }
             throw new FatalLangException();

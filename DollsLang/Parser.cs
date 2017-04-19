@@ -179,7 +179,7 @@ namespace DollsLang
             {
                 Token orToken = Next(TokenType.OR);
                 var right = And();
-                left = new AstOperation(orToken, OperationType.OR, left, right);
+                left = new AstOperation(orToken, OperationType.Or, left, right);
             }
             return left;
         }
@@ -194,7 +194,7 @@ namespace DollsLang
             {
                 Token andToken = Next(TokenType.AND);
                 var right = Equal();
-                left = new AstOperation(andToken, OperationType.AND, left, right);
+                left = new AstOperation(andToken, OperationType.And, left, right);
             }
             return left;
         }
@@ -269,10 +269,10 @@ namespace DollsLang
                 switch (op.Type)
                 {
                     case TokenType.PLUS:
-                        left = new AstOperation(op, OperationType.ADD, left, right);
+                        left = new AstOperation(op, OperationType.Add, left, right);
                         break;
                     case TokenType.MINUS:
-                        left = new AstOperation(op, OperationType.SUB, left, right);
+                        left = new AstOperation(op, OperationType.Sub, left, right);
                         break;
                     default:
                         throw new RuntimeLangException();
@@ -295,13 +295,13 @@ namespace DollsLang
                 switch (op.Type)
                 {
                     case TokenType.MUL:
-                        left = new AstOperation(op, OperationType.MUL, left, right);
+                        left = new AstOperation(op, OperationType.Mul, left, right);
                         break;
                     case TokenType.DIV:
-                        left = new AstOperation(op, OperationType.DIV, left, right);
+                        left = new AstOperation(op, OperationType.Div, left, right);
                         break;
                     case TokenType.MOD:
-                        left = new AstOperation(op, OperationType.MOD, left, right);
+                        left = new AstOperation(op, OperationType.Mod, left, right);
                         break;
                     default:
                         throw new RuntimeLangException();
@@ -323,7 +323,7 @@ namespace DollsLang
                     return Unary();
                 case TokenType.MINUS:
                     Token minusToken = Next(TokenType.MINUS);
-                    return new AstOperation(minusToken, OperationType.NEGATIVE, Unary());
+                    return new AstOperation(minusToken, OperationType.Negative, Unary());
                 default:
                     return Postfixed();
             }
