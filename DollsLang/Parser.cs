@@ -565,8 +565,7 @@ namespace DollsLang
         {
             Token token = tokenList[readPtr];
             return new SyntaxLangException(
-                string.Format("Syntax Error at line {0}, column {1} {2}",
-                token.Line, token.Column, message));
+                $"Syntax Error at line {token.Line}, column {token.Column}: {message}");
         }
     }
 }

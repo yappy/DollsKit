@@ -356,8 +356,7 @@ namespace DollsLang
                             return new FloatValue(-args[0].ToFloat());
                         default:
                             throw new RuntimeLangException(
-                                string.Format("Cannot apply {0} operator: {1}",
-                                    node.Operaton, args[0].Type));
+                                $"Cannot apply {node.Operaton} operator: {args[0].Type}");
                     }
                 case OperationType.Not:
                     return BoolValue.Of(!args[0].ToBool());
@@ -383,8 +382,7 @@ namespace DollsLang
                     else
                     {
                         throw new RuntimeLangException(
-                            string.Format("Cannot apply + operator: {0}, {1}",
-                                args[0].Type, args[1].Type));
+                            $"Cannot apply + operator: {args[0].Type}, {args[1].Type}");
                     }
                 case OperationType.Sub:
                 case OperationType.Mul:
@@ -468,8 +466,8 @@ namespace DollsLang
                     else
                     {
                         throw new RuntimeLangException(
-                            string.Format("Cannot apply {0} operator: {1}, {2}",
-                                node.Operaton, args[0].Type, args[1].Type));
+                            $"Cannot apply {node.Operaton} operator: " +
+                            $"{args[0].Type}, {args[1].Type}");
                     }
                 // simply returns rh (short circuit passed)
                 case OperationType.And:
@@ -485,7 +483,7 @@ namespace DollsLang
             if (index >= args.Length)
             {
                 throw new RuntimeLangException(
-                    string.Format("Parameter #{0} is required", index + 1));
+                    $"Parameter #{index + 1} is required");
             }
             return args[index];
         }
