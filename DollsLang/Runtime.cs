@@ -9,6 +9,7 @@ namespace DollsLang
     {
         private static readonly int OutputSize = 140;
         private static readonly int StringMax = 256;
+        private static readonly int ArrayMax = 1024;
         private static readonly int DepthMax = 1024;
 
         private CancellationToken Cancel;
@@ -185,6 +186,25 @@ namespace DollsLang
             return list[index];
         }
 
+        private void AssignArray(Value arrayValue, Value indexValue, Value value)
+        {
+            if (arrayValue.Type != ValueType.Array)
+            {
+                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
+            }
+            List<Value> list = ((ArrayValue)arrayValue).ValueList;
+            int index = indexValue.ToInt();
+            if (index < 0 || index >= ArrayMax)
+            {
+                throw new RuntimeLangException("Invalid array index: " + index);
+            }
+            while (list.Count < index + 1)
+            {
+                list.Add(NilValue.Nil);
+            }
+            list[index] = value;
+        }
+
         private Value EvalExpression(AstExpression expr)
         {
             CallDepth++;
@@ -226,6 +246,22 @@ namespace DollsLang
                             Value value = EvalExpression(node.Expression);
                             Assign(node.VariableName, value);
                             return value;
+                        }
+                    case NodeType.AssignArray:
+                        {
+                            var node = (AstAssignArray)expr;
+                            Value arrayValue = EvalExpression(node.Array);
+                            Value indexValue = EvalExpression(node.Index);
+                            Value value = EvalExpression(node.Expression);
+                            AssignArray(arrayValue, indexValue, value);
+                            return value;
+                        }
+                    case NodeType.ReadArray:
+                        {
+                            var node = (AstReadArray)expr;
+                            Value arrayValue = EvalExpression(node.Array);
+                            Value indexValue = EvalExpression(node.Index);
+                            return ReadArray(arrayValue, indexValue);
                         }
                     case NodeType.FunctionCall:
                         {
@@ -292,9 +328,6 @@ namespace DollsLang
             LastRecord = node;
             switch (node.Operaton)
             {
-                case OperationType.READ_ARRAY:
-                    return ReadArray(args[0], args[1]);
-
                 case OperationType.NEGATIVE:
                     switch (args[0].Type)
                     {
