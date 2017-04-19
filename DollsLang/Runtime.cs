@@ -192,8 +192,17 @@ namespace DollsLang
             {
                 throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
             }
-            List<Value> list = ((ArrayValue)arrayValue).ValueList;
             int index = indexValue.ToInt();
+            AssignArray(arrayValue, index, value);
+        }
+
+        private void AssignArray(Value arrayValue, int index, Value value)
+        {
+            if (arrayValue.Type != ValueType.Array)
+            {
+                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
+            }
+            List<Value> list = ((ArrayValue)arrayValue).ValueList;
             if (index < 0 || index >= ArrayMax)
             {
                 throw new RuntimeLangException("Invalid array index: " + index);
@@ -277,12 +286,15 @@ namespace DollsLang
                     case NodeType.ConstructArray:
                         {
                             var node = (AstConstructArray)expr;
-                            var valueList = new List<Value>();
+                            var valueList = new List<Value>(node.ExpressionList.Count);
+                            var value = new ArrayValue(valueList);
+                            int index = 0;
                             foreach (var elem in node.ExpressionList)
                             {
-                                valueList.Add(EvalExpression(elem));
+                                AssignArray(value, index, EvalExpression(elem));
+                                index++;
                             }
-                            return new ArrayValue(valueList);
+                            return value;
                         }
                     default:
                         throw new FatalLangException();
