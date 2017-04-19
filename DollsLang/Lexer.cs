@@ -106,7 +106,7 @@ namespace DollsLang
                     if (!find)
                     {
                         throw new LexicalLangException(
-                            string.Format("Lexical Error at line {0}, column {1}", lineNo, columnNo));
+                            $"Lexical Error at line {lineNo}, column {columnNo}");
                     }
                 }
             }

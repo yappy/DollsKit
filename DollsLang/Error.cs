@@ -69,8 +69,7 @@ namespace DollsLang
             : base(message, inner)
         { }
 
-        public override string Message => string.Format(
-            "Runtime Error at line {0}, column {1} {2}",
-            Line, Column, base.Message);
+        public override string Message =>
+            $"Runtime Error at line {Line}, column {Column}: {base.Message}";
     }
 }
