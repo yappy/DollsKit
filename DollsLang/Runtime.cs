@@ -203,10 +203,17 @@ namespace DollsLang
                 throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
             }
             List<Value> list = ((ArrayValue)arrayValue).ValueList;
+            // index range check
             if (index < 0 || index >= ArrayMax)
             {
                 throw new RuntimeLangException("Invalid array index: " + index);
             }
+            // array of array check (against memory attack)
+            if (value.Type == ValueType.Array)
+            {
+                throw new RuntimeLangException("Cannot assign array to array");
+            }
+            // expand size and fill with nil
             while (list.Count < index + 1)
             {
                 list.Add(NilValue.Nil);
