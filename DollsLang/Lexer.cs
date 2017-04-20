@@ -113,7 +113,7 @@ namespace DollsLang
                     if (!find)
                     {
                         throw new LexicalLangException(
-                            $"Lexical Error at line {lineNo}, column {columnNo}");
+                            $"'{line[x]}'", lineNo, columnNo);
                     }
                 }
             }
