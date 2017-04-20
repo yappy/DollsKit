@@ -7,58 +7,65 @@ namespace DollsLang
     {
         private struct Target
         {
-            public Regex regex;
-            public TokenType type;
+            public Regex Regex;
+            public TokenType Type;
         }
 
-        private static readonly char lineComment = '#';
-        private static readonly Regex skipRegex = new Regex(@"\G\s*");
-        private static readonly List<Target> targetList = new List<Target>();
+        private static readonly char LineComment = '#';
+        private static readonly Regex SkipRegex = new Regex(@"\G\s*");
+        private static readonly IList<Target> TargetList;
 
-        public Lexer()
+        static Lexer()
         {
-            targetList.Add(new Target { regex = new Regex(@"\G\+"), type = TokenType.PLUS });
-            targetList.Add(new Target { regex = new Regex(@"\G\-"), type = TokenType.MINUS });
-            targetList.Add(new Target { regex = new Regex(@"\G\*"), type = TokenType.MUL });
-            targetList.Add(new Target { regex = new Regex(@"\G\/"), type = TokenType.DIV });
-            targetList.Add(new Target { regex = new Regex(@"\G\%"), type = TokenType.MOD });
+            var targetList = new List<Target>();
 
-            targetList.Add(new Target { regex = new Regex(@"\G<="), type = TokenType.LE });
-            targetList.Add(new Target { regex = new Regex(@"\G>="), type = TokenType.GE });
-            targetList.Add(new Target { regex = new Regex(@"\G<"), type = TokenType.LT });
-            targetList.Add(new Target { regex = new Regex(@"\G>"), type = TokenType.GT });
-            targetList.Add(new Target { regex = new Regex(@"\G=="), type = TokenType.EQ });
-            targetList.Add(new Target { regex = new Regex(@"\G!="), type = TokenType.NE });
+            targetList.Add(new Target { Regex = new Regex(@"\G\+"), Type = TokenType.PLUS });
+            targetList.Add(new Target { Regex = new Regex(@"\G\-"), Type = TokenType.MINUS });
+            targetList.Add(new Target { Regex = new Regex(@"\G\*"), Type = TokenType.MUL });
+            targetList.Add(new Target { Regex = new Regex(@"\G\/"), Type = TokenType.DIV });
+            targetList.Add(new Target { Regex = new Regex(@"\G\%"), Type = TokenType.MOD });
 
-            targetList.Add(new Target { regex = new Regex(@"\G\&\&"), type = TokenType.AND });
-            targetList.Add(new Target { regex = new Regex(@"\G\|\|"), type = TokenType.OR });
-            targetList.Add(new Target { regex = new Regex(@"\G\!"), type = TokenType.NOT });
+            targetList.Add(new Target { Regex = new Regex(@"\G<="), Type = TokenType.LE });
+            targetList.Add(new Target { Regex = new Regex(@"\G>="), Type = TokenType.GE });
+            targetList.Add(new Target { Regex = new Regex(@"\G<"), Type = TokenType.LT });
+            targetList.Add(new Target { Regex = new Regex(@"\G>"), Type = TokenType.GT });
+            targetList.Add(new Target { Regex = new Regex(@"\G=="), Type = TokenType.EQ });
+            targetList.Add(new Target { Regex = new Regex(@"\G!="), Type = TokenType.NE });
 
-            targetList.Add(new Target { regex = new Regex(@"\G\="), type = TokenType.ASSIGN });
-            targetList.Add(new Target { regex = new Regex(@"\G\("), type = TokenType.LPAREN });
-            targetList.Add(new Target { regex = new Regex(@"\G\)"), type = TokenType.RPAREN });
-            targetList.Add(new Target { regex = new Regex(@"\G\{"), type = TokenType.LBRACE });
-            targetList.Add(new Target { regex = new Regex(@"\G\}"), type = TokenType.RBRACE });
-            targetList.Add(new Target { regex = new Regex(@"\G\["), type = TokenType.LBRACKET });
-            targetList.Add(new Target { regex = new Regex(@"\G\]"), type = TokenType.RBRACKET });
-            targetList.Add(new Target { regex = new Regex(@"\G\|"), type = TokenType.BAR });
-            targetList.Add(new Target { regex = new Regex(@"\G\,"), type = TokenType.COMMA });
+            targetList.Add(new Target { Regex = new Regex(@"\G\&\&"), Type = TokenType.AND });
+            targetList.Add(new Target { Regex = new Regex(@"\G\|\|"), Type = TokenType.OR });
+            targetList.Add(new Target { Regex = new Regex(@"\G\!"), Type = TokenType.NOT });
+
+            targetList.Add(new Target { Regex = new Regex(@"\G\="), Type = TokenType.ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\("), Type = TokenType.LPAREN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\)"), Type = TokenType.RPAREN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\{"), Type = TokenType.LBRACE });
+            targetList.Add(new Target { Regex = new Regex(@"\G\}"), Type = TokenType.RBRACE });
+            targetList.Add(new Target { Regex = new Regex(@"\G\["), Type = TokenType.LBRACKET });
+            targetList.Add(new Target { Regex = new Regex(@"\G\]"), Type = TokenType.RBRACKET });
+            targetList.Add(new Target { Regex = new Regex(@"\G\|"), Type = TokenType.BAR });
+            targetList.Add(new Target { Regex = new Regex(@"\G\,"), Type = TokenType.COMMA });
 
             string idPat = @"\G[_a-zA-Z][_a-zA-Z0-9]*";
-            targetList.Add(new Target { regex = new Regex(idPat), type = TokenType.ID });
+            targetList.Add(new Target { Regex = new Regex(idPat), Type = TokenType.ID });
 
             string floatPat = @"\G[0-9]+\.[0-9]+";
-            targetList.Add(new Target { regex = new Regex(floatPat), type = TokenType.FLOAT });
+            targetList.Add(new Target { Regex = new Regex(floatPat), Type = TokenType.FLOAT });
             string floatExpPat = @"\G[0-9]+(?:\.[0-9]+)?[eE][\+\-]?[0-9]+";
-            targetList.Add(new Target { regex = new Regex(floatExpPat), type = TokenType.FLOAT });
+            targetList.Add(new Target { Regex = new Regex(floatExpPat), Type = TokenType.FLOAT });
 
             string intPat = @"\G[0-9]+";
-            targetList.Add(new Target { regex = new Regex(intPat), type = TokenType.INT });
+            targetList.Add(new Target { Regex = new Regex(intPat), Type = TokenType.INT });
 
             // "string"
             string strPat = @"\G""(?:\\""|[^""])*""";
-            targetList.Add(new Target { regex = new Regex(strPat), type = TokenType.STRING });
+            targetList.Add(new Target { Regex = new Regex(strPat), Type = TokenType.STRING });
+
+            TargetList = targetList.AsReadOnly();
         }
+
+        public Lexer()
+        { }
 
         public List<Token> Process(string source)
         {
@@ -74,7 +81,7 @@ namespace DollsLang
                 while (true)
                 {
                     // skip space
-                    Match skip = skipRegex.Match(line, x);
+                    Match skip = SkipRegex.Match(line, x);
                     x += skip.Length;
                     // end of line
                     if (x >= line.Length)
@@ -82,19 +89,19 @@ namespace DollsLang
                         break;
                     }
                     // line comment
-                    if (line[x] == lineComment)
+                    if (line[x] == LineComment)
                     {
                         break;
                     }
 
                     int columnNo = x + 1;
                     bool find = false;
-                    foreach (var target in targetList)
+                    foreach (var target in TargetList)
                     {
-                        Match match = target.regex.Match(line, x);
+                        Match match = target.Regex.Match(line, x);
                         if (match.Success)
                         {
-                            var token = new Token(CheckReserved(target.type, match.Value),
+                            var token = new Token(checkReserved(target.Type, match.Value),
                                 match.Value, lineNo, columnNo);
                             result.Add(token);
 
@@ -116,7 +123,7 @@ namespace DollsLang
             return result;
         }
 
-        private TokenType CheckReserved(TokenType orgType, string text)
+        private TokenType checkReserved(TokenType orgType, string text)
         {
             // detected as ID
             if (orgType != TokenType.ID)
