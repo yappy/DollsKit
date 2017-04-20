@@ -16,18 +16,18 @@ namespace DollsLang
             this.tokenList = tokenList;
             this.readPtr = 0;
 
-            return Program();
+            return program();
         }
 
         /*
          * Program ::= (Statement)* <EOF>
          */
-        private AstProgram Program()
+        private AstProgram program()
         {
             var statements = new List<AstStatement>(); ;
-            while (Peek() != TokenType.EOF)
+            while (peek() != TokenType.EOF)
             {
-                statements.Add(Statement());
+                statements.Add(statement());
             }
 
             return new AstProgram(null, statements);
@@ -38,32 +38,32 @@ namespace DollsLang
          * Statement ::= While
          * Statement ::= Expression
          */
-        private AstStatement Statement()
+        private AstStatement statement()
         {
-            switch (Peek(0))
+            switch (peek(0))
             {
                 case TokenType.IF:
-                    return IfElifElse();
+                    return ifElifElse();
                 case TokenType.WHILE:
-                    return WhileLoop();
+                    return whileLoop();
                 default:
-                    return Expression();
+                    return expression();
             }
         }
 
         /*
          * Block ::= <LBRACE> Statement* <RBRACE>
          */
-        private List<AstStatement> Block()
+        private List<AstStatement> block()
         {
             var statList = new List<AstStatement>();
 
-            Next(TokenType.LBRACE);
-            while (Peek() != TokenType.RBRACE)
+            next(TokenType.LBRACE);
+            while (peek() != TokenType.RBRACE)
             {
-                statList.Add(Statement());
+                statList.Add(statement());
             }
-            Next(TokenType.RBRACE);
+            next(TokenType.RBRACE);
 
             return statList;
         }
@@ -74,34 +74,34 @@ namespace DollsLang
          * Elif ::= <ELIF> <LPAREN> Expression <RPAREN> Block
          * Else ::= <ELSE> Block
          */
-        private AstIf IfElifElse()
+        private AstIf ifElifElse()
         {
             var condBodyList = new List<AstIf.CondAndBody>();
 
             // If
-            Token ifToken = Next(TokenType.IF);
-            Next(TokenType.LPAREN);
-            AstExpression ifCond = Expression();
-            Next(TokenType.RPAREN);
-            var ifStatList = Block();
+            Token ifToken = next(TokenType.IF);
+            next(TokenType.LPAREN);
+            AstExpression ifCond = expression();
+            next(TokenType.RPAREN);
+            var ifStatList = block();
             condBodyList.Add(new AstIf.CondAndBody(ifCond, ifStatList));
 
             // Elif*
-            while (Peek() == TokenType.ELIF)
+            while (peek() == TokenType.ELIF)
             {
-                Next(TokenType.ELIF);
-                Next(TokenType.LPAREN);
-                AstExpression elifCond = Expression();
-                Next(TokenType.RPAREN);
-                var elifStatList = Block();
+                next(TokenType.ELIF);
+                next(TokenType.LPAREN);
+                AstExpression elifCond = expression();
+                next(TokenType.RPAREN);
+                var elifStatList = block();
                 condBodyList.Add(new AstIf.CondAndBody(elifCond, elifStatList));
             }
 
             // Else?
-            if (Peek() == TokenType.ELSE)
+            if (peek() == TokenType.ELSE)
             {
-                Next(TokenType.ELSE);
-                var elseStatList = Block();
+                next(TokenType.ELSE);
+                var elseStatList = block();
                 condBodyList.Add(new AstIf.CondAndBody(null, elseStatList));
             }
 
@@ -111,20 +111,20 @@ namespace DollsLang
         /*
          * While ::= <WHILE> <LPAREN> Expression <RPAREN> <LBRACE> Statement* <RBRACE>
          */
-        private AstWhile WhileLoop()
+        private AstWhile whileLoop()
         {
-            Token whileToken = Next(TokenType.WHILE);
-            Next(TokenType.LPAREN);
-            AstExpression cond = Expression();
-            Next(TokenType.RPAREN);
+            Token whileToken = next(TokenType.WHILE);
+            next(TokenType.LPAREN);
+            AstExpression cond = expression();
+            next(TokenType.RPAREN);
 
             var statList = new List<AstStatement>();
-            Next(TokenType.LBRACE);
-            while (Peek() != TokenType.RBRACE)
+            next(TokenType.LBRACE);
+            while (peek() != TokenType.RBRACE)
             {
-                statList.Add(Statement());
+                statList.Add(statement());
             }
-            Next(TokenType.RBRACE);
+            next(TokenType.RBRACE);
 
             return new AstWhile(whileToken, cond, statList);
         }
@@ -132,38 +132,38 @@ namespace DollsLang
         /*
          * Expression ::= Assign
          */
-        private AstExpression Expression()
+        private AstExpression expression()
         {
-            return Assign();
+            return assign();
         }
 
         /*
          * Assign ::= Or <ASSIGN> Assign
          * Assign ::= Or
          */
-        private AstExpression Assign()
+        private AstExpression assign()
         {
-            var left = Or();
-            if (Peek() == TokenType.ASSIGN)
+            var left = or();
+            if (peek() == TokenType.ASSIGN)
             {
-                Token assignToken = Next(TokenType.ASSIGN);
+                Token assignToken = next(TokenType.ASSIGN);
                 if (left.Type == NodeType.Variable)
                 {
                     // <ID> = Expression
-                    var right = Assign();
+                    var right = assign();
                     string varName = ((AstVariable)left).Name;
                     return new AstAssign(assignToken, varName, right);
                 }
                 else if (left.Type == NodeType.ReadArray)
                 {
                     // Expression [Expression] = Expression
-                    var right = Assign();
+                    var right = assign();
                     var ltmp = (AstReadArray)left;
                     return new AstAssignArray(assignToken, ltmp.Array, ltmp.Index, right);
                 }
                 else
                 {
-                    throw CreateSyntaxError("Invalid assign");
+                    throw createSyntaxError("Invalid assign");
                 }
             }
             return left;
@@ -172,13 +172,13 @@ namespace DollsLang
         /*
          * Or ::= And (<OR> And)*
          */
-        private AstExpression Or()
+        private AstExpression or()
         {
-            var left = And();
-            while (Peek() == TokenType.OR)
+            var left = and();
+            while (peek() == TokenType.OR)
             {
-                Token orToken = Next(TokenType.OR);
-                var right = And();
+                Token orToken = next(TokenType.OR);
+                var right = and();
                 left = new AstOperation(orToken, OperationType.Or, left, right);
             }
             return left;
@@ -187,13 +187,13 @@ namespace DollsLang
         /*
          * And ::= Equal (<AND> Equal)*
          */
-        private AstExpression And()
+        private AstExpression and()
         {
-            var left = Equal();
-            while (Peek() == TokenType.AND)
+            var left = equal();
+            while (peek() == TokenType.AND)
             {
-                Token andToken = Next(TokenType.AND);
-                var right = Equal();
+                Token andToken = next(TokenType.AND);
+                var right = equal();
                 left = new AstOperation(andToken, OperationType.And, left, right);
             }
             return left;
@@ -202,13 +202,13 @@ namespace DollsLang
         /*
          * Equal ::= Compare ((<EQ> | <NE>) Compare)*
          */
-        private AstExpression Equal()
+        private AstExpression equal()
         {
-            var left = Compare();
-            while (Peek() == TokenType.EQ || Peek() == TokenType.NE)
+            var left = compare();
+            while (peek() == TokenType.EQ || peek() == TokenType.NE)
             {
-                Token op = NextAny();
-                var right = Compare();
+                Token op = nextAny();
+                var right = compare();
                 switch (op.Type)
                 {
                     case TokenType.EQ:
@@ -227,14 +227,14 @@ namespace DollsLang
         /*
          * Compare ::= AddSub ((<LT> | <LE> | <GT> | <GE>) AddSub)*
          */
-        private AstExpression Compare()
+        private AstExpression compare()
         {
-            var left = AddSub();
-            while (Peek() == TokenType.LT || Peek() == TokenType.LE ||
-                Peek() == TokenType.GT || Peek() == TokenType.GE)
+            var left = addSub();
+            while (peek() == TokenType.LT || peek() == TokenType.LE ||
+                peek() == TokenType.GT || peek() == TokenType.GE)
             {
-                Token op = NextAny();
-                var right = AddSub();
+                Token op = nextAny();
+                var right = addSub();
                 switch (op.Type)
                 {
                     case TokenType.LT:
@@ -259,13 +259,13 @@ namespace DollsLang
         /*
          * AddSub ::= MulDiv ((<PLUS> | <MINUS>) MulDiv)*
          */
-        private AstExpression AddSub()
+        private AstExpression addSub()
         {
-            var left = MulDiv();
-            while (Peek() == TokenType.PLUS || Peek() == TokenType.MINUS)
+            var left = mulDiv();
+            while (peek() == TokenType.PLUS || peek() == TokenType.MINUS)
             {
-                Token op = NextAny();
-                var right = MulDiv();
+                Token op = nextAny();
+                var right = mulDiv();
                 switch (op.Type)
                 {
                     case TokenType.PLUS:
@@ -284,14 +284,14 @@ namespace DollsLang
         /*
          * MulDiv ::= Unary ((<MUL> | <DIV> | <REM>) Unary)*
          */
-        private AstExpression MulDiv()
+        private AstExpression mulDiv()
         {
-            var left = Unary();
-            while (Peek() == TokenType.MUL || Peek() == TokenType.DIV ||
-                Peek() == TokenType.MOD)
+            var left = unary();
+            while (peek() == TokenType.MUL || peek() == TokenType.DIV ||
+                peek() == TokenType.MOD)
             {
-                Token op = NextAny();
-                var right = Unary();
+                Token op = nextAny();
+                var right = unary();
                 switch (op.Type)
                 {
                     case TokenType.MUL:
@@ -314,18 +314,18 @@ namespace DollsLang
          * Unary ::= (<PLUS> | <MINUS>) Unary
          * Unary ::= Postfixed
          */
-        private AstExpression Unary()
+        private AstExpression unary()
         {
-            switch (Peek())
+            switch (peek())
             {
                 case TokenType.PLUS:
-                    Next(TokenType.PLUS);
-                    return Unary();
+                    next(TokenType.PLUS);
+                    return unary();
                 case TokenType.MINUS:
-                    Token minusToken = Next(TokenType.MINUS);
-                    return new AstOperation(minusToken, OperationType.Negative, Unary());
+                    Token minusToken = next(TokenType.MINUS);
+                    return new AstOperation(minusToken, OperationType.Negative, unary());
                 default:
-                    return Postfixed();
+                    return postfixed();
             }
         }
 
@@ -338,33 +338,33 @@ namespace DollsLang
          * [Read array]
          * Postfixed ::= Value (<LBRACKET> Expression <RBRACKET>)*
          */
-        private AstExpression Postfixed()
+        private AstExpression postfixed()
         {
-            var value = Value();
-            while (Peek() == TokenType.LPAREN || Peek() == TokenType.LBRACKET)
+            var value = factor();
+            while (peek() == TokenType.LPAREN || peek() == TokenType.LBRACKET)
             {
-                if (Peek() == TokenType.LPAREN)
+                if (peek() == TokenType.LPAREN)
                 {
                     var exprList = new List<AstExpression>();
-                    Token lparenToken = Next(TokenType.LPAREN);
-                    if (Peek() != TokenType.RPAREN)
+                    Token lparenToken = next(TokenType.LPAREN);
+                    if (peek() != TokenType.RPAREN)
                     {
-                        exprList.Add(Expression());
-                        while (Peek() == TokenType.COMMA)
+                        exprList.Add(expression());
+                        while (peek() == TokenType.COMMA)
                         {
-                            Next(TokenType.COMMA);
-                            exprList.Add(Expression());
+                            next(TokenType.COMMA);
+                            exprList.Add(expression());
                         }
                     }
-                    Next(TokenType.RPAREN);
+                    next(TokenType.RPAREN);
 
                     value = new AstFunctionCall(lparenToken, value, exprList);
                 }
-                else if (Peek() == TokenType.LBRACKET)
+                else if (peek() == TokenType.LBRACKET)
                 {
-                    Token lbracketToken = Next(TokenType.LBRACKET);
-                    var index = Expression();
-                    Next(TokenType.RBRACKET);
+                    Token lbracketToken = next(TokenType.LBRACKET);
+                    var index = expression();
+                    next(TokenType.RBRACKET);
 
                     value = new AstReadArray(lbracketToken, value, index);
                 }
@@ -376,63 +376,63 @@ namespace DollsLang
             return value;
         }
 
-            /*
-             * Value ::= <LPAREN> Expression <RPAREN>
-             * Value ::= Array
-             * Value ::= Function
-             * Value ::= <NIL> | <FALSE> | <TRUE>
-             * Value ::= <ID> | <STRING> | <INT> | <FLOAT>
-             */
-            private AstExpression Value()
+        /*
+         * Factor ::= <LPAREN> Expression <RPAREN>
+         * Factor ::= Array
+         * Factor ::= Function
+         * Factor ::= <NIL> | <FALSE> | <TRUE>
+         * Factor ::= <ID> | <STRING> | <INT> | <FLOAT>
+         */
+        private AstExpression factor()
         {
             AstExpression result;
             Token token;
-            switch (Peek())
+            switch (peek())
             {
                 case TokenType.LPAREN:
-                    Next(TokenType.LPAREN);
-                    result = Expression();
-                    Next(TokenType.RPAREN);
+                    next(TokenType.LPAREN);
+                    result = expression();
+                    next(TokenType.RPAREN);
                     break;
                 case TokenType.LBRACKET:
-                    result = Array();
+                    result = array();
                     break;
                 case TokenType.BAR:
-                    result = Function();
+                    result = function();
                     break;
                 case TokenType.NIL:
-                    token = Next(TokenType.NIL);
+                    token = next(TokenType.NIL);
                     result = new AstConstant(token, NilValue.Nil);
                     break;
                 case TokenType.FALSE:
-                    token = Next(TokenType.FALSE);
+                    token = next(TokenType.FALSE);
                     result = new AstConstant(token, BoolValue.False);
                     break;
                 case TokenType.TRUE:
-                    token = Next(TokenType.TRUE);
+                    token = next(TokenType.TRUE);
                     result = new AstConstant(token, BoolValue.True);
                     break;
                 case TokenType.ID:
-                    token = Next(TokenType.ID);
+                    token = next(TokenType.ID);
                     result = new AstVariable(token, token.Text);
                     break;
                 case TokenType.STRING:
-                    token = Next(TokenType.STRING);
+                    token = next(TokenType.STRING);
                     result = new AstConstant(token,
-                        new StringValue(NormalizeString(token.Text)));
+                        new StringValue(normalizeString(token.Text)));
                     break;
                 case TokenType.INT:
-                    token = Next(TokenType.INT);
+                    token = next(TokenType.INT);
                     result = new AstConstant(token,
-                        new IntValue(ConvertToInt(token.Text)));
+                        new IntValue(convertToInt(token.Text)));
                     break;
                 case TokenType.FLOAT:
-                    token = Next(TokenType.FLOAT);
+                    token = next(TokenType.FLOAT);
                     result = new AstConstant(token,
-                        new FloatValue(ConvertToFloat(token.Text)));
+                        new FloatValue(convertToFloat(token.Text)));
                     break;
                 default:
-                    throw CreateSyntaxError();
+                    throw createSyntaxError();
             }
             return result;
         }
@@ -442,21 +442,21 @@ namespace DollsLang
          * ExpressionListOrEmpty ::= eps | ExpressionList
          * ExpressionList ::= Expression (<COMMA> Expression)*
          */
-        private AstExpression Array()
+        private AstExpression array()
         {
             var exprList = new List<AstExpression>();
 
-            Token startingToken = Next(TokenType.LBRACKET);
-            if (Peek() != TokenType.RBRACKET)
+            Token startingToken = next(TokenType.LBRACKET);
+            if (peek() != TokenType.RBRACKET)
             {
-                exprList.Add(Expression());
-                while (Peek() == TokenType.COMMA)
+                exprList.Add(expression());
+                while (peek() == TokenType.COMMA)
                 {
-                    Next(TokenType.COMMA);
-                    exprList.Add(Expression());
+                    next(TokenType.COMMA);
+                    exprList.Add(expression());
                 }
             }
-            Next(TokenType.RBRACKET);
+            next(TokenType.RBRACKET);
 
             return new AstConstructArray(startingToken, exprList);
         }
@@ -466,34 +466,34 @@ namespace DollsLang
          * ParamListOrEmpty ::= eps | ParamList
          * ParamList ::= <ID> (<COMMA> <ID>)*
          */
-        private AstConstant Function()
+        private AstConstant function()
         {
             var paramList = new List<string>();
-            Token startingToken = Next(TokenType.BAR);
-            if (Peek() != TokenType.BAR)
+            Token startingToken = next(TokenType.BAR);
+            if (peek() != TokenType.BAR)
             {
-                paramList.Add(Next(TokenType.ID).Text);
-                while (Peek() == TokenType.COMMA)
+                paramList.Add(next(TokenType.ID).Text);
+                while (peek() == TokenType.COMMA)
                 {
-                    Next(TokenType.COMMA);
-                    paramList.Add(Next(TokenType.ID).Text);
+                    next(TokenType.COMMA);
+                    paramList.Add(next(TokenType.ID).Text);
                 }
             }
-            Next(TokenType.BAR);
+            next(TokenType.BAR);
 
-            var body = Block();
+            var body = block();
 
             return new AstConstant(startingToken,
                 new UserFunctionValue(paramList, body));
         }
 
-        private TokenType Peek(int offset = 0)
+        private TokenType peek(int offset = 0)
         {
             int idx = Math.Min(readPtr + offset, tokenList.Count - 1);
             return tokenList[idx].Type;
         }
 
-        private Token NextAny()
+        private Token nextAny()
         {
             Token token = tokenList[readPtr];
             if (readPtr < tokenList.Count - 1)
@@ -503,16 +503,16 @@ namespace DollsLang
             return token;
         }
 
-        private Token Next(TokenType type)
+        private Token next(TokenType type)
         {
-            if (Peek() != type)
+            if (peek() != type)
             {
-                throw CreateSyntaxError();
+                throw createSyntaxError();
             }
-            return NextAny();
+            return nextAny();
         }
 
-        private string NormalizeString(string src)
+        private string normalizeString(string src)
         {
             if (src.Length < 2 || src[0] != '"' || src[src.Length - 1] != '"')
             {
@@ -535,7 +535,7 @@ namespace DollsLang
             return result.ToString();
         }
 
-        private int ConvertToInt(string src)
+        private int convertToInt(string src)
         {
             int result;
             if (int.TryParse(src, out result))
@@ -544,11 +544,11 @@ namespace DollsLang
             }
             else
             {
-                throw CreateSyntaxError("Convert failed: " + src);
+                throw createSyntaxError("Convert failed: " + src);
             }
         }
 
-        private double ConvertToFloat(string src)
+        private double convertToFloat(string src)
         {
             double result;
             if (double.TryParse(src, out result))
@@ -557,11 +557,11 @@ namespace DollsLang
             }
             else
             {
-                throw CreateSyntaxError("Convert failed: " + src);
+                throw createSyntaxError("Convert failed: " + src);
             }
         }
 
-        private Exception CreateSyntaxError(string message = "")
+        private SyntaxLangException createSyntaxError(string message = "")
         {
             Token token = tokenList[readPtr];
             return new SyntaxLangException(
