@@ -218,7 +218,7 @@ namespace DollsLang
                         left = new AstOperation(op, OperationType.NE, left, right);
                         break;
                     default:
-                        throw new RuntimeLangException();
+                        throw new FatalLangException();
                 }
             }
             return left;
@@ -250,7 +250,7 @@ namespace DollsLang
                         left = new AstOperation(op, OperationType.GE, left, right);
                         break;
                     default:
-                        throw new RuntimeLangException();
+                        throw new FatalLangException();
                 }
             }
             return left;
@@ -275,7 +275,7 @@ namespace DollsLang
                         left = new AstOperation(op, OperationType.Sub, left, right);
                         break;
                     default:
-                        throw new RuntimeLangException();
+                        throw new FatalLangException();
                 }
             }
             return left;
@@ -304,7 +304,7 @@ namespace DollsLang
                         left = new AstOperation(op, OperationType.Mod, left, right);
                         break;
                     default:
-                        throw new RuntimeLangException();
+                        throw new FatalLangException();
                 }
             }
             return left;
