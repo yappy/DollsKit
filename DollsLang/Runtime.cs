@@ -32,6 +32,7 @@ namespace DollsLang
             LoadFunction("print", libPrint);
             LoadFunction("p", libPrint);
             LoadFunction("for", libFor);
+            LoadFunction("foreach", libForEach);
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
@@ -498,6 +499,23 @@ namespace DollsLang
             for (int i = start; i <= end; i++)
             {
                 callArgs[0] = new IntValue(i);
+                callFunction(func, callArgs);
+            }
+
+            return NilValue.Nil;
+        }
+
+        private Value libForEach(Value[] args)
+        {
+            ArrayValue array = getParam(args, 0).ToArray();
+            List<Value> list = array.ValueList;
+            FunctionValue func = getParam(args, 1).ToFunction();
+
+            Value[] callArgs = new Value[2];
+            for (int i = 0; i < list.Count; i++)
+            {
+                callArgs[0] = list[i];
+                callArgs[1] = new IntValue(i);
                 callFunction(func, callArgs);
             }
 
