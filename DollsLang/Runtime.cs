@@ -33,6 +33,7 @@ namespace DollsLang
             LoadFunction("p", libPrint);
             LoadFunction("for", libFor);
             LoadFunction("foreach", libForEach);
+            LoadFunction("size", libSize);
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
@@ -521,6 +522,13 @@ namespace DollsLang
             }
 
             return NilValue.Nil;
+        }
+
+        private Value libSize(Value[] args)
+        {
+            ArrayValue array = getParam(args, 0).ToArray();
+
+            return new IntValue(array.ValueList.Count);
         }
     }
 }
