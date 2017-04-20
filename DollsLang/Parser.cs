@@ -432,7 +432,7 @@ namespace DollsLang
                         new FloatValue(convertToFloat(token.Text)));
                     break;
                 default:
-                    throw createSyntaxError();
+                    throw createSyntaxError("Invalid expression");
             }
             return result;
         }
@@ -507,7 +507,7 @@ namespace DollsLang
         {
             if (peek() != type)
             {
-                throw createSyntaxError();
+                throw createSyntaxError($"<{type}> is required");
             }
             return nextAny();
         }
@@ -544,7 +544,7 @@ namespace DollsLang
             }
             else
             {
-                throw createSyntaxError("Convert failed: " + src);
+                throw createSyntaxError($"Convert failed: {src}");
             }
         }
 
@@ -557,15 +557,14 @@ namespace DollsLang
             }
             else
             {
-                throw createSyntaxError("Convert failed: " + src);
+                throw createSyntaxError($"Convert failed: {src}");
             }
         }
 
         private SyntaxLangException createSyntaxError(string message = "")
         {
             Token token = tokenList[readPtr];
-            return new SyntaxLangException(
-                $"Syntax Error at line {token.Line}, column {token.Column}: {message}");
+            return new SyntaxLangException(message, token.Line, token.Column);
         }
     }
 }
