@@ -158,6 +158,7 @@ namespace DollsLang
 
         private Value callNativeFunction(NativeFunctionValue funcValue, params Value[] args)
         {
+            cancel.ThrowIfCancellationRequested();
             return funcValue.NativeFunc(args);
         }
 
