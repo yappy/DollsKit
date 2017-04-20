@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -190,7 +191,7 @@ namespace DollsLang
             // index range check
             if (index < 0 || index >= ArrayMax)
             {
-                throw new RuntimeLangException("Invalid array index: " + index);
+                throw new RuntimeLangException($"Invalid array index: {index}");
             }
             // array of array check (against memory attack)
             if (value.Type == ValueType.Array)
@@ -203,6 +204,18 @@ namespace DollsLang
                 list.Add(NilValue.Nil);
             }
             list[index] = value;
+        }
+
+        private ArrayValue concatArray(ArrayValue lh, ArrayValue rh)
+        {
+            List<Value> llist = lh.ValueList;
+            List<Value> rlist = rh.ValueList;
+            if (llist.Count + rlist.Count > ArrayMax)
+            {
+                throw new RuntimeLangException("Array size over");
+            }
+            List<Value> resultList = llist.Concat(rlist).ToList();
+            return new ArrayValue(resultList);
         }
 
         private Value evalExpression(AstExpression expr)
@@ -346,7 +359,11 @@ namespace DollsLang
                     return BoolValue.Of(!args[0].ToBool());
 
                 case OperationType.Add:
-                    if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
+                    if (args[0].Type == ValueType.Array && args[1].Type == ValueType.Array)
+                    {
+                        return concatArray(args[0].ToArray(), args[1].ToArray());
+                    }
+                    else if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
                     {
                         var result = args[0].ToString() + args[1].ToString();
                         if (result.Length > StringMax)
