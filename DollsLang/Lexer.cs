@@ -118,7 +118,7 @@ namespace DollsLang
                 }
             }
             // EOF token
-            result.Add(new Token(TokenType.EOF, "", lines.Length, 0));
+            result.Add(new Token(TokenType.EOF, "", lines.Length + 1, 0));
 
             return result;
         }
