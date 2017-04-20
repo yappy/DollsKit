@@ -36,7 +36,7 @@ namespace DollsLang
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
         {
-            varTable[funcName] = new NativeFunctionValue(func);
+            assign(funcName, new NativeFunctionValue(func));
         }
 
         public string Execute(AstProgram program)
