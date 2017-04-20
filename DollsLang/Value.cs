@@ -22,6 +22,8 @@ namespace DollsLang
         public abstract bool ToBool();
         public abstract int ToInt();
         public abstract double ToFloat();
+        public abstract ArrayValue ToArray();
+        public abstract FunctionValue ToFunction();
     }
 
     public class NilValue : Value
@@ -50,6 +52,16 @@ namespace DollsLang
         public override string ToString()
         {
             return "nil";
+        }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("nil cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("nil cannot be converted to function");
         }
     }
 
@@ -90,6 +102,16 @@ namespace DollsLang
         {
             return RawValue ? "true" : "false";
         }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("bool cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("bool cannot be converted to function");
+        }
     }
 
     public class IntValue : Value
@@ -121,6 +143,16 @@ namespace DollsLang
         {
             return RawValue.ToString();
         }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("int cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("int cannot be converted to function");
+        }
     }
 
     public class FloatValue : Value
@@ -151,6 +183,16 @@ namespace DollsLang
         public override string ToString()
         {
             return RawValue.ToString();
+        }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("float cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("float cannot be converted to function");
         }
     }
 
@@ -199,6 +241,16 @@ namespace DollsLang
         {
             return RawValue;
         }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("string cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("string cannot be converted to function");
+        }
     }
 
     public class ArrayValue : Value
@@ -230,6 +282,16 @@ namespace DollsLang
         {
             return "[" + string.Join(",", ValueList) +"]";
         }
+
+        public override ArrayValue ToArray()
+        {
+            return this;
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            throw new RuntimeLangException("array cannot be converted to function");
+        }
     }
 
     public abstract class FunctionValue : Value
@@ -251,6 +313,16 @@ namespace DollsLang
         public override double ToFloat()
         {
             throw new RuntimeLangException("Cannot convert function to float");
+        }
+
+        public override ArrayValue ToArray()
+        {
+            throw new RuntimeLangException("function cannot be converted to array");
+        }
+
+        public override FunctionValue ToFunction()
+        {
+            return this;
         }
     }
 
