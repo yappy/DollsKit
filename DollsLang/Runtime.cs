@@ -12,129 +12,129 @@ namespace DollsLang
         private static readonly int ArrayMax = 1024;
         private static readonly int DepthMax = 1024;
 
-        private CancellationToken Cancel;
-        private int CallDepth;
-        private Dictionary<string, Value> VarTable;
-        private StringBuilder OutputBuffer;
+        private CancellationToken cancel;
+        private int callDepth;
+        private Dictionary<string, Value> varTable;
+        private StringBuilder outputBuffer;
         // Error position info
-        private AstNode LastRecord;
+        private AstNode lastRecord;
 
         public Runtime(CancellationToken cancel)
         {
-            Cancel = cancel;
-            CallDepth = 0;
-            VarTable = new Dictionary<string, Value>();
-            OutputBuffer = new StringBuilder(OutputSize);
+            this.cancel = cancel;
+            callDepth = 0;
+            varTable = new Dictionary<string, Value>();
+            outputBuffer = new StringBuilder(OutputSize);
         }
 
         public void LoadDefaultFunctions()
         {
-            LoadFunction("print", Print);
-            LoadFunction("p", Print);
-            LoadFunction("for", For);
+            LoadFunction("print", libPrint);
+            LoadFunction("p", libPrint);
+            LoadFunction("for", libFor);
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
         {
-            VarTable[funcName] = new NativeFunctionValue(func);
+            assign(funcName, new NativeFunctionValue(func));
         }
 
         public string Execute(AstProgram program)
         {
-            OutputBuffer.Clear();
-            LastRecord = null;
+            outputBuffer.Clear();
+            lastRecord = null;
             try
             {
-                ExecuteStatementList(program.Statements);
-                return OutputBuffer.ToString();
+                executeStatementList(program.Statements);
+                return outputBuffer.ToString();
             }
             catch (RuntimeLangException e)
             {
-                if (LastRecord != null)
+                if (lastRecord != null)
                 {
-                    e.Line = LastRecord.Line;
-                    e.Column = LastRecord.Column;
+                    e.Line = lastRecord.Line;
+                    e.Column = lastRecord.Column;
                 }
                 throw;
             }
         }
 
-        private Value ExecuteStatementList(List<AstStatement> statList)
+        private Value executeStatementList(List<AstStatement> statList)
         {
             Value result = NilValue.Nil;
 
             // for 0-length list
-            Cancel.ThrowIfCancellationRequested();
+            cancel.ThrowIfCancellationRequested();
             foreach (var stat in statList)
             {
-                result = ExecuteStatement(stat);
-                Cancel.ThrowIfCancellationRequested();
+                result = executeStatement(stat);
+                cancel.ThrowIfCancellationRequested();
             }
             return result;
         }
 
-        private Value ExecuteStatement(AstStatement stat)
+        private Value executeStatement(AstStatement stat)
         {
-            LastRecord = stat;
+            lastRecord = stat;
             switch (stat.Type)
             {
                 case NodeType.If:
                     {
                         var node = (AstIf)stat;
-                        ExecuteIf(node.CondBobyList);
+                        executeIf(node.CondBobyList);
                         return NilValue.Nil;
                     }
                 case NodeType.While:
                     {
                         var node = (AstWhile)stat;
-                        ExecuteWhile(node.Cond, node.Body);
+                        executeWhile(node.Cond, node.Body);
                         return NilValue.Nil;
                     }
                 default:
                     {
                         var node = (AstExpression)stat;
-                        return EvalExpression(node);
+                        return evalExpression(node);
                     }
             }
         }
 
-        private void ExecuteIf(List<AstIf.CondAndBody> list)
+        private void executeIf(List<AstIf.CondAndBody> list)
         {
             foreach (var condBody in list)
             {
                 // If "if" or "elif", if condition is false, goto next
                 if (condBody.Cond != null)
                 {
-                    bool b = EvalExpression(condBody.Cond).ToBool();
+                    bool b = evalExpression(condBody.Cond).ToBool();
                     if (!b)
                     {
                         continue;
                     }
                 }
                 // Execute block and break
-                ExecuteStatementList(condBody.Body);
+                executeStatementList(condBody.Body);
                 break;
             }
         }
 
-        private void ExecuteWhile(AstExpression cond, List<AstStatement> body)
+        private void executeWhile(AstExpression cond, List<AstStatement> body)
         {
-            while (EvalExpression(cond).ToBool())
+            while (evalExpression(cond).ToBool())
             {
-                ExecuteStatementList(body);
+                executeStatementList(body);
             }
         }
 
-        private void Assign(string varName, Value value)
+        private void assign(string varName, Value value)
         {
-            VarTable[varName] = value;
+            varTable[varName] = value;
         }
 
-        private Value CallFunction(Value funcValue, params Value[] args)
+        private Value callFunction(Value funcValue, params Value[] args)
         {
-            CallDepth++;
+            callDepth++;
             try {
-                if (CallDepth > DepthMax)
+                if (callDepth > DepthMax)
                 {
                     throw new RuntimeLangException("Stack overflow");
                 }
@@ -142,36 +142,36 @@ namespace DollsLang
                 switch (funcValue.Type)
                 {
                     case ValueType.NativeFunction:
-                        return CallNativeFunction((NativeFunctionValue)funcValue, args);
+                        return callNativeFunction((NativeFunctionValue)funcValue, args);
                     case ValueType.UserFunction:
-                        return CallUserFunction((UserFunctionValue)funcValue, args);
+                        return callUserFunction((UserFunctionValue)funcValue, args);
                     default:
                         throw new RuntimeLangException("Not a function: " + funcValue.ToString());
                 }
             }
             finally
             {
-                CallDepth--;
+                callDepth--;
             }
         }
 
-        private Value CallNativeFunction(NativeFunctionValue funcValue, params Value[] args)
+        private Value callNativeFunction(NativeFunctionValue funcValue, params Value[] args)
         {
             return funcValue.NativeFunc(args);
         }
 
-        private Value CallUserFunction(UserFunctionValue funcValue, params Value[] args)
+        private Value callUserFunction(UserFunctionValue funcValue, params Value[] args)
         {
             List<string> paramList = funcValue.ParamList;
             int min = Math.Min(paramList.Count, args.Length);
             for (int i = 0; i < min; i++)
             {
-                Assign(paramList[i], args[i]);
+                assign(paramList[i], args[i]);
             }
-            return ExecuteStatementList(funcValue.Body);
+            return executeStatementList(funcValue.Body);
         }
 
-        private Value ReadArray(Value arrayValue, Value indexValue)
+        private Value readArray(Value arrayValue, Value indexValue)
         {
             if (arrayValue.Type != ValueType.Array)
             {
@@ -186,17 +186,17 @@ namespace DollsLang
             return list[index];
         }
 
-        private void AssignArray(Value arrayValue, Value indexValue, Value value)
+        private void assignArray(Value arrayValue, Value indexValue, Value value)
         {
             if (arrayValue.Type != ValueType.Array)
             {
                 throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
             }
             int index = indexValue.ToInt();
-            AssignArray(arrayValue, index, value);
+            assignArray(arrayValue, index, value);
         }
 
-        private void AssignArray(Value arrayValue, int index, Value value)
+        private void assignArray(Value arrayValue, int index, Value value)
         {
             if (arrayValue.Type != ValueType.Array)
             {
@@ -221,15 +221,15 @@ namespace DollsLang
             list[index] = value;
         }
 
-        private Value EvalExpression(AstExpression expr)
+        private Value evalExpression(AstExpression expr)
         {
-            CallDepth++;
+            callDepth++;
             try {
-                if (CallDepth > DepthMax)
+                if (callDepth > DepthMax)
                 {
                     throw new RuntimeLangException("Stack overflow");
                 }
-                LastRecord = expr;
+                lastRecord = expr;
 
                 switch (expr.Type)
                 {
@@ -242,7 +242,7 @@ namespace DollsLang
                         {
                             var node = (AstVariable)expr;
                             Value value;
-                            if (VarTable.TryGetValue(node.Name, out value))
+                            if (varTable.TryGetValue(node.Name, out value))
                             {
                                 return value;
                             }
@@ -254,41 +254,41 @@ namespace DollsLang
                     case NodeType.Operation:
                         {
                             var node = (AstOperation)expr;
-                            return EvalOperation(node);
+                            return evalOperation(node);
                         }
                     case NodeType.Assign:
                         {
                             var node = (AstAssign)expr;
-                            Value value = EvalExpression(node.Expression);
-                            Assign(node.VariableName, value);
+                            Value value = evalExpression(node.Expression);
+                            assign(node.VariableName, value);
                             return value;
                         }
                     case NodeType.AssignArray:
                         {
                             var node = (AstAssignArray)expr;
-                            Value arrayValue = EvalExpression(node.Array);
-                            Value indexValue = EvalExpression(node.Index);
-                            Value value = EvalExpression(node.Expression);
-                            AssignArray(arrayValue, indexValue, value);
+                            Value arrayValue = evalExpression(node.Array);
+                            Value indexValue = evalExpression(node.Index);
+                            Value value = evalExpression(node.Expression);
+                            assignArray(arrayValue, indexValue, value);
                             return value;
                         }
                     case NodeType.ReadArray:
                         {
                             var node = (AstReadArray)expr;
-                            Value arrayValue = EvalExpression(node.Array);
-                            Value indexValue = EvalExpression(node.Index);
-                            return ReadArray(arrayValue, indexValue);
+                            Value arrayValue = evalExpression(node.Array);
+                            Value indexValue = evalExpression(node.Index);
+                            return readArray(arrayValue, indexValue);
                         }
                     case NodeType.FunctionCall:
                         {
                             var node = (AstFunctionCall)expr;
-                            var funcValue = EvalExpression(node.Func);
+                            var funcValue = evalExpression(node.Func);
                             var args = new List<Value>(node.ExpressionList.Count);
                             foreach (var arg in node.ExpressionList)
                             {
-                                args.Add(EvalExpression(arg));
+                                args.Add(evalExpression(arg));
                             }
-                            return CallFunction(funcValue, args.ToArray());
+                            return callFunction(funcValue, args.ToArray());
                         }
                     case NodeType.ConstructArray:
                         {
@@ -298,7 +298,7 @@ namespace DollsLang
                             int index = 0;
                             foreach (var elem in node.ExpressionList)
                             {
-                                AssignArray(value, index, EvalExpression(elem));
+                                assignArray(value, index, evalExpression(elem));
                                 index++;
                             }
                             return value;
@@ -309,29 +309,29 @@ namespace DollsLang
             }
             finally
             {
-                CallDepth--;
+                callDepth--;
             }
         }
 
-        private Value EvalOperation(AstOperation node)
+        private Value evalOperation(AstOperation node)
         {
-            LastRecord = node;
+            lastRecord = node;
 
             var args = new Value[node.Operands.Length];
-            args[0] = EvalExpression(node.Operands[0]);
+            args[0] = evalExpression(node.Operands[0]);
 
-            LastRecord = node;
+            lastRecord = node;
 
             // short circuit
             switch (node.Operaton)
             {
-                case OperationType.AND:
+                case OperationType.And:
                     if (!args[0].ToBool())
                     {
                         return args[0];
                     }
                     break;
-                case OperationType.OR:
+                case OperationType.Or:
                     if (args[0].ToBool())
                     {
                         return args[0];
@@ -341,13 +341,13 @@ namespace DollsLang
 
             for (int i = 1; i < args.Length; i++)
             {
-                args[i] = EvalExpression(node.Operands[i]);
+                args[i] = evalExpression(node.Operands[i]);
             }
 
-            LastRecord = node;
+            lastRecord = node;
             switch (node.Operaton)
             {
-                case OperationType.NEGATIVE:
+                case OperationType.Negative:
                     switch (args[0].Type)
                     {
                         case ValueType.Int:
@@ -356,13 +356,12 @@ namespace DollsLang
                             return new FloatValue(-args[0].ToFloat());
                         default:
                             throw new RuntimeLangException(
-                                string.Format("Cannot apply {0} operator: {1}",
-                                    node.Operaton, args[0].Type));
+                                $"Cannot apply {node.Operaton} operator: {args[0].Type}");
                     }
-                case OperationType.NOT:
+                case OperationType.Not:
                     return BoolValue.Of(!args[0].ToBool());
 
-                case OperationType.ADD:
+                case OperationType.Add:
                     if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
                     {
                         var result = args[0].ToString() + args[1].ToString();
@@ -383,13 +382,12 @@ namespace DollsLang
                     else
                     {
                         throw new RuntimeLangException(
-                            string.Format("Cannot apply + operator: {0}, {1}",
-                                args[0].Type, args[1].Type));
+                            $"Cannot apply + operator: {args[0].Type}, {args[1].Type}");
                     }
-                case OperationType.SUB:
-                case OperationType.MUL:
-                case OperationType.DIV:
-                case OperationType.MOD:
+                case OperationType.Sub:
+                case OperationType.Mul:
+                case OperationType.Div:
+                case OperationType.Mod:
                 case OperationType.LT:
                 case OperationType.LE:
                 case OperationType.GT:
@@ -402,13 +400,13 @@ namespace DollsLang
                         double rh = args[1].ToFloat();
                         switch (node.Operaton)
                         {
-                            case OperationType.SUB:
+                            case OperationType.Sub:
                                 return new FloatValue(lh - rh);
-                            case OperationType.MUL:
+                            case OperationType.Mul:
                                 return new FloatValue(lh * rh);
-                            case OperationType.DIV:
+                            case OperationType.Div:
                                 return new FloatValue(lh / rh);
-                            case OperationType.MOD:
+                            case OperationType.Mod:
                                 return new FloatValue(lh % rh);
                             case OperationType.LT:
                                 return BoolValue.Of(lh < rh);
@@ -433,17 +431,17 @@ namespace DollsLang
                         int rh = args[1].ToInt();
                         switch (node.Operaton)
                         {
-                            case OperationType.SUB:
+                            case OperationType.Sub:
                                 return new IntValue(lh - rh);
-                            case OperationType.MUL:
+                            case OperationType.Mul:
                                 return new IntValue(lh * rh);
-                            case OperationType.DIV:
+                            case OperationType.Div:
                                 if (rh == 0)
                                 {
                                     throw new RuntimeLangException("Divide by 0");
                                 }
                                 return new IntValue(lh / rh);
-                            case OperationType.MOD:
+                            case OperationType.Mod:
                                 if (rh == 0)
                                 {
                                     throw new RuntimeLangException("Divide by 0");
@@ -468,57 +466,58 @@ namespace DollsLang
                     else
                     {
                         throw new RuntimeLangException(
-                            string.Format("Cannot apply {0} operator: {1}, {2}",
-                                node.Operaton, args[0].Type, args[1].Type));
+                            $"Cannot apply {node.Operaton} operator: " +
+                            $"{args[0].Type}, {args[1].Type}");
                     }
                 // simply returns rh (short circuit passed)
-                case OperationType.AND:
+                case OperationType.And:
                     return args[1];
-                case OperationType.OR:
+                case OperationType.Or:
                     return args[1];
             }
             throw new FatalLangException();
         }
 
-        private Value GetParam(Value[] args, int index)
+        private Value getParam(Value[] args, int index)
         {
             if (index >= args.Length)
             {
                 throw new RuntimeLangException(
-                    string.Format("Parameter #{0} is required", index + 1));
+                    $"Parameter #{index + 1} is required");
             }
             return args[index];
         }
 
-        private Value Print(Value[] args)
+        private Value libPrint(Value[] args)
         {
             bool first = true;
             foreach (var value in args)
             {
                 if (!first)
                 {
-                    OutputBuffer.Append(' ');
+                    outputBuffer.Append(' ');
                 }
                 first = false;
-                OutputBuffer.Append(value.ToString());
+                outputBuffer.Append(value.ToString());
             }
-            OutputBuffer.Append('\n');
-            OutputBuffer.Length = Math.Min(OutputBuffer.Length, OutputSize);
+            outputBuffer.Append('\n');
+            // max size = OutputSize
+            outputBuffer.Length = Math.Min(outputBuffer.Length, OutputSize);
 
             return NilValue.Nil;
         }
 
-        private Value For(Value[] args)
+        private Value libFor(Value[] args)
         {
-            int start = GetParam(args, 0).ToInt();
-            int end = GetParam(args, 1).ToInt();
-            Value func = GetParam(args, 2);
+            int start = getParam(args, 0).ToInt();
+            int end = getParam(args, 1).ToInt();
+            Value func = getParam(args, 2);
 
             Value[] callArgs = new Value[1];
             for (int i = start; i <= end; i++)
             {
                 callArgs[0] = new IntValue(i);
-                CallFunction(func, callArgs);
+                callFunction(func, callArgs);
             }
 
             return NilValue.Nil;

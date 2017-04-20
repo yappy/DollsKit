@@ -14,13 +14,13 @@ namespace DollsLang
 
     public enum OperationType
     {
-        NEGATIVE, NOT,
-        MUL, DIV, MOD,
-        ADD, SUB,
+        Negative, Not,
+        Mul, Div, Mod,
+        Add, Sub,
         LT, LE, GT, GE,
         EQ, NE,
-        AND,
-        OR,
+        And,
+        Or,
     }
 
     public abstract class AstNode

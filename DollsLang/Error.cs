@@ -2,20 +2,7 @@
 
 namespace DollsLang
 {
-    public class LangException : Exception
-    {
-        public LangException() : this("Language error") { }
-
-        public LangException(string message)
-            : base(message)
-        { }
-
-        public LangException(string message, Exception inner)
-            : base(message, inner)
-        { }
-    }
-
-    public class FatalLangException : LangException
+    public class FatalLangException : Exception
     {
         public FatalLangException() : this("Language system fatal error") { }
 
@@ -28,6 +15,22 @@ namespace DollsLang
         { }
     }
 
+    public class LangException : Exception
+    {
+        public int Line { get; set; } = -1;
+        public int Column { get; set; } = -1;
+
+        public LangException() : this("Language error") { }
+
+        public LangException(string message)
+            : base(message)
+        { }
+
+        public LangException(string message, Exception inner)
+            : base(message, inner)
+        { }
+    }
+
     public class LexicalLangException : LangException
     {
         public LexicalLangException() : this("Lexical error") { }
@@ -36,9 +39,15 @@ namespace DollsLang
             : base(message)
         { }
 
-        public LexicalLangException(string message, Exception inner)
-            : base(message, inner)
-        { }
+        public LexicalLangException(string message, int line, int column)
+            : base(message)
+        {
+            Line = line;
+            Column = column;
+        }
+
+        public override string Message =>
+            $"Lexical Error at line {Line}, column {Column}: {base.Message}";
     }
 
     public class SyntaxLangException : LangException
@@ -52,13 +61,20 @@ namespace DollsLang
         public SyntaxLangException(string message, Exception inner)
             : base(message, inner)
         { }
+
+        public SyntaxLangException(string message, int line, int column)
+            : base(message)
+        {
+            Line = line;
+            Column = column;
+        }
+
+        public override string Message =>
+            $"Syntax Error at line {Line}, column {Column}: {base.Message}";
     }
 
     public class RuntimeLangException : LangException
     {
-        public int Line { get; set; } = -1;
-        public int Column { get; set; } = -1;
-
         public RuntimeLangException() : this("Runtime error") { }
 
         public RuntimeLangException(string message)
@@ -69,8 +85,7 @@ namespace DollsLang
             : base(message, inner)
         { }
 
-        public override string Message => string.Format(
-            "Runtime Error at line {0}, column {1} {2}",
-            Line, Column, base.Message);
+        public override string Message =>
+            $"Runtime Error at line {Line}, column {Column}: {base.Message}";
     }
 }

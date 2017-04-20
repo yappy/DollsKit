@@ -31,7 +31,7 @@
 
         public override string ToString()
         {
-            return string.Format("[({0}:{1}){2}: {3}]", Line, Column, Type, Text);
+            return $"[({Line}:{Column}){Type}: {Text}]";
         }
     }
 }

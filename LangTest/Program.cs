@@ -70,7 +70,31 @@ print(arr1)
                 Console.WriteLine(e.Message);
             }
 
-            Console.Read();
+            while (true) {
+                string src = Console.ReadLine();
+                if (src.Length == 0) {
+                    break;
+                }
+                Console.WriteLine(interpret(src));
+            }
+        }
+
+        static String interpret(String src)
+        {
+            try {
+                var lexer = new Lexer();
+                var tokenList = lexer.Process(src);
+                var parser = new Parser();
+                var program = parser.Parse(tokenList);
+                var cancelSource = new CancellationTokenSource();
+                var runtime = new Runtime(cancelSource.Token);
+                runtime.LoadDefaultFunctions();
+                return runtime.Execute(program);
+            }
+            catch (LangException e)
+            {
+                return e.Message;
+            }
         }
     }
 }
