@@ -26,14 +26,7 @@ namespace DollsLang
 
     public class NilValue : Value
     {
-        private static readonly NilValue obj = new NilValue();
-        public static NilValue Nil
-        {
-            get
-            {
-                return obj;
-            }
-        }
+        public static NilValue Nil { get; } = new NilValue();
 
         private NilValue()
             : base(ValueType.Nil)
@@ -64,23 +57,8 @@ namespace DollsLang
     {
         public bool RawValue { get; private set; }
 
-        private static readonly BoolValue tobj = new BoolValue(true);
-        private static readonly BoolValue fobj = new BoolValue(false);
-
-        public static BoolValue True
-        {
-            get
-            {
-                return tobj;
-            }
-        }
-        public static BoolValue False
-        {
-            get
-            {
-                return fobj;
-            }
-        }
+        public static BoolValue False { get; } = new BoolValue(false);
+        public static BoolValue True { get; } = new BoolValue(true);
 
         public static Value Of(bool b)
         {
