@@ -130,7 +130,7 @@ namespace DollsLang
             varTable[varName] = value;
         }
 
-        private Value callFunction(Value funcValue, params Value[] args)
+        private Value callFunction(FunctionValue funcValue, params Value[] args)
         {
             callDepth++;
             try {
@@ -171,14 +171,9 @@ namespace DollsLang
             return executeStatementList(funcValue.Body);
         }
 
-        private Value readArray(Value arrayValue, Value indexValue)
+        private Value readArray(ArrayValue arrayValue, int index)
         {
-            if (arrayValue.Type != ValueType.Array)
-            {
-                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
-            }
             List<Value> list = ((ArrayValue)arrayValue).ValueList;
-            int index = indexValue.ToInt();
             if (index < 0 || index >= list.Count)
             {
                 return NilValue.Nil;
@@ -186,22 +181,8 @@ namespace DollsLang
             return list[index];
         }
 
-        private void assignArray(Value arrayValue, Value indexValue, Value value)
+        private void assignArray(ArrayValue arrayValue, int index, Value value)
         {
-            if (arrayValue.Type != ValueType.Array)
-            {
-                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
-            }
-            int index = indexValue.ToInt();
-            assignArray(arrayValue, index, value);
-        }
-
-        private void assignArray(Value arrayValue, int index, Value value)
-        {
-            if (arrayValue.Type != ValueType.Array)
-            {
-                throw new RuntimeLangException("Not an array: " + arrayValue.ToString());
-            }
             List<Value> list = ((ArrayValue)arrayValue).ValueList;
             // index range check
             if (index < 0 || index >= ArrayMax)
@@ -266,23 +247,23 @@ namespace DollsLang
                     case NodeType.AssignArray:
                         {
                             var node = (AstAssignArray)expr;
-                            Value arrayValue = evalExpression(node.Array);
-                            Value indexValue = evalExpression(node.Index);
+                            ArrayValue arrayValue = evalExpression(node.Array).ToArray();
+                            int index = evalExpression(node.Index).ToInt();
                             Value value = evalExpression(node.Expression);
-                            assignArray(arrayValue, indexValue, value);
+                            assignArray(arrayValue, index, value);
                             return value;
                         }
                     case NodeType.ReadArray:
                         {
                             var node = (AstReadArray)expr;
-                            Value arrayValue = evalExpression(node.Array);
-                            Value indexValue = evalExpression(node.Index);
-                            return readArray(arrayValue, indexValue);
+                            ArrayValue arrayValue = evalExpression(node.Array).ToArray();
+                            int index = evalExpression(node.Index).ToInt();
+                            return readArray(arrayValue, index);
                         }
                     case NodeType.FunctionCall:
                         {
                             var node = (AstFunctionCall)expr;
-                            var funcValue = evalExpression(node.Func);
+                            FunctionValue funcValue = evalExpression(node.Func).ToFunction();
                             var args = new List<Value>(node.ExpressionList.Count);
                             foreach (var arg in node.ExpressionList)
                             {
@@ -511,7 +492,7 @@ namespace DollsLang
         {
             int start = getParam(args, 0).ToInt();
             int end = getParam(args, 1).ToInt();
-            Value func = getParam(args, 2);
+            FunctionValue func = getParam(args, 2).ToFunction();
 
             Value[] callArgs = new Value[1];
             for (int i = start; i <= end; i++)
