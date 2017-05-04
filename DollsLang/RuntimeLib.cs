@@ -104,12 +104,20 @@ namespace DollsLang
                 case 1:
                     {
                         int maxValue = GetParam(args, 0).ToInt();
+                        if (maxValue < 0)
+                        {
+                            throw new RuntimeLangException($"MaxValue is less than 0: {maxValue}");
+                        }
                         return new IntValue(random.Next(maxValue));
                     }
                 default:
                     {
                         int minValue = GetParam(args, 0).ToInt();
                         int maxValue = GetParam(args, 1).ToInt();
+                        if (minValue > maxValue)
+                        {
+                            throw new RuntimeLangException($"MaxValue is less than MinValue: {minValue} > {maxValue}");
+                        }
                         return new IntValue(random.Next(minValue, maxValue));
                     }
             }
