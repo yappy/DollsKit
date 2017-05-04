@@ -136,6 +136,7 @@ namespace Shanghai
             }
             catch (LangException e)
             {
+                // 通常の言語処理系エラー
                 output = e.Message;
             }
             catch (OperationCanceledException)
@@ -150,6 +151,14 @@ namespace Shanghai
                     // サーバに対するキャンセルは外へリスロー
                     throw;
                 }
+            }
+            catch(Exception e)
+            {
+                // 起きてはいけないはずのエラー
+                // FatalLangException
+                // またはライブラリから例外がスローされてしまった
+                output = "Language system fatal error (管理者へ連絡してください)";
+                Logger.Log(LogLevel.Error, e);
             }
             return output;
         }
