@@ -45,6 +45,7 @@
     <Compile Include="Lexer.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Runtime.cs" />
+    <Compile Include="RuntimeLib.cs" />
     <Compile Include="Token.cs" />
     <Compile Include="Value.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
