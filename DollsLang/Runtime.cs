@@ -233,7 +233,10 @@ namespace DollsLang
                     case NodeType.Variable:
                         {
                             var node = (AstVariable)expr;
-                            if (varTable.TryGetValue(node.Name, out Value value))
+#pragma warning disable IDE0018 // インライン変数宣言
+                            Value value;
+#pragma warning restore IDE0018 // インライン変数宣言
+                            if (varTable.TryGetValue(node.Name, out value))
                             {
                                 return value;
                             }
