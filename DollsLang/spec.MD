@@ -393,7 +393,7 @@ print(size(a))
 
 MaxValue < 0 の場合、エラーになります。
 
-### 引数0
+### 引数2
 * 引数
     * Int MinValue(inclusive)
     * Int MaxValue(exclusive)
