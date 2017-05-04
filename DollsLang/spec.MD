@@ -374,3 +374,30 @@ print(size(a))
 3
 4
 ```
+
+## rand
+乱数を返します。
+シードはプログラムの開始時に現在の時間を使って自動的に初期化されます。
+
+### 引数0
+* 引数
+    * なし
+* 返り値
+    * 0.0 以上 1.0 未満の Float 値
+
+### 引数1
+* 引数
+    * Int MaxValue(exclusive)
+* 返り値
+    * 0 以上 MaxValue 未満の Int 値
+
+MaxValue < 0 の場合、エラーになります。
+
+### 引数0
+* 引数
+    * Int MinValue(inclusive)
+    * Int MaxValue(exclusive)
+* 返り値
+    * MinValue 以上 MaxValue 未満の Int 値
+
+MinValue > MaxValue の場合、エラーになります。
