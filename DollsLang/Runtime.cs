@@ -30,16 +30,16 @@ namespace DollsLang
 
         public void LoadDefaultFunctions()
         {
-            LoadFunction("print", libPrint);
-            LoadFunction("p", libPrint);
-            LoadFunction("for", libFor);
-            LoadFunction("foreach", libForEach);
-            LoadFunction("size", libSize);
+            LoadFunction("print", LibPrint);
+            LoadFunction("p", LibPrint);
+            LoadFunction("for", LibFor);
+            LoadFunction("foreach", LibForEach);
+            LoadFunction("size", LibSize);
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)
         {
-            assign(funcName, new NativeFunctionValue(func));
+            Assign(funcName, new NativeFunctionValue(func));
         }
 
         public string Execute(AstProgram program)
@@ -48,7 +48,7 @@ namespace DollsLang
             lastRecord = null;
             try
             {
-                executeStatementList(program.Statements);
+                ExecuteStatementList(program.Statements);
                 return outputBuffer.ToString();
             }
             catch (RuntimeLangException e)
@@ -62,7 +62,7 @@ namespace DollsLang
             }
         }
 
-        private Value executeStatementList(List<AstStatement> statList)
+        private Value ExecuteStatementList(List<AstStatement> statList)
         {
             Value result = NilValue.Nil;
 
@@ -70,13 +70,13 @@ namespace DollsLang
             cancel.ThrowIfCancellationRequested();
             foreach (var stat in statList)
             {
-                result = executeStatement(stat);
+                result = ExecuteStatement(stat);
                 cancel.ThrowIfCancellationRequested();
             }
             return result;
         }
 
-        private Value executeStatement(AstStatement stat)
+        private Value ExecuteStatement(AstStatement stat)
         {
             lastRecord = stat;
             switch (stat.Type)
@@ -84,56 +84,56 @@ namespace DollsLang
                 case NodeType.If:
                     {
                         var node = (AstIf)stat;
-                        executeIf(node.CondBobyList);
+                        ExecuteIf(node.CondBobyList);
                         return NilValue.Nil;
                     }
                 case NodeType.While:
                     {
                         var node = (AstWhile)stat;
-                        executeWhile(node.Cond, node.Body);
+                        ExecuteWhile(node.Cond, node.Body);
                         return NilValue.Nil;
                     }
                 default:
                     {
                         var node = (AstExpression)stat;
-                        return evalExpression(node);
+                        return EvalExpression(node);
                     }
             }
         }
 
-        private void executeIf(List<AstIf.CondAndBody> list)
+        private void ExecuteIf(List<AstIf.CondAndBody> list)
         {
             foreach (var condBody in list)
             {
                 // If "if" or "elif", if condition is false, goto next
                 if (condBody.Cond != null)
                 {
-                    bool b = evalExpression(condBody.Cond).ToBool();
+                    bool b = EvalExpression(condBody.Cond).ToBool();
                     if (!b)
                     {
                         continue;
                     }
                 }
                 // Execute block and break
-                executeStatementList(condBody.Body);
+                ExecuteStatementList(condBody.Body);
                 break;
             }
         }
 
-        private void executeWhile(AstExpression cond, List<AstStatement> body)
+        private void ExecuteWhile(AstExpression cond, List<AstStatement> body)
         {
-            while (evalExpression(cond).ToBool())
+            while (EvalExpression(cond).ToBool())
             {
-                executeStatementList(body);
+                ExecuteStatementList(body);
             }
         }
 
-        private void assign(string varName, Value value)
+        private void Assign(string varName, Value value)
         {
             varTable[varName] = value;
         }
 
-        private Value callFunction(FunctionValue funcValue, params Value[] args)
+        private Value CallFunction(FunctionValue funcValue, params Value[] args)
         {
             callDepth++;
             try {
@@ -145,9 +145,9 @@ namespace DollsLang
                 switch (funcValue.Type)
                 {
                     case ValueType.NativeFunction:
-                        return callNativeFunction((NativeFunctionValue)funcValue, args);
+                        return CallNativeFunction((NativeFunctionValue)funcValue, args);
                     case ValueType.UserFunction:
-                        return callUserFunction((UserFunctionValue)funcValue, args);
+                        return CallUserFunction((UserFunctionValue)funcValue, args);
                     default:
                         throw new RuntimeLangException("Not a function: " + funcValue.ToString());
                 }
@@ -158,24 +158,24 @@ namespace DollsLang
             }
         }
 
-        private Value callNativeFunction(NativeFunctionValue funcValue, params Value[] args)
+        private Value CallNativeFunction(NativeFunctionValue funcValue, params Value[] args)
         {
             cancel.ThrowIfCancellationRequested();
             return funcValue.NativeFunc(args);
         }
 
-        private Value callUserFunction(UserFunctionValue funcValue, params Value[] args)
+        private Value CallUserFunction(UserFunctionValue funcValue, params Value[] args)
         {
             List<string> paramList = funcValue.ParamList;
             int min = Math.Min(paramList.Count, args.Length);
             for (int i = 0; i < min; i++)
             {
-                assign(paramList[i], args[i]);
+                Assign(paramList[i], args[i]);
             }
-            return executeStatementList(funcValue.Body);
+            return ExecuteStatementList(funcValue.Body);
         }
 
-        private Value readArray(ArrayValue arrayValue, int index)
+        private Value ReadArray(ArrayValue arrayValue, int index)
         {
             List<Value> list = ((ArrayValue)arrayValue).ValueList;
             if (index < 0 || index >= list.Count)
@@ -185,7 +185,7 @@ namespace DollsLang
             return list[index];
         }
 
-        private void assignArray(ArrayValue arrayValue, int index, Value value)
+        private void AssignArray(ArrayValue arrayValue, int index, Value value)
         {
             List<Value> list = ((ArrayValue)arrayValue).ValueList;
             // index range check
@@ -206,7 +206,7 @@ namespace DollsLang
             list[index] = value;
         }
 
-        private ArrayValue concatArray(ArrayValue lh, ArrayValue rh)
+        private ArrayValue ConcatArray(ArrayValue lh, ArrayValue rh)
         {
             List<Value> llist = lh.ValueList;
             List<Value> rlist = rh.ValueList;
@@ -218,7 +218,7 @@ namespace DollsLang
             return new ArrayValue(resultList);
         }
 
-        private Value evalExpression(AstExpression expr)
+        private Value EvalExpression(AstExpression expr)
         {
             callDepth++;
             try {
@@ -238,8 +238,7 @@ namespace DollsLang
                     case NodeType.Variable:
                         {
                             var node = (AstVariable)expr;
-                            Value value;
-                            if (varTable.TryGetValue(node.Name, out value))
+                            if (varTable.TryGetValue(node.Name, out Value value))
                             {
                                 return value;
                             }
@@ -251,41 +250,41 @@ namespace DollsLang
                     case NodeType.Operation:
                         {
                             var node = (AstOperation)expr;
-                            return evalOperation(node);
+                            return EvalOperation(node);
                         }
                     case NodeType.Assign:
                         {
                             var node = (AstAssign)expr;
-                            Value value = evalExpression(node.Expression);
-                            assign(node.VariableName, value);
+                            Value value = EvalExpression(node.Expression);
+                            Assign(node.VariableName, value);
                             return value;
                         }
                     case NodeType.AssignArray:
                         {
                             var node = (AstAssignArray)expr;
-                            ArrayValue arrayValue = evalExpression(node.Array).ToArray();
-                            int index = evalExpression(node.Index).ToInt();
-                            Value value = evalExpression(node.Expression);
-                            assignArray(arrayValue, index, value);
+                            ArrayValue arrayValue = EvalExpression(node.Array).ToArray();
+                            int index = EvalExpression(node.Index).ToInt();
+                            Value value = EvalExpression(node.Expression);
+                            AssignArray(arrayValue, index, value);
                             return value;
                         }
                     case NodeType.ReadArray:
                         {
                             var node = (AstReadArray)expr;
-                            ArrayValue arrayValue = evalExpression(node.Array).ToArray();
-                            int index = evalExpression(node.Index).ToInt();
-                            return readArray(arrayValue, index);
+                            ArrayValue arrayValue = EvalExpression(node.Array).ToArray();
+                            int index = EvalExpression(node.Index).ToInt();
+                            return ReadArray(arrayValue, index);
                         }
                     case NodeType.FunctionCall:
                         {
                             var node = (AstFunctionCall)expr;
-                            FunctionValue funcValue = evalExpression(node.Func).ToFunction();
+                            FunctionValue funcValue = EvalExpression(node.Func).ToFunction();
                             var args = new List<Value>(node.ExpressionList.Count);
                             foreach (var arg in node.ExpressionList)
                             {
-                                args.Add(evalExpression(arg));
+                                args.Add(EvalExpression(arg));
                             }
-                            return callFunction(funcValue, args.ToArray());
+                            return CallFunction(funcValue, args.ToArray());
                         }
                     case NodeType.ConstructArray:
                         {
@@ -295,7 +294,7 @@ namespace DollsLang
                             int index = 0;
                             foreach (var elem in node.ExpressionList)
                             {
-                                assignArray(value, index, evalExpression(elem));
+                                AssignArray(value, index, EvalExpression(elem));
                                 index++;
                             }
                             return value;
@@ -310,12 +309,12 @@ namespace DollsLang
             }
         }
 
-        private Value evalOperation(AstOperation node)
+        private Value EvalOperation(AstOperation node)
         {
             lastRecord = node;
 
             var args = new Value[node.Operands.Length];
-            args[0] = evalExpression(node.Operands[0]);
+            args[0] = EvalExpression(node.Operands[0]);
 
             lastRecord = node;
 
@@ -338,7 +337,7 @@ namespace DollsLang
 
             for (int i = 1; i < args.Length; i++)
             {
-                args[i] = evalExpression(node.Operands[i]);
+                args[i] = EvalExpression(node.Operands[i]);
             }
 
             lastRecord = node;
@@ -361,7 +360,7 @@ namespace DollsLang
                 case OperationType.Add:
                     if (args[0].Type == ValueType.Array && args[1].Type == ValueType.Array)
                     {
-                        return concatArray(args[0].ToArray(), args[1].ToArray());
+                        return ConcatArray(args[0].ToArray(), args[1].ToArray());
                     }
                     else if (args[0].Type == ValueType.String || args[1].Type == ValueType.String)
                     {
@@ -479,7 +478,7 @@ namespace DollsLang
             throw new FatalLangException();
         }
 
-        private Value getParam(Value[] args, int index)
+        private Value GetParam(Value[] args, int index)
         {
             if (index >= args.Length)
             {
@@ -489,7 +488,7 @@ namespace DollsLang
             return args[index];
         }
 
-        private Value libPrint(Value[] args)
+        private Value LibPrint(Value[] args)
         {
             bool first = true;
             foreach (var value in args)
@@ -508,42 +507,42 @@ namespace DollsLang
             return NilValue.Nil;
         }
 
-        private Value libFor(Value[] args)
+        private Value LibFor(Value[] args)
         {
-            int start = getParam(args, 0).ToInt();
-            int end = getParam(args, 1).ToInt();
-            FunctionValue func = getParam(args, 2).ToFunction();
+            int start = GetParam(args, 0).ToInt();
+            int end = GetParam(args, 1).ToInt();
+            FunctionValue func = GetParam(args, 2).ToFunction();
 
             Value[] callArgs = new Value[1];
             for (int i = start; i <= end; i++)
             {
                 callArgs[0] = new IntValue(i);
-                callFunction(func, callArgs);
+                CallFunction(func, callArgs);
             }
 
             return NilValue.Nil;
         }
 
-        private Value libForEach(Value[] args)
+        private Value LibForEach(Value[] args)
         {
-            ArrayValue array = getParam(args, 0).ToArray();
+            ArrayValue array = GetParam(args, 0).ToArray();
             List<Value> list = array.ValueList;
-            FunctionValue func = getParam(args, 1).ToFunction();
+            FunctionValue func = GetParam(args, 1).ToFunction();
 
             Value[] callArgs = new Value[2];
             for (int i = 0; i < list.Count; i++)
             {
                 callArgs[0] = list[i];
                 callArgs[1] = new IntValue(i);
-                callFunction(func, callArgs);
+                CallFunction(func, callArgs);
             }
 
             return NilValue.Nil;
         }
 
-        private Value libSize(Value[] args)
+        private Value LibSize(Value[] args)
         {
-            ArrayValue array = getParam(args, 0).ToArray();
+            ArrayValue array = GetParam(args, 0).ToArray();
 
             return new IntValue(array.ValueList.Count);
         }
