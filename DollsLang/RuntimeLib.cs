@@ -20,6 +20,7 @@ namespace DollsLang
         {
             LoadFunction("print", LibPrint);
             LoadFunction("p", LibPrint);
+            LoadFunction("cond", LibCond);
             LoadFunction("for", LibFor);
             LoadFunction("foreach", LibForEach);
             LoadFunction("size", LibSize);
@@ -53,6 +54,14 @@ namespace DollsLang
             outputBuffer.Length = Math.Min(outputBuffer.Length, OutputSize);
 
             return NilValue.Nil;
+        }
+
+        private Value LibCond(Value[] args)
+        {
+            bool b = GetParam(args, 0).ToBool();
+            Value x = GetParam(args, 1);
+            Value y = GetParam(args, 2);
+            return b ? x : y;
         }
 
         private Value LibFor(Value[] args)
