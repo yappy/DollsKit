@@ -25,6 +25,7 @@ namespace DollsLang
             LoadFunction("foreach", LibForEach);
             LoadFunction("size", LibSize);
             LoadFunction("rand", LibRand);
+            LoadFunction("isprime", LibIsPrime);
         }
 
         private Value GetParam(Value[] args, int index)
@@ -130,6 +131,28 @@ namespace DollsLang
                         return new IntValue(random.Next(minValue, maxValue));
                     }
             }
+        }
+
+        private Value LibIsPrime(Value[] args)
+        {
+            long x = GetParam(args, 0).ToInt();
+            if (x == 2)
+            {
+                return BoolValue.Of(true);
+            }
+            if (x <= 1 || x % 2 == 0)
+            {
+                return BoolValue.Of(false);
+            }
+            // 3 <= x <= 0x7fffffff
+            for (long i = 2; i * i <= x; i++)
+            {
+                if (x % i == 0)
+                {
+                    return BoolValue.Of(false);
+                }
+            }
+            return BoolValue.Of(true);
         }
     }
 }
