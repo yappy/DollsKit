@@ -24,6 +24,11 @@ namespace DollsLang
             LoadFunction("for", LibFor);
             LoadFunction("foreach", LibForEach);
             LoadFunction("size", LibSize);
+
+            LoadFunction("toi", LibToI);
+            LoadFunction("tof", LibToF);
+            LoadFunction("tos", LibToS);
+
             LoadFunction("rand", LibRand);
             LoadFunction("isprime", LibIsPrime);
         }
@@ -38,6 +43,7 @@ namespace DollsLang
             return args[index];
         }
 
+#region System functions
         private Value LibPrint(Value[] args)
         {
             bool first = true;
@@ -104,7 +110,31 @@ namespace DollsLang
 
             return new IntValue(array.ValueList.Count);
         }
+#endregion
 
+#region Convert functions
+        private Value LibToI(Value[] args)
+        {
+            Value x = GetParam(args, 0);
+            return x.Type == ValueType.Float ?
+                new IntValue((int)x.ToFloat()) :
+                new IntValue(x.ToInt());
+        }
+
+        private Value LibToF(Value[] args)
+        {
+            Value x = GetParam(args, 0);
+            return new FloatValue(x.ToFloat());
+        }
+
+        private Value LibToS(Value[] args)
+        {
+            Value x = GetParam(args, 0);
+            return new StringValue(x.ToString());
+        }
+#endregion
+
+#region Math functions
         private Value LibRand(Value[] args)
         {
             switch (args.Length)
@@ -154,5 +184,6 @@ namespace DollsLang
             }
             return BoolValue.Of(true);
         }
+#endregion
     }
 }
