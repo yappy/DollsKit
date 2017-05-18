@@ -29,6 +29,10 @@ namespace DollsLang
             LoadFunction("tof", LibToF);
             LoadFunction("tos", LibToS);
 
+            LoadFunction("abs", LibAbs);
+            LoadFunction("sin", LibSin);
+            LoadFunction("cos", LibCos);
+            LoadFunction("tan", LibTan);
             LoadFunction("rand", LibRand);
             LoadFunction("isprime", LibIsPrime);
         }
@@ -135,6 +139,46 @@ namespace DollsLang
 #endregion
 
 #region Math functions
+        private Value FloatFunc1(Value[] args, Func<double, double> func)
+        {
+            double x = GetParam(args, 0).ToFloat();
+            return new FloatValue(func(x));
+        }
+
+        private Value LibAbs(Value[] args)
+        {
+            Value x = GetParam(args, 0);
+            if (x.Type == ValueType.Int)
+            {
+                int i = x.ToInt();
+                if (i == int.MinValue)
+                {
+                    throw new RuntimeLangException("Overflow at abs");
+                }
+                return new IntValue(Math.Abs(i));
+            }
+            else
+            {
+                double d = x.ToFloat();
+                return new FloatValue(Math.Abs(d));
+            }
+        }
+
+        private Value LibSin(Value[] args)
+        {
+            return FloatFunc1(args, Math.Sin);
+        }
+
+        private Value LibCos(Value[] args)
+        {
+            return FloatFunc1(args, Math.Cos);
+        }
+
+        private Value LibTan(Value[] args)
+        {
+            return FloatFunc1(args, Math.Tan);
+        }
+
         private Value LibRand(Value[] args)
         {
             switch (args.Length)
