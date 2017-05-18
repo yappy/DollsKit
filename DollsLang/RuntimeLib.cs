@@ -21,6 +21,13 @@ namespace DollsLang
             LoadIntVariable("IMIN", int.MinValue);
             LoadIntVariable("IMAX", int.MaxValue);
 
+            LoadFloatVariable("FMIN", double.MinValue);
+            LoadFloatVariable("FMAX", double.MaxValue);
+            LoadFloatVariable("FEPS", double.Epsilon);
+            LoadFloatVariable("NAN", double.NaN);
+            LoadFloatVariable("NINF", double.NegativeInfinity);
+            LoadFloatVariable("PINF", double.PositiveInfinity);
+
             LoadFloatVariable("E", Math.E);
             LoadFloatVariable("PI", Math.PI);
         }
