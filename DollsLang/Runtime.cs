@@ -27,9 +27,20 @@ namespace DollsLang
             outputBuffer = new StringBuilder(OutputSize);
         }
 
-        public void LoadDefaultFunctions()
+        public void LoadDefaultLibrary()
         {
+            LoadDefaultVariablesInternal();
             LoadDefaultFunctionsInternal();
+        }
+
+        public void LoadIntVariable(string name, int value)
+        {
+            Assign(name, new IntValue(value));
+        }
+
+        public void LoadFloatVariable(string name, double value)
+        {
+            Assign(name, new FloatValue(value));
         }
 
         public void LoadFunction(string funcName, Func<Value[], Value> func)

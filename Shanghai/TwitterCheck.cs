@@ -129,7 +129,7 @@ namespace Shanghai
                 var tokenList = lexer.Process(src);
                 var program = parser.Parse(tokenList);
 
-                runtime.LoadDefaultFunctions();
+                runtime.LoadDefaultLibrary();
                 // TODO: timeout
                 timeoutSource.CancelAfter(1000);
                 output = runtime.Execute(program);
