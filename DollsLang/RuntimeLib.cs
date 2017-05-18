@@ -46,9 +46,17 @@ namespace DollsLang
             LoadFunction("tos", LibToS);
 
             LoadFunction("abs", LibAbs);
+            LoadFunction("exp", LibExp);
+            LoadFunction("pow", LibPow);
+            LoadFunction("sqrt", LibSqrt);
+            LoadFunction("log", LibLog);
             LoadFunction("sin", LibSin);
             LoadFunction("cos", LibCos);
             LoadFunction("tan", LibTan);
+            LoadFunction("sin", LibAsin);
+            LoadFunction("cos", LibAcos);
+            LoadFunction("tan", LibAtan);
+            LoadFunction("tan2", LibAtan2);
             LoadFunction("rand", LibRand);
             LoadFunction("isprime", LibIsPrime);
         }
@@ -161,6 +169,13 @@ namespace DollsLang
             return new FloatValue(func(x));
         }
 
+        private Value FloatFunc2(Value[] args, Func<double, double, double> func)
+        {
+            double x = GetParam(args, 0).ToFloat();
+            double y = GetParam(args, 1).ToFloat();
+            return new FloatValue(func(x, y));
+        }
+
         private Value LibAbs(Value[] args)
         {
             Value x = GetParam(args, 0);
@@ -180,6 +195,33 @@ namespace DollsLang
             }
         }
 
+        private Value LibExp(Value[] args)
+        {
+            return FloatFunc1(args, Math.Exp);
+        }
+
+        private Value LibPow(Value[] args)
+        {
+            return FloatFunc2(args, Math.Pow);
+        }
+
+        private Value LibSqrt(Value[] args)
+        {
+            return FloatFunc1(args, Math.Sqrt);
+        }
+
+        private Value LibLog(Value[] args)
+        {
+            if (args.Length == 1)
+            {
+                return FloatFunc1(args, Math.Log);
+            }
+            else
+            {
+                return FloatFunc2(args, Math.Log);
+            }
+        }
+
         private Value LibSin(Value[] args)
         {
             return FloatFunc1(args, Math.Sin);
@@ -193,6 +235,26 @@ namespace DollsLang
         private Value LibTan(Value[] args)
         {
             return FloatFunc1(args, Math.Tan);
+        }
+
+        private Value LibAsin(Value[] args)
+        {
+            return FloatFunc1(args, Math.Asin);
+        }
+
+        private Value LibAcos(Value[] args)
+        {
+            return FloatFunc1(args, Math.Acos);
+        }
+
+        private Value LibAtan(Value[] args)
+        {
+            return FloatFunc1(args, Math.Atan);
+        }
+
+        private Value LibAtan2(Value[] args)
+        {
+            return FloatFunc2(args, Math.Atan2);
         }
 
         private Value LibRand(Value[] args)
