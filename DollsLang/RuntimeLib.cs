@@ -16,6 +16,15 @@ namespace DollsLang
             random = new Random();
         }
 
+        private void LoadDefaultVariablesInternal()
+        {
+            LoadIntVariable("IMIN", int.MinValue);
+            LoadIntVariable("IMAX", int.MaxValue);
+
+            LoadFloatVariable("E", Math.E);
+            LoadFloatVariable("PI", Math.PI);
+        }
+
         private void LoadDefaultFunctionsInternal()
         {
             LoadFunction("print", LibPrint);

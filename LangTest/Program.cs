@@ -54,7 +54,7 @@ print(arr1)
 
             var cancelSource = new CancellationTokenSource();
             var runtime = new Runtime(cancelSource.Token);
-            runtime.LoadDefaultFunctions();
+            runtime.LoadDefaultLibrary();
             cancelSource.CancelAfter(10 * 1000);
             try
             {
@@ -88,7 +88,7 @@ print(arr1)
                 var program = parser.Parse(tokenList);
                 var cancelSource = new CancellationTokenSource();
                 var runtime = new Runtime(cancelSource.Token);
-                runtime.LoadDefaultFunctions();
+                runtime.LoadDefaultLibrary();
                 return runtime.Execute(program);
             }
             catch (LangException e)
