@@ -12,11 +12,20 @@ namespace DollsLang
 
     public abstract class Value
     {
+        public static readonly int ShortStringMax = 16;
         public ValueType Type { get; private set; }
 
         protected Value(ValueType type)
         {
             Type = type;
+        }
+
+        protected string ToShortString()
+        {
+            string org = ToString();
+            return org.Length < ShortStringMax ?
+                org :
+                org.Substring(0, ShortStringMax) + "...";
         }
 
         public abstract bool ToBool();
@@ -41,12 +50,12 @@ namespace DollsLang
 
         public override int ToInt()
         {
-            throw new RuntimeLangException("nil cannot be converted to int");
+            throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
         }
 
         public override double ToFloat()
         {
-            throw new RuntimeLangException("nil cannot be converted to float");
+            throw new RuntimeLangException("Cannot convert to float: " + ToShortString());
         }
 
         public override string ToString()
@@ -56,12 +65,12 @@ namespace DollsLang
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("nil cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array: " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("nil cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function: " + ToShortString());
         }
     }
 
@@ -90,12 +99,12 @@ namespace DollsLang
 
         public override int ToInt()
         {
-            throw new RuntimeLangException("bool cannot be converted to int");
+            throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
         }
 
         public override double ToFloat()
         {
-            throw new RuntimeLangException("bool cannot be converted to float");
+            throw new RuntimeLangException("Cannot convert to float " + ToShortString());
         }
 
         public override string ToString()
@@ -105,12 +114,12 @@ namespace DollsLang
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("bool cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("bool cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function " + ToShortString());
         }
     }
 
@@ -146,12 +155,12 @@ namespace DollsLang
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("int cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array: " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("int cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function: " + ToShortString());
         }
     }
 
@@ -172,7 +181,7 @@ namespace DollsLang
 
         public override int ToInt()
         {
-            return (int)RawValue;
+            throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
         }
 
         public override double ToFloat()
@@ -187,12 +196,12 @@ namespace DollsLang
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("float cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("float cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function: " + ToShortString());
         }
     }
 
@@ -220,7 +229,7 @@ namespace DollsLang
             }
             else
             {
-                throw new RuntimeLangException("Cannot convert to int: " + RawValue);
+                throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
             }
         }
 
@@ -233,7 +242,7 @@ namespace DollsLang
             }
             else
             {
-                throw new RuntimeLangException("Cannot convert to float: " + RawValue);
+                throw new RuntimeLangException("Cannot convert to float: " + ToShortString());
             }
         }
 
@@ -244,12 +253,12 @@ namespace DollsLang
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("string cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array: " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("string cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function: " + ToShortString());
         }
     }
 
@@ -270,12 +279,12 @@ namespace DollsLang
 
         public override int ToInt()
         {
-            throw new RuntimeLangException("Cannot convert array to int");
+            throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
         }
 
         public override double ToFloat()
         {
-            throw new RuntimeLangException("Cannot convert array to float");
+            throw new RuntimeLangException("Cannot convert to float: " + ToShortString());
         }
 
         public override string ToString()
@@ -290,7 +299,7 @@ namespace DollsLang
 
         public override FunctionValue ToFunction()
         {
-            throw new RuntimeLangException("array cannot be converted to function");
+            throw new RuntimeLangException("Cannot convert to function: " + ToShortString());
         }
     }
 
@@ -307,17 +316,17 @@ namespace DollsLang
 
         public override int ToInt()
         {
-            throw new RuntimeLangException("Cannot convert function to int");
+            throw new RuntimeLangException("Cannot convert to int: " + ToShortString());
         }
 
         public override double ToFloat()
         {
-            throw new RuntimeLangException("Cannot convert function to float");
+            throw new RuntimeLangException("Cannot convert to float: " + ToShortString());
         }
 
         public override ArrayValue ToArray()
         {
-            throw new RuntimeLangException("function cannot be converted to array");
+            throw new RuntimeLangException("Cannot convert to array: " + ToShortString());
         }
 
         public override FunctionValue ToFunction()
