@@ -53,10 +53,10 @@ namespace DollsLang
             LoadFunction("sin", LibSin);
             LoadFunction("cos", LibCos);
             LoadFunction("tan", LibTan);
-            LoadFunction("sin", LibAsin);
-            LoadFunction("cos", LibAcos);
-            LoadFunction("tan", LibAtan);
-            LoadFunction("tan2", LibAtan2);
+            LoadFunction("asin", LibAsin);
+            LoadFunction("acos", LibAcos);
+            LoadFunction("atan", LibAtan);
+            LoadFunction("atan2", LibAtan2);
             LoadFunction("rand", LibRand);
             LoadFunction("isprime", LibIsPrime);
         }
