@@ -311,7 +311,7 @@ namespace DollsLang
         }
 
         /*
-         * Unary ::= (<PLUS> | <MINUS>) Unary
+         * Unary ::= (<PLUS> | <MINUS> | <NOT>) Unary
          * Unary ::= Postfixed
          */
         private AstExpression unary()
@@ -324,6 +324,9 @@ namespace DollsLang
                 case TokenType.MINUS:
                     Token minusToken = next(TokenType.MINUS);
                     return new AstOperation(minusToken, OperationType.Negative, unary());
+                case TokenType.NOT:
+                    Token notToken = next(TokenType.NOT);
+                    return new AstOperation(notToken, OperationType.Not, unary());
                 default:
                     return postfixed();
             }
