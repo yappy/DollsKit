@@ -293,6 +293,7 @@ namespace DollsLang
                             {
                                 args.Add(EvalExpression(arg));
                             }
+                            lastRecord = expr;
                             return CallFunction(funcValue, args.ToArray());
                         }
                     case NodeType.ConstructArray:
