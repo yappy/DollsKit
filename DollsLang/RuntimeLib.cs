@@ -40,6 +40,7 @@ namespace DollsLang
             LoadFunction("for", LibFor);
             LoadFunction("foreach", LibForEach);
             LoadFunction("size", LibSize);
+            LoadFunction("shuffle", LibShuffle);
 
             LoadFunction("toi", LibToI);
             LoadFunction("tof", LibToF);
@@ -137,6 +138,21 @@ namespace DollsLang
             ArrayValue array = GetParam(args, 0).ToArray();
 
             return new IntValue(array.ValueList.Count);
+        }
+
+        private Value LibShuffle(Value[] args)
+        {
+            ArrayValue array = GetParam(args, 0).ToArray();
+            List<Value> target = array.ValueList;
+            for (int i = target.Count - 1; i >= 1; i--)
+            {
+                int r = random.Next(i + 1);
+                Value tmp = target[r];
+                target[r] = target[i];
+                target[i] = tmp;
+            }
+
+            return array;
         }
 #endregion
 
