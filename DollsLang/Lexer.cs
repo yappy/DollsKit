@@ -24,6 +24,7 @@ namespace DollsLang
             targetList.Add(new Target { Regex = new Regex(@"\G\*"), Type = TokenType.MUL });
             targetList.Add(new Target { Regex = new Regex(@"\G\/"), Type = TokenType.DIV });
             targetList.Add(new Target { Regex = new Regex(@"\G\%"), Type = TokenType.MOD });
+            targetList.Add(new Target { Regex = new Regex(@"\G\^"), Type = TokenType.POW });
 
             targetList.Add(new Target { Regex = new Regex(@"\G<="), Type = TokenType.LE });
             targetList.Add(new Target { Regex = new Regex(@"\G>="), Type = TokenType.GE });

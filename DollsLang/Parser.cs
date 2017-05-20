@@ -312,7 +312,7 @@ namespace DollsLang
 
         /*
          * Unary ::= (<PLUS> | <MINUS> | <NOT>) Unary
-         * Unary ::= Postfixed
+         * Unary ::= Pow
          */
         private AstExpression unary()
         {
@@ -328,7 +328,23 @@ namespace DollsLang
                     Token notToken = next(TokenType.NOT);
                     return new AstOperation(notToken, OperationType.Not, unary());
                 default:
-                    return postfixed();
+                    return pow();
+            }
+        }
+
+        /*
+         * Pow ::= Postfixed (<POW> Pow)?
+         */
+        private AstExpression pow()
+        {
+            var left = postfixed();
+            switch (peek())
+            {
+                case TokenType.POW:
+                    Token powToken = next(TokenType.POW);
+                    return new AstOperation(powToken, OperationType.Pow, left, pow());
+                default:
+                    return left;
             }
         }
 

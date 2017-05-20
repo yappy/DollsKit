@@ -15,7 +15,7 @@ namespace DollsLang
     public enum OperationType
     {
         Negative, Not,
-        Mul, Div, Mod,
+        Mul, Div, Mod, Pow,
         Add, Sub,
         LT, LE, GT, GE,
         EQ, NE,
