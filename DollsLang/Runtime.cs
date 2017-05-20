@@ -398,6 +398,7 @@ namespace DollsLang
                 case OperationType.Mul:
                 case OperationType.Div:
                 case OperationType.Mod:
+                case OperationType.Pow:
                 case OperationType.LT:
                 case OperationType.LE:
                 case OperationType.GT:
@@ -418,6 +419,8 @@ namespace DollsLang
                                 return new FloatValue(lh / rh);
                             case OperationType.Mod:
                                 return new FloatValue(lh % rh);
+                            case OperationType.Pow:
+                                return new FloatValue(Math.Pow(lh, rh));
                             case OperationType.LT:
                                 return BoolValue.Of(lh < rh);
                             case OperationType.LE:
@@ -457,6 +460,8 @@ namespace DollsLang
                                     throw new RuntimeLangException("Divide by 0");
                                 }
                                 return new IntValue(lh % rh);
+                            case OperationType.Pow:
+                                return new FloatValue(Math.Pow(lh, rh));
                             case OperationType.LT:
                                 return BoolValue.Of(lh < rh);
                             case OperationType.LE:

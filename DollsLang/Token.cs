@@ -7,7 +7,7 @@
         ASSIGN,
         LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET,
         BAR, COMMA,
-        PLUS, MINUS, MUL, DIV, MOD,
+        PLUS, MINUS, MUL, DIV, MOD, POW,
         LT, LE, GT, GE, EQ, NE,
         AND, OR, NOT,
         NIL, FALSE, TRUE,
