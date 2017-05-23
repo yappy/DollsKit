@@ -72,6 +72,18 @@ namespace DollsLang
             return args[index];
         }
 
+        private void CheckIntRange(string name, int value, int min, int max)
+        {
+            if (value < min)
+            {
+                throw new RuntimeLangException($"{name} is less than {min}: {value}");
+            }
+            if (value > max)
+            {
+                throw new RuntimeLangException($"{name} is greater than {max}: {value}");
+            }
+        }
+
 #region System functions
         private Value LibPrint(Value[] args)
         {
@@ -282,20 +294,14 @@ namespace DollsLang
                 case 1:
                     {
                         int maxValue = GetParam(args, 0).ToInt();
-                        if (maxValue < 0)
-                        {
-                            throw new RuntimeLangException($"MaxValue is less than 0: {maxValue}");
-                        }
+                        CheckIntRange("MaxValue", maxValue, 0, int.MaxValue);
                         return new IntValue(random.Next(maxValue));
                     }
                 default:
                     {
                         int minValue = GetParam(args, 0).ToInt();
                         int maxValue = GetParam(args, 1).ToInt();
-                        if (minValue > maxValue)
-                        {
-                            throw new RuntimeLangException($"MaxValue is less than MinValue: {minValue} > {maxValue}");
-                        }
+                        CheckIntRange("MaxValue", maxValue, minValue, int.MaxValue);
                         return new IntValue(random.Next(minValue, maxValue));
                     }
             }

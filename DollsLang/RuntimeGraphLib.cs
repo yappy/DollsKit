@@ -9,11 +9,14 @@ namespace DollsLang
     {
         private static readonly int SizeW = 256;
         private static readonly int SizeH = 256;
-        private static readonly Pen DefaultPen = Pens.Black;
+        private static readonly Color BgColor = Color.AliceBlue;
+        private static readonly Color DefaultColor = Color.Black;
+        private static readonly float DefaultWidth = 1.0f;
 
         private Bitmap bitmap = new Bitmap(SizeW, SizeH);
         private Graphics g = null;
-        private Pen pen = DefaultPen;
+        private Color penColor = DefaultColor;
+        private float penWidth = DefaultWidth;
         private bool graphicsEnabled = false;
 
         private Bitmap GetGraphicsResultInternal()
@@ -29,8 +32,9 @@ namespace DollsLang
                 g.Dispose();
             }
             g = Graphics.FromImage(bitmap);
-            g.Clear(Color.White);
-            pen = DefaultPen;
+            g.Clear(BgColor);
+            penColor = DefaultColor;
+            penWidth = DefaultWidth;
         }
 
         private void LoadGraphVariablesInternal()
@@ -40,8 +44,20 @@ namespace DollsLang
 
         private void LoadGraphFunctionsInternal()
         {
+            LoadFunction("pen", LibPen);
             LoadFunction("line", LibLine);
             LoadFunction("draw", LibDraw);
+        }
+
+        private Color ArrayToColor(ArrayValue array)
+        {
+            int r = ReadArray(array, 0).ToInt();
+            int g = ReadArray(array, 1).ToInt();
+            int b = ReadArray(array, 2).ToInt();
+            CheckIntRange("R", r, 0, 255);
+            CheckIntRange("G", g, 0, 255);
+            CheckIntRange("B", b, 0, 255);
+            return Color.FromArgb(r, g, b);
         }
 
         private Point Transform(double x, double y)
@@ -54,16 +70,41 @@ namespace DollsLang
                 (int)(SizeH / 2 * (1.0 - y)));
         }
 
+        private Value LibPen(Value[] args)
+        {
+            ArrayValue colorArray = GetParam(args, 0).ToArray();
+            double width = 1.0;
+            if (args.Length >= 2)
+            {
+                width = GetParam(args, 1).ToFloat();
+            }
+
+            penColor = ArrayToColor(colorArray);
+            penWidth = (float)width;
+
+            return NilValue.Nil;
+        }
+
         private Value LibLine(Value[] args)
         {
             graphicsEnabled = true;
 
-            double x1 = GetParam(args, 0).ToFloat();
-            double y1 = GetParam(args, 1).ToFloat();
-            double x2 = GetParam(args, 2).ToFloat();
-            double y2 = GetParam(args, 3).ToFloat();
+            ArrayValue startPos = GetParam(args, 0).ToArray();
 
-            g.DrawLine(pen, Transform(x1, y1), Transform(x2, y2));
+            using (var pen = new Pen(penColor, penWidth))
+            {
+                double x1 = ReadArray(startPos, 0).ToFloat();
+                double y1 = ReadArray(startPos, 1).ToFloat();
+                for (int i = 1; i < args.Length; i++)
+                {
+                    ArrayValue nextPos = GetParam(args, i).ToArray();
+                    double x2 = ReadArray(nextPos, 0).ToFloat();
+                    double y2 = ReadArray(nextPos, 1).ToFloat();
+                    g.DrawLine(pen, Transform(x1, y1), Transform(x2, y2));
+                    x1 = x2;
+                    y1 = y2;
+                }
+            }
 
             return NilValue.Nil;
         }
@@ -90,13 +131,16 @@ namespace DollsLang
                 return Transform(x, y);
             };
 
-            Point prev = call(init);
-            for (int i = 1; i <= count; i++)
+            using (var pen = new Pen(penColor, penWidth))
             {
-                double t = init + dt * i;
-                Point cur = call(t);
-                g.DrawLine(pen, prev, cur);
-                prev = cur;
+                Point prev = call(init);
+                for (int i = 1; i <= count; i++)
+                {
+                    double t = init + dt * i;
+                    Point cur = call(t);
+                    g.DrawLine(pen, prev, cur);
+                    prev = cur;
+                }
             }
 
             return NilValue.Nil;
