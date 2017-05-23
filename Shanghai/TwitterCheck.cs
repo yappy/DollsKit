@@ -3,6 +3,7 @@ using CoreTweet;
 using DollsLang;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -124,6 +125,7 @@ namespace Shanghai
                 server.CancelToken, timeoutSource.Token);
             var runtime = new Runtime(linkedSource.Token);
             string output = "";
+            Bitmap imageOut = null;
             try
             {
                 var tokenList = lexer.Process(src);
@@ -132,7 +134,7 @@ namespace Shanghai
                 runtime.LoadDefaultLibrary();
                 // TODO: timeout
                 timeoutSource.CancelAfter(1000);
-                output = runtime.Execute(program);
+                runtime.Execute(program, out output, out imageOut);
             }
             catch (LangException e)
             {
