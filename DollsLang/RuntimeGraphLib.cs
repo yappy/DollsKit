@@ -45,6 +45,7 @@ namespace DollsLang
         private void LoadGraphFunctionsInternal()
         {
             LoadFunction("pen", LibPen);
+            LoadFunction("clear", LibClear);
             LoadFunction("line", LibLine);
             LoadFunction("draw", LibDraw);
         }
@@ -81,6 +82,17 @@ namespace DollsLang
 
             penColor = ArrayToColor(colorArray);
             penWidth = (float)width;
+
+            return NilValue.Nil;
+        }
+
+        private Value LibClear(Value[] args)
+        {
+            graphicsEnabled = true;
+
+            ArrayValue colorArray = GetParam(args, 0).ToArray();
+
+            g.Clear(ArrayToColor(colorArray));
 
             return NilValue.Nil;
         }
