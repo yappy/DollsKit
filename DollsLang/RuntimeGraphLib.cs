@@ -23,6 +23,7 @@ namespace DollsLang
 
         private void InitializeGraphRuntime()
         {
+            graphicsEnabled = false;
             if (g != null)
             {
                 g.Dispose();
