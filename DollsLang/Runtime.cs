@@ -32,6 +32,9 @@ namespace DollsLang
         {
             LoadDefaultVariablesInternal();
             LoadDefaultFunctionsInternal();
+
+            LoadGraphVariablesInternal();
+            LoadGraphFunctionsInternal();
         }
 
         public void LoadIntVariable(string name, int value)
@@ -52,6 +55,7 @@ namespace DollsLang
         public void Execute(AstProgram program, out string result, out Bitmap graphicsResult)
         {
             InitializeRuntime();
+            InitializeGraphRuntime();
             lastRecord = null;
             try
             {

@@ -36,6 +36,10 @@ namespace LangTest
                 string result;
                 Bitmap graphicsResult;
                 runtime.Execute(program, out result, out graphicsResult);
+                if (graphicsResult != null)
+                {
+                    graphicsResult.Save("out.png");
+                }
                 return result;
             }
             catch (LangException e)
