@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,6 +32,9 @@ namespace DollsLang
         {
             LoadDefaultVariablesInternal();
             LoadDefaultFunctionsInternal();
+
+            LoadGraphVariablesInternal();
+            LoadGraphFunctionsInternal();
         }
 
         public void LoadIntVariable(string name, int value)
@@ -48,14 +52,16 @@ namespace DollsLang
             Assign(funcName, new NativeFunctionValue(func));
         }
 
-        public string Execute(AstProgram program)
+        public void Execute(AstProgram program, out string result, out Bitmap graphicsResult)
         {
             InitializeRuntime();
+            InitializeGraphRuntime();
             lastRecord = null;
             try
             {
                 ExecuteStatementList(program.Statements);
-                return outputBuffer.ToString();
+                result = outputBuffer.ToString();
+                graphicsResult = GetGraphicsResultInternal();
             }
             catch (RuntimeLangException e)
             {

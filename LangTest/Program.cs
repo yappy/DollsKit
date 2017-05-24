@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Text;
 using DollsLang;
 using System.Threading;
@@ -10,69 +11,11 @@ namespace LangTest
     {
         static void Main(string[] args)
         {
-            var lexer = new Lexer();
-
-            string test1 = @"
-a = 3
-b = c = 3.14
-x = 1.0 y = 2.0
-e = 1e-15
-s = ""this is \""string\""""
-
-p(nil) p(false) p(true)
-print(a, b, c)
-print(x, y, e)
-print(s)
-
-while (y - x > e) {
-  m = (y + x) / 2
-  if (m * m > 2) { y = m }
-  else { x = m }
-}
-p(m)
-
-arr1 = []
-arr2 = [1, 3.14, ""hello"", print]
-print(arr1, arr2)
-print(arr2[2])
-arr1[2] = ""test""
-print(arr1)
-";
-
-            var tokenList = lexer.Process(test1);
-            foreach (var token in tokenList)
+            while (true)
             {
-                Console.WriteLine(token);
-            }
-            Console.WriteLine();
-
-            var parser = new Parser();
-            var program = parser.Parse(tokenList);
-            var buf = new StringBuilder();
-            program.Print(buf, 0);
-            Console.WriteLine(buf);
-
-            var cancelSource = new CancellationTokenSource();
-            var runtime = new Runtime(cancelSource.Token);
-            runtime.LoadDefaultLibrary();
-            cancelSource.CancelAfter(10 * 1000);
-            try
-            {
-                string output = runtime.Execute(program);
-                Console.WriteLine(output);
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("cancel!");
-            }
-            catch (LangException e)
-            {
-                Console.WriteLine(e.Message);
-            }
-
-            while (true) {
                 string src = Console.ReadLine();
-                if (src.Length == 0) {
+                if (src.Length == 0)
+                {
                     break;
                 }
                 Console.WriteLine(interpret(src));
@@ -81,7 +24,8 @@ print(arr1)
 
         static String interpret(String src)
         {
-            try {
+            try
+            {
                 var lexer = new Lexer();
                 var tokenList = lexer.Process(src);
                 var parser = new Parser();
@@ -89,7 +33,14 @@ print(arr1)
                 var cancelSource = new CancellationTokenSource();
                 var runtime = new Runtime(cancelSource.Token);
                 runtime.LoadDefaultLibrary();
-                return runtime.Execute(program);
+                string result;
+                Bitmap graphicsResult;
+                runtime.Execute(program, out result, out graphicsResult);
+                if (graphicsResult != null)
+                {
+                    graphicsResult.Save("out.png");
+                }
+                return result;
             }
             catch (LangException e)
             {

@@ -3,6 +3,9 @@ using CoreTweet;
 using DollsLang;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -115,7 +118,7 @@ namespace Shanghai
             return status.Entities.HashTags.Any((ent) => ent.Text == "人形語");
         }
 
-        private string ExecuteProgram(TaskServer server, string src)
+        private string ExecuteProgram(TaskServer server, string src, out Bitmap graphicsResult)
         {
             var lexer = new Lexer();
             var parser = new Parser();
@@ -124,6 +127,7 @@ namespace Shanghai
                 server.CancelToken, timeoutSource.Token);
             var runtime = new Runtime(linkedSource.Token);
             string output = "";
+            graphicsResult = null;
             try
             {
                 var tokenList = lexer.Process(src);
@@ -132,7 +136,7 @@ namespace Shanghai
                 runtime.LoadDefaultLibrary();
                 // TODO: timeout
                 timeoutSource.CancelAfter(1000);
-                output = runtime.Execute(program);
+                runtime.Execute(program, out output, out graphicsResult);
             }
             catch (LangException e)
             {
@@ -192,7 +196,8 @@ namespace Shanghai
                     Logger.Log(LogLevel.Info, "[{0}] Find program: @{1} - {2}",
                         taskName, status.User.ScreenName, src);
 
-                    string output = ExecuteProgram(server, src);
+                    Bitmap graphicsResult;
+                    string output = ExecuteProgram(server, src, out graphicsResult);
                     // @ と # は禁止する
                     output = output.Replace('@', ' ');
                     output = output.Replace('#', ' ');
@@ -206,7 +211,33 @@ namespace Shanghai
                     tweet = tweet.Substring(0, Math.Min(tweet.Length, 140));
                     try
                     {
-                        TwitterManager.Update(tweet, status.Id);
+                        if (graphicsResult == null)
+                        {
+                            // 文字だけツイート
+                            TwitterManager.Update(tweet, status.Id);
+                        }
+                        else
+                        {
+                            // 画像付きツイート
+                            string tmpPath = Path.GetTempPath() + Guid.NewGuid() + ".png";
+                            Logger.Log(LogLevel.Info, "Save a result image to: {0}", tmpPath);
+                            graphicsResult.Save(tmpPath, ImageFormat.Png);
+                            try
+                            {
+                                TwitterManager.UpdateWithImage(tweet, tmpPath, status.Id);
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    File.Delete(tmpPath);
+                                }
+                                catch (Exception e)
+                                {
+                                    Logger.Log(LogLevel.Warning, e);
+                                }
+                            }
+                        }
                         nextSinceId = Math.Max(status.Id, nextSinceId);
                     }
                     catch (TwitterException e)
