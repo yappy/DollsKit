@@ -224,7 +224,7 @@ namespace Shanghai
                             graphicsResult.Save(tmpPath, ImageFormat.Png);
                             try
                             {
-                                TwitterManager.UpdateWithImage(tweet, tmpPath);
+                                TwitterManager.UpdateWithImage(tweet, tmpPath, status.Id);
                             }
                             finally
                             {
