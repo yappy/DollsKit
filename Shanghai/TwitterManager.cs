@@ -52,14 +52,14 @@ namespace Shanghai
             Logger.Log(LogLevel.Info, "Twitter update: {0}", msg);
         }
 
-        public static void UpdateWithImage(string msg, string imgPath)
+        public static void UpdateWithImage(string msg, string imgPath, long? reply_to_status = null)
         {
             if (settings.WriteEnabled)
             {
                 MediaUploadResult media = Tokens.Media.Upload(
                     media: new FileInfo(imgPath));
                 Logger.Log(LogLevel.Info, "Twitter upload: {0}", media.MediaId);
-                Tokens.Statuses.Update(status: msg,
+                Tokens.Statuses.Update(status: msg, in_reply_to_status_id: reply_to_status,
                     media_ids: new long[] { media.MediaId });
                 Logger.Log(LogLevel.Info, "Twitter update with media: {0}", msg);
             }
