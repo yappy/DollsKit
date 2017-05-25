@@ -144,29 +144,72 @@ namespace DollsLang
         private AstExpression assign()
         {
             var left = or();
-            if (peek() == TokenType.ASSIGN)
+            switch (peek())
             {
-                Token assignToken = next(TokenType.ASSIGN);
-                if (left.Type == NodeType.Variable)
-                {
-                    // <ID> = Expression
-                    var right = assign();
-                    string varName = ((AstVariable)left).Name;
-                    return new AstAssign(assignToken, varName, right);
-                }
-                else if (left.Type == NodeType.ReadArray)
-                {
-                    // Expression [Expression] = Expression
-                    var right = assign();
-                    var ltmp = (AstReadArray)left;
-                    return new AstAssignArray(assignToken, ltmp.Array, ltmp.Index, right);
-                }
-                else
-                {
-                    throw createSyntaxError("Invalid assign");
-                }
+                case TokenType.ASSIGN:
+                case TokenType.ADD_ASSIGN:
+                case TokenType.SUB_ASSIGN:
+                case TokenType.MUL_ASSIGN:
+                case TokenType.DIV_ASSIGN:
+                case TokenType.MOD_ASSIGN:
+                case TokenType.POW_ASSIGN:
+                    break;
+                default:
+                    return left;
             }
-            return left;
+            Token assignToken = nextAny();
+            var right = assign();
+
+            AstExpression operated;
+            switch (assignToken.Type)
+            {
+                case TokenType.ASSIGN:
+                    operated = right;
+                    break;
+                case TokenType.ADD_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Add, left, right);
+                    break;
+                case TokenType.SUB_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Sub, left, right);
+                    break;
+                case TokenType.MUL_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Mul, left, right);
+                    break;
+                case TokenType.DIV_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Div, left, right);
+                    break;
+                case TokenType.MOD_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Mod, left, right);
+                    break;
+                case TokenType.POW_ASSIGN:
+                    operated = new AstOperation(assignToken,
+                        OperationType.Pow, left, right);
+                    break;
+                default:
+                    throw new FatalLangException();
+            }
+
+            if (left.Type == NodeType.Variable)
+            {
+                // <ID> = Expression
+                string varName = ((AstVariable)left).Name;
+                return new AstAssign(assignToken, varName, operated);
+            }
+            else if (left.Type == NodeType.ReadArray)
+            {
+                // Expression [Expression] = Expression
+                var ltmp = (AstReadArray)left;
+                return new AstAssignArray(assignToken, ltmp.Array, ltmp.Index, operated);
+            }
+            else
+            {
+                throw createSyntaxError("Invalid assign");
+            }
         }
 
         /*
