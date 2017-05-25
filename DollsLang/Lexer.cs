@@ -19,6 +19,13 @@ namespace DollsLang
         {
             var targetList = new List<Target>();
 
+            targetList.Add(new Target { Regex = new Regex(@"\G\+\="), Type = TokenType.ADD_ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\-\="), Type = TokenType.SUB_ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\*\="), Type = TokenType.MUL_ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\/\="), Type = TokenType.DIV_ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\%\="), Type = TokenType.MOD_ASSIGN });
+            targetList.Add(new Target { Regex = new Regex(@"\G\^\="), Type = TokenType.POW_ASSIGN });
+
             targetList.Add(new Target { Regex = new Regex(@"\G\+"), Type = TokenType.PLUS });
             targetList.Add(new Target { Regex = new Regex(@"\G\-"), Type = TokenType.MINUS });
             targetList.Add(new Target { Regex = new Regex(@"\G\*"), Type = TokenType.MUL });
