@@ -61,7 +61,23 @@ namespace DollsLang
             return Color.FromArgb(r, g, b);
         }
 
-        private Point Transform(double x, double y)
+        private Point ArrayToPoint(ArrayValue array)
+        {
+            double x = ReadArray(array, 0).ToFloat();
+            double y = ReadArray(array, 1).ToFloat();
+            return TransformPoint(x, y);
+        }
+
+        private Rectangle ArrayToRect(ArrayValue array)
+        {
+            double x = ReadArray(array, 0).ToFloat();
+            double y = ReadArray(array, 1).ToFloat();
+            double w = ReadArray(array, 2).ToFloat();
+            double h = ReadArray(array, 3).ToFloat();
+            return TransformRect(x, y, w, h);
+        }
+
+        private Point TransformPoint(double x, double y)
         {
             // (SIZE / 2) + v * (SIZE / 2)
             // = (SIZE / 2) * (1 + v)
@@ -69,6 +85,20 @@ namespace DollsLang
             return new Point(
                 (int)(SizeW / 2 * (1.0 + x)),
                 (int)(SizeH / 2 * (1.0 - y)));
+        }
+
+        private Size TransformSize(double w, double h)
+        {
+            return new Size(
+                (int)(SizeW / 2 * w),
+                (int)(SizeH / -2 * h));
+        }
+
+        private Rectangle TransformRect(double x, double y, double w, double h)
+        {
+            return new Rectangle(
+                TransformPoint(x, y),
+                TransformSize(w, h));
         }
 
         private Value LibPen(Value[] args)
@@ -105,16 +135,13 @@ namespace DollsLang
 
             using (var pen = new Pen(penColor, penWidth))
             {
-                double x1 = ReadArray(startPos, 0).ToFloat();
-                double y1 = ReadArray(startPos, 1).ToFloat();
+                Point v1 = ArrayToPoint(startPos);
                 for (int i = 1; i < args.Length; i++)
                 {
                     ArrayValue nextPos = GetParam(args, i).ToArray();
-                    double x2 = ReadArray(nextPos, 0).ToFloat();
-                    double y2 = ReadArray(nextPos, 1).ToFloat();
-                    g.DrawLine(pen, Transform(x1, y1), Transform(x2, y2));
-                    x1 = x2;
-                    y1 = y2;
+                    Point v2 = ArrayToPoint(nextPos);
+                    g.DrawLine(pen, v1, v2);
+                    v1 = v2;
                 }
             }
 
@@ -138,9 +165,7 @@ namespace DollsLang
 
             Func<double, Point> call = (t) => {
                 ArrayValue result = CallFunction(func, new FloatValue(t)).ToArray();
-                double x = ReadArray(result, 0).ToFloat();
-                double y = ReadArray(result, 1).ToFloat();
-                return Transform(x, y);
+                return ArrayToPoint(result);
             };
 
             using (var pen = new Pen(penColor, penWidth))
