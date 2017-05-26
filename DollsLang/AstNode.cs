@@ -6,7 +6,7 @@ namespace DollsLang
     public enum NodeType
     {
         Program,
-        Assign, AssignArray,
+        Assign, AssignArray, AssignOpArray,
         ReadArray, ConstructArray, FunctionCall,
         If, While,
         Operation, Variable, Constant,
@@ -14,6 +14,7 @@ namespace DollsLang
 
     public enum OperationType
     {
+        None,
         Negative, Not,
         Mul, Div, Mod, Pow,
         Add, Sub,
@@ -166,19 +167,19 @@ namespace DollsLang
 
     class AstOperation : AstExpression
     {
-        public OperationType Operaton { get; private set; }
+        public OperationType Operation { get; private set; }
         public AstExpression[] Operands;
 
         public AstOperation(Token from, OperationType operation, params AstExpression[] operands)
             : base(from, NodeType.Operation)
         {
-            Operaton = operation;
+            Operation = operation;
             Operands = operands;
         }
 
         public override string ToString()
         {
-            return base.ToString() + " " + Operaton;
+            return base.ToString() + " " + Operation;
         }
 
         protected override void PrintChildren(StringBuilder buf, int depth)
@@ -219,13 +220,43 @@ namespace DollsLang
         public AstExpression Index { get; private set; }
         public AstExpression Expression { get; private set; }
 
-        public AstAssignArray(Token from, AstExpression array, AstExpression index,
-            AstExpression expression)
+        public AstAssignArray(Token from,
+            AstExpression array, AstExpression index, AstExpression expression)
             : base(from, NodeType.AssignArray)
         {
             Array = array;
             Index = index;
             Expression = expression;
+        }
+
+        protected override void PrintChildren(StringBuilder buf, int depth)
+        {
+            Array.Print(buf, depth);
+            Index.Print(buf, depth);
+            Expression.Print(buf, depth);
+        }
+    }
+
+    class AstAssignOpArray : AstExpression
+    {
+        public OperationType Operation { get; private set; }
+        public AstExpression Array { get; private set; }
+        public AstExpression Index { get; private set; }
+        public AstExpression Expression { get; private set; }
+
+        public AstAssignOpArray(Token from, OperationType operation,
+            AstExpression array, AstExpression index, AstExpression expression)
+            : base(from, NodeType.AssignOpArray)
+        {
+            Operation = operation;
+            Array = array;
+            Index = index;
+            Expression = expression;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + " " + Operation;
         }
 
         protected override void PrintChildren(StringBuilder buf, int depth)
