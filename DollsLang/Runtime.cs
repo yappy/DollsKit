@@ -283,6 +283,23 @@ namespace DollsLang
                             AssignArray(arrayValue, index, value);
                             return value;
                         }
+                    case NodeType.AssignOpArray:
+                        {
+                            // a[b] <op>= c
+                            var node = (AstAssignOpArray)expr;
+                            // eval a, b
+                            ArrayValue arrayValue = EvalExpression(node.Array).ToArray();
+                            int index = EvalExpression(node.Index).ToInt();
+                            // eval a[b]
+                            Value left = ReadArray(arrayValue, index);
+                            // eval c
+                            Value right = EvalExpression(node.Expression);
+                            // eval (a[b] <op> c)
+                            Value value = DoOperation(node.Operation, left, right);
+                            // a[b] <- (a[b] <op> c)
+                            AssignArray(arrayValue, index, value);
+                            return value;
+                        }
                     case NodeType.ReadArray:
                         {
                             var node = (AstReadArray)expr;
@@ -335,7 +352,7 @@ namespace DollsLang
             lastRecord = node;
 
             // short circuit
-            switch (node.Operaton)
+            switch (node.Operation)
             {
                 case OperationType.And:
                     if (!args[0].ToBool())
@@ -357,7 +374,23 @@ namespace DollsLang
             }
 
             lastRecord = node;
-            switch (node.Operaton)
+
+            // simply returns rh (short circuit passed)
+            switch (node.Operation)
+            {
+                case OperationType.And:
+                    return args[1];
+                case OperationType.Or:
+                    return args[1];
+            }
+
+            return DoOperation(node.Operation, args);
+        }
+
+        // Cannot do short circuit AND/OR
+        private Value DoOperation(OperationType operation, params Value[] args)
+        {
+            switch (operation)
             {
                 case OperationType.Negative:
                     switch (args[0].Type)
@@ -368,7 +401,7 @@ namespace DollsLang
                             return new FloatValue(-args[0].ToFloat());
                         default:
                             throw new RuntimeLangException(
-                                $"Cannot apply {node.Operaton} operator: {args[0].Type}");
+                                $"Cannot apply {operation} operator: {args[0].Type}");
                     }
                 case OperationType.Not:
                     return BoolValue.Of(!args[0].ToBool());
@@ -415,7 +448,7 @@ namespace DollsLang
                     {
                         double lh = args[0].ToFloat();
                         double rh = args[1].ToFloat();
-                        switch (node.Operaton)
+                        switch (operation)
                         {
                             case OperationType.Sub:
                                 return new FloatValue(lh - rh);
@@ -448,7 +481,7 @@ namespace DollsLang
                     {
                         int lh = args[0].ToInt();
                         int rh = args[1].ToInt();
-                        switch (node.Operaton)
+                        switch (operation)
                         {
                             case OperationType.Sub:
                                 return new IntValue(lh - rh);
@@ -487,14 +520,9 @@ namespace DollsLang
                     else
                     {
                         throw new RuntimeLangException(
-                            $"Cannot apply {node.Operaton} operator: " +
+                            $"Cannot apply {operation} operator: " +
                             $"{args[0].Type}, {args[1].Type}");
                     }
-                // simply returns rh (short circuit passed)
-                case OperationType.And:
-                    return args[1];
-                case OperationType.Or:
-                    return args[1];
             }
             throw new FatalLangException();
         }
