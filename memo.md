@@ -104,3 +104,10 @@
 - lighttpd
   - CGI の stderr
     - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
+
+# MySQL
+- Oracle から持ってこないと古い
+- Install
+  - `wget https://dev.mysql.com/get/mysql-apt-config_?????_all.deb`
+  - `sudo dpkg -i mysql-apt-config_?????_all.deb`
+  - `apt-get install mysql-server`
