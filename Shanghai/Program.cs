@@ -44,7 +44,7 @@ namespace Shanghai
                 healthCheck.Check);
 
             server.RegisterPeriodicTask("twitter",
-                (hour, min) => Array.IndexOf(new int[] { 5, 25, 45 }, min) >= 0,
+                (hour, min) => Array.IndexOf(new int[] { 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 }, min) >= 0,
                 twitterCheck.CheckTwitter);
 
             server.RegisterPeriodicTask("ddns",
@@ -52,7 +52,7 @@ namespace Shanghai
                 ddnsTask.UpdateTask);
 
             server.RegisterPeriodicTask("camera",
-                (hour, min) => (Array.IndexOf(new int[] {  }, hour) >= 0) && (min == 0),
+                (hour, min) => (Array.IndexOf(new int[] { 0, 6, 12, 18 }, hour) >= 0) && (min == 0),
                 cameraTask.TakePictureTask);
             server.RegisterPeriodicTask("uploadpic",
                 (hour, min) => Array.IndexOf(new int[] { 10, 30, 50 }, min) >= 0,
