@@ -9,6 +9,7 @@
   - user, pass = pi, raspberry
   - インターネット公開前にはポートを変えておいたほうがよい
 
+
 # 初期設定
 `$sudo raspi-config`
 - (1) Expand Filesystem
@@ -23,19 +24,28 @@
   - hostname とか
   - raspi-config 自体のアップデートが一番下にある
 
+
 # 無線
 忘れた。ググってなんかうまくやる。
 
+
 # アップデート
 ## パッケージの更新
-`sudo apt-get update`
-`sudo apt-get upgrade`
-`sudo apt-get dist-upgrade`
+* `sudo apt-get update`
+* `sudo apt-get upgrade`
+* `sudo apt-get dist-upgrade`
 
 ## Raspberry Piのファームウェア更新(危険)
 `sudo rpi-update`
 
 開発中の最新版になるので注意
+
+## パッケージの削除
+`sudo apt-get remove --purge <PKGNAME>` or `sudo apt-get purge <PKGNAME>`
+
+## 設定ファイルを後から消す
+`` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
+
 
 # Mono (C#)
 - mono は古い
@@ -53,10 +63,12 @@
 - 自己アップデート
   - `sudo nuget update -self`
 
+
 # screen
 - nohup だと ssh 切れた後プロセスが死んでしまう(原因は不明)
 - `sudo apt-get install screen`
   - デタッチ: C-a d
+
 
 # ssh をまともにする
 - root password
@@ -72,6 +84,7 @@
     - AuthorizedKeysFile  %h/.ssh/authorized_keys
   - パスワード認証の無効化
     - `#PasswordAuthentication yes`
+
 
 # カメラモジュール
 - カメラモジュールの有効化
@@ -91,9 +104,11 @@
 - C# からサムネイルの取り出し
   - GetThumbnailImage()
 
+
 # 形態素解析
 - MeCab
   - `sudo apt-get install mecab mecab-ipadic-utf8`
+
 
 # HTTP Server
 - lighttpd
@@ -104,6 +119,7 @@
 - lighttpd
   - CGI の stderr
     - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
+
 
 # MySQL
 - Oracle から持ってこないと古い
