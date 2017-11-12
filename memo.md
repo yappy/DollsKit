@@ -122,8 +122,19 @@
 
 
 # MySQL
-- Oracle から持ってこないと古い
-- Install
-  - `wget https://dev.mysql.com/get/mysql-apt-config_?????_all.deb`
-  - `sudo dpkg -i mysql-apt-config_?????_all.deb`
-  - `apt-get install mysql-server`
+- `apt-get install mysql-server`
+- Debian 9 では中身は MariaDB になっている。
+
+## Ruby (Mysql2)
+MySQL クライアント用の C ライブラリが必要。
+default-libmysqlclient-dev っていうのが MySQL 用と互換性高そうな MariaDB 用ライブラリへの依存になってた。
+こいつを追いかけておくのがよさそう。
+> dep: libmariadbclient-dev-compat
+>    MariaDB database development files (libmysqlclient compatibility) 
+
+Ruby ネイティブ拡張用 C ライブラリが必要。
+```
+sudo apt-get install default-libmysqlclient-dev
+sudo apt-get install ruby-dev
+sudo gem install mysql2
+```
