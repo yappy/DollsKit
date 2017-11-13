@@ -2,19 +2,18 @@
 
 NUGET_DIR = packages
 
-default: build deploy
+default: all
 
-all: nuget build deploy
+all: nuget build
 
 nuget:
-	nuget install -OutputDirectory $(NUGET_DIR) Shanghai/packages.config
-	nuget install -OutputDirectory $(NUGET_DIR) DollsLib/packages.config
+	nuget restore DollsKit.sln
 
 build:
-	xbuild DollsKit.sln /p:Configuration=Debug
-	xbuild DollsKit.sln /p:Configuration=Release
+	msbuild DollsKit.sln /p:Configuration=Debug
+	msbuild DollsKit.sln /p:Configuration=Release
 
 clean:
-#	rm -rf $(NUGET_DIR)
-	xbuild DollsKit.sln /t:Clean /p:Configuration=Debug
-	xbuild DollsKit.sln /t:Clean /p:Configuration=Release
+	msbuild DollsKit.sln /t:Clean /p:Configuration=Debug
+	msbuild DollsKit.sln /t:Clean /p:Configuration=Release
+	rm -rf $(NUGET_DIR)
