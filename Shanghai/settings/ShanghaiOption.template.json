@@ -2,7 +2,6 @@
 	"Twitter":
 	{
 		"WriteEnabled"		: false,
-		"DlNetTrainError"	: 0
 	},
 	"Ddns":
 	{
