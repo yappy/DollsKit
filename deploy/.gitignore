@@ -1,5 +1,3 @@
-*
-!.gitignore
-!/www/
-!/www/**
+/*
 !/console.bat
+!/www
