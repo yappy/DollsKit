@@ -11,6 +11,7 @@ CMD = "raspistill -o #{Const::TEST_PIC} -n -w #{PIC_W} -h #{PIC_H} -t #{TIMEOUT_
 
 execres = system(CMD)
 exitcode = $?
+system("chmod g+rw #{Const::TEST_PIC}")
 %>
 
 <!DOCTYPE html>
