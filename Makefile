@@ -8,7 +8,7 @@ all: nuget build deploy
 
 nuget:
 	nuget install -OutputDirectory $(NUGET_DIR) Shanghai/packages.config
-	nuget install -OutputDirectory $(NUGET_DIR) DLearn/packages.config
+	nuget install -OutputDirectory $(NUGET_DIR) DollsLib/packages.config
 
 build:
 	xbuild DollsKit.sln /p:Configuration=Debug
