@@ -1,5 +1,4 @@
-﻿using Accord.Neuro.Networks;
-using CoreTweet;
+﻿using CoreTweet;
 using DollsLang;
 using System;
 using System.Collections.Generic;
@@ -26,8 +25,6 @@ namespace Shanghai
         private WhiteSettings Setting;
         private long? SinceId = null;
 
-        private DeepBeliefNetwork DlNetwork;
-
         public TwitterCheck()
         {
             Setting = SettingManager.Settings.White;
@@ -48,18 +45,6 @@ namespace Shanghai
                "{0} replace list loaded", Setting.ReplaceList.Count);
             Logger.Log(LogLevel.Trace, Setting.ReplaceList.Aggregate(new StringBuilder(),
                 (sb, kvp) => sb.AppendFormat(" {0}={1}", kvp.Key, kvp.Value)).ToString());
-
-            try
-            {
-                DlNetwork = DollsLib.Learning.DataManager.LoadDeepLearning(
-                    SettingManager.Settings.Twitter.DlNetTrainError);
-            }
-            catch (Exception)
-            {
-                Logger.Log(LogLevel.Info,
-                    "DlNwtwork {0} load failed",
-                    SettingManager.Settings.Twitter.DlNetTrainError);
-            }
         }
 
         /// <summary>
@@ -247,44 +232,6 @@ namespace Shanghai
                 }
             }
 
-            // 判定器を使う
-            if (DlNetwork != null)
-            {
-                var ln = new DollsLib.Learning.Learning();
-                var workDataList = ln.CreateWorkDataList(timeline);
-                var result = ln.Execute(DlNetwork, workDataList);
-                for (int i = 0; i < result.Count; i++)
-                {
-                    var status = timeline[i];
-                    // Black List filter
-                    if (!Setting.BlackList.Contains(status.User.ScreenName))
-                    {
-                        continue;
-                    }
-                    // リツイートは除外
-                    if (status.RetweetedStatus != null)
-                    {
-                        continue;
-                    }
-                    if (result[i] > DollsLib.Learning.LearningCommon.Threshold)
-                    {
-                        Logger.Log(LogLevel.Info,
-                            "[{0}] Find by dl net {1:F3}: @{2} - {3}",
-                            taskName, result[i], status.User.ScreenName, status.Text);
-                        try
-                        {
-                            TwitterManager.Update(
-                                string.Format("@{0} ブラック #DollsLearning #試験中", status.User.ScreenName),
-                                status.Id);
-                            nextSinceId = Math.Max(status.Id, nextSinceId);
-                        }
-                        catch (TwitterException e)
-                        {
-                            Logger.Log(LogLevel.Error, e.Message);
-                        }
-                    }
-                }
-            }
             // ヒューリスティクスを使う
             foreach (var status in timeline)
             {

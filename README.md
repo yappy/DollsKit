@@ -20,7 +20,7 @@ C# の入った Visual Studio で DollsKit.sln を開く
 ## 人形の実行
 ```
 % cd deploy
-% ./Shanghai.exe
+% mono Shanghai.exe
 ```
 ```
 (Visual Studio)
