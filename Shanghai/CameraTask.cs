@@ -13,9 +13,9 @@ namespace Shanghai
 
     class CameraTask
     {
-        private static readonly string WebDir = "www";
-        private static readonly string PicDir = Path.Combine(WebDir, "pics");
-        private static readonly string TweetDir = Path.Combine(WebDir, "twque");
+        private static readonly string CameraDir = Path.Combine("www", "camera");
+        private static readonly string PicDir = Path.Combine(CameraDir, "pics");
+        private static readonly string TweetDir = Path.Combine(CameraDir, "twque");
 
         // 1024×768
         private static readonly int ImgW = 1024;
