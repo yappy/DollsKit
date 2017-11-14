@@ -26,7 +26,9 @@ namespace Shanghai
         static void TaskTest()
         {
             // Stub
+#if DEBUG
             new UpdateCheck().Check(null, "update");
+#endif
         }
 
         static void SetupTasks(TaskServer server, string bootMsg)
@@ -35,6 +37,7 @@ namespace Shanghai
             var twitterCheck = new TwitterCheck();
             var ddnsTask = new DdnsTask();
             var cameraTask = new CameraTask();
+            var updateCheck = new UpdateCheck();
 
             server.RegisterOneShotTask("bootmsg", TimeSpan.FromMinutes(0),
                 (taskServer, taskName) =>
@@ -50,7 +53,7 @@ namespace Shanghai
                 });
 
             server.RegisterPeriodicTask("health",
-                (hour, min) => (Array.IndexOf(new int[] { 0, 6, 12, 18 }, hour) >= 0) && (min == 0),
+                (hour, min) => (Array.IndexOf(new int[] { 0, 6, 12, 18 }, hour) >= 0) && (min == 59),
                 healthCheck.Check);
 
             server.RegisterPeriodicTask("twitter",
@@ -67,6 +70,10 @@ namespace Shanghai
             server.RegisterPeriodicTask("uploadpic",
                 (hour, min) => Array.IndexOf(new int[] { 10, 30, 50 }, min) >= 0,
                 cameraTask.UploadPictureTask);
+
+            server.RegisterPeriodicTask("update",
+                (hour, min) => Array.IndexOf(new int[] { 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 }, min) >= 0,
+                updateCheck.Check);
         }
 
         static void Main(string[] args)
