@@ -5,6 +5,7 @@ namespace Shanghai
 {
     public class Settings
     {
+        public DatabaseSettings Database { get; set; }
         public TwitterSettings Twitter { get; set; }
         public DdnsSettings Ddns { get; set; }
         public CameraSettings Camera { get; set; }
@@ -15,14 +16,13 @@ namespace Shanghai
     {
         private static readonly string SettingFileName = "settings/ShanghaiOption.json";
 
-        private static Settings settings;
-        public static Settings Settings { get { return settings; } }
+        public static Settings Settings { get; private set; }
 
         public static void Initialize()
         {
             using (var reader = new StreamReader(SettingFileName))
             {
-                settings = JsonConvert.DeserializeObject<Settings>(
+                Settings = JsonConvert.DeserializeObject<Settings>(
                     reader.ReadToEnd());
                 Logger.Log(LogLevel.Info, "Settings loaded");
             }
@@ -30,7 +30,7 @@ namespace Shanghai
 
         public static void Terminate()
         {
-            settings = null;
+            Settings = null;
         }
     }
 }

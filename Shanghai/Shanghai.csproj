@@ -60,6 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CameraTask.cs" />
+    <Compile Include="DatabaseManager.cs" />
     <Compile Include="DdnsTask.cs" />
     <Compile Include="HealthCheck.cs" />
     <Compile Include="Logger.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="TaskServer.cs" />
     <Compile Include="TwitterCheck.cs" />
     <Compile Include="TwitterManager.cs" />
+    <Compile Include="UpdateCheck.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

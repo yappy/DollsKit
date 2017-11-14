@@ -10,13 +10,23 @@ namespace Shanghai
         static void InitializeSystems()
         {
             SettingManager.Initialize();
+            DatabaseManager.Initialize();
             TwitterManager.Initialize();
         }
 
         static void TerminateSystems()
         {
             TwitterManager.Terminate();
+            DatabaseManager.Terminate();
             SettingManager.Terminate();
+        }
+
+        // Called after InitializeSystems() statically.
+        // For new task test.
+        static void TaskTest()
+        {
+            // Stub
+            new UpdateCheck().Check(null, "update");
         }
 
         static void SetupTasks(TaskServer server, string bootMsg)
@@ -63,13 +73,14 @@ namespace Shanghai
         {
             Logger.AddConsole(LogLevel.Trace);
             Logger.AddFile(LogLevel.Info);
-            Console.CancelKeyPress += (sender, eventArgs) => {
+            Console.CancelKeyPress += (sender, eventArgs) =>
+            {
                 Logger.Log(LogLevel.Info, "Interrupted");
                 Logger.Flush();
             };
 
             Logger.Log(LogLevel.Info, "Start");
-
+            
             try
             {
                 int errorRebootCount = 0;
@@ -77,6 +88,9 @@ namespace Shanghai
                 while (true)
                 {
                     InitializeSystems();
+
+                    TaskTest();
+
                     {
                         var taskServer = new TaskServer();
                         SetupTasks(taskServer, bootMsg);
