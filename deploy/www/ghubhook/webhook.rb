@@ -5,7 +5,7 @@ require 'mysql2'
 require 'openssl'
 load 'common.rb'
 
-@config = JSON.parse(File.read("../config.json"))
+@config = JSON.parse(File.read(Const::CONFIG_FILE))
 
 # copy stdin to file
 unless File.file?($stdin)
@@ -27,10 +27,11 @@ $stdin.rewind
 def github_push(payload)
 	client = Mysql2::Client.new(
 		:encoding => 'utf8mb4',
+		:host     => @config["server"],
 		:username => @config["user"],
 		:password => @config["pass"],
 		:database => @config["database"])
-	statement = client.prepare("INSERT INTO #{Const::TABLE_NAME}" \
+	statement = client.prepare("INSERT INTO #{Const::PUSH_TABLE}" \
 		"(ref, hash_before, hash_after, compare, repo_fname, head_msg) " \
 		"VALUES (?, ?, ?, ?, ?, ?)")
 	statement.execute(

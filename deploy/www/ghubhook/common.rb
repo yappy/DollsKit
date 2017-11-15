@@ -1,3 +1,5 @@
 module Const
-	TABLE_NAME = "push_log"
+	CONFIG_FILE = "../webconfig.json"
+	PUSH_TABLE = "push_log"
+	BUILD_TABLE = "build_log"
 end
