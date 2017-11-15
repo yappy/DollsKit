@@ -72,6 +72,8 @@ namespace Shanghai
             startInfo.RedirectStandardInput = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
+            Logger.Log(LogLevel.Info, "FileName = {0}, Args = {1}, WorkDir = {2}",
+                startInfo.FileName, startInfo.Arguments, startInfo.WorkingDirectory);
 
             StringBuilder outbuf = new StringBuilder(1024, BuildLogMax);
 
@@ -151,7 +153,6 @@ namespace Shanghai
                 DateTime startTime = DateTime.Now;
                 bool success = false;
                 string message = "";
-                Exception exception = null;
                 try
                 {
                     TwitterManager.UpdateNoThrow(
@@ -164,7 +165,6 @@ namespace Shanghai
                 {
                     success = false;
                     message = "System error\n";
-                    exception = e;
                     Logger.Log(LogLevel.Error, e);
                 }
 
