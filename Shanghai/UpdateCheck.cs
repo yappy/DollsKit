@@ -43,7 +43,7 @@ namespace Shanghai
         {
             var cmd = new MySqlCommand("INSERT INTO build_log " + 
                 "(push_id, started_at, finished_at, succeeded, message) " +
-                "VALUES (@push_id, @started_at, @finished_at, @succeeded, CAST(@message AS VARCHAR(65536)))",
+                "VALUES (@push_id, @started_at, @finished_at, @succeeded, @message)",
                 conn);
             cmd.Prepare();
             cmd.Parameters.AddWithValue("@push_id", pushId);
@@ -72,7 +72,9 @@ namespace Shanghai
             startInfo.RedirectStandardInput = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
-            Logger.Log(LogLevel.Info, "FileName = {0}, Args = {1}, WorkDir = {2}",
+            Logger.Log(LogLevel.Info,
+                "[{0}] FileName = {1}, Args = {2}, WorkDir = {3}",
+                taskName,
                 startInfo.FileName, startInfo.Arguments, startInfo.WorkingDirectory);
 
             StringBuilder outbuf = new StringBuilder(1024, BuildLogMax);
