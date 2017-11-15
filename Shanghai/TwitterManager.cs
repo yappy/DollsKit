@@ -1,4 +1,5 @@
 ﻿using CoreTweet;
+using System;
 using System.IO;
 
 namespace Shanghai
@@ -50,6 +51,19 @@ namespace Shanghai
                 }
             }
             Logger.Log(LogLevel.Info, "Twitter update: {0}", msg);
+        }
+
+        public static void UpdateNoThrow(Action<TwitterException> handler,
+            string msg, long? reply_to_status = null)
+        {
+            try
+            {
+                Update(msg, reply_to_status);
+            }
+            catch (TwitterException e)
+            {
+                handler(e);
+            }
         }
 
         public static void UpdateWithImage(string msg, string imgPath, long? reply_to_status = null)
