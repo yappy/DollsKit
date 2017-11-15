@@ -77,7 +77,7 @@ namespace Shanghai
                 taskName,
                 startInfo.FileName, startInfo.Arguments, startInfo.WorkingDirectory);
 
-            StringBuilder outbuf = new StringBuilder(1024, BuildLogMax);
+            StringBuilder outbuf = new StringBuilder(1024);
 
             using (var p = Process.Start(startInfo))
             {
