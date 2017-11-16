@@ -1,4 +1,7 @@
+# (Re)Initialize table
+
 # Please specify your database name
+# mysql [-u <user> -p] <dbname> < <this>.sql
 
 DROP TABLE IF EXISTS build_log;
 DROP TABLE IF EXISTS push_log;
@@ -24,10 +27,10 @@ CREATE TABLE build_log(
 	updated_at	TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 				ON UPDATE CURRENT_TIMESTAMP,
 	push_id		INT NOT NULL,
-	started_at	TIMESTAMP NOT NULL,
-	finished_at	TIMESTAMP NOT NULL,
+	started_at	TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	finished_at	TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	succeeded	BOOL NOT NULL,
-	message		VARCHAR(65536) NOT NULL,
+	message		VARCHAR(256) NOT NULL,
 
 	PRIMARY KEY(id),
 	FOREIGN KEY (push_id) REFERENCES push_log(id)
