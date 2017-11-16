@@ -78,11 +78,14 @@ namespace Shanghai
                 // stdin は即 EOF
                 p.StandardInput.Close();
 
-                Action<string> outFunc = (line) => {
-                    Logger.Log(LogLevel.Info, line);
+                Action<string, string> outFunc = (prefix, data) => {
+                    if (data != null)
+                    {
+                        Logger.Log(LogLevel.Info, prefix + data);
+                    }
                 };
-                p.OutputDataReceived += (sender, e) => outFunc("1> " + e.Data);
-                p.ErrorDataReceived += (sender, e) => outFunc("2> " + e.Data);
+                p.OutputDataReceived += (sender, e) => outFunc("1> ", e.Data);
+                p.ErrorDataReceived += (sender, e) => outFunc("2> ", e.Data);
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
 

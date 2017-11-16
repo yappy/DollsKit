@@ -26,10 +26,17 @@ namespace Shanghai
 
                 p.OutputDataReceived += (sender, e) =>
                 {
-                    output.Add(e.Data);
+                    if (e.Data != null)
+                    {
+                        output.Add(e.Data);
+                    }
                 };
-                p.ErrorDataReceived += (sender, e) => {
-                    Logger.Log(LogLevel.Warning, e.Data);
+                p.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        Logger.Log(LogLevel.Warning, e.Data);
+                    }
                 };
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
