@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace Shanghai
 {
@@ -118,10 +119,23 @@ namespace Shanghai
 
             Logger.Log(LogLevel.Info, "Start");
 
+            // Get git info
+            var gitInfo = new StringBuilder();
+            {
+                string str = ExternalCommand.RunNoThrowOneLine(
+                    "git", "--abbrev-ref HEAD", 1);
+                gitInfo.Append((str != null) ? ('\n' + str) : "");
+            }
+            {
+                string str = ExternalCommand.RunNoThrowOneLine(
+                    "git", "--abbrev-ref", 1);
+                gitInfo.Append((str != null) ? (' ' + str) : "");
+            }
+
             try
             {
                 int errorRebootCount = 0;
-                string bootMsg = "Boot...";
+                string bootMsg = "Boot..." + gitInfo.ToString();
                 while (true)
                 {
                     InitializeSystems();
@@ -175,7 +189,7 @@ namespace Shanghai
                     Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
-                    bootMsg = "Reboot...";
+                    bootMsg = "Reboot..." + gitInfo.ToString(); ;
                 } // while (true)
             }
             catch (Exception e)
