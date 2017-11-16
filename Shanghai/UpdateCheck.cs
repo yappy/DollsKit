@@ -165,7 +165,7 @@ namespace Shanghai
                 // tweet
                 string time = (finishTime - startTime).ToString("c");
                 string twmsg = string.Format(
-                    "結果: {0}\nビルド時間: {1}",
+                    "結果: {0}\n時間: {1}",
                     message, time);
                 TwitterManager.UpdateNoThrow(
                     (e) => Logger.Log(LogLevel.Error, e),
