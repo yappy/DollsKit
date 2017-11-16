@@ -25,6 +25,9 @@ $stdin.rewind
 @cgi = CGI.new("html5")
 
 def github_push(payload)
+	# delete remote branch push
+	return if payload["deleted"]
+
 	client = Mysql2::Client.new(
 		:encoding => 'utf8mb4',
 		:host     => @config["server"],
