@@ -89,6 +89,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="reboot.rb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="settings\ShanghaiOption.template.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

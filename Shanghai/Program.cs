@@ -72,7 +72,7 @@ namespace Shanghai
                 cameraTask.UploadPictureTask);
 
             server.RegisterPeriodicTask("update",
-                (hour, min) => Array.IndexOf(new int[] { 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 }, min) >= 0,
+                (hour, min) => Array.IndexOf(new int[] { 5, 15, 25, 35, 45, 55 }, min) >= 0,
                 updateCheck.Check);
         }
 

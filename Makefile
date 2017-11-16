@@ -11,6 +11,7 @@ build:
 	nuget restore DollsKit.sln
 	msbuild DollsKit.sln /p:Configuration=Debug
 	msbuild DollsKit.sln /p:Configuration=Release
+	chmod u+x deploy/*.exe deploy_debug/*.exe
 
 clean:
 	msbuild DollsKit.sln /t:Clean /p:Configuration=Debug
