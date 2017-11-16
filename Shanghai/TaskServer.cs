@@ -11,8 +11,9 @@ namespace Shanghai
     {
         None,
         Reboot,
-        Shutdown,
         ErrorReboot,
+        Shutdown,
+        UpdateShutdown,
         FatalShutdown,
     }
 

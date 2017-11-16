@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 namespace Shanghai
 {
     class Program
     {
         private static readonly int MaxErrorReboot = 3;
+        private static readonly string RebootCmd = "ruby";
+        private static readonly string RebootScript = "reboot.rb";
 
         static void InitializeSystems()
         {
@@ -76,6 +80,32 @@ namespace Shanghai
                 updateCheck.Check);
         }
 
+        static void SpawnRebootScript()
+        {
+            var asm = Assembly.GetEntryAssembly();
+            if (asm == null)
+            {
+                throw new PlatformNotSupportedException("GetEntryAssembly failed");
+            }
+            string mainExePath = asm.Location;
+            string cmd = "./" + Path.GetFileName(mainExePath);
+            cmd = '"' + cmd + '"';
+
+            var startInfo = new ProcessStartInfo();
+            startInfo.FileName = RebootCmd;
+            startInfo.Arguments = $"{RebootScript} {mainExePath}";
+            startInfo.UseShellExecute = false;
+
+            Logger.Log(LogLevel.Info, "Starting reboot script...");
+            Logger.Log(LogLevel.Info, $"{RebootCmd} {RebootScript} {mainExePath}");
+
+            using (var p = Process.Start(startInfo))
+            {
+                Logger.Log(LogLevel.Info,
+                    $"Starting reboot script OK: pid = {p.Id}");
+            }
+        }
+
         static void Main(string[] args)
         {
             Logger.AddConsole(LogLevel.Trace);
@@ -87,7 +117,7 @@ namespace Shanghai
             };
 
             Logger.Log(LogLevel.Info, "Start");
-            
+
             try
             {
                 int errorRebootCount = 0;
@@ -113,14 +143,19 @@ namespace Shanghai
                                 Logger.Log(LogLevel.Info, "Reboot");
                                 exit = false;
                                 break;
-                            case ServerResult.Shutdown:
-                                Logger.Log(LogLevel.Info, "Shutdown");
-                                exit = true;
-                                break;
                             case ServerResult.ErrorReboot:
                                 errorRebootCount++;
                                 Logger.Log(LogLevel.Info, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
                                 exit = (errorRebootCount >= MaxErrorReboot);
+                                break;
+                            case ServerResult.Shutdown:
+                                Logger.Log(LogLevel.Info, "Shutdown");
+                                exit = true;
+                                break;
+                            case ServerResult.UpdateShutdown:
+                                Logger.Log(LogLevel.Info, "Update Shutdown");
+                                exit = true;
+                                SpawnRebootScript();
                                 break;
                             case ServerResult.FatalShutdown:
                                 Logger.Log(LogLevel.Info, "Fatal Shutdown");
@@ -141,7 +176,7 @@ namespace Shanghai
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
                     bootMsg = "Reboot...";
-                }
+                } // while (true)
             }
             catch (Exception e)
             {

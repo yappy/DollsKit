@@ -97,7 +97,18 @@ namespace Shanghai
             }
         }
 
-        private void BuildIfPushed(string taskName, MySqlConnection conn)
+        private void UpdateReboot(TaskServer server, string taskName)
+        {
+            Logger.Log(LogLevel.Info, $"[{taskName}] Request UpdateShutdown");
+
+            TwitterManager.UpdateNoThrow(
+                (e) => Logger.Log(LogLevel.Error, e),
+                $"[{DateTime.Now}] Shutdown...");
+
+            server.RequestShutdown(ServerResult.UpdateShutdown);
+        }
+
+        private void BuildIfPushed(TaskServer server, string taskName, MySqlConnection conn)
         {
             int maxIdInBuild = GetMaxPushIdInBuildLog(conn);
             Logger.Log(LogLevel.Info, "[{0}] Max push_id in build log: {1}",
@@ -164,12 +175,16 @@ namespace Shanghai
 
                 // tweet
                 string time = (finishTime - startTime).ToString("c");
-                string twmsg = string.Format(
-                    "結果: {0}\n時間: {1}",
-                    message, time);
+                string twmsg = $"{DateTime.Now}: \n結果: {message}\n時間: {time}";
                 TwitterManager.UpdateNoThrow(
                     (e) => Logger.Log(LogLevel.Error, e),
                     twmsg);
+
+                // reboot if succeeded
+                if (success)
+                {
+                    UpdateReboot(server, taskName);
+                }
             }
             else
             {
@@ -181,7 +196,7 @@ namespace Shanghai
         {
             using(var conn = DatabaseManager.OpenConnection())
             {
-                BuildIfPushed(taskName, conn);
+                BuildIfPushed(server, taskName, conn);
             }
         }
     }
