@@ -25,7 +25,7 @@ branch_name = branch_name.gsub(/^refs\/heads\//, "")
 puts "===== Auto build (branch=#{branch_name}) start ====="
 puts
 
-Task("git", "fetch", "--all")
+Task("git", "fetch", "--all", "--prune")
 Task("git", "checkout", branch_name)
 Task("git", "merge", "--ff-only", "origin/#{branch_name}")
 
