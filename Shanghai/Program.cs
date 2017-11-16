@@ -128,7 +128,7 @@ namespace Shanghai
             }
             {
                 string str = ExternalCommand.RunNoThrowOneLine(
-                    "git", "rev-parse --abbrev-ref", 1);
+                    "git", "rev-parse HEAD", 1);
                 gitInfo.Append((str != null) ? (' ' + str) : "");
             }
 
