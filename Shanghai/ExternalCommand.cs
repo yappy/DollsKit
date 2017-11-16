@@ -18,6 +18,10 @@ namespace Shanghai
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
+            Logger.Log(LogLevel.Info,
+                "FileName = {1}, Args = {2}, WorkDir = {3}",
+                startInfo.FileName, startInfo.Arguments, startInfo.WorkingDirectory);
+
             var output = new List<string>();
             using (var p = Process.Start(startInfo))
             {
@@ -28,6 +32,7 @@ namespace Shanghai
                 {
                     if (e.Data != null)
                     {
+                        Logger.Log(LogLevel.Info, e.Data);
                         output.Add(e.Data);
                     }
                 };
