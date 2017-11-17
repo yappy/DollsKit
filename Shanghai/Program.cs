@@ -28,11 +28,12 @@ namespace Shanghai
 
         // Called after InitializeSystems() statically.
         // For new task test.
-        static void TaskTest()
+        static void TaskTest(TaskServer server)
         {
             // Stub
 #if DEBUG
-            new UpdateCheck().Check(null, "update");
+            Logger.Log(LogLevel.Info, "Task Test");
+            new UpdateCheck().Check(server, "update");
 #endif
         }
 
@@ -89,12 +90,12 @@ namespace Shanghai
                 throw new PlatformNotSupportedException("GetEntryAssembly failed");
             }
             string mainExePath = asm.Location;
-            string cmd = "./" + Path.GetFileName(mainExePath);
+            string cmd = "mono --debug " + Path.GetFileName(mainExePath);
             cmd = '"' + cmd + '"';
 
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = RebootCmd;
-            startInfo.Arguments = $"{RebootScript} {mainExePath}";
+            startInfo.Arguments = $"{RebootScript} {cmd}";
             startInfo.UseShellExecute = false;
 
             Logger.Log(LogLevel.Info, "Starting reboot script...");
@@ -140,11 +141,10 @@ namespace Shanghai
                 {
                     InitializeSystems();
 
-                    TaskTest();
-
                     {
                         var taskServer = new TaskServer();
                         SetupTasks(taskServer, bootMsg);
+                        TaskTest(taskServer);
 
                         Logger.Log(LogLevel.Info, "Task server start");
                         ServerResult result = taskServer.Run();
