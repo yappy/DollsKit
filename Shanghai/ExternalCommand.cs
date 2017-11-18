@@ -19,7 +19,7 @@ namespace Shanghai
             startInfo.RedirectStandardError = true;
 
             Logger.Log(LogLevel.Info,
-                "FileName = {1}, Args = {2}, WorkDir = {3}",
+                "FileName = {0}, Args = {1}, WorkDir = {2}",
                 startInfo.FileName, startInfo.Arguments, startInfo.WorkingDirectory);
 
             var output = new List<string>();
