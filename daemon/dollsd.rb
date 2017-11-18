@@ -9,8 +9,9 @@
 require 'logger'
 require 'open3'
 
-EXEC_CMD = "ruby -e 'p $stdin.gets'"
+EXEC_CMD = "ruby -e '2.times { puts $stdin.gets }; $stderr.puts 42'"
 LOG_FILE = "dollsd.log".freeze
+IN_BUF_SIZE = 64 * 1024
 
 $logger = nil
 $args = {
@@ -31,6 +32,7 @@ class DollsDaemon
 			:stdin    => nil,
 			:stdout   => nil,
 			:stderr   => nil,
+			:rest_out => nil,
 		};
 	end
 
@@ -42,7 +44,6 @@ class DollsDaemon
 
 private
 	def setup
-		$logger.info "[START]"
 		# create child and parent process will exit 0
 		# stdin, stdout, stderr to /dev/null
 		if $args[:daemon] then
@@ -85,6 +86,9 @@ private
 		exit_code = @child[:wait_thr].value
 		$logger.info "Dolls process exit (code=#{exit_code})"
 
+		# drain until EOF
+		process_input
+
 		@child[:stdin].close
 		@child[:stdout].close
 		@child[:stderr].close
@@ -106,10 +110,12 @@ private
 			if @sig_hup then
 				$logger.info "[SIGHUP]"
 
-				# TODO: reload
+				send_cmd("RELOAD");
 
 				@sig_hup = false
 			end
+			# process input stream from the child
+			process_input
 			# wait for process exit
 			if @child[:wait_thr].join(1) then
 				on_exit_proc
@@ -118,25 +124,64 @@ private
 		end
 	end
 
-	def send_cmd(cmd)
-		$logger.info "send command: #{cmd}"
-		cmd = "\n" + cmd + "\n"
+	def intr_safe
 		loop do
 			begin
-				expected = cmd.bytesize
-				actual = @child[:stdin].write_nonblock(cmd)
-				if actual != expected then
-					raise "write_nonblock #{expected} returns #{actual}"
-				end
-				return true
+				return yield
 			rescue Errno::EINTR
-				# do again
-			rescue => err
-				$logger.error "send command failed"
-				$logger.error err
-				return false
+				# retry
 			end
 		end
+	end
+
+	def send_cmd(cmd_line)
+		$logger.info "send command: #{cmd_line}"
+		cmd_line = "\n" + cmd_line + "\n"
+		expected = cmd_line.bytesize
+		begin
+			actual = intr_safe { @child[:stdin].write_nonblock(cmd_line) }
+			if actual != expected then
+				raise "write_nonblock #{expected} returns #{actual}"
+			end
+			true
+		rescue => err
+			$logger.error "send command failed"
+			$logger.error err
+			false
+		end
+	end
+
+	def recv_cmd(cmd_line)
+		$logger.info "recv command: #{cmd_line}"
+	end
+
+	def process_input
+		result = intr_safe {
+			select([@child[:stdout], @child[:stderr]], [], [], 0)
+		}
+		process_any = !(result.nil?)
+
+		result ||= [[], [], []]
+		rs = result[0]
+		if rs.include?(@child[:stdout]) then
+			begin
+				buf = intr_safe { @child[:stdout].sysread(IN_BUF_SIZE) }
+				*lines, last = buf.split("\n", -1)
+				lines[0] = @child[:rest_out].to_s + lines[0]
+				@child[:rest_out] = last
+				lines.each {|line| recv_cmd(line) }
+			rescue EOFError
+			end
+		end
+		if rs.include?(@child[:stderr]) then
+			begin
+				buf = intr_safe { @child[:stderr].sysread(IN_BUF_SIZE) }
+				$logger.warn "stderr data (#{buf.bytesize})"
+				$logger.warn buf
+			rescue EOFError
+			end
+		end
+		process_any
 	end
 end
 
@@ -163,12 +208,13 @@ def main
 	$logger = Logger.new(LOG_FILE)
 
 	# after that, output to $logger instead of stderr (it will be /dev/null)
+	$logger.info "[dollsd START]"
 	begin
 		DollsDaemon.new.run
 	rescue => err
 		$logger.fatal err
 	ensure
-		$logger.info "[END]"
+		$logger.info "[dollsd EXIT]"
 	end
 end
 
