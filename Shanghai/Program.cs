@@ -110,13 +110,26 @@ namespace Shanghai
 
         static void Main(string[] args)
         {
-            Logger.AddConsole(LogLevel.Trace);
-            Logger.AddFile(LogLevel.Info);
-            Console.CancelKeyPress += (sender, eventArgs) =>
+            try
             {
-                Logger.Log(LogLevel.Info, "Interrupted");
-                Logger.Flush();
-            };
+                CommandLine.Parse(args);
+            }
+            catch (ArgumentException e)
+            {
+                Console.WriteLine(e.Message);
+                return;
+            }
+            if (CommandLine.Settings.Help)
+            {
+                CommandLine.PrintHelp();
+                return;
+            }
+
+            if (!CommandLine.Settings.Daemon)
+            {
+                Logger.AddConsole(LogLevel.Trace);
+            }
+            Logger.AddFile(LogLevel.Info);
 
             Logger.Log(LogLevel.Info, "Start");
 
