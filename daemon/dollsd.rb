@@ -33,8 +33,12 @@ private
 		$logger.info "[START]"
 		# create child and parent process will exit 0
 		# stdin, stdout, stderr to /dev/null
-		Process.daemon(nochdir = true, noclose = nil)
-		$logger.info "daemon OK"
+		if $args[:daemon] then
+			Process.daemon(nochdir = true, noclose = nil)
+			$logger.info "daemon OK"
+		else
+			$logger.info "daemon SKIP"
+		end
 
 		# write daemon pid (fails if not exists)
 		open($args[:pid_file], IO::WRONLY | IO::TRUNC) do |f|
@@ -82,6 +86,8 @@ def parse_args
 			puts "Invalid arg: #{arg}"
 		end
 	end
+	raise "--pid-file needed" unless $args[:pid_file]
+
 	$args.each do |k, v|
 		v.freeze
 	end
