@@ -8,10 +8,6 @@ namespace Shanghai
 {
     class Program
     {
-        private static readonly int MaxErrorReboot = 3;
-        private static readonly string RebootCmd = "ruby";
-        private static readonly string RebootScript = "reboot.rb";
-
         static void InitializeSystems()
         {
             SettingManager.Initialize();
@@ -82,32 +78,6 @@ namespace Shanghai
                 updateCheck.Check);
         }
 
-        static void SpawnRebootScript()
-        {
-            var asm = Assembly.GetEntryAssembly();
-            if (asm == null)
-            {
-                throw new PlatformNotSupportedException("GetEntryAssembly failed");
-            }
-            string mainExePath = asm.Location;
-            string cmd = "mono --debug " + Path.GetFileName(mainExePath);
-            cmd = '"' + cmd + '"';
-
-            var startInfo = new ProcessStartInfo();
-            startInfo.FileName = RebootCmd;
-            startInfo.Arguments = $"{RebootScript} {cmd}";
-            startInfo.UseShellExecute = false;
-
-            Logger.Log(LogLevel.Info, "Starting reboot script...");
-            Logger.Log(LogLevel.Info, $"{RebootCmd} {RebootScript} {mainExePath}");
-
-            using (var p = Process.Start(startInfo))
-            {
-                Logger.Log(LogLevel.Info,
-                    $"Starting reboot script OK: pid = {p.Id}");
-            }
-        }
-
         static void Main(string[] args)
         {
             try
@@ -133,27 +103,26 @@ namespace Shanghai
 
             Logger.Log(LogLevel.Info, "Start");
 
-            // Get git info
-            var gitInfo = new StringBuilder();
-            {
-                string str = ExternalCommand.RunNoThrowOneLine(
-                    "git", "rev-parse --abbrev-ref HEAD", 1);
-                gitInfo.Append((str != null) ? ('\n' + str) : "");
-            }
-            {
-                string str = ExternalCommand.RunNoThrowOneLine(
-                    "git", "rev-parse HEAD", 1);
-                gitInfo.Append((str != null) ? (' ' + str) : "");
-            }
-
+            string cmdToDaemon = null;
             try
             {
-                int errorRebootCount = 0;
+                // Get git info
+                var gitInfo = new StringBuilder();
+                {
+                    string str = ExternalCommand.RunNoThrowOneLine(
+                        "git", "rev-parse --abbrev-ref HEAD", 1);
+                    gitInfo.Append((str != null) ? ('\n' + str) : "");
+                }
+                {
+                    string str = ExternalCommand.RunNoThrowOneLine(
+                        "git", "rev-parse HEAD", 1);
+                    gitInfo.Append((str != null) ? (' ' + str) : "");
+                }
+
                 string bootMsg = "Boot..." + gitInfo.ToString();
                 while (true)
                 {
                     InitializeSystems();
-
                     {
                         var taskServer = new TaskServer();
                         SetupTasks(taskServer, bootMsg);
@@ -166,52 +135,58 @@ namespace Shanghai
                         bool exit;
                         switch (result)
                         {
-                            case ServerResult.Reboot:
-                                Logger.Log(LogLevel.Info, "Reboot");
+                            case ServerResult.Reload:
+                                Logger.Log(LogLevel.Info, "Reload");
                                 exit = false;
-                                break;
-                            case ServerResult.ErrorReboot:
-                                errorRebootCount++;
-                                Logger.Log(LogLevel.Info, "Reboot by Error ({0}/{1})", errorRebootCount, MaxErrorReboot);
-                                exit = (errorRebootCount >= MaxErrorReboot);
                                 break;
                             case ServerResult.Shutdown:
                                 Logger.Log(LogLevel.Info, "Shutdown");
                                 exit = true;
                                 break;
-                            case ServerResult.UpdateShutdown:
-                                Logger.Log(LogLevel.Info, "Update Shutdown");
+                            case ServerResult.UpdateReboot:
+                                Logger.Log(LogLevel.Info, "Update Reboot");
                                 exit = true;
-                                SpawnRebootScript();
+                                break;
+                            case ServerResult.ErrorReboot:
+                                Logger.Log(LogLevel.Info, "Error Reboot");
+                                exit = true;
                                 break;
                             case ServerResult.FatalShutdown:
                                 Logger.Log(LogLevel.Info, "Fatal Shutdown");
                                 exit = true;
                                 break;
                             default:
-                                Trace.Fail("must not reach");
+                                Logger.Log(LogLevel.Fatal, "must not reach");
                                 exit = true;
                                 break;
                         }
                         if (exit)
                         {
+                            // shutdown/reboot
                             break;
                         }
                     }
+                    // reload
                     TerminateSystems();
                     Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
-                    bootMsg = "Reboot..." + gitInfo.ToString(); ;
+                    bootMsg = "Reload..." + gitInfo.ToString();
                 } // while (true)
             }
             catch (Exception e)
             {
                 Logger.Log(LogLevel.Fatal, e);
             }
-
-            Logger.Log(LogLevel.Info, "Terminate");
-            Logger.Terminate();
+            finally
+            {
+                if (cmdToDaemon != null)
+                {
+                    Console.WriteLine(cmdToDaemon);
+                }
+                Logger.Log(LogLevel.Info, "Terminate");
+                Logger.Terminate();
+            }
         }
     }
 }

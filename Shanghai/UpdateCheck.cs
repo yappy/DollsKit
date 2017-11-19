@@ -108,7 +108,7 @@ namespace Shanghai
                 (e) => Logger.Log(LogLevel.Error, e),
                 $"[{DateTime.Now}] Shutdown...");
 
-            server.RequestShutdown(ServerResult.UpdateShutdown);
+            server.RequestShutdown(ServerResult.UpdateReboot);
         }
 
         private void BuildIfPushed(TaskServer server, string taskName, MySqlConnection conn)

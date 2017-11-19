@@ -7,13 +7,20 @@ using System.Threading.Tasks;
 
 namespace Shanghai
 {
+    // タスクサーバの終了結果
+    // 同時に起きた場合は下の方が優先される
     public enum ServerResult
     {
         None,
-        Reboot,
-        ErrorReboot,
+        // プロセスそのままで再初期化
+        Reload,
+        // プロセス終了
         Shutdown,
-        UpdateShutdown,
+        // プロセス終了、デーモンにアップデート後再起動してもらう
+        UpdateReboot,
+        // エラーでプロセス終了、デーモンに再起動してもらう
+        ErrorReboot,
+        // 致命的エラーによりプロセス終了
         FatalShutdown,
     }
 
