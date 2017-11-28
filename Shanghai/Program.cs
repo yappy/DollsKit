@@ -8,6 +8,8 @@ namespace Shanghai
 {
     class Program
     {
+        static readonly int ErrorReloadLimit = 5;
+
         static void InitializeSystems()
         {
             SettingManager.Initialize();
@@ -28,13 +30,14 @@ namespace Shanghai
         {
             // Stub
 #if DEBUG
-            Logger.Log(LogLevel.Info, "Task Test");
-            new UpdateCheck().Check(server, "update");
+            //Logger.Log(LogLevel.Info, "Task Test");
+            //new UpdateCheck().Check(server, "update");
 #endif
         }
 
         static void SetupTasks(TaskServer server, string bootMsg)
         {
+            var stdInTask = new StdInTask();
             var healthCheck = new HealthCheck();
             var twitterCheck = new TwitterCheck();
             var ddnsTask = new DdnsTask();
@@ -46,6 +49,7 @@ namespace Shanghai
                 {
                     TwitterManager.Update(string.Format("[{0}] {1}", DateTime.Now, bootMsg));
                 });
+            server.RegisterOneShotTask("stdin", TimeSpan.FromMinutes(0), stdInTask.ProcessStdIn);
 
             server.RegisterPeriodicTask("flushlog",
                 (hour, min) => min == 55,
@@ -101,6 +105,9 @@ namespace Shanghai
             }
             Logger.AddFile(LogLevel.Info);
 
+            // Start stdin task
+            StdIn.Start();
+
             Logger.Log(LogLevel.Info, "Start");
 
             string cmdToDaemon = null;
@@ -119,6 +126,7 @@ namespace Shanghai
                     gitInfo.Append((str != null) ? (' ' + str) : "");
                 }
 
+                int errorCount = 0;
                 string bootMsg = "Boot..." + gitInfo.ToString();
                 while (true)
                 {
@@ -137,6 +145,14 @@ namespace Shanghai
                         {
                             case ServerResult.Reload:
                                 Logger.Log(LogLevel.Info, "Reload");
+                                errorCount = 0;
+                                bootMsg = "Reload..." + gitInfo.ToString();
+                                exit = false;
+                                break;
+                            case ServerResult.ErrorReload:
+                                Logger.Log(LogLevel.Info, "Error Reboot");
+                                errorCount++;
+                                bootMsg = $"Reload... ({errorCount}/{ErrorReloadLimit})" + gitInfo.ToString();
                                 exit = false;
                                 break;
                             case ServerResult.Shutdown:
@@ -145,10 +161,6 @@ namespace Shanghai
                                 break;
                             case ServerResult.UpdateReboot:
                                 Logger.Log(LogLevel.Info, "Update Reboot");
-                                exit = true;
-                                break;
-                            case ServerResult.ErrorReboot:
-                                Logger.Log(LogLevel.Info, "Error Reboot");
                                 exit = true;
                                 break;
                             case ServerResult.FatalShutdown:
@@ -171,7 +183,6 @@ namespace Shanghai
                     Logger.Log(LogLevel.Info, "GC...");
                     GC.Collect();
                     Logger.Log(LogLevel.Info, "GC complete");
-                    bootMsg = "Reload..." + gitInfo.ToString();
                 } // while (true)
             }
             catch (Exception e)
