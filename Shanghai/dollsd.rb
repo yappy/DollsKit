@@ -41,7 +41,8 @@ class DollsDaemon
 		setup
 		loop do
 			exec_proc
-			break if !main_loop
+			main_loop
+			break if !on_exit_proc
 		end
 	end
 
@@ -96,12 +97,14 @@ private
 		@child[:stdin].close
 		@child[:stdout].close
 		@child[:stderr].close
-
+		reboot = (@child[:result] == :result_reboot)
 		@child.clear
+
+		$logger.info "Cleanup dolls process (reboot: #{reboot})"
+		reboot
 	end
 
 	def main_loop
-		reboot = false
 		loop do
 			# process signals
 			if @sig_int or @sig_term then
@@ -123,13 +126,9 @@ private
 			process_input
 			# wait for process exit
 			if @child[:wait_thr].join(1) then
-				reboot = true if @child[:result] == :result_reboot
-				on_exit_proc
 				break
 			end
 		end
-		$logger.info "reboot: #{reboot}"
-		reboot
 	end
 
 	def intr_safe
