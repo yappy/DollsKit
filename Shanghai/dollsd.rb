@@ -9,7 +9,7 @@
 require 'logger'
 require 'open3'
 
-EXEC_CMD = "ruby -e '2.times { puts $stdin.gets }; $stderr.puts 42'"
+EXEC_CMD = "mono --debug Shanghai.exe"
 LOG_FILE = "dollsd.log".freeze
 IN_BUF_SIZE = 64 * 1024
 
@@ -29,6 +29,7 @@ class DollsDaemon
 		# child process
 		@child = {
 			:wait_thr => nil,
+			:result   => nil,
 			:stdin    => nil,
 			:stdout   => nil,
 			:stderr   => nil,
@@ -38,8 +39,10 @@ class DollsDaemon
 
 	def run
 		setup
-		exec_proc
-		main_loop
+		loop do
+			exec_proc
+			break if !main_loop
+		end
 	end
 
 private
@@ -77,6 +80,7 @@ private
 
 		stdin, stdout, stderr, wait_thr = *Open3::popen3(EXEC_CMD)
 		@child[:wait_thr] = wait_thr
+		@child[:result] = :result_shutdown
 		@child[:stdin] = stdin
 		@child[:stdout] = stdout
 		@child[:stderr] = stderr
@@ -87,7 +91,7 @@ private
 		$logger.info "Dolls process exit (code=#{exit_code})"
 
 		# drain until EOF
-		process_input
+		while process_input do end
 
 		@child[:stdin].close
 		@child[:stdout].close
@@ -97,6 +101,7 @@ private
 	end
 
 	def main_loop
+		reboot = false
 		loop do
 			# process signals
 			if @sig_int or @sig_term then
@@ -118,10 +123,12 @@ private
 			process_input
 			# wait for process exit
 			if @child[:wait_thr].join(1) then
+				reboot = true if @child[:result] == :result_reboot
 				on_exit_proc
 				break
 			end
 		end
+		reboot
 	end
 
 	def intr_safe
@@ -153,6 +160,14 @@ private
 
 	def recv_cmd(cmd_line)
 		$logger.info "recv command: #{cmd_line}"
+		case cmd_line
+		when "SHUTDOWN" then
+			@child[:result] = :result_shutdown
+		when "REBOOT" then
+			@child[:result] = :result_reboot
+		else
+			$logger.warn "unknown command: #{cmd_line}"
+		end
 	end
 
 	def process_input
