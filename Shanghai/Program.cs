@@ -30,8 +30,8 @@ namespace Shanghai
         {
             // Stub
 #if DEBUG
-            //Logger.Log(LogLevel.Info, "Task Test");
-            //new UpdateCheck().Check(server, "update");
+            Logger.Log(LogLevel.Info, "Task Test");
+            new UpdateCheck().Check(server, "update");
 #endif
         }
 
