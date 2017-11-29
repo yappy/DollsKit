@@ -152,7 +152,7 @@ namespace Shanghai
                             case ServerResult.ErrorReload:
                                 Logger.Log(LogLevel.Info, "Error Reboot");
                                 errorCount++;
-                                bootMsg = $"Reload... ({errorCount}/{ErrorReloadLimit})" + gitInfo.ToString();
+                                bootMsg = $"Reload... (Error {errorCount}/{ErrorReloadLimit})" + gitInfo.ToString();
                                 exit = false;
                                 break;
                             case ServerResult.Shutdown:
@@ -161,6 +161,7 @@ namespace Shanghai
                                 break;
                             case ServerResult.UpdateReboot:
                                 Logger.Log(LogLevel.Info, "Update Reboot");
+                                cmdToDaemon = "REBOOT";
                                 exit = true;
                                 break;
                             case ServerResult.FatalShutdown:
