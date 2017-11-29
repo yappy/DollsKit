@@ -9,7 +9,7 @@
 require 'logger'
 require 'open3'
 
-EXEC_CMD = "mono --debug Shanghai.exe"
+EXEC_CMD = "mono --debug Shanghai.exe --daemon"
 LOG_FILE = "dollsd.log".freeze
 IN_BUF_SIZE = 64 * 1024
 
@@ -128,6 +128,7 @@ private
 				break
 			end
 		end
+		$logger.info "reboot: #{reboot}"
 		reboot
 	end
 
@@ -171,13 +172,14 @@ private
 	end
 
 	def process_input
+		process_any = false
+
 		result = intr_safe {
 			select([@child[:stdout], @child[:stderr]], [], [], 0)
 		}
-		process_any = !(result.nil?)
-
 		result ||= [[], [], []]
 		rs = result[0]
+
 		if rs.include?(@child[:stdout]) then
 			begin
 				buf = intr_safe { @child[:stdout].sysread(IN_BUF_SIZE) }
@@ -185,6 +187,7 @@ private
 				lines[0] = @child[:rest_out].to_s + lines[0]
 				@child[:rest_out] = last
 				lines.each {|line| recv_cmd(line) }
+				process_any = true
 			rescue EOFError
 			end
 		end
@@ -193,6 +196,7 @@ private
 				buf = intr_safe { @child[:stderr].sysread(IN_BUF_SIZE) }
 				$logger.warn "stderr data (#{buf.bytesize})"
 				$logger.warn buf
+				process_any = true
 			rescue EOFError
 			end
 		end
