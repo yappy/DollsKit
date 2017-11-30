@@ -11,6 +11,7 @@ require 'open3'
 
 EXEC_CMD = "mono --debug Shanghai.exe --daemon"
 LOG_FILE = "dollsd.log".freeze
+MAIN_LOOP_PERIOD_SEC = 1
 IN_BUF_SIZE = 64 * 1024
 
 $logger = nil
@@ -76,17 +77,22 @@ private
 		$logger.info "sigaction OK"
 	end
 
+	# exec new child process and set @child
 	def exec_proc
 		raise "assert" if @child[:wait_thr]
 
+		$logger.info "exec: `#{EXEC_CMD}`"
 		stdin, stdout, stderr, wait_thr = *Open3::popen3(EXEC_CMD)
 		@child[:wait_thr] = wait_thr
 		@child[:result] = :result_shutdown
 		@child[:stdin] = stdin
 		@child[:stdout] = stdout
 		@child[:stderr] = stderr
+		$logger.info "exec OK"
 	end
 
+	# should be called after child process exit
+	# return true if re-exec required
 	def on_exit_proc
 		exit_code = @child[:wait_thr].value
 		$logger.info "Dolls process exit (code=#{exit_code})"
@@ -104,6 +110,8 @@ private
 		reboot
 	end
 
+	# process signal and input loop
+	# return after child process exit
 	def main_loop
 		loop do
 			# process signals
@@ -125,12 +133,14 @@ private
 			# process input stream from the child
 			process_input
 			# wait for process exit
-			if @child[:wait_thr].join(1) then
+			if @child[:wait_thr].join(MAIN_LOOP_PERIOD_SEC) then
 				break
 			end
 		end
 	end
 
+	# execute block and return its result
+	# retry if Errno::EINTR was thrown
 	def intr_safe
 		loop do
 			begin
@@ -141,6 +151,10 @@ private
 		end
 	end
 
+	# write to child's stdin
+	# don't block (treated as failure)
+	# don't throw exceptions (log only)
+	# return true if succeeded
 	def send_cmd(cmd_line)
 		$logger.info "send command: #{cmd_line}"
 		cmd_line = "\n" + cmd_line + "\n"
@@ -158,6 +172,7 @@ private
 		end
 	end
 
+	# for each command line from the child stdout
 	def recv_cmd(cmd_line)
 		$logger.info "recv command: #{cmd_line}"
 		case cmd_line
@@ -170,15 +185,22 @@ private
 		end
 	end
 
+	# process stdout, stderr from the child process
+	# return true if at least one input from stdout or stderr was processed
 	def process_input
 		process_any = false
 
+		# timeout = 0
 		result = intr_safe {
 			select([@child[:stdout], @child[:stderr]], [], [], 0)
 		}
+		# nil if timeout
+		# replace with empty array
 		result ||= [[], [], []]
 		rs = result[0]
 
+		# stdout exists
+		# split with "\n" and call recv_cmd for each lines
 		if rs.include?(@child[:stdout]) then
 			begin
 				buf = intr_safe { @child[:stdout].sysread(IN_BUF_SIZE) }
@@ -190,6 +212,8 @@ private
 			rescue EOFError
 			end
 		end
+		# stderr exists
+		# just log as warning
 		if rs.include?(@child[:stderr]) then
 			begin
 				buf = intr_safe { @child[:stderr].sysread(IN_BUF_SIZE) }
