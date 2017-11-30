@@ -49,13 +49,22 @@ namespace Shanghai
                 bool exited = p.WaitForExit(timeoutSec * 1000);
                 if (!exited)
                 {
+                    p.Kill();
                     throw new TimeoutException();
                 }
+                // MS 実装も Mono 実装もタイムアウト付きの WaitForExit() では
+                // (true を返したとしても) バッファが EOF まで読み出されたことは保証されない
+                // 残りのデータすべてに対して DataReceived イベントハンドラを呼んでいる間に
+                // タイムアウトした場合困るので仕方ないと思うがどこかにそう書いておいてほしい
+                //
+                // p.WaitForExit(timeout) が true を返した後なのでプロセスは終了しており
+                // 出力イベントハンドラに null (EOF) が配送され終わるのだけを待つ
+                p.WaitForExit();
+
                 if (p.ExitCode != 0)
                 {
                     throw new InvalidOperationException($"ExitCode={p.ExitCode}");
                 }
-
                 return output;
             }
         }

@@ -117,14 +117,15 @@ namespace Shanghai
                 var gitInfo = new StringBuilder();
                 {
                     string str = ExternalCommand.RunNoThrowOneLine(
-                        "git", "rev-parse --abbrev-ref HEAD", 1);
+                        "git", "rev-parse --symbolic-full-name HEAD", 1);
                     gitInfo.Append((str != null) ? ('\n' + str) : "");
                 }
                 {
                     string str = ExternalCommand.RunNoThrowOneLine(
                         "git", "rev-parse HEAD", 1);
-                    gitInfo.Append((str != null) ? (' ' + str) : "");
+                    gitInfo.Append((str != null) ? ('\n' + str) : "");
                 }
+                Logger.Log(LogLevel.Info, $"git info: {gitInfo.ToString()}");
 
                 int errorCount = 0;
                 string bootMsg = "Boot..." + gitInfo.ToString();
