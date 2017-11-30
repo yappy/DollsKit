@@ -18,7 +18,7 @@ end
 
 usage = "Usage: ruby <this>.rb <branch_name>"
 branch_name = ARGV[0] or abort(usage)
-# remove "/refs/heads/"
+# remove "refs/heads/"
 branch_name = branch_name.gsub(/^refs\/heads\//, "")
 
 

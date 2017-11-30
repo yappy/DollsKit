@@ -10,7 +10,9 @@ require 'logger'
 require 'open3'
 
 EXEC_CMD = "mono --debug Shanghai.exe --daemon"
-LOG_FILE = "dollsd.log".freeze
+LOG_FILE = "dollsdlog.txt".freeze
+LOG_SHIFT = 3
+LOG_SIZE = 1024 * 1024
 MAIN_LOOP_PERIOD_SEC = 1
 IN_BUF_SIZE = 64 * 1024
 
@@ -247,7 +249,8 @@ end
 def main
 	parse_args
 	# log ready
-	$logger = Logger.new(LOG_FILE)
+	$logger = Logger.new(logdev = LOG_FILE,
+		shift_age = LOG_SHIFT, shift_size = LOG_SIZE)
 
 	# after that, output to $logger instead of stderr (it will be /dev/null)
 	$logger.info "[dollsd START]"

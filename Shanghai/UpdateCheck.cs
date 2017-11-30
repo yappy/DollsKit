@@ -1,7 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Diagnostics;
-using System.Text;
 
 namespace Shanghai
 {
