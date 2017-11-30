@@ -3,7 +3,7 @@
 # Create dummy push with current git HEAD branch
 # ./<this>.sh | mysql [-u <user> -p] <dbname>
 
-branch=refs/heads/`git rev-parse --abbrev-ref HEAD`
+branch=`git rev-parse --symbolic-full-name HEAD`
 hash=`git rev-parse HEAD`
 
 echo INSERT INTO push_log
@@ -20,4 +20,8 @@ echo	"VALUES ('${branch}', '', '', 'https://', 'yappy/DollsKit', '寿司ビー�
 
 echo INSERT INTO push_log
 echo	'(ref, hash_before, hash_after, compare, repo_fname, head_msg)'
-echo	"VALUES ('${branch}', '', '', 'https://', 'yappy/DollsKit', 'build test');"
+echo	"VALUES ('${branch}', '', '', 'https://', 'yappy/DollsKit', 'build test\n\n@update on');"
+
+echo INSERT INTO push_log
+echo	'(ref, hash_before, hash_after, compare, repo_fname, head_msg)'
+echo	"VALUES ('${branch}', '', '', 'https://', 'yappy/DollsKit', 'build test\n\n@update off');"

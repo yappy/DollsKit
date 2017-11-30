@@ -24,17 +24,6 @@ namespace Shanghai
             SettingManager.Terminate();
         }
 
-        // Called after InitializeSystems() statically.
-        // For new task test.
-        static void TaskTest(TaskServer server)
-        {
-            // Stub
-#if DEBUG
-            Logger.Log(LogLevel.Info, "Task Test");
-            new UpdateCheck().Check(server, "update");
-#endif
-        }
-
         static void SetupTasks(TaskServer server, string bootMsg)
         {
             var stdInTask = new StdInTask();
@@ -57,6 +46,11 @@ namespace Shanghai
                 {
                     Logger.Flush();
                 });
+
+            // One shot task to be released soon for test
+#if DEBUG
+            server.RegisterOneShotTask("test_update", TimeSpan.FromMinutes(0), updateCheck.Check);
+#endif
 
             server.RegisterPeriodicTask("health",
                 (hour, min) => (Array.IndexOf(new int[] { 0, 6, 12, 18 }, hour) >= 0) && (min == 59),
@@ -135,7 +129,6 @@ namespace Shanghai
                     {
                         var taskServer = new TaskServer();
                         SetupTasks(taskServer, bootMsg);
-                        TaskTest(taskServer);
 
                         Logger.Log(LogLevel.Info, "Task server start");
                         ServerResult result = taskServer.Run();

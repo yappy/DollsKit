@@ -10,6 +10,9 @@ namespace Shanghai
         private static readonly string BuildArgs = "autobuild.rb {0}";
         private static readonly string BuildDir = "..";
 
+        private static readonly string MsgCmdUpdateOn = "@update on";
+        private static readonly string MsgCmdUpdateOff = "@update off";
+
         public UpdateCheck() { }
 
         // build_log 中の push_log id の最大値
@@ -32,11 +35,12 @@ namespace Shanghai
             return max;
         }
 
+        // build_log テーブルに追加
         private void WriteBuildLog(MySqlConnection conn,
             int pushId, DateTime startedAt, DateTime finishedAt,
             bool succeeded, string message)
         {
-            var cmd = new MySqlCommand("INSERT INTO build_log " + 
+            var cmd = new MySqlCommand("INSERT INTO build_log " +
                 "(push_id, started_at, finished_at, succeeded, message) " +
                 "VALUES (@push_id, @started_at, @finished_at, @succeeded, @message)",
                 conn);
@@ -47,6 +51,26 @@ namespace Shanghai
             cmd.Parameters.AddWithValue("@succeeded", succeeded);
             cmd.Parameters.AddWithValue("@message", message);
             cmd.ExecuteNonQuery();
+        }
+
+        private bool FilterPushLog(string gitRef, string headMsg)
+        {
+            bool result = false;
+            // master のみデフォルト ON
+            if (gitRef == "refs/heads/master")
+            {
+                result = true;
+            }
+            // コミットメッセージによるコントロール
+            if (headMsg.IndexOf(MsgCmdUpdateOn) >= 0)
+            {
+                result = true;
+            }
+            if (headMsg.IndexOf(MsgCmdUpdateOff) >= 0)
+            {
+                result = false;
+            }
+            return result;
         }
 
         // true: 正常終了
@@ -91,6 +115,7 @@ namespace Shanghai
                 // 自身のビルドが終わらない場合にビルドプロセスを kill して
                 // 正常稼働に戻るのはやばいので Cancel 不可で無限待ちとしてタスクサーバに任せる
                 // 本当に固まった場合、管理プログラム全体の異常終了となる
+                // タイムアウトなし版のみ、DataReceived イベントがもう来ないことを保証する
                 p.WaitForExit();
 
                 // 例外なしで完走
@@ -101,11 +126,11 @@ namespace Shanghai
 
         private void UpdateReboot(TaskServer server, string taskName)
         {
-            Logger.Log(LogLevel.Info, $"[{taskName}] Request UpdateShutdown");
+            Logger.Log(LogLevel.Info, $"[{taskName}] Request UpdateReboot");
 
             TwitterManager.UpdateNoThrow(
                 (e) => Logger.Log(LogLevel.Error, e),
-                $"[{DateTime.Now}] Shutdown...");
+                $"[{DateTime.Now}] Reboot...");
 
             server.RequestShutdown(ServerResult.UpdateReboot);
         }
@@ -135,20 +160,22 @@ namespace Shanghai
             {
                 while (reader.Read())
                 {
-                    // OK
                     id = reader.GetInt32("id");
                     Logger.Log(LogLevel.Info, "[{0}] Find push to be built: id={1}",
                         taskName, id);
                     gitRef = reader.GetString("ref");
                     compareUrl = reader.GetString("compare");
                     headMsg = reader.GetString("head_msg");
-                    // TODO: headMsg で制御
-                    find = true;
-                    // 条件を満たす中で最初に見つかった1件のみを処理
-                    break;
+                    // auto build 条件フィルタ
+                    if (FilterPushLog(gitRef, headMsg))
+                    {
+                        find = true;
+                        // 条件を満たす中で最初に見つかった1件のみを処理
+                        break;
+                    }
                 }
             }
-            // build if found
+            // 処理対象があるときのみ
             if (find)
             {
                 DateTime startTime = DateTime.Now;
@@ -170,19 +197,19 @@ namespace Shanghai
                     Logger.Log(LogLevel.Error, e);
                 }
 
-                // write build_log
+                // build_log に結果を追加
                 DateTime finishTime = DateTime.Now;
                 WriteBuildLog(conn, id, startTime, finishTime,
                     success, message);
 
                 // tweet
                 string time = (finishTime - startTime).ToString("c");
-                string twmsg = $"{DateTime.Now}: \n結果: {message}\n時間: {time}";
+                string twmsg = $"{DateTime.Now}: \nResult: {message}\nTime: {time}";
                 TwitterManager.UpdateNoThrow(
                     (e) => Logger.Log(LogLevel.Error, e),
                     twmsg);
 
-                // reboot if succeeded
+                // ビルド成功時のみプロセスを再起動
                 if (success)
                 {
                     UpdateReboot(server, taskName);
