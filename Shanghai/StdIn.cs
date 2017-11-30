@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +9,9 @@ namespace Shanghai
     {
         private static BlockingCollection<string> queue = new BlockingCollection<string>(1);
 
+        // stdin から1行読んでは BlockingCollection に入れるスレッドを起動
+        // プロセスの開始時に起動して終了まで放置する
+        // stdin の非同期操作は問題が多そうなため、BlockingCollection 経由にする
         public static void Start()
         {
             Task.Run(()=>
@@ -32,7 +32,7 @@ namespace Shanghai
 
     class StdInTask
     {
-        // 終了しない one-shot task
+        // サーバキャンセル以外で終了しない one-shot task
         public void ProcessStdIn(TaskServer server, string taskName)
         {
             while (true)
@@ -43,6 +43,9 @@ namespace Shanghai
 
                 switch (line)
                 {
+                    case "":
+                        // ignore
+                        break;
                     case "SHUTDOWN":
                         server.RequestShutdown(ServerResult.Shutdown);
                         break;
