@@ -85,6 +85,9 @@
   - パスワード認証の無効化
     - `#PasswordAuthentication yes`
 
+# VNC (remote desktop)
+https://www.raspberrypi.org/documentation/remote-access/vnc/
+
 
 # カメラモジュール
 - カメラモジュールの有効化
