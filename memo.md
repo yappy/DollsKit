@@ -30,6 +30,12 @@
 
 
 # アップデート
+## 日本のミラーサイト
+http://raspbian.org/RaspbianMirrors
+* http://ftp.jaist.ac.jp/raspbian/
+* http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
+* http://ftp.yz.yamagata-u.ac.jp/pub/linux/raspbian/raspbian/
+
 ## パッケージの更新
 * `sudo apt-get update`
 * `sudo apt-get upgrade`
