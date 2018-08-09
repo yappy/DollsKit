@@ -19,6 +19,9 @@ enum class LogLevel {
 	Trace,
 };
 
+/*
+ * ログの出力先
+ */
 class LogTarget {
 protected:
 	explicit LogTarget(LogLevel level) : m_level(level) {}
@@ -26,9 +29,15 @@ protected:
 public:
 	virtual ~LogTarget() = default;
 
-	bool CheckLevel(LogLevel level);
-	virtual void Write(const char *str, LogLevel level, uintptr_t tid,
-		const char *timestamp) = 0;
+	// コンストラクタで指定したフィルタレベルを満たすかを返す
+	bool CheckLevel(LogLevel level) noexcept
+	{
+		return static_cast<int>(level) < static_cast<int>(m_level);
+	}
+
+	// 1エントリを書き込む
+	virtual void Write(const char *str) = 0;
+	// バッファリングしている場合はフラッシュする
 	virtual void Flush() = 0;
 
 private:
@@ -41,11 +50,14 @@ private:
 class Logger final {
 public:
 	Logger() = default;
-	// デストラクタでもフラッシュする
-	~Logger();
+	// フラッシュした後メンバを解放する
+	~Logger()
+	{
+		Flush();
+	}
 
-	void Log(const char *fmt, ...);
-	void Flush();
+	void Log(LogLevel level, const char *fmt, ...) noexcept;
+	void Flush() noexcept;
 
 	// 出力先に標準出力を追加する (buffering on)
 	void AddStdOut(LogLevel level);
