@@ -88,6 +88,11 @@ private:
 	std::vector<std::unique_ptr<LogTarget>> m_targets;
 };
 
+/*
+ * グローバルロガー
+ */
+extern std::unique_ptr<Logger> logger;
+
 }	// namespace shanghai
 
 #endif	// SHANGHAI_LOGGER_H

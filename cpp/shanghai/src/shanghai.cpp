@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "logger.h"
+#include "taskserver.h"
 
 int main()
 {
@@ -7,12 +8,11 @@ int main()
 
 	std::puts("hello, shanghai");
 
-	Logger logger;
-	logger.AddStdOut(LogLevel::Trace);
-	logger.AddFile(LogLevel::Trace);
-	for (int i = 0; i < 100 * 1000; i++) {
-		logger.Log(LogLevel::Info, "test log %8d %256s", i, "");
-	}
+	logger = std::make_unique<Logger>();
+	logger->AddStdOut(LogLevel::Trace);
+	logger->AddFile(LogLevel::Trace);
+
+	auto server = std::make_unique<TaskServer>();
 
 	return 0;
 }
