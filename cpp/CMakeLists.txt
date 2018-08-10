@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
 
-# Enable make datail output
-set(CMAKE_VERBOSE_MAKEFILE 1)
-
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")
 
@@ -19,19 +16,23 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	add_compile_options(/W4)
 endif()
 
+# thread library for std::thread
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 #
 # Externals
 #
 include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/include"
-	"${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/include")
+	"${CMAKE_CURRENT_BINARY_DIR}/include/${CMAKE_LIBRARY_ARCHITECTURE}")
 link_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/lib"
-	"${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_LIBRARY_ARCHITECTURE}/lib")
+	"${CMAKE_CURRENT_BINARY_DIR}/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
 
 # json11
 include(ExternalProject)
-ExternalProject_Add(json11
+ExternalProject_Add(JSON11
 	PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/json11"
 	INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 	# download
@@ -39,11 +40,16 @@ ExternalProject_Add(json11
 	# 21 Jun 2017
 	GIT_TAG "ec4e45219af1d7cde3d58b49ed762376fccf1ace"
 	# update
+	# update causes build slow down...
+	# version is fixed to be used; no update
+	UPDATE_COMMAND ""
 	# configure
 	CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}"
 	# build
 	# install
 )
 
+#
 # projects
+#
 add_subdirectory("shanghai")
