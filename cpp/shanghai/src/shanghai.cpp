@@ -3,6 +3,7 @@
 #include "taskserver.h"
 #include <json11.hpp>
 
+#ifndef DISABLE_MAIN
 int main()
 {
 	using namespace shanghai;
@@ -15,11 +16,6 @@ int main()
 
 	auto server = std::make_unique<TaskServer>();
 
-	const char *sample = "{\"a\": 3.14}";
-	std::string err;
-	auto json = json11::Json::parse(sample, err);
-	logger->Log(LogLevel::Info, "%s", json.dump().c_str());
-	logger->Log(LogLevel::Error, "%s", err.c_str());
-
 	return 0;
 }
+#endif

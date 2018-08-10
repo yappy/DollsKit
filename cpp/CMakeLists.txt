@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 
+enable_testing()
+
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")
 
@@ -8,6 +10,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# warning options
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 	add_compile_options(-Wall -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
@@ -23,6 +26,7 @@ find_package(Threads REQUIRED)
 #
 # Externals
 #
+include(ExternalProject)
 include_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/include"
 	"${CMAKE_CURRENT_BINARY_DIR}/include/${CMAKE_LIBRARY_ARCHITECTURE}")
@@ -31,13 +35,11 @@ link_directories(
 	"${CMAKE_CURRENT_BINARY_DIR}/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
 
 # gtest
-include(ExternalProject)
 ExternalProject_Add(GTEST
 	PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/googletest"
 	INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 	# download
 	GIT_REPOSITORY "https://github.com/google/googletest"
-	# 21 Jun 2017
 	GIT_TAG "release-1.8.0"
 	GIT_SHALLOW 1
 	# update
@@ -54,7 +56,6 @@ ExternalProject_Add(GTEST
 )
 
 # json11
-include(ExternalProject)
 ExternalProject_Add(JSON11
 	PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/json11"
 	INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}"
