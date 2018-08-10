@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <mutex>
+#include <array>
 #include <vector>
 
 namespace shanghai {
@@ -14,9 +15,20 @@ namespace shanghai {
 enum class LogLevel {
 	Fatal,
 	Error,
-	Warning,
+	Warn,
 	Info,
 	Trace,
+
+	Count
+};
+
+const std::array<const char *, static_cast<int>(LogLevel::Count)>
+LogLevelStr = {
+	"Fatal",
+	"Error",
+	"Warn",
+	"Info",
+	"Trace",
 };
 
 /*
@@ -35,9 +47,9 @@ public:
 		return static_cast<int>(level) < static_cast<int>(m_level);
 	}
 
-	// 1エントリを書き込む
+	// 1エントリを書き込む (他の呼び出しとは排他)
 	virtual void Write(const char *str) = 0;
-	// バッファリングしている場合はフラッシュする
+	// バッファリングしている場合はフラッシュする (他の呼び出しとは排他)
 	virtual void Flush() = 0;
 
 private:
@@ -46,6 +58,7 @@ private:
 
 /*
  * ログシステム
+ * thread safe
  */
 class Logger final {
 public:
@@ -56,15 +69,17 @@ public:
 		Flush();
 	}
 
+	// ログを出す
 	void Log(LogLevel level, const char *fmt, ...) noexcept
 		__attribute__((format(printf, 3, 4)));
+	// バッファリングされている出力先をフラッシュする
 	void Flush() noexcept;
 
-	// 出力先に標準出力を追加する (buffering on)
+	// 出力先に標準出力を追加する (buffering off)
 	void AddStdOut(LogLevel level);
-	// 出力先にファイルを追加する (buffering off)
+	// 出力先にファイルを追加する (buffering on)
 	void AddFile(LogLevel level,
-		const char *file_name = "log%d.txt",
+		const char *file_name = "shanghai.log",
 		uint32_t rotate_size = 10 * 1024 * 1024,
 		uint32_t rotate_num = 2);
 
