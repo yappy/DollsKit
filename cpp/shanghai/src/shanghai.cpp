@@ -9,7 +9,7 @@ int main()
 
 	Logger logger;
 	logger.AddStdOut(LogLevel::Trace);
-	logger.Log(LogLevel::Info, "test log");
+	logger.Log(LogLevel::Info, "test log, %f", 3.14);
 
 	return 0;
 }

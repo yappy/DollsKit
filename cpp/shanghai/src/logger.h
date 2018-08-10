@@ -56,7 +56,8 @@ public:
 		Flush();
 	}
 
-	void Log(LogLevel level, const char *fmt, ...) noexcept;
+	void Log(LogLevel level, const char *fmt, ...) noexcept
+		__attribute__((format(printf, 3, 4)));
 	void Flush() noexcept;
 
 	// 出力先に標準出力を追加する (buffering on)
