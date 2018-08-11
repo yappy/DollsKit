@@ -12,13 +12,16 @@ add_test(
 	COMMAND "$<TARGET_FILE:${PROJECT_NAME}-test>")
 
 # std::thread depends on thread
-target_link_libraries(${PROJECT_NAME} "Threads::Threads")
-target_link_libraries(${PROJECT_NAME}-test "Threads::Threads")
+set(INCS ${CURL_INCLUDE_DIRS})
+set(LIBS "Threads::Threads" ${CURL_LIBRARIES} "json11")
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
+target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})
+target_link_libraries(${PROJECT_NAME} ${LIBS})
+target_link_libraries(${PROJECT_NAME}-test "gtest_main" "gtest" ${LIBS})
 
+# External projects must be built before this
 add_dependencies(${PROJECT_NAME} JSON11)
-target_link_libraries(${PROJECT_NAME} "json11")
 add_dependencies(${PROJECT_NAME}-test GTEST JSON11)
-target_link_libraries(${PROJECT_NAME}-test "gtest_main" "gtest" "json11")
 
 # install
 install(TARGETS ${PROJECT_NAME}

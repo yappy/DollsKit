@@ -19,9 +19,16 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	add_compile_options(/W4)
 endif()
 
+#
+# Libraries
+#
+
 # thread library for std::thread
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
+# libcurl
+find_package(CURL REQUIRED)
 
 #
 # Externals
