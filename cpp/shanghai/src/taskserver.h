@@ -5,8 +5,10 @@
 #include <functional>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 #include <thread>
 #include <vector>
+#include <queue>
 
 namespace shanghai {
 
@@ -23,11 +25,17 @@ enum class ServerResult {
 
 class TaskServer;
 /*
+ * タスクのエントリポイント
+ */
+using TaskEntry = std::function<void(const std::atomic<bool> &cancel,
+	TaskServer &server, const std::string &task_name)>;
+
+/*
  * 1分ごとに確認されリリースされるタスク
  */
 struct PeriodicTask {
 	std::string name;
-	std::function<void(TaskServer &, const std::string)> proc;
+	TaskEntry func;
 };
 
 /*
@@ -35,15 +43,23 @@ struct PeriodicTask {
  */
 class ThreadPool final {
 public:
+	using TaskFunc = std::function<
+		void(const std::atomic<bool> &cancel) noexcept>;
+
 	explicit ThreadPool(int thnum);
 	~ThreadPool();
 
 	void Shutdown();
+	void PostTask(TaskFunc func);
 
 private:
 	static const int DefaultThreadsNum = 4;
 
+	std::atomic<bool> m_cancel;
+	std::mutex m_mtx;
+	std::condition_variable m_cond;
 	std::vector<std::thread> m_threads;
+	std::queue<TaskFunc> m_tasks;
 };
 
 /*
@@ -52,7 +68,6 @@ private:
 class TaskServer final {
 public:
 	explicit TaskServer(int thnum = std::thread::hardware_concurrency()) :
-		m_cancel(false),
 		m_thread_pool(thnum)
 	{}
 	~TaskServer() = default;
@@ -61,7 +76,6 @@ public:
 	void RequestShutdown();
 
 private:
-	std::atomic<bool> m_cancel;
 	std::mutex m_mtx;
 	ThreadPool m_thread_pool;
 };
