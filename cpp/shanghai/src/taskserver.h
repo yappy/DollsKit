@@ -6,6 +6,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <future>
 #include <thread>
 #include <vector>
 #include <queue>
@@ -43,14 +44,13 @@ struct PeriodicTask {
  */
 class ThreadPool final {
 public:
-	using TaskFunc = std::function<
-		void(const std::atomic<bool> &cancel) noexcept>;
+	using TaskFunc = void(const std::atomic<bool> &cancel) noexcept;
 
 	explicit ThreadPool(int thnum);
 	~ThreadPool();
 
 	void Shutdown();
-	void PostTask(TaskFunc func);
+	std::future<void> PostTask(TaskFunc func);
 
 private:
 	static const int DefaultThreadsNum = 4;
@@ -59,7 +59,7 @@ private:
 	std::mutex m_mtx;
 	std::condition_variable m_cond;
 	std::vector<std::thread> m_threads;
-	std::queue<TaskFunc> m_tasks;
+	std::queue<std::packaged_task<TaskFunc>> m_tasks;
 };
 
 /*

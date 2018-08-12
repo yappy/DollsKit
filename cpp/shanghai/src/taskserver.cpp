@@ -14,7 +14,7 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 			logger->Log(LogLevel::Info, "Thread pool %d start", i);
 
 			while (1) {
-				TaskFunc func;
+				std::packaged_task<TaskFunc> task;
 				{
 					// lock
 					std::unique_lock<std::mutex> lock(m_mtx);
@@ -27,11 +27,11 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 						break;
 					}
 					// (2) タスクがキューに存在する場合 pop して処理
-					func = std::move(m_tasks.front());
+					task = std::move(m_tasks.front());
 					m_tasks.pop();
 					// unlock
 				}
-				func(m_cancel);
+				task(m_cancel);
 			}
 
 			logger->Log(LogLevel::Info, "Thread pool %d exit", i);
@@ -55,11 +55,14 @@ void ThreadPool::Shutdown()
 	// unlock
 }
 
-void ThreadPool::PostTask(TaskFunc func)
+std::future<void> ThreadPool::PostTask(TaskFunc func)
 {
 	std::unique_lock<std::mutex> lock(m_mtx);
-	m_tasks.push(std::move(func));
+	std::packaged_task<TaskFunc> task(func);
+    std::future<void> f = task.get_future();
+	m_tasks.push(std::move(task));
 	m_cond.notify_all();
+	return f;
 	// unlock
 }
 
