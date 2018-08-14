@@ -91,7 +91,7 @@ private:
 /*
  * グローバルロガー
  */
-extern std::unique_ptr<Logger> logger;
+extern Logger logger;
 
 }	// namespace shanghai
 

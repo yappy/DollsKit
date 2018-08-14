@@ -177,6 +177,6 @@ void Logger::AddFile(LogLevel level,
 }
 
 // global instance
-std::unique_ptr<Logger> logger;
+Logger logger;
 
 }	// namespace shanghai

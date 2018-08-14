@@ -11,7 +11,7 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 	// thnum 個のワーカースレッドを立ち上げる
 	for (int i = 0; i < thnum; i++) {
 		m_threads.emplace_back([this, i]() {
-			logger->Log(LogLevel::Info, "Thread pool %d start", i);
+			logger.Log(LogLevel::Info, "Thread pool %d start", i);
 
 			while (1) {
 				std::packaged_task<TaskFunc> task;
@@ -34,7 +34,7 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 				task(m_cancel);
 			}
 
-			logger->Log(LogLevel::Info, "Thread pool %d exit", i);
+			logger.Log(LogLevel::Info, "Thread pool %d exit", i);
 		});
 	}
 }
@@ -55,7 +55,7 @@ void ThreadPool::Shutdown()
 	// unlock
 }
 
-std::future<void> ThreadPool::PostTask(TaskFunc func)
+std::future<void> ThreadPool::PostTask(std::function<TaskFunc> func)
 {
 	std::unique_lock<std::mutex> lock(m_mtx);
 	std::packaged_task<TaskFunc> task(func);

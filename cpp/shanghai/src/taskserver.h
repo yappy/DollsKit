@@ -44,13 +44,13 @@ struct PeriodicTask {
  */
 class ThreadPool final {
 public:
-	using TaskFunc = void(const std::atomic<bool> &cancel) noexcept;
+	using TaskFunc = void(const std::atomic<bool> &cancel);
 
 	explicit ThreadPool(int thnum);
 	~ThreadPool();
 
 	void Shutdown();
-	std::future<void> PostTask(TaskFunc func);
+	std::future<void> PostTask(std::function<TaskFunc> func);
 
 private:
 	static const int DefaultThreadsNum = 4;
