@@ -22,6 +22,17 @@ enum class ServerResult {
 	Shutdown,
 	ErrorReboot,
 	FatalShutdown,
+
+	Count
+};
+
+const std::array<const char *, static_cast<int>(ServerResult::Count)>
+ServerResultStr = {
+	"None",
+	"Reboot",
+	"Shutdown",
+	"ErrorReboot",
+	"FatalShutdown",
 };
 
 class TaskServer;
@@ -49,15 +60,16 @@ public:
 	explicit ThreadPool(int thnum);
 	~ThreadPool();
 
-	void Shutdown();
+	bool Shutdown(int timeout_sec);
 	std::future<void> PostTask(std::function<TaskFunc> func);
 
 private:
 	static const int DefaultThreadsNum = 4;
 
-	std::atomic<bool> m_cancel;
 	std::mutex m_mtx;
-	std::condition_variable m_cond;
+	std::condition_variable m_task_cond, m_exit_cond;
+	std::atomic<bool> m_cancel;
+	int m_active_count;
 	std::vector<std::thread> m_threads;
 	std::queue<std::packaged_task<TaskFunc>> m_tasks;
 };
@@ -71,10 +83,13 @@ public:
 	~TaskServer() = default;
 
 	ServerResult Run();
-	void RequestShutdown(ServerResult level);
+	void RequestShutdown(ServerResult result);
 
 private:
+	static const int ShutdownTimeout = 60;
+
 	std::mutex m_mtx;
+	std::condition_variable m_shutdown_cond;
 	ThreadPool m_thread_pool;
 	ServerResult m_result;
 };

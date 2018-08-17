@@ -10,6 +10,7 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 	if (thnum <= 0) {
 		thnum = DefaultThreadsNum;
 	}
+	m_active_count = thnum;
 	// thnum 個のワーカースレッドを立ち上げる
 	for (int i = 0; i < thnum; i++) {
 		m_threads.emplace_back([this, i]() {
@@ -18,69 +19,84 @@ ThreadPool::ThreadPool(int thnum) : m_cancel(false)
 			while (1) {
 				std::packaged_task<TaskFunc> task;
 				{
-					// lock
 					std::unique_lock<std::mutex> lock(m_mtx);
-					// 条件変数待ち
-					m_cond.wait(lock, [this]() {
+					// キャンセル条件変数待ち
+					m_task_cond.wait(lock, [this]() {
 						return m_cancel.load() || !m_tasks.empty();
 					});
 					// (1) キャンセルが入った場合スレッド終了
 					if (m_cancel) {
 						break;
 					}
-					// (2) タスクがキューに存在する場合 pop して処理
+					// (2) タスクがキューに存在する場合先頭から取り出して処理
 					task = std::move(m_tasks.front());
 					m_tasks.pop();
-					// unlock
 				}
+				// 実行して future に結果をセット (void or exception)
 				task(m_cancel);
 			}
-
 			logger.Log(LogLevel::Info, "Thread pool %d exit", i);
+			{
+				// アクティブスレッド数をデクリメントして 0 になったら signal
+				std::unique_lock<std::mutex> lock(m_mtx);
+				m_active_count--;
+				if (m_active_count == 0) {
+					m_exit_cond.notify_all();
+				}
+			}
 		});
 	}
 }
 
 ThreadPool::~ThreadPool()
 {
-	Shutdown();
+	Shutdown(0);
 	for (auto &th : m_threads) {
 		th.join();
 	}
 }
 
-void ThreadPool::Shutdown()
+bool ThreadPool::Shutdown(int timeout_sec)
 {
 	std::unique_lock<std::mutex> lock(m_mtx);
 	m_cancel.store(true);
-	m_cond.notify_all();
-	// unlock
+	m_task_cond.notify_all();
+
+	// アクティブスレッド数 0 条件待ち、タイムアウトしたら false
+	return m_exit_cond.wait_for(lock, std::chrono::seconds(timeout_sec),
+		[this]() -> bool {
+			return m_active_count == 0;
+		});
 }
 
 std::future<void> ThreadPool::PostTask(std::function<TaskFunc> func)
 {
+	// packaged_task を作ってキューに追加、future をここから返す
+	// worker thread に signal
 	std::unique_lock<std::mutex> lock(m_mtx);
 	std::packaged_task<TaskFunc> task(func);
 	std::future<void> f = task.get_future();
 	m_tasks.push(std::move(task));
-	m_cond.notify_all();
+	m_task_cond.notify_all();
 	return f;
-	// unlock
 }
 
 
 TaskServer::TaskServer(int thnum) :
-	m_thread_pool(thnum)
+	m_thread_pool(thnum),
+	m_result(ServerResult::None)
 {}
 
 ServerResult TaskServer::Run()
 {
+	ServerResult result = ServerResult::None;
+
 	logger.Log(LogLevel::Info, "TaskServer start");
 	while (1) {
 		std::time_t now = std::time(nullptr);
 		struct tm local;
 		::localtime_r(&now, &local);
-		// ローカル時間から秒を切り捨てて +61 sec したものを次回の起床時刻とする
+		// ローカル時間から秒を切り捨てて +60 sec したものを次回の起床時刻とする
 		local.tm_sec = 0;
 		std::time_t target_time = mktime(&local);
 		if (target_time == static_cast<std::time_t>(-1)) {
@@ -95,18 +111,52 @@ ServerResult TaskServer::Run()
 				target_time - now : 0;
 			logger.Log(LogLevel::Trace,
 				"sleep for %d sec", static_cast<int>(sleep_time));
-			std::this_thread::sleep_for(std::chrono::seconds(sleep_time));
+			// シャットダウン条件変数をタイムアウト付きで待つ
+			{
+				std::unique_lock<std::mutex> lock(m_mtx);
+				bool shutdown = m_shutdown_cond.wait_for(
+					lock, std::chrono::seconds(sleep_time),
+					[this]() -> bool {
+						return m_result != ServerResult::None;
+					});
+				// シャットダウン条件で起きた場合
+				// その時のロック状態でローカル変数にコピー、それを return
+				if (shutdown) {
+					result = m_result;
+					goto END;
+				}
+				// unlock
+			}
 			now = std::time(nullptr);
 		} while (now < target_time);
 
 		logger.Log(LogLevel::Trace, "wake up");
 	}
-	logger.Log(LogLevel::Info, "TaskServer end");
+END:
+	// スレッドプールにシャットダウン要求を入れて終了待ち
+	bool pool_ok = m_thread_pool.Shutdown(ShutdownTimeout);
+	// タイムアウトした: スレッドプールのデストラクタ内 join() で固まると思われるため
+	// このインスタンスの破棄前に std::terminate() が必要
+	if (!pool_ok) {
+		logger.Log(LogLevel::Fatal, "Thread pool shutdown timeout");
+		return ServerResult::FatalShutdown;
+	}
+
+	logger.Log(LogLevel::Info, "TaskServer end: %s",
+		ServerResultStr.at(static_cast<int>(result)));
+	return result;
 }
 
-void TaskServer::RequestShutdown(ServerResult level)
+void TaskServer::RequestShutdown(ServerResult result)
 {
-	m_thread_pool.Shutdown();
+	if (result == ServerResult::None) {
+		throw std::runtime_error("Invalid result");
+	}
+	{
+		std::unique_lock<std::mutex> lock(m_mtx);
+		m_result = result;
+		m_shutdown_cond.notify_all();
+	}
 }
 
 }	// namespace shanghai
