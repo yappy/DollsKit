@@ -2,6 +2,7 @@
 #define SHANGHAI_NET_H
 
 #include <stdexcept>
+#include <atomic>
 #include <vector>
 
 namespace shanghai {
@@ -19,7 +20,10 @@ public:
 	Network(const Network &) = delete;
 	Network & operator=(const Network &) = delete;
 
-	std::vector<char> Download(const std::string &url);
+	// 完了するまでブロックする
+	// タイムアウトは 0 で無限待ち
+	std::vector<char> Download(const std::string &url, int timeout_sec = 0,
+		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 };
 
 extern Network net;
