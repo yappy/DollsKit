@@ -108,8 +108,8 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 	char timestr[64] = "";
 	char logstr[LogLenMax] = "";
 
-	// msg <- sprintf(fmt, ...)
 	{
+		// msg <- sprintf(fmt, ...)
 		va_list arg;
 		va_start(arg, fmt);
 		std::vsnprintf(msg, sizeof(msg) - 1, fmt, arg);
@@ -117,12 +117,10 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 		va_end(arg);
 	}
 	{
-		mtx_guard lock(m_mtx);
-
 		// timestr <- strftime()
-		// ローカルタイムへの変換がスレッドセーフでないので一緒に排他する
-		struct tm *local = std::localtime(&timestamp);
-		if (std::strftime(timestr, sizeof(timestr), "%c", local) == 0) {
+		struct tm local;
+		::localtime_r(&timestamp, &local);
+		if (std::strftime(timestr, sizeof(timestr), "%c", &local) == 0) {
 			timestr[0] = '\0';
 		}
 		// 1つの文字列にまとめる
@@ -130,6 +128,9 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 			"%s [%s]: %s",
 			timestr, LogLevelStr.at(static_cast<int>(level)), msg);
 		logstr[sizeof(logstr) - 1] = '\0';
+	}
+	{
+		mtx_guard lock(m_mtx);
 
 		for (auto &target : m_targets) {
 			if (target->CheckLevel(level)) {

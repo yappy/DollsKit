@@ -44,7 +44,7 @@ public:
 	// コンストラクタで指定したフィルタレベルを満たすかを返す
 	bool CheckLevel(LogLevel level) noexcept
 	{
-		return static_cast<int>(level) < static_cast<int>(m_level);
+		return static_cast<int>(level) <= static_cast<int>(m_level);
 	}
 
 	// 1エントリを書き込む (他の呼び出しとは排他)
