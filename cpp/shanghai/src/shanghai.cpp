@@ -14,6 +14,7 @@ int main()
 	logger.AddFile(LogLevel::Trace);
 
 	auto server = std::make_unique<TaskServer>();
+	server->Run();
 
 	return 0;
 }

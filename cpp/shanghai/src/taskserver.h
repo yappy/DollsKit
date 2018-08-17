@@ -67,19 +67,18 @@ private:
  */
 class TaskServer final {
 public:
-	explicit TaskServer(int thnum = std::thread::hardware_concurrency()) :
-		m_thread_pool(thnum)
-	{}
+	explicit TaskServer(int thnum = std::thread::hardware_concurrency());
 	~TaskServer() = default;
 
 	ServerResult Run();
-	void RequestShutdown();
+	void RequestShutdown(ServerResult level);
 
 private:
 	std::mutex m_mtx;
 	ThreadPool m_thread_pool;
+	ServerResult m_result;
 };
 
 }	// namespace shanghai
 
-#endif	// SHANGHAI_LOGGER_H
+#endif	// SHANGHAI_TASKSERVER_H
