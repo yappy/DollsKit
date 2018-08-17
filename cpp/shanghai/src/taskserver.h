@@ -39,15 +39,21 @@ class TaskServer;
 /*
  * タスクのエントリポイント
  */
-using TaskEntry = std::function<void(const std::atomic<bool> &cancel,
+using TaskEntry = std::function<void(
+	const std::atomic<bool> &cancel,
 	TaskServer &server, const std::string &task_name)>;
+/*
+ * タスクのリリース条件
+ */
+using ReleaseCondition = std::function<bool(const struct tm &local_time)>;
 
 /*
  * 1分ごとに確認されリリースされるタスク
  */
 struct PeriodicTask {
 	std::string name;
-	TaskEntry func;
+	ReleaseCondition cond;
+	TaskEntry entry;
 };
 
 /*
@@ -82,6 +88,15 @@ public:
 	explicit TaskServer(int thnum = std::thread::hardware_concurrency());
 	~TaskServer() = default;
 
+	void RegisterPeriodicTask(const PeriodicTask &task);
+	template <size_t N>
+	void RegisterPeriodicTaskList(const std::array<PeriodicTask, N> &list)
+	{
+		for (size_t i = 0; i < N; i++) {
+			RegisterPeriodicTask(list[i]);
+		}
+	}
+
 	ServerResult Run();
 	void RequestShutdown(ServerResult result);
 
@@ -92,6 +107,7 @@ private:
 	std::condition_variable m_shutdown_cond;
 	ThreadPool m_thread_pool;
 	ServerResult m_result;
+	std::vector<PeriodicTask> m_periodic_list;
 };
 
 }	// namespace shanghai

@@ -87,6 +87,13 @@ TaskServer::TaskServer(int thnum) :
 	m_result(ServerResult::None)
 {}
 
+void TaskServer::RegisterPeriodicTask(const PeriodicTask &task)
+{
+	std::lock_guard<std::mutex> lock(m_mtx);
+	// copy construct
+	m_periodic_list.emplace_back(task);
+}
+
 ServerResult TaskServer::Run()
 {
 	ServerResult result = ServerResult::None;
@@ -131,6 +138,22 @@ ServerResult TaskServer::Run()
 		} while (now < target_time);
 
 		logger.Log(LogLevel::Trace, "wake up");
+
+		::localtime_r(&now, &local);
+		{
+			std::lock_guard<std::mutex> lock(m_mtx);
+			for (auto &task : m_periodic_list) {
+				if (task.cond(local)) {
+					std::string name = task.name;
+					TaskEntry entry = task.entry;
+					m_thread_pool.PostTask(
+						[this, entry, name](const std::atomic<bool> &cancel)
+						{
+							entry(cancel, *this, name);
+						});
+				}
+			}
+		}
 	}
 END:
 	// スレッドプールにシャットダウン要求を入れて終了待ち

@@ -1,13 +1,32 @@
-#include <cstdio>
 #include "logger.h"
 #include "taskserver.h"
+#include <cstdio>
+#include <string>
 #include <json11.hpp>
+
+namespace {
+
+using namespace shanghai;
+using namespace std::string_literals;
+
+const PeriodicTask TestTask = {
+	"TestTask"s,
+	[](const struct tm &local_time) -> bool
+	{
+		return true;
+	},
+	[](const std::atomic<bool> &cancel,	TaskServer &server,
+		const std::string &task_name) -> void
+	{
+		logger.Log(LogLevel::Info, "test task");
+	}
+};
+
+}	// namespace
 
 #ifndef DISABLE_MAIN
 int main()
 {
-	using namespace shanghai;
-
 	std::puts("hello, shanghai");
 
 	logger.AddStdOut(LogLevel::Trace);
@@ -15,13 +34,10 @@ int main()
 
 	while (1) {
 		auto server = std::make_unique<TaskServer>();
-		// テスト用に外部から3秒後にシャットダウンを要求する
-		std::thread th([&server]() {
-			std::this_thread::sleep_for(std::chrono::seconds(3));
-			server->RequestShutdown(ServerResult::Shutdown);
-		});
-		th.detach();
+
+		server->RegisterPeriodicTask(TestTask);
 		ServerResult result = server->Run();
+
 		switch (result) {
 		case ServerResult::Reboot:
 		case ServerResult::ErrorReboot:
