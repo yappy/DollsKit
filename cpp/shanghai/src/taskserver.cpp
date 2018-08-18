@@ -84,18 +84,30 @@ std::future<void> ThreadPool::PostTask(std::function<TaskFunc> func)
 
 TaskServer::TaskServer(int thnum) :
 	m_thread_pool(thnum),
+	m_started(false),
 	m_result(ServerResult::None)
 {}
 
-void TaskServer::RegisterPeriodicTask(const PeriodicTask &task)
+void TaskServer::RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task)
 {
 	std::lock_guard<std::mutex> lock(m_mtx);
-	// copy construct
-	m_periodic_list.emplace_back(task);
+	if (m_started) {
+		throw std::logic_error("Server already started");
+	}
+	// move construct
+	m_periodic_list.emplace_back(std::move(task));
 }
 
 ServerResult TaskServer::Run()
 {
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		if (m_started) {
+			throw std::logic_error("Server already started");
+		}
+		m_started = true;
+	}
+
 	ServerResult result = ServerResult::None;
 
 	logger.Log(LogLevel::Info, "TaskServer start");
@@ -139,17 +151,17 @@ ServerResult TaskServer::Run()
 
 		logger.Log(LogLevel::Trace, "wake up");
 
+		// 時間で判定してスレッドプールにポスト
+		// m_periodic_list の要素への参照をスレッドがキャプチャするので寿命に注意
 		::localtime_r(&now, &local);
 		{
 			std::lock_guard<std::mutex> lock(m_mtx);
 			for (auto &task : m_periodic_list) {
-				if (task.cond(local)) {
-					std::string name = task.name;
-					TaskEntry entry = task.entry;
+				if (task->CheckRelease(local)) {
 					m_thread_pool.PostTask(
-						[this, entry, name](const std::atomic<bool> &cancel)
+						[this, &task](const std::atomic<bool> &cancel)
 						{
-							entry(cancel, *this, name);
+							task->Entry(*this, cancel);
 						});
 				}
 			}
@@ -158,7 +170,8 @@ ServerResult TaskServer::Run()
 END:
 	// スレッドプールにシャットダウン要求を入れて終了待ち
 	bool pool_ok = m_thread_pool.Shutdown(ShutdownTimeout);
-	// タイムアウトした: スレッドプールのデストラクタ内 join() で固まると思われるため
+	// タイムアウトした: スレッドプールのデストラクタ内 join() で固まる
+	// TaskServer のデストラクタでスレッドが参照する m_periodic_list が破棄される
 	// このインスタンスの破棄前に std::terminate() が必要
 	if (!pool_ok) {
 		logger.Log(LogLevel::Fatal, "Thread pool shutdown timeout");
@@ -173,7 +186,7 @@ END:
 void TaskServer::RequestShutdown(ServerResult result)
 {
 	if (result == ServerResult::None) {
-		throw std::runtime_error("Invalid result");
+		throw std::logic_error("Invalid result");
 	}
 	{
 		std::unique_lock<std::mutex> lock(m_mtx);
