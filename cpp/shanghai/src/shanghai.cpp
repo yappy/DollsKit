@@ -15,19 +15,26 @@ const char * const ConfigFileName = "config.template.json";
 
 class TestTask : public PeriodicTask {
 public:
+	TestTask(ReleaseFunc rel_func) : PeriodicTask(rel_func) {}
+	~TestTask() = default;
+
 	std::string GetName() override
 	{
 		return "TestTask"s;
-	}
-	bool CheckRelease(const struct tm &local_time) override
-	{
-		return true;
 	}
 	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override
 	{
 		logger.Log(LogLevel::Info, "test task");
 	}
 };
+
+void SetupTasks(const std::unique_ptr<TaskServer> &server)
+{
+	server->RegisterPeriodicTask(
+		std::make_unique<TestTask>([](const struct tm &) {
+			return true;
+		}));
+}
 
 }	// namespace
 
@@ -46,7 +53,7 @@ int main()
 		while (1) {
 			auto server = std::make_unique<TaskServer>();
 
-			server->RegisterPeriodicTask(std::make_unique<TestTask>());
+			SetupTasks(server);
 			ServerResult result = server->Run();
 
 			switch (result) {

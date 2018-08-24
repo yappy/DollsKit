@@ -159,9 +159,12 @@ ServerResult TaskServer::Run()
 			for (auto &task : m_periodic_list) {
 				if (task->CheckRelease(local)) {
 					m_thread_pool.PostTask(
-						[this, &task](const std::atomic<bool> &cancel)
-						{
+						[this, &task](const std::atomic<bool> &cancel) {
+							logger.Log(LogLevel::Info,
+								"[%s] start", task->GetName().c_str());
 							task->Entry(*this, cancel);
+							logger.Log(LogLevel::Info,
+								"[%s] finish", task->GetName().c_str());
 						});
 				}
 			}

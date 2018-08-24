@@ -42,12 +42,20 @@ class TaskServer;
  */
 class PeriodicTask {
 public:
-	PeriodicTask() = default;
+	using ReleaseFunc = std::function<bool(const struct tm &local_time)>;
+
+	explicit PeriodicTask(ReleaseFunc rel_func) : m_rel_func(rel_func) {}
 	virtual ~PeriodicTask() = default;
 
 	virtual std::string GetName() = 0;
-	virtual bool CheckRelease(const struct tm &local_time) = 0;
+	bool CheckRelease(const struct tm &local_time)
+	{
+		return m_rel_func(local_time);
+	}
 	virtual void Entry(TaskServer &server, const std::atomic<bool> &cancel) = 0;
+
+private:
+	ReleaseFunc m_rel_func;
 };
 
 /*

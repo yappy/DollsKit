@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.7)
 
 project(shanghai)
 
-file(GLOB SRCS "src/*.cpp")
+file(GLOB_RECURSE SRCS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRCS})
 
-file(GLOB TEST_SRCS "test/*.cpp")
+file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 add_test(
