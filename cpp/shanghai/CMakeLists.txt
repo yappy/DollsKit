@@ -4,6 +4,7 @@ project(shanghai)
 
 file(GLOB SRCS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRCS})
+
 file(GLOB TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
@@ -25,4 +26,10 @@ add_dependencies(${PROJECT_NAME}-test GTEST JSON11)
 
 # install
 install(TARGETS ${PROJECT_NAME}
-	RUNTIME DESTINATION "bin")
+	RUNTIME DESTINATION ".")
+install(DIRECTORY "res/" DESTINATION ".")
+
+# make run
+add_custom_target("run"
+	COMMAND "./${PROJECT_NAME}"
+	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")

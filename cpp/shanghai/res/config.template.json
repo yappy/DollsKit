@@ -1,0 +1,8 @@
+{
+	"Ddns":
+	{
+		"Enabled"	: false,
+		"User"		: "",
+		"Pass"		: ""
+	}
+}
