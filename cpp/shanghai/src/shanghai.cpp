@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "config.h"
 #include "taskserver.h"
 #include <cstdio>
 #include <string>
@@ -8,6 +9,9 @@ namespace {
 
 using namespace shanghai;
 using namespace std::string_literals;
+
+// TODO: 今はテンプレートをそのまま読む
+const char * const ConfigFileName = "config.template.json";
 
 class TestTask : public PeriodicTask {
 public:
@@ -30,30 +34,48 @@ public:
 #ifndef DISABLE_MAIN
 int main()
 {
-	std::puts("hello, shanghai");
-
+	// ログシステムの設定
 	logger.AddStdOut(LogLevel::Trace);
-	logger.AddFile(LogLevel::Trace);
+	logger.AddFile(LogLevel::Info);
 
-	while (1) {
-		auto server = std::make_unique<TaskServer>();
+	try {
+		// 設定ファイルのロード
+		logger.Log(LogLevel::Info, "Load config file");
+		config.Load(ConfigFileName);
 
-		server->RegisterPeriodicTask(std::make_unique<TestTask>());
-		ServerResult result = server->Run();
+		while (1) {
+			auto server = std::make_unique<TaskServer>();
 
-		switch (result) {
-		case ServerResult::Reboot:
-		case ServerResult::ErrorReboot:
-			break;
-		case ServerResult::Shutdown:
-			goto EXIT;
-		case ServerResult::FatalShutdown:
-			std::terminate();
-			break;
-		default:
-			std::terminate();
-			break;
+			server->RegisterPeriodicTask(std::make_unique<TestTask>());
+			ServerResult result = server->Run();
+
+			switch (result) {
+			case ServerResult::Reboot:
+			case ServerResult::ErrorReboot:
+				break;
+			case ServerResult::Shutdown:
+				goto EXIT;
+			case ServerResult::FatalShutdown:
+				std::terminate();
+				break;
+			default:
+				std::terminate();
+				break;
+			}
 		}
+	}
+	catch (std::runtime_error &e) {
+		logger.Log(LogLevel::Fatal, "Runtime error");
+		logger.Log(LogLevel::Fatal, "%s", e.what());
+		return 1;
+	}
+	catch (std::exception &e) {
+		logger.Log(LogLevel::Fatal, "Fatal error");
+		logger.Log(LogLevel::Fatal, "%s", e.what());
+		throw;
+	}
+	catch (...) {
+		throw;
 	}
 EXIT:
 	return 0;
