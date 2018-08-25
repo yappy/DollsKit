@@ -98,11 +98,11 @@ std::vector<char> Network::Download(const std::string &url, int timeout_sec,
 	ret = ::curl_easy_perform(curl.get());
 	CheckError(ret);
 
-	// HTTP status = 200 以外はエラーとする (リダイレクトもエラーになるので注意)
+	// HTTP status = 200 番台以外はエラーとする (リダイレクトもエラーになるので注意)
 	long http_code;
 	ret = curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &http_code);
 	CheckError(ret);
-	if (http_code != 200) {
+	if (http_code < 200 || http_code >= 300) {
 		throw NetworkError("HTTP failed status: "s + std::to_string(http_code));
 	}
 
