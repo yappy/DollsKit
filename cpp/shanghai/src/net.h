@@ -24,6 +24,11 @@ public:
 	// タイムアウトは 0 で無限待ち
 	std::vector<char> Download(const std::string &url, int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
+	// BASIC
+	std::vector<char> Download(const std::string &url,
+		const std::string &user, const std::string &pass,
+		int timeout_sec = 0,
+		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 };
 
 extern Network net;

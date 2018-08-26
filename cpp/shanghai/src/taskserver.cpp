@@ -162,7 +162,15 @@ ServerResult TaskServer::Run()
 						[this, &task](const std::atomic<bool> &cancel) {
 							logger.Log(LogLevel::Info,
 								"[%s] start", task->GetName().c_str());
-							task->Entry(*this, cancel);
+							try {
+								task->Entry(*this, cancel);
+							}
+							catch (std::runtime_error &e) {
+								logger.Log(LogLevel::Error,
+									"[%s] error", task->GetName().c_str());
+								logger.Log(LogLevel::Error,
+									"%s", e.what());
+							}
 							logger.Log(LogLevel::Info,
 								"[%s] finish", task->GetName().c_str());
 						});

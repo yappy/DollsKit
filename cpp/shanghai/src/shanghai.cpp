@@ -1,6 +1,7 @@
 #include "logger.h"
 #include "config.h"
 #include "taskserver.h"
+#include "task/task.h"
 #include <cstdio>
 #include <string>
 #include <json11.hpp>
@@ -13,25 +14,10 @@ using namespace std::string_literals;
 // TODO: 今はテンプレートをそのまま読む
 const char * const ConfigFileName = "config.template.json";
 
-class TestTask : public PeriodicTask {
-public:
-	TestTask(ReleaseFunc rel_func) : PeriodicTask(rel_func) {}
-	~TestTask() = default;
-
-	std::string GetName() override
-	{
-		return "TestTask"s;
-	}
-	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override
-	{
-		logger.Log(LogLevel::Info, "test task");
-	}
-};
-
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
 	server->RegisterPeriodicTask(
-		std::make_unique<TestTask>([](const struct tm &) {
+		std::make_unique<task::DdnsTask>([](const struct tm &) {
 			return true;
 		}));
 }
