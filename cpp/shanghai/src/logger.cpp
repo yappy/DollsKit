@@ -4,6 +4,8 @@
 #include <cstring>
 #include <ctime>
 #include <string>
+#include <sstream>
+#include <thread>
 #include <sys/stat.h>
 
 namespace shanghai {
@@ -106,6 +108,7 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 	std::time_t timestamp = std::time(nullptr);
 	char msg[MsgLenMax] = "";
 	char timestr[64] = "";
+	std::string tidstr;
 	char logstr[LogLenMax] = "";
 
 	{
@@ -123,12 +126,18 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 		if (std::strftime(timestr, sizeof(timestr), "%c", &local) == 0) {
 			timestr[0] = '\0';
 		}
-		// 1つの文字列にまとめる
-		std::snprintf(logstr, sizeof(logstr) - 1,
-			"%s [%s]: %s",
-			timestr, LogLevelStr.at(static_cast<int>(level)), msg);
-		logstr[sizeof(logstr) - 1] = '\0';
 	}
+	{
+		// tidstr <- this_thread::get_id()
+		std::stringstream ss;
+		ss << std::this_thread::get_id();
+		tidstr = ss.str();
+	}
+	// 1つの文字列にまとめる
+	std::snprintf(logstr, sizeof(logstr) - 1,
+		"%s [%s](%s): %s",
+		timestr, LogLevelStr.at(static_cast<int>(level)), tidstr.c_str(), msg);
+	logstr[sizeof(logstr) - 1] = '\0';
 	{
 		mtx_guard lock(m_mtx);
 
