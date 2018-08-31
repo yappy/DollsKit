@@ -1,7 +1,10 @@
 #include "taskserver.h"
 
+#include <algorithm>
 #include <ctime>
 #include "logger.h"
+
+using namespace std::chrono_literals;
 
 namespace shanghai {
 
@@ -100,6 +103,8 @@ void TaskServer::RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task)
 
 ServerResult TaskServer::Run()
 {
+	// この関数はコンストラクト後1回のみ呼び出せる
+	// この関数からのみアクセスする変数は排他の必要なし
 	{
 		std::lock_guard<std::mutex> lock(m_mtx);
 		if (m_started) {
@@ -109,6 +114,7 @@ ServerResult TaskServer::Run()
 	}
 
 	ServerResult result = ServerResult::None;
+	std::vector<std::future<void>> future_list;
 
 	logger.Log(LogLevel::Info, "TaskServer start");
 	while (1) {
@@ -151,6 +157,21 @@ ServerResult TaskServer::Run()
 
 		logger.Log(LogLevel::Trace, "wake up");
 
+		// 完了した future に例外がセットされていないか確認したのち削除する
+		auto rm_result = std::remove_if(future_list.begin(), future_list.end(),
+			[](std::future<void> &f) {
+				if (f.wait_for(0s) == std::future_status::ready) {
+					// 例外が起きた場合は fatal; 外に投げる
+					f.get();
+					logger.Log(LogLevel::Trace, "finalize future");
+					return true;
+				}
+				else {
+					return false;
+				}
+			});
+		future_list.erase(rm_result, future_list.end());
+
 		// 時間で判定してスレッドプールにポスト
 		// m_periodic_list の要素への参照をスレッドがキャプチャするので寿命に注意
 		::localtime_r(&now, &local);
@@ -158,7 +179,7 @@ ServerResult TaskServer::Run()
 			std::lock_guard<std::mutex> lock(m_mtx);
 			for (auto &task : m_periodic_list) {
 				if (task->CheckRelease(local)) {
-					m_thread_pool.PostTask(
+					std::future<void> future = m_thread_pool.PostTask(
 						[this, &task](const std::atomic<bool> &cancel) {
 							logger.Log(LogLevel::Info,
 								"[%s] start", task->GetName().c_str());
@@ -166,6 +187,7 @@ ServerResult TaskServer::Run()
 								task->Entry(*this, cancel);
 							}
 							catch (std::runtime_error &e) {
+								// runtime_error はログを出して処理完了
 								logger.Log(LogLevel::Error,
 									"[%s] error", task->GetName().c_str());
 								logger.Log(LogLevel::Error,
@@ -174,6 +196,8 @@ ServerResult TaskServer::Run()
 							logger.Log(LogLevel::Info,
 								"[%s] finish", task->GetName().c_str());
 						});
+					// 結果は void だが未キャッチ例外の確認のため future を保存
+					future_list.emplace_back(std::move(future));
 				}
 			}
 		}
