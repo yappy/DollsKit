@@ -2,8 +2,11 @@
 #include "config.h"
 #include "taskserver.h"
 #include "task/task.h"
+#include <unistd.h>
+#include <signal.h>
 #include <cstdio>
 #include <string>
+#include <thread>
 #include <json11.hpp>
 
 namespace {
@@ -22,6 +25,62 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 		}));
 }
 
+// 負の返り値の場合に errno から system_error を生成して投げる
+inline void CheckedSysCall(int ret)
+{
+	if (ret < 0) {
+		throw std::system_error(errno, std::generic_category());
+	}
+}
+
+void SetupSignalMask(sigset_t &sigset)
+{
+	int ret;
+
+	CheckedSysCall(sigemptyset(&sigset));
+	CheckedSysCall(sigaddset(&sigset, SIGINT));
+	CheckedSysCall(sigaddset(&sigset, SIGHUP));
+	CheckedSysCall(sigaddset(&sigset, SIGUSR1));
+	ret = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
+	if (ret != 0) {
+		throw std::system_error(ret, std::generic_category());
+	}
+}
+
+// シグナル処理スレッド (SIGUSR1 で終了)
+void SignalThreadEntry(const sigset_t &sigset,
+	std::unique_ptr<TaskServer> &server)
+{
+	int ret, sig;
+
+	while (1) {
+		ret = sigwait(&sigset, &sig);
+		if (ret != 0) {
+			throw std::system_error(ret, std::generic_category());
+		}
+		logger.Log(LogLevel::Info, "Signal: %d", sig);
+
+		switch (sig) {
+		case SIGINT:
+			logger.Log(LogLevel::Info, "SIGINT");
+			server->RequestShutdown(ServerResult::Shutdown);
+			break;
+		case SIGHUP:
+			logger.Log(LogLevel::Info, "SIGHUP");
+			server->RequestShutdown(ServerResult::Reboot);
+			break;
+		case SIGUSR1:
+			logger.Log(LogLevel::Info, "SIGUSR1");
+			goto EXIT;
+		default:
+			logger.Log(LogLevel::Fatal, "Unknown signal: %d", sig);
+			throw std::logic_error("unknown signal");
+		}
+	}
+EXIT:
+	logger.Log(LogLevel::Info, "Signal thread exit");
+}
+
 }	// namespace
 
 #ifndef DISABLE_MAIN
@@ -31,16 +90,31 @@ int main()
 	logger.AddStdOut(LogLevel::Trace);
 	logger.AddFile(LogLevel::Info);
 
+	// メインスレッドでシグナルマスクを設定する
+	// メインスレッドから生成されたサブスレッドはこの設定を継承する
+	// ref. man pthread_sigmask
+	sigset_t sigset;
+	SetupSignalMask(sigset);
+
 	try {
-		// 設定ファイルのロード
-		logger.Log(LogLevel::Info, "Load config file");
-		config.Load(ConfigFileName);
-
 		while (1) {
-			auto server = std::make_unique<TaskServer>();
+			// 設定ファイルのロード
+			logger.Log(LogLevel::Info, "Load config file");
+			config.Load(ConfigFileName);
 
+			// サーバの作成、初期化
+			auto server = std::make_unique<TaskServer>();
 			SetupTasks(server);
+
+			// シグナル処理スレッドを立ち上げる
+			// シグナルセットとタスクサーバへの参照を渡す
+			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
+			// サーバスタート
 			ServerResult result = server->Run();
+
+			// シグナル処理スレッドを SIGUSR1 で終了させて join
+			CheckedSysCall(kill(getpid(), SIGUSR1));
+			sigth.join();
 
 			switch (result) {
 			case ServerResult::Reboot:
@@ -55,6 +129,7 @@ int main()
 				std::terminate();
 				break;
 			}
+			// destruct server
 		}
 	}
 	catch (std::runtime_error &e) {
