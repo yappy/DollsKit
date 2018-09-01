@@ -101,6 +101,14 @@ void TaskServer::RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task)
 	m_periodic_list.emplace_back(std::move(task));
 }
 
+void TaskServer::ReleaseAllForTest()
+{
+	std::lock_guard<std::mutex> lock(m_mtx);
+	for (auto &task : m_periodic_list) {
+		ReleaseTask(task);
+	}
+}
+
 ServerResult TaskServer::Run()
 {
 	// この関数はコンストラクト後1回のみ呼び出せる
@@ -173,31 +181,13 @@ ServerResult TaskServer::Run()
 		future_list.erase(rm_result, future_list.end());
 
 		// 時間で判定してスレッドプールにポスト
-		// m_periodic_list の要素への参照をスレッドがキャプチャするので寿命に注意
 		::localtime_r(&now, &local);
 		{
 			std::lock_guard<std::mutex> lock(m_mtx);
 			for (auto &task : m_periodic_list) {
 				if (task->CheckRelease(local)) {
-					std::future<void> future = m_thread_pool.PostTask(
-						[this, &task](const std::atomic<bool> &cancel) {
-							logger.Log(LogLevel::Info,
-								"[%s] start", task->GetName().c_str());
-							try {
-								task->Entry(*this, cancel);
-							}
-							catch (std::runtime_error &e) {
-								// runtime_error はログを出して処理完了
-								logger.Log(LogLevel::Error,
-									"[%s] error", task->GetName().c_str());
-								logger.Log(LogLevel::Error,
-									"%s", e.what());
-							}
-							logger.Log(LogLevel::Info,
-								"[%s] finish", task->GetName().c_str());
-						});
 					// 結果は void だが未キャッチ例外の確認のため future を保存
-					future_list.emplace_back(std::move(future));
+					future_list.emplace_back(ReleaseTask(task));;
 				}
 			}
 		}
@@ -228,6 +218,30 @@ void TaskServer::RequestShutdown(ServerResult result)
 		m_result = result;
 		m_shutdown_cond.notify_all();
 	}
+}
+
+// task への参照をスレッドがキャプチャするので寿命に注意
+std::future<void> TaskServer::ReleaseTask(
+	const std::unique_ptr<PeriodicTask> &task)
+{
+	std::future<void> future = m_thread_pool.PostTask(
+		[this, &task](const std::atomic<bool> &cancel) {
+			logger.Log(LogLevel::Info,
+				"[%s] start", task->GetName().c_str());
+			try {
+				task->Entry(*this, cancel);
+			}
+			catch (std::runtime_error &e) {
+				// runtime_error はログを出して処理完了
+				logger.Log(LogLevel::Error,
+					"[%s] error", task->GetName().c_str());
+				logger.Log(LogLevel::Error,
+					"%s", e.what());
+			}
+			logger.Log(LogLevel::Info,
+				"[%s] finish", task->GetName().c_str());
+		});
+	return future;
 }
 
 }	// namespace shanghai

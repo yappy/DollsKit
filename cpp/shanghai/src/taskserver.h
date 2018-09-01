@@ -91,6 +91,7 @@ public:
 	~TaskServer() = default;
 
 	void RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task);
+	void ReleaseAllForTest();
 
 	ServerResult Run();
 	void RequestShutdown(ServerResult result);
@@ -105,6 +106,8 @@ private:
 	bool m_started;
 	ServerResult m_result;
 	std::vector<std::unique_ptr<PeriodicTask>> m_periodic_list;
+
+	std::future<void> ReleaseTask(const std::unique_ptr<PeriodicTask> &task);
 };
 
 }	// namespace shanghai

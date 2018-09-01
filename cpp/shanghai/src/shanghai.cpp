@@ -109,6 +109,12 @@ int main()
 			// シグナル処理スレッドを立ち上げる
 			// シグナルセットとタスクサーバへの参照を渡す
 			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
+
+			// Debug build only
+#ifndef NDEBUG
+			logger.Log(LogLevel::Warn, "Release all tasks for test");
+			server->ReleaseAllForTest();
+#endif
 			// サーバスタート
 			ServerResult result = server->Run();
 
