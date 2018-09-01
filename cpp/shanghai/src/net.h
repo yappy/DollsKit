@@ -25,10 +25,15 @@ public:
 	std::vector<char> Download(const std::string &url, int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 	// BASIC
-	std::vector<char> Download(const std::string &url,
+	std::vector<char> DownloadBasicAuth(const std::string &url,
 		const std::string &user, const std::string &pass,
 		int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
+
+private:
+	template <class F>
+	std::vector<char> DownloadInternal(const std::string &url, int timeout_sec,
+		const std::atomic<bool> &cancel, F prepair);
 };
 
 extern Network net;

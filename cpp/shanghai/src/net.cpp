@@ -63,8 +63,10 @@ int ProgressFunc(void *clientp,   curl_off_t dltotal,   curl_off_t dlnow,   curl
 }
 }	// namespace
 
-std::vector<char> Network::Download(const std::string &url, int timeout_sec,
-	const std::atomic<bool> &cancel)
+template <class F>
+std::vector<char> Network::DownloadInternal(
+	const std::string &url, int timeout_sec,
+	const std::atomic<bool> &cancel, F prepair)
 {
 	SafeCurl curl(::curl_easy_init());
 	if (curl == nullptr) {
@@ -74,11 +76,11 @@ std::vector<char> Network::Download(const std::string &url, int timeout_sec,
 	CURLcode ret;
 	std::vector<char> data;
 
-	// URL
-	ret = ::curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
-	CheckError(ret);
 	// シグナルは危険なので無効にする
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
+	CheckError(ret);
+	// URL
+	ret = ::curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
 	CheckError(ret);
 	// タイムアウト(全体)
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT,
@@ -91,8 +93,13 @@ std::vector<char> Network::Download(const std::string &url, int timeout_sec,
 	// 受信進捗コールバックと引数、有効化
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_XFERINFOFUNCTION, ProgressFunc);
 	CheckError(ret);
-	ret = curl_easy_setopt(curl.get(), CURLOPT_XFERINFODATA, &cancel);
-	ret = curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
+	ret = ::curl_easy_setopt(curl.get(), CURLOPT_XFERINFODATA, &cancel);
+	CheckError(ret);
+	ret = ::curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
+	CheckError(ret);
+
+	// カスタム処理
+	prepair(curl);
 
 	// 開始
 	ret = ::curl_easy_perform(curl.get());
@@ -108,6 +115,32 @@ std::vector<char> Network::Download(const std::string &url, int timeout_sec,
 
 	// move
 	return data;
+}
+
+std::vector<char> Network::Download(const std::string &url, int timeout_sec,
+	const std::atomic<bool> &cancel)
+{
+	return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
+}
+
+std::vector<char> Network:: DownloadBasicAuth(const std::string &url,
+	const std::string &user, const std::string &pass,
+	int timeout_sec, const std::atomic<bool> &cancel)
+{
+	return DownloadInternal(url, timeout_sec, cancel,
+		[&user, &pass](const SafeCurl &curl) {
+			CURLcode ret;
+
+			ret = ::curl_easy_setopt(curl.get(),
+				CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
+			CheckError(ret);
+			ret = ::curl_easy_setopt(curl.get(),
+				CURLOPT_USERNAME, user.c_str());
+			CheckError(ret);
+			ret = ::curl_easy_setopt(curl.get(),
+				CURLOPT_PASSWORD, pass.c_str());
+			CheckError(ret);
+		});
 }
 
 
