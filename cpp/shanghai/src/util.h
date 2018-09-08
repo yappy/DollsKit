@@ -17,11 +17,13 @@ public:
 namespace util {
 
 // 負の返り値の場合に errno から system_error を生成して投げる
-inline void SysCall(int ret)
+template <typename R>
+inline int SysCall(R ret)
 {
 	if (ret < 0) {
 		throw std::system_error(errno, std::generic_category());
 	}
+	return ret;
 }
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
