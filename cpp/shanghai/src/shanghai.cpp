@@ -102,7 +102,7 @@ int main()
 			// 設定ファイルのロード
 			try {
 				logger.Log(LogLevel::Info, "Load: %s", ConfigFile);
-				config.Load(ConfigFile);
+				config.LoadFile(ConfigFile);
 			}
 			catch (std::runtime_error &e) {
 #ifndef NDEBUG
@@ -112,7 +112,7 @@ int main()
 				logger.Log(LogLevel::Warn,
 					"DEBUG BUILD ONLY: load template file instead");
 				logger.Log(LogLevel::Info, "Load: %s", ConfigFileFallback);
-				config.Load(ConfigFileFallback);
+				config.LoadFile(ConfigFileFallback);
 #else
 				// RELEASE
 				throw;
