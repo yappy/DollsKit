@@ -135,8 +135,8 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 	}
 	// 1つの文字列にまとめる
 	std::snprintf(logstr, sizeof(logstr) - 1,
-		"%s [%s](%s): %s",
-		timestr, LogLevelStr.at(static_cast<int>(level)), tidstr.c_str(), msg);
+		"%s (%s) [%s]: %s",
+		timestr, tidstr.c_str(), LogLevelStr.at(static_cast<int>(level)), msg);
 	logstr[sizeof(logstr) - 1] = '\0';
 	{
 		mtx_guard lock(m_mtx);

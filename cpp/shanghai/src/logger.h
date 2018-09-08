@@ -26,8 +26,8 @@ const std::array<const char *, static_cast<int>(LogLevel::Count)>
 LogLevelStr = {
 	"Fatal",
 	"Error",
-	"Warn",
-	"Info",
+	"Warn ",
+	"Info ",
 	"Trace",
 };
 
