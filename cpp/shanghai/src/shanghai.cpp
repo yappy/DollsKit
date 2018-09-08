@@ -1,5 +1,6 @@
 #include "logger.h"
 #include "config.h"
+#include "util.h"
 #include "taskserver.h"
 #include "task/task.h"
 #include <unistd.h>
@@ -26,22 +27,14 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 		}));
 }
 
-// 負の返り値の場合に errno から system_error を生成して投げる
-inline void CheckedSysCall(int ret)
-{
-	if (ret < 0) {
-		throw std::system_error(errno, std::generic_category());
-	}
-}
-
 void SetupSignalMask(sigset_t &sigset)
 {
 	int ret;
 
-	CheckedSysCall(sigemptyset(&sigset));
-	CheckedSysCall(sigaddset(&sigset, SIGINT));
-	CheckedSysCall(sigaddset(&sigset, SIGHUP));
-	CheckedSysCall(sigaddset(&sigset, SIGUSR1));
+	util::SysCall(sigemptyset(&sigset));
+	util::SysCall(sigaddset(&sigset, SIGINT));
+	util::SysCall(sigaddset(&sigset, SIGHUP));
+	util::SysCall(sigaddset(&sigset, SIGUSR1));
 	ret = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 	if (ret != 0) {
 		throw std::system_error(ret, std::generic_category());
@@ -136,7 +129,7 @@ int main()
 			ServerResult result = server->Run();
 
 			// シグナル処理スレッドを SIGUSR1 で終了させて join
-			CheckedSysCall(kill(getpid(), SIGUSR1));
+			util::SysCall(kill(getpid(), SIGUSR1));
 			sigth.join();
 
 			switch (result) {
