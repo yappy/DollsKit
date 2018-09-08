@@ -230,16 +230,16 @@ std::future<void> TaskServer::ReleaseTask(
 				"[%s] start", task->GetName().c_str());
 			try {
 				task->Entry(*this, cancel);
+				logger.Log(LogLevel::Info,
+					"[%s] finish (OK)", task->GetName().c_str());
 			}
 			catch (std::runtime_error &e) {
 				// runtime_error はログを出して処理完了
 				logger.Log(LogLevel::Error,
-					"[%s] error", task->GetName().c_str());
+					"[%s] finish (error)", task->GetName().c_str());
 				logger.Log(LogLevel::Error,
-					"%s", e.what());
+					"[%s] %s", task->GetName().c_str(), e.what());
 			}
-			logger.Log(LogLevel::Info,
-				"[%s] finish", task->GetName().c_str());
 		});
 	return future;
 }
