@@ -144,7 +144,20 @@ int Process::WaitForExit(int timeout_sec)
 	}
 	// ゾンビの回収完了
 	m_exit = true;
-	return status;
+	// 終了状態の変換
+	if (WIFEXITED(status)) {
+		// exit() or main return code
+		return WEXITSTATUS(status);
+	}
+	else if (WIFSIGNALED(status)) {
+		// シグナル死
+		// -(シグナル番号) を返す
+		return -static_cast<int>(WTERMSIG(status));
+	}
+	else {
+		// よく分からないので 1 を返したとする
+		return 1;
+	}
 }
 
 void Process::InputAndClose(const std::string &data)

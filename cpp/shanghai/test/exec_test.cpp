@@ -6,7 +6,7 @@ using namespace std::string_literals;
 
 TEST(ExecTest, Simple) {
 	Process p("/bin/uname"s, {});
-	p.WaitForExit();
+	EXPECT_EQ(0, p.WaitForExit());
 }
 
 TEST(ExecTest, StdInOut) {
@@ -14,7 +14,7 @@ TEST(ExecTest, StdInOut) {
 
 	Process p("/bin/cat"s, {});
 	p.InputAndClose(teststr);
-	p.WaitForExit();
+	EXPECT_EQ(0, p.WaitForExit());
 	EXPECT_EQ(teststr, p.GetOut());
 }
 
