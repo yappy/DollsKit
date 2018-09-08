@@ -17,3 +17,8 @@ TEST(ExecTest, StdInOut) {
 	p.WaitForExit();
 	EXPECT_EQ(teststr, p.GetOut());
 }
+
+TEST(ExecTest, Timeout) {
+	Process p("/bin/cat"s, {});
+	EXPECT_THROW(p.WaitForExit(1), ProcessError);
+}

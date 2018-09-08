@@ -8,6 +8,12 @@
 
 namespace shanghai {
 
+class ProcessError : public std::runtime_error {
+public:
+	ProcessError(const char *msg) : runtime_error(msg) {}
+	ProcessError(const std::string &msg) : runtime_error(msg) {}
+};
+
 struct PipeDeleter {
 	void operator()(int *fds);
 };
@@ -21,7 +27,7 @@ public:
 	Process & operator=(const Process &) = delete;
 
 	void Kill();
-	void WaitForExit();
+	int WaitForExit(int timeout_sec = -1);
 	void InputAndClose(const std::string &data);
 	const std::string &GetOut();
 	const std::string &GetErr();

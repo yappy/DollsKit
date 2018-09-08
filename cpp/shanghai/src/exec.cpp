@@ -1,5 +1,6 @@
 #include "exec.h"
 #include "util.h"
+#include <chrono>
 #include <thread>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -7,6 +8,8 @@
 namespace shanghai {
 
 namespace {
+
+using namespace std::chrono_literals;
 
 const int RD = 0;
 const int WR = 1;
@@ -114,14 +117,34 @@ void Process::Kill()
 	kill(m_pid, SIGKILL);
 }
 
-void Process::WaitForExit()
+// 負のタイムアウトは無制限
+int Process::WaitForExit(int timeout_sec)
 {
 	if (m_exit) {
 		throw std::logic_error("Already exit");
 	}
+
+	// あまりいい方法がなさそうなので (waitpid にシグナルで割り込むのは NG)
+	// 100ms ごとにポーリングする
+	auto timeout = std::chrono::seconds(timeout_sec);
+	auto start = std::chrono::system_clock::now();
 	int status = 0;
-	util::SysCall(waitpid(m_pid, &status, 0));
+	while (1) {
+		int ret = util::SysCall(waitpid(m_pid, &status, WNOHANG));
+		if (ret > 0) {
+			// wait OK
+			break;
+		}
+		// ret == 0 (not exited)
+		auto now = std::chrono::system_clock::now();
+		if (timeout_sec >= 0 && now - start >= timeout) {
+			throw ProcessError("Process wait timeout");
+		}
+		std::this_thread::sleep_for(100ms);
+	}
+	// ゾンビの回収完了
 	m_exit = true;
+	return status;
 }
 
 void Process::InputAndClose(const std::string &data)
