@@ -9,6 +9,11 @@ TEST(ExecTest, Simple) {
 	EXPECT_EQ(0, p.WaitForExit());
 }
 
+TEST(ExecTest, Exit1) {
+	Process p("/bin/false"s, {});
+	EXPECT_EQ(1, p.WaitForExit());
+}
+
 TEST(ExecTest, StdInOut) {
 	const auto teststr = "hello, shanghai\n"s;
 
