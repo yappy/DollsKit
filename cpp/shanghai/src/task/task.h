@@ -12,7 +12,7 @@ using namespace std::string_literals;
 
 class DdnsTask : public PeriodicTask {
 public:
-	DdnsTask(ReleaseFunc rel_func) : PeriodicTask(rel_func) {}
+	DdnsTask(ReleaseFunc rel_func);
 	~DdnsTask() = default;
 
 	std::string GetName() override
@@ -20,6 +20,11 @@ public:
 		return "DdnsTask"s;
 	}
 	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
+
+private:
+	bool m_enabled;
+	std::string m_user;
+	std::string m_pass;
 };
 
 }	// namespace task
