@@ -14,8 +14,9 @@ namespace {
 using namespace shanghai;
 using namespace std::string_literals;
 
-// TODO: 今はテンプレートをそのまま読む
-const char * const ConfigFileName = "config.template.json";
+// 設定ファイル名
+const char * const ConfigFile = "config.json";
+const char * const ConfigFileFallback = "config.template.json";
 
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
@@ -99,8 +100,24 @@ int main()
 	try {
 		while (1) {
 			// 設定ファイルのロード
-			logger.Log(LogLevel::Info, "Load config file");
-			config.Load(ConfigFileName);
+			try {
+				logger.Log(LogLevel::Info, "Load: %s", ConfigFile);
+				config.Load(ConfigFile);
+			}
+			catch (std::runtime_error &e) {
+#ifndef NDEBUG
+				// DEBUG
+				logger.Log(LogLevel::Error, "Load config failed");
+				logger.Log(LogLevel::Error, "%s", e.what());
+				logger.Log(LogLevel::Warn,
+					"DEBUG BUILD ONLY: load template file instead");
+				logger.Log(LogLevel::Info, "Load: %s", ConfigFileFallback);
+				config.Load(ConfigFileFallback);
+#else
+				// RELEASE
+				throw;
+#endif
+			}
 
 			// サーバの作成、初期化
 			auto server = std::make_unique<TaskServer>();
