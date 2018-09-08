@@ -35,7 +35,7 @@ TEST(TaskServerTest, ThreadPoolHeavy) {
 	}
 }
 
-TEST(TaskServerTest, ThreadPoolException) {
+TEST(TaskServerTest, ThreadPoolException_SLOW) {
 	ThreadPool pool(4);
 
 	auto task = [](const std::atomic<bool> &cancel) -> void {

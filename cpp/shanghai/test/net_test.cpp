@@ -8,25 +8,25 @@ using namespace shanghai;
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 
-TEST(NetTest, Simple) {
+TEST(NetTest, Simple_SLOW) {
 	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);
 }
 
-TEST(NetTest, NotFound404) {
+TEST(NetTest, NotFound404_SLOW) {
 	EXPECT_THROW(
 		net.Download("https://httpbin.org/aaaaa"s),
 		NetworkError);
 }
 
-TEST(NetTest, Timeout) {
+TEST(NetTest, Timeout_SLOW) {
 	// 10s delay, 1s timeout
 	EXPECT_THROW(
 		net.Download("https://httpbin.org/delay/10"s, 1),
 		NetworkError);
 }
 
-TEST(NetTest, Cancel) {
+TEST(NetTest, Cancel_SLOW) {
 	std::atomic<bool> cancel(false);
 	std::thread th([&cancel]() {
 		// 1s cancel
@@ -46,7 +46,7 @@ TEST(NetTest, Cancel) {
 	EXPECT_LT(end - start, 2s);
 }
 
-TEST(NetTest, BasicAuth) {
+TEST(NetTest, BasicAuth_SLOW) {
 	const auto user = "a"s;
 	const auto pass = "b"s;
 	const auto url = "https://httpbin.org/basic-auth/"s + user + "/"s + pass;
@@ -54,7 +54,7 @@ TEST(NetTest, BasicAuth) {
 	EXPECT_GT(data.size(), 0U);
 }
 
-TEST(NetTest, BasicAuthFail) {
+TEST(NetTest, BasicAuthFail_SLOW) {
 	const auto user = "a"s;
 	const auto pass = "b"s;
 	const auto url = "https://httpbin.org/basic-auth/user/pass"s;
