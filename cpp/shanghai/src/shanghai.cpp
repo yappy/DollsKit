@@ -120,11 +120,10 @@ int main()
 			// シグナルセットとタスクサーバへの参照を渡す
 			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
 
-			// Debug build only
-#ifndef NDEBUG
-			logger.Log(LogLevel::Warn, "Release all tasks for test");
-			server->ReleaseAllForTest();
-#endif
+			if (config.GetBool({"System", "AllTasksFirst"})) {
+				logger.Log(LogLevel::Info, "Release all tasks for test");
+				server->ReleaseAllForTest();
+			}
 			// サーバスタート
 			ServerResult result = server->Run();
 
