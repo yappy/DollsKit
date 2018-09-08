@@ -8,25 +8,25 @@ using namespace shanghai;
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 
-TEST(NetTest, simple) {
+TEST(NetTest, Simple) {
 	std::vector<char> data = net.Download("http://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);
 }
 
-TEST(NetTest, notfound404) {
+TEST(NetTest, NotFound404) {
 	EXPECT_THROW({
 		net.Download("http://httpbin.org/aaaaa"s);
 	}, NetworkError);
 }
 
-TEST(NetTest, timeout) {
+TEST(NetTest, Timeout) {
 	EXPECT_THROW({
 		// 10s delay, 1s timeout
 		net.Download("http://httpbin.org/delay/10"s, 1);
 	}, NetworkError);
 }
 
-TEST(NetTest, cancel) {
+TEST(NetTest, Cancel) {
 	std::atomic<bool> cancel(false);
 	std::thread th([&cancel]() {
 		// 1s cancel

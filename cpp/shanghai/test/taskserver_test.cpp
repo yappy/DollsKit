@@ -3,7 +3,7 @@
 
 using namespace shanghai;
 
-TEST(TaskServerTest, thread_pool) {
+TEST(TaskServerTest, ThreadPool) {
 	ThreadPool pool(4);
 
 	int x = 0;
@@ -16,7 +16,7 @@ TEST(TaskServerTest, thread_pool) {
 	EXPECT_EQ(1, x);
 }
 
-TEST(TaskServerTest, thread_pool_heavy) {
+TEST(TaskServerTest, ThreadPoolHeavy) {
 	ThreadPool pool(4);
 
 	const int Num = 1024;
@@ -35,7 +35,7 @@ TEST(TaskServerTest, thread_pool_heavy) {
 	}
 }
 
-TEST(TaskServerTest, thread_pool_exception) {
+TEST(TaskServerTest, ThreadPoolException) {
 	ThreadPool pool(4);
 
 	auto task = [](const std::atomic<bool> &cancel) -> void {

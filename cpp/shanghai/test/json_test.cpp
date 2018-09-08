@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <json11.hpp>
 
-TEST(JsonTest, simple) {
+TEST(JsonTest, Simple) {
 	const char *sample = R"({"user_id": 123, "name": "Alice"})";
 	std::string err;
 	auto json = json11::Json::parse(sample, err);
