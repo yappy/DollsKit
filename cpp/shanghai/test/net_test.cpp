@@ -9,21 +9,21 @@ using namespace std::string_literals;
 using namespace std::chrono_literals;
 
 TEST(NetTest, Simple) {
-	std::vector<char> data = net.Download("http://httpbin.org/ip"s);
+	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);
 }
 
 TEST(NetTest, NotFound404) {
-	EXPECT_THROW({
-		net.Download("http://httpbin.org/aaaaa"s);
-	}, NetworkError);
+	EXPECT_THROW(
+		net.Download("https://httpbin.org/aaaaa"s),
+		NetworkError);
 }
 
 TEST(NetTest, Timeout) {
-	EXPECT_THROW({
-		// 10s delay, 1s timeout
-		net.Download("http://httpbin.org/delay/10"s, 1);
-	}, NetworkError);
+	// 10s delay, 1s timeout
+	EXPECT_THROW(
+		net.Download("https://httpbin.org/delay/10"s, 1),
+		NetworkError);
 }
 
 TEST(NetTest, Cancel) {
@@ -35,13 +35,30 @@ TEST(NetTest, Cancel) {
 	});
 
 	auto start = std::chrono::system_clock::now();
-	EXPECT_THROW({
-		// 10s delay
-		net.Download("http://httpbin.org/delay/10"s, 0, cancel);
-	}, NetworkError);
+	// 10s delay
+	EXPECT_THROW(
+		net.Download("https://httpbin.org/delay/10"s, 0, cancel),
+		NetworkError);
 	auto end = std::chrono::system_clock::now();
 	th.join();
 
 	// < 2s ?
 	EXPECT_LT(end - start, 2s);
+}
+
+TEST(NetTest, BasicAuth) {
+	const auto user = "a"s;
+	const auto pass = "b"s;
+	const auto url = "https://httpbin.org/basic-auth/"s + user + "/"s + pass;
+	std::vector<char> data = net.DownloadBasicAuth(url, user, pass);
+	EXPECT_GT(data.size(), 0U);
+}
+
+TEST(NetTest, BasicAuthFail) {
+	const auto user = "a"s;
+	const auto pass = "b"s;
+	const auto url = "https://httpbin.org/basic-auth/user/pass"s;
+	EXPECT_THROW(
+		net.DownloadBasicAuth(url, user, pass),
+		NetworkError);
 }
