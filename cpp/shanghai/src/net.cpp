@@ -89,7 +89,9 @@ void Network::HmacSha1(const void *key, int key_len,
 
 	unsigned int reslen = 0;
 
-	if (!HMAC(EVP_sha1(), key, key_len, buf, size, result, &reslen)) {
+	unsigned char *ret = HMAC(EVP_sha1(),
+		key, key_len, buf, size, result, &reslen);
+	if (ret == nullptr || reslen != ShaDigestLen) {
 		throw NetworkError("HMAC-SHA1 error");
 	}
 }
@@ -201,17 +203,66 @@ std::vector<char> Network::DownloadBasicAuth(const std::string &url,
 		});
 }
 
-std::string Network::CalcSignature(const std::string &http_method,
-	const std::string &url, const KeyValue &oauth_param,
-	const KeyValue &query_param)
+// https://developer.twitter.com
+// /en/docs/basics/authentication/guides/creating-a-signature.html
+std::string Network::CalcSignature(
+	const std::string &http_method, const std::string &base_url,
+	const KeyValue &oauth_param, const KeyValue &query_param,
+	const std::string &consumer_secret, const std::string &token_secret)
 {
-	// TODO
-	return ""s;
+	// "Collecting parameters"
+	// percent encode しつつ合成してキーでソートする
+	KeyValue param;
+	auto encode_insert = [this, &param](const KeyValue &map) {
+		for (const auto &entry : map) {
+			param.emplace(Escape(entry.first), Escape(entry.second));
+		}
+	};
+	encode_insert(oauth_param);
+	encode_insert(query_param);
+	// 文字列にする
+	// key1=value1&key2=value2&...
+	std::string param_str;
+	bool is_first = true;
+	for (const auto &entry : param) {
+		if (is_first) {
+			is_first = false;
+		}
+		else {
+			param_str += '&';
+		}
+		param_str += entry.first;
+		param_str += '=';
+		param_str += entry.second;
+	}
+
+	// "Creating the signature base string"
+	// 署名対象
+	std::string base = http_method;
+	base += '&';
+	base += Escape(base_url);
+	base += '&';
+	base += Escape(param_str);
+
+	// "Getting a signing key"
+	// 署名鍵は consumer_secret と token_secret をエスケープして & でつなぐだけ
+	std::string key = Escape(consumer_secret);
+	key += '&';
+	key += Escape(token_secret);
+
+	// "Calculating the signature"
+	ShaDigest signature;
+	HmacSha1(
+		key.data(), key.size(),
+		reinterpret_cast<const unsigned char *>(base.data()), base.size(),
+		signature);
+
+	return Base64Encode(signature, sizeof(signature));
 }
 
 // https://developer.twitter.com
 // /en/docs/basics/authentication/guides/authorizing-a-request
-Network::KeyValue Network::CreateOAuthField(const std::string &url,
+Network::KeyValue Network::CreateOAuthField(
 	const std::string &consumer_key, const std::string &access_token)
 {
 	KeyValue param;
@@ -246,39 +297,64 @@ Network::KeyValue Network::CreateOAuthField(const std::string &url,
 	return param;
 }
 
-std::vector<char> Network::DownloadOAuth(const std::string &url,
+std::vector<char> Network::DownloadOAuth(const std::string &base_url,
 	const std::string &http_method, const KeyValue &query,
 	const std::string &consumer_key, const std::string &access_token,
+	const std::string &consumer_secret, const std::string &token_secret,
 	int timeout_sec, const std::atomic<bool> &cancel)
 {
 	// 署名以外の oauth 用のパラメータセットを作る
-	KeyValue auth_param = CreateOAuthField(url, consumer_key, access_token);
-	// それに URL, query を合わせたものの署名を求める
-	std::string signature = CalcSignature(http_method, url, auth_param, query);
+	KeyValue auth_param = CreateOAuthField(consumer_key, access_token);
+	// それと method, URL, query を合わせたものに署名する
+	std::string signature = CalcSignature(
+		http_method, base_url, auth_param, query,
+		consumer_secret, token_secret);
 	// 署名を oauth パラメータセットに追加
 	auth_param.emplace("oauth_signature", signature);
 
 	// URL にクエリをくっつける
-	std::string query_url = url;
+	std::string url = base_url;
 	{
 		bool is_first = true;
 		for (const auto &entry : query) {
 			if (is_first) {
-				query_url += '?';
+				url += '?';
 				is_first = false;
 			}
 			else {
-				query_url += '&';
+				url += '&';
 			}
-			query_url += Escape(entry.first);
-			query_url += '=';
-			query_url += Escape(entry.second);
+			url += Escape(entry.first);
+			url += '=';
+			url += Escape(entry.second);
+		}
+	}
+
+	// https://developer.twitter.com
+	// /en/docs/basics/authentication/guides/authorizing-a-request
+	// "Building the header string"
+	// Authorization HTTP ヘッダ
+	std::string auth_str = "OAuth "s;
+	{
+		bool is_first = true;
+		for (const auto &entry : auth_param) {
+			if (is_first) {
+				is_first = false;
+			}
+			else {
+				url += ", ";
+			}
+			auth_str += Escape(entry.first);
+			auth_str += '=';
+			auth_str += '"';
+			auth_str += Escape(entry.second);
+			auth_str += '"';
 		}
 	}
 
 	// TODO
-	return std::vector<char>();
-	// return DownloadInternal(query_url, timeout_sec, cancel, [](const SafeCurl &){});
+	return std::vector<char>(auth_str.begin(), auth_str.end());
+	// return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
 }
 
 

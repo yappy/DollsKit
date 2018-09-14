@@ -133,6 +133,10 @@ TEST(NetTest, HmacSha1_7) {
 
 TEST(NetTest, OAuthHeader) {
 	puts("TODO: temp test!");
+	net.DownloadOAuth("https://shanghai.doll/test.json"s,
+		"GET"s, {{"a", "1"}},
+		"consumer_key"s, "access_token"s,
+		"consumer_secret"s, "token_secret"s);
 }
 
 TEST(NetTest, Simple_SLOW) {

@@ -53,16 +53,18 @@ public:
 		int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 	// OAuth 1.0a
-	std::string CalcSignature(const std::string &http_method,
-		const std::string &url, const KeyValue &oauth_param,
-		const KeyValue &query_param);
-	KeyValue CreateOAuthField(const std::string &url,
+	std::string CalcSignature(
+		const std::string &http_method, const std::string &base_url,
+		const KeyValue &oauth_param, const KeyValue &query_param,
+		const std::string &consumer_secret, const std::string &token_secret);
+	KeyValue CreateOAuthField(
 		const std::string &consumer_key, const std::string &access_token);
 	// URL の終わりにつく query (?a=b&c=d...) は署名が必要なため
 	// url に含めず query に渡すこと
-	std::vector<char> DownloadOAuth(const std::string &url,
+	std::vector<char> DownloadOAuth(const std::string &base_url,
 		const std::string &http_method, const KeyValue &query,
 		const std::string &consumer_key, const std::string &access_token,
+		const std::string &consumer_secret, const std::string &token_secret,
 		int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 
