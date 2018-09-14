@@ -4,6 +4,7 @@
 #include <curl/curl.h>
 #include <memory>
 #include <algorithm>
+#include <ctime>
 
 namespace shanghai {
 
@@ -188,7 +189,7 @@ std::vector<char> Network::DownloadBasicAuth(const std::string &url,
 // https://developer.twitter.com
 // /en/docs/basics/authentication/guides/authorizing-a-request
 std::string Network::CreateOAuthField(const std::string &url,
-	const std::string &consumer_key)
+	const std::string &consumer_key, const std::string &access_token)
 {
 	std::vector<std::pair<std::string, std::string>> param;
 
@@ -210,6 +211,13 @@ std::string Network::CreateOAuthField(const std::string &url,
 		std::back_inserter(nonce_str),
 		[](unsigned char c) { return std::isalnum(c); });
 	param.emplace_back("oauth_nonce", nonce_str);
+
+	// param.emplace_back("oauth_signature", sha1(...));
+
+	param.emplace_back("oauth_signature_method", "HMAC-SHA1");
+	param.emplace_back("oauth_timestamp", std::to_string(std::time(nullptr)));
+	param.emplace_back("oauth_token", access_token);
+	param.emplace_back("oauth_version", "1.0");
 
 	std::string result;
 	bool is_first = true;

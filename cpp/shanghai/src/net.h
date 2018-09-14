@@ -44,7 +44,7 @@ public:
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 	// OAuth 1.0a
 	std::string CreateOAuthField(const std::string &url,
-		const std::string &consumer_key);
+		const std::string &consumer_key, const std::string &access_token);
 	std::vector<char> DownloadOAuth(const std::string &url,
 		const std::string &consumer_key,
 		int timeout_sec = 0,
