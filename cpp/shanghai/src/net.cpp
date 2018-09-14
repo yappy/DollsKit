@@ -342,7 +342,7 @@ std::vector<char> Network::DownloadOAuth(const std::string &base_url,
 				is_first = false;
 			}
 			else {
-				url += ", ";
+				auth_str += ", ";
 			}
 			auth_str += Escape(entry.first);
 			auth_str += '=';
