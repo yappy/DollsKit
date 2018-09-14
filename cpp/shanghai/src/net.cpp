@@ -1,4 +1,6 @@
 #include "net.h"
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 #include <curl/curl.h>
 #include <memory>
 
@@ -51,6 +53,27 @@ std::string Network::Escape(const std::string &str)
 	}
 	std::string result(buf);
 	::curl_free(buf);
+	return result;
+}
+
+std::string Network::Base64Encode(const void *buf, int size)
+{
+	BIO *bio_base64 = BIO_new(BIO_f_base64());
+	BIO_set_flags(bio_base64, BIO_FLAGS_BASE64_NO_NL);
+
+	BIO *bio_memout = BIO_new(BIO_s_mem());
+
+	BIO_push(bio_base64, bio_memout);
+
+	BIO_write(bio_base64, buf, size);
+	BIO_flush(bio_base64);
+
+	char *p;
+	long len = BIO_get_mem_data(bio_memout, &p);
+	std::string result(p, len);
+
+	BIO_free_all(bio_base64);
+
 	return result;
 }
 

@@ -31,6 +31,8 @@ public:
 	// スペースは "+" ではなく "%20" になるのでやや安心
 	std::string Escape(const std::string &str);
 
+	std::string Base64Encode(const void *buf, int size);
+
 	// 完了するまでブロックする
 	// タイムアウトは 0 で無限待ち
 	std::vector<char> Download(const std::string &url, int timeout_sec = 0,

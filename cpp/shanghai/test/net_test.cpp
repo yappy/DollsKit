@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../src/net.h"
+#include "../src/exec.h"
 #include <string>
 #include <chrono>
 #include <thread>
@@ -24,6 +25,23 @@ TEST(NetTest, Escape) {
 	EXPECT_EQ(
 		u8"%E2%98%83"s,
 		net.Escape("\u2603"s));
+}
+
+TEST(NetTest, Base64Encode) {
+	std::string in;
+	for (int i = 0; i < 19997; i++) {
+		in += static_cast<char>(i);
+	}
+
+	Process p("/usr/bin/base64"s, {"--wrap=0"});
+	p.InputAndClose(in);
+	EXPECT_EQ(0, p.WaitForExit());
+	const std::string &expect = p.GetOut().c_str();
+
+	std::string actual = net.Base64Encode(
+		in.c_str(), static_cast<int>(in.size()));
+
+	EXPECT_EQ(actual, expect);
 }
 
 TEST(NetTest, Simple_SLOW) {
