@@ -115,21 +115,29 @@ int main()
 			// サーバの作成、初期化
 			auto server = std::make_unique<TaskServer>();
 			SetupTasks(server);
-
-			// シグナル処理スレッドを立ち上げる
-			// シグナルセットとタスクサーバへの参照を渡す
-			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
-
 			if (config.GetBool({"System", "AllTasksFirst"})) {
 				logger.Log(LogLevel::Info, "Release all tasks for test");
 				server->ReleaseAllForTest();
 			}
-			// サーバスタート
-			ServerResult result = server->Run();
 
-			// シグナル処理スレッドを SIGUSR1 で終了させて join
-			util::SysCall(kill(getpid(), SIGUSR1));
-			sigth.join();
+			// シグナル処理スレッドを立ち上げる
+			// シグナルセットとタスクサーバへの参照を渡す
+			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
+			auto teardown = [&sigth]() {
+				// シグナル処理スレッドを SIGUSR1 で終了させて join
+				util::SysCall(kill(getpid(), SIGUSR1));
+				sigth.join();
+			};
+			ServerResult result = ServerResult::None;
+			try {
+				// サーバスタート
+				result = server->Run();
+			}
+			catch(...) {
+				teardown();
+				throw;
+			}
+			teardown();
 
 			switch (result) {
 			case ServerResult::Reboot:
