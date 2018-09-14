@@ -55,7 +55,8 @@ std::string Network::Escape(const std::string &str)
 }
 
 namespace {
-extern "C"
+// 受信コールバック
+// userp: 格納先 vector<char> へのポインタ
 size_t WriteFunc(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	auto cbuf = static_cast<char *>(buffer);
@@ -66,8 +67,10 @@ size_t WriteFunc(void *buffer, size_t size, size_t nmemb, void *userp)
 	return nmemb;
 }
 
-extern "C"
-int ProgressFunc(void *clientp,   curl_off_t dltotal,   curl_off_t dlnow,   curl_off_t ultotal,   curl_off_t ulnow)
+// 受信中コールバック
+// clientp: atomic<bool> キャンセル変数へのポインタ
+int ProgressFunc(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
+	curl_off_t ultotal, curl_off_t ulnow)
 {
 	auto cancel = static_cast<std::atomic<bool> *>(clientp);
 	if (cancel->load()) {
@@ -122,7 +125,7 @@ std::vector<char> Network::DownloadInternal(
 
 	// HTTP status = 200 番台以外はエラーとする (リダイレクトもエラーになるので注意)
 	long http_code;
-	ret = curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &http_code);
+	ret = ::curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &http_code);
 	CheckError(ret);
 	if (http_code < 200 || http_code >= 300) {
 		throw NetworkError("HTTP failed status: "s + std::to_string(http_code));
