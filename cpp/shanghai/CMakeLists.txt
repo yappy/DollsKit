@@ -16,7 +16,7 @@ gtest_add_tests(TARGET ${PROJECT_NAME}-test)
 
 # std::thread depends on thread
 set(INCS ${CURL_INCLUDE_DIRS})
-set(LIBS "Threads::Threads" ${CURL_LIBRARIES} "json11")
+set(LIBS "Threads::Threads" "OpenSSL::SSL" ${CURL_LIBRARIES} "json11")
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})
 target_link_libraries(${PROJECT_NAME} ${LIBS})

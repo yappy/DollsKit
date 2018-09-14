@@ -27,8 +27,12 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# OpenSSL
+find_package(OpenSSL REQUIRED)
+
 # libcurl
 find_package(CURL REQUIRED)
+
 
 #
 # Externals
