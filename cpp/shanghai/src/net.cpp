@@ -3,6 +3,7 @@
 #include <openssl/evp.h>
 #include <curl/curl.h>
 #include <memory>
+#include <algorithm>
 
 namespace shanghai {
 
@@ -190,14 +191,44 @@ std::string Network::CreateOAuthField(const std::string &url,
 	const std::string &consumer_key)
 {
 	std::vector<std::pair<std::string, std::string>> param;
+
 	// oauth_consumer_key: アプリの識別子
 	param.emplace_back("oauth_consumer_key", consumer_key);
+
 	// oauth_nonce: ランダム値
-	// OAuth ではリプレイ攻撃対策との記述あり
-	// 乱数に署名して第三者によるリプレイを防ぐだけなので
-	// 暗号学的安全性は要らない気がするが一応そうしておく
-	uint32_t nonce = m_secure_rand();
-	return "";
+	// OAuth spec ではリプレイ攻撃対策との記述あり
+	// 暗号学的安全性は要らない気もするが一応そうしておく
+	// Twitter によるとランダムな英数字なら何でもいいらしいが、例に挙げられている
+	// 32byte の乱数を BASE64 にして英数字のみを残したものとする
+	std::array<uint8_t, 32> nonce;
+	for (auto &b : nonce) {
+		b = static_cast<uint8_t>(m_secure_rand());
+	}
+	std::string nonce_b64 = net.Base64Encode(&nonce, sizeof(nonce));
+	std::string nonce_str;
+	std::copy_if(nonce_b64.begin(), nonce_b64.end(),
+		std::back_inserter(nonce_str),
+		[](unsigned char c) { return std::isalnum(c); });
+	param.emplace_back("oauth_nonce", nonce_str);
+
+	std::string result;
+	bool is_first = true;
+	for (const auto &entry : param) {
+		if (is_first) {
+			is_first = false;
+		}
+		else {
+			result += ", ";
+		}
+		// escape(key) '=' '"' escape(value) '"'
+		// key はエスケープ不要なものしかないので省略
+		result += entry.first;
+		result += '=';
+		result += '"';
+		result += Escape(entry.second);
+		result += '"';
+	}
+	return result;
 }
 
 /*

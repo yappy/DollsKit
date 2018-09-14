@@ -44,6 +44,11 @@ TEST(NetTest, Base64Encode) {
 	EXPECT_EQ(actual, expect);
 }
 
+TEST(NetTest, OAuthHeader) {
+	puts("TODO: temp test!");
+	puts(net.CreateOAuthField("https://hoge.com"s, "consumekey"s).c_str());
+}
+
 TEST(NetTest, Simple_SLOW) {
 	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);

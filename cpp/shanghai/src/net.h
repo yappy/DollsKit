@@ -51,11 +51,11 @@ public:
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 
 private:
+	std::random_device m_secure_rand;
+
 	template <class F>
 	std::vector<char> DownloadInternal(const std::string &url, int timeout_sec,
 		const std::atomic<bool> &cancel, F prepair);
-
-	std::random_device m_secure_rand;
 };
 
 extern Network net;
