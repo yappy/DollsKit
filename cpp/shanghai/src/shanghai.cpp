@@ -22,6 +22,10 @@ const char * const ConfigFileFallback = "config.template.json";
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
 	server->RegisterPeriodicTask(
+		std::make_unique<task::HealthCheckTask>([](const struct tm &) {
+			return true;
+		}));
+	server->RegisterPeriodicTask(
 		std::make_unique<task::DdnsTask>([](const struct tm &) {
 			return true;
 		}));
