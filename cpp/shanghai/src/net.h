@@ -22,6 +22,9 @@ public:
 
 class Network final {
 public:
+	static const int ShaDigestLen = 20;
+	using ShaDigest = unsigned char[ShaDigestLen];
+
 	Network();
 	~Network();
 	Network(const Network &) = delete;
@@ -30,8 +33,12 @@ public:
 	// curl_easy_espace
 	// スペースは "+" ではなく "%20" になるのでやや安心
 	std::string Escape(const std::string &str);
-
+	// BASE64 改行無し
 	std::string Base64Encode(const void *buf, int size);
+	// HMAC-SHA1
+	void HmacSha1(const void *key, int key_len,
+		const unsigned char *buf, size_t size,
+		ShaDigest &result);
 
 	// 完了するまでブロックする
 	// タイムアウトは 0 で無限待ち

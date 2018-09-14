@@ -1,6 +1,8 @@
 #include "net.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
 #include <curl/curl.h>
 #include <memory>
 #include <algorithm>
@@ -77,6 +79,19 @@ std::string Network::Base64Encode(const void *buf, int size)
 	BIO_free_all(bio_base64);
 
 	return result;
+}
+
+void Network::HmacSha1(const void *key, int key_len,
+	const unsigned char *buf, size_t size,
+	ShaDigest &result)
+{
+	static_assert(ShaDigestLen == SHA_DIGEST_LENGTH, "SHA_DIGEST_LENGTH");
+
+	unsigned int reslen = 0;
+
+	if (!HMAC(EVP_sha1(), key, key_len, buf, size, result, &reslen)) {
+		throw NetworkError("HMAC-SHA1 error");
+	}
 }
 
 namespace {

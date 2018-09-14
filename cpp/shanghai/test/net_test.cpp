@@ -44,6 +44,24 @@ TEST(NetTest, Base64Encode) {
 	EXPECT_EQ(actual, expect);
 }
 
+TEST(NetTest, HmacSha1) {
+	// https://www.ipa.go.jp/security/rfc/RFC2104JA.html
+	const unsigned char key[] = {
+		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b };
+	int key_len = sizeof(key);
+	const unsigned char data[] = "Hi There";
+	size_t size = sizeof(data) - 1;
+	const unsigned char expect[] = {
+		0xb6, 0x17, 0x31, 0x86, 0x55, 0x05, 0x72, 0x64, 0xe2, 0x8b,
+		0xc0, 0xb6, 0xfb, 0x37, 0x8c, 0x8e, 0xf1, 0x46, 0xbe, 0x00 };
+
+	Network::ShaDigest digest;
+	net.HmacSha1(key, key_len, data, size, digest);
+
+	EXPECT_EQ(0, memcmp(digest, expect, sizeof(digest)));
+}
+
 TEST(NetTest, OAuthHeader) {
 	puts("TODO: temp test!");
 	puts(net.CreateOAuthField("https://hoge.com"s,
