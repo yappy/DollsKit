@@ -39,6 +39,21 @@ Network::~Network()
 	::curl_global_cleanup();
 }
 
+std::string Network::Escape(const std::string &str)
+{
+	SafeCurl curl(::curl_easy_init());
+	if (curl == nullptr) {
+		throw NetworkError("CURL init handle failed");
+	}
+	char *buf = ::curl_easy_escape(curl.get(), str.c_str(), str.size());
+	if (buf == nullptr) {
+		throw std::bad_alloc();
+	}
+	std::string result(buf);
+	::curl_free(buf);
+	return result;
+}
+
 namespace {
 extern "C"
 size_t WriteFunc(void *buffer, size_t size, size_t nmemb, void *userp)

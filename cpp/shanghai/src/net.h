@@ -20,6 +20,10 @@ public:
 	Network(const Network &) = delete;
 	Network & operator=(const Network &) = delete;
 
+	// curl_easy_espace
+	// スペースは "+" ではなく "%20" になるのでやや安心
+	std::string Escape(const std::string &str);
+
 	// 完了するまでブロックする
 	// タイムアウトは 0 で無限待ち
 	std::vector<char> Download(const std::string &url, int timeout_sec = 0,

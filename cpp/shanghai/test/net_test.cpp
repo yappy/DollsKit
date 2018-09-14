@@ -8,6 +8,24 @@ using namespace shanghai;
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 
+TEST(NetTest, Escape) {
+	// https://developer.twitter.com
+	// /en/docs/basics/authentication/guides/percent-encoding-parameters
+	EXPECT_EQ(
+		"Ladies%20%2B%20Gentlemen"s,
+		net.Escape("Ladies + Gentlemen"s));
+	EXPECT_EQ(
+		"An%20encoded%20string%21"s,
+		net.Escape("An encoded string!"s));
+	EXPECT_EQ(
+		"Dogs%2C%20Cats%20%26%20Mice"s,
+		net.Escape("Dogs, Cats & Mice"s));
+	// showman
+	EXPECT_EQ(
+		u8"%E2%98%83"s,
+		net.Escape("\u2603"s));
+}
+
 TEST(NetTest, Simple_SLOW) {
 	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);
