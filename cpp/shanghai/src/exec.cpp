@@ -43,7 +43,7 @@ Pipe Process::CreatePipe()
 }
 
 Process::Process(const std::string &path,
-	std::initializer_list<std::string> argv) : m_exit(false)
+	std::initializer_list<std::string> args) : m_exit(false)
 {
 	Pipe in = CreatePipe();
 	Pipe out = CreatePipe();
@@ -61,11 +61,21 @@ Process::Process(const std::string &path,
 		out.reset();
 		err.reset();
 		// exec
-		// TODO: argv
 		// TODO: error
-		char * const argv[] = { (char *)path.c_str(), nullptr };
-		int ret = execv(path.c_str(), argv);
-		std::quick_exit(0);
+		// argv の要素が const char * でないのは互換性のため: const_cast で回避する
+		// https://stackoverflow.com/questions/190184/execv-and-const-ness
+		size_t argvlen = args.size() + 2;
+		auto argv = std::make_unique<char *[]>(argvlen);
+		argv[0] = const_cast<char *>(path.c_str());
+		int argc = 1;
+		for (const std::string &arg : args) {
+			argv[argc] = const_cast<char *>(arg.c_str());
+			argc++;
+		}
+		argv[argc] = nullptr;
+		int ret = execv(path.c_str(), argv.get());
+		// ここに来たら失敗している
+		std::quick_exit(1);
 	}
 	else {
 		// parent process

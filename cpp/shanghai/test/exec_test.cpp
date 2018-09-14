@@ -23,6 +23,12 @@ TEST(ExecTest, StdInOut) {
 	EXPECT_EQ(teststr, p.GetOut());
 }
 
+TEST(ExecTest, Argv) {
+	Process p("/bin/echo", {"-n", "shanghai", "", "horai"});
+	EXPECT_EQ(0, p.WaitForExit());
+	EXPECT_EQ("shanghai  horai", p.GetOut());
+}
+
 TEST(ExecTest, Timeout_SLOW) {
 	Process p("/bin/cat"s, {});
 	EXPECT_THROW(p.WaitForExit(1), ProcessError);

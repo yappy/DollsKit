@@ -21,7 +21,7 @@ using Pipe = std::unique_ptr<int[], PipeDeleter>;
 
 class Process final {
 public:
-	Process(const std::string &path, std::initializer_list<std::string> argv);
+	Process(const std::string &path, std::initializer_list<std::string> args);
 	~Process();
 	Process(const Process &) = delete;
 	Process & operator=(const Process &) = delete;
