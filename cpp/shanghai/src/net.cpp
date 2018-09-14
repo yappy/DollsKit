@@ -201,15 +201,23 @@ std::vector<char> Network::DownloadBasicAuth(const std::string &url,
 		});
 }
 
+std::string Network::CalcSignature(const std::string &http_method,
+	const std::string &url, const KeyValue &oauth_param,
+	const KeyValue &query_param)
+{
+	// TODO
+	return ""s;
+}
+
 // https://developer.twitter.com
 // /en/docs/basics/authentication/guides/authorizing-a-request
-std::string Network::CreateOAuthField(const std::string &url,
+Network::KeyValue Network::CreateOAuthField(const std::string &url,
 	const std::string &consumer_key, const std::string &access_token)
 {
-	std::vector<std::pair<std::string, std::string>> param;
+	KeyValue param;
 
 	// oauth_consumer_key: アプリの識別子
-	param.emplace_back("oauth_consumer_key", consumer_key);
+	param.emplace("oauth_consumer_key", consumer_key);
 
 	// oauth_nonce: ランダム値
 	// OAuth spec ではリプレイ攻撃対策との記述あり
@@ -225,40 +233,53 @@ std::string Network::CreateOAuthField(const std::string &url,
 	std::copy_if(nonce_b64.begin(), nonce_b64.end(),
 		std::back_inserter(nonce_str),
 		[](unsigned char c) { return std::isalnum(c); });
-	param.emplace_back("oauth_nonce", nonce_str);
+	param.emplace("oauth_nonce", nonce_str);
 
-	// param.emplace_back("oauth_signature", sha1(...));
+	// 署名は署名以外のフィールドに対しても行うので後で追加する
+	// param.emplace("oauth_signature", sha1(...));
 
-	param.emplace_back("oauth_signature_method", "HMAC-SHA1");
-	param.emplace_back("oauth_timestamp", std::to_string(std::time(nullptr)));
-	param.emplace_back("oauth_token", access_token);
-	param.emplace_back("oauth_version", "1.0");
+	param.emplace("oauth_signature_method", "HMAC-SHA1");
+	param.emplace("oauth_timestamp", std::to_string(std::time(nullptr)));
+	param.emplace("oauth_token", access_token);
+	param.emplace("oauth_version", "1.0");
 
-	std::string result;
-	bool is_first = true;
-	for (const auto &entry : param) {
-		if (is_first) {
-			is_first = false;
-		}
-		else {
-			result += ", ";
-		}
-		// escape(key) '=' '"' escape(value) '"'
-		// key はエスケープ不要なものしかないので省略
-		result += entry.first;
-		result += '=';
-		result += '"';
-		result += Escape(entry.second);
-		result += '"';
-	}
-	return result;
+	return param;
 }
 
-/*
 std::vector<char> Network::DownloadOAuth(const std::string &url,
-	const std::string &consumer_key,
-	int timeout_sec, const std::atomic<bool> &cancel);
-*/
+	const std::string &http_method, const KeyValue &query,
+	const std::string &consumer_key, const std::string &access_token,
+	int timeout_sec, const std::atomic<bool> &cancel)
+{
+	// 署名以外の oauth 用のパラメータセットを作る
+	KeyValue auth_param = CreateOAuthField(url, consumer_key, access_token);
+	// それに URL, query を合わせたものの署名を求める
+	std::string signature = CalcSignature(http_method, url, auth_param, query);
+	// 署名を oauth パラメータセットに追加
+	auth_param.emplace("oauth_signature", signature);
+
+	// URL にクエリをくっつける
+	std::string query_url = url;
+	{
+		bool is_first = true;
+		for (const auto &entry : query) {
+			if (is_first) {
+				query_url += '?';
+				is_first = false;
+			}
+			else {
+				query_url += '&';
+			}
+			query_url += Escape(entry.first);
+			query_url += '=';
+			query_url += Escape(entry.second);
+		}
+	}
+
+	// TODO
+	return std::vector<char>();
+	// return DownloadInternal(query_url, timeout_sec, cancel, [](const SafeCurl &){});
+}
 
 
 Network net;

@@ -133,8 +133,6 @@ TEST(NetTest, HmacSha1_7) {
 
 TEST(NetTest, OAuthHeader) {
 	puts("TODO: temp test!");
-	puts(net.CreateOAuthField("https://hoge.com"s,
-		"consumekey"s, "accesstoken"s).c_str());
 }
 
 TEST(NetTest, Simple_SLOW) {
