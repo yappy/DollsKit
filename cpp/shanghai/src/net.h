@@ -4,6 +4,13 @@
 #include <stdexcept>
 #include <atomic>
 #include <vector>
+#include <random>
+
+// MINGW32 実装では std::random_device が暗号論的に安全でない
+// https://cpprefjp.github.io/reference/random/random_device.html
+#ifdef __MINGW32__
+#error MINGW std::random_device is not cryptographically secure.
+#endif
 
 namespace shanghai {
 
@@ -33,11 +40,20 @@ public:
 		const std::string &user, const std::string &pass,
 		int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
+	// OAuth 1.0a
+	std::string CreateOAuthField(const std::string &url,
+		const std::string &consumer_key);
+	std::vector<char> DownloadOAuth(const std::string &url,
+		const std::string &consumer_key,
+		int timeout_sec = 0,
+		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 
 private:
 	template <class F>
 	std::vector<char> DownloadInternal(const std::string &url, int timeout_sec,
 		const std::atomic<bool> &cancel, F prepair);
+
+	std::random_device m_secure_rand;
 };
 
 extern Network net;

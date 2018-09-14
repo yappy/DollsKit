@@ -141,7 +141,7 @@ std::vector<char> Network::Download(const std::string &url, int timeout_sec,
 	return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
 }
 
-std::vector<char> Network:: DownloadBasicAuth(const std::string &url,
+std::vector<char> Network::DownloadBasicAuth(const std::string &url,
 	const std::string &user, const std::string &pass,
 	int timeout_sec, const std::atomic<bool> &cancel)
 {
@@ -160,6 +160,28 @@ std::vector<char> Network:: DownloadBasicAuth(const std::string &url,
 			CheckError(ret);
 		});
 }
+
+// https://developer.twitter.com
+// /en/docs/basics/authentication/guides/authorizing-a-request
+std::string Network::CreateOAuthField(const std::string &url,
+	const std::string &consumer_key)
+{
+	std::vector<std::pair<std::string, std::string>> param;
+	// oauth_consumer_key: アプリの識別子
+	param.emplace_back("oauth_consumer_key", consumer_key);
+	// oauth_nonce: ランダム値
+	// OAuth ではリプレイ攻撃対策との記述あり
+	// 乱数に署名して第三者によるリプレイを防ぐだけなので
+	// 暗号学的安全性は要らない気がするが一応そうしておく
+	uint32_t nonce = m_secure_rand();
+	return "";
+}
+
+/*
+std::vector<char> Network::DownloadOAuth(const std::string &url,
+	const std::string &consumer_key,
+	int timeout_sec, const std::atomic<bool> &cancel);
+*/
 
 
 Network net;
