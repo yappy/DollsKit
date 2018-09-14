@@ -44,22 +44,91 @@ TEST(NetTest, Base64Encode) {
 	EXPECT_EQ(actual, expect);
 }
 
-TEST(NetTest, HmacSha1) {
-	// https://www.ipa.go.jp/security/rfc/RFC2104JA.html
-	const unsigned char key[] = {
-		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
-		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b };
-	int key_len = sizeof(key);
-	const unsigned char data[] = "Hi There";
-	size_t size = sizeof(data) - 1;
-	const unsigned char expect[] = {
-		0xb6, 0x17, 0x31, 0x86, 0x55, 0x05, 0x72, 0x64, 0xe2, 0x8b,
-		0xc0, 0xb6, 0xfb, 0x37, 0x8c, 0x8e, 0xf1, 0x46, 0xbe, 0x00 };
+namespace {
+void HmacSha1Body(const void *key, size_t key_size,
+	const unsigned char *data, size_t data_size,
+	const std::string &digest_str)
+{
+	ASSERT_EQ(Network::ShaDigestLen * 2, static_cast<int>(digest_str.size()));
+	Network::ShaDigest expect;
+	for (int i = 0; i < Network::ShaDigestLen; i++) {
+		expect[i] = std::stoi(digest_str.substr(i * 2, 2), nullptr, 16);
+	}
 
 	Network::ShaDigest digest;
-	net.HmacSha1(key, key_len, data, size, digest);
+	net.HmacSha1(key, key_size, data, data_size, digest);
 
 	EXPECT_EQ(0, memcmp(digest, expect, sizeof(digest)));
+}
+}
+
+// https://www.ipa.go.jp/security/rfc/RFC2104JA.html
+TEST(NetTest, HmacSha1_1) {
+	unsigned char key[20];
+	memset(key, 0x0b, sizeof(key));
+	unsigned char data[] = "Hi There";
+	const auto expect = "b617318655057264e28bc0b6fb378c8ef146be00"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data) - 1, expect);
+}
+
+TEST(NetTest, HmacSha1_2) {
+	unsigned char key[] = "Jefe";
+	unsigned char data[] = "what do ya want for nothing?";
+	const auto expect = "effcdf6ae5eb2fa2d27416d5f184df9c259a7c79"s;
+
+	HmacSha1Body(key, sizeof(key) - 1, data, sizeof(data) - 1, expect);
+}
+
+TEST(NetTest, HmacSha1_3) {
+	unsigned char key[20];
+	memset(key, 0xaa, sizeof(key));
+	unsigned char data[50];
+	memset(data, 0xdd, sizeof(data));
+	const auto expect = "125d7342b9ac11cd91a39af48aa17b4f63f175d3"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data), expect);
+}
+
+TEST(NetTest, HmacSha1_4) {
+	unsigned char key[25];
+	for (size_t i = 0; i < sizeof(key); i++) {
+		key[i] = i + 1;
+	}
+	unsigned char data[50];
+	memset(data, 0xcd, sizeof(data));
+	const auto expect = "4c9007f4026250c6bc8414f9bf50c86c2d7235da"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data), expect);
+}
+
+TEST(NetTest, HmacSha1_5) {
+	unsigned char key[20];
+	memset(key, 0x0c, sizeof(key));
+	unsigned char data[] = "Test With Truncation";
+	const auto expect = "4c1a03424b55e07fe7f27be1d58bb9324a9a5a04"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data) - 1, expect);
+}
+
+TEST(NetTest, HmacSha1_6) {
+	unsigned char key[80];
+	memset(key, 0xaa, sizeof(key));
+	unsigned char data[] = "Test Using Larger Than Block-Size Key"
+		" - Hash Key First";
+	const auto expect = "aa4ae5e15272d00e95705637ce8a3b55ed402112"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data) - 1, expect);
+}
+
+TEST(NetTest, HmacSha1_7) {
+	unsigned char key[80];
+	memset(key, 0xaa, sizeof(key));
+	unsigned char data[] = "Test Using Larger Than Block-Size Key and "
+		"Larger Than One Block-Size Data";
+	const auto expect = "e8e99d0f45237d786d6bbaa7965c7808bbff1a91"s;
+
+	HmacSha1Body(key, sizeof(key), data, sizeof(data) - 1, expect);
 }
 
 TEST(NetTest, OAuthHeader) {
