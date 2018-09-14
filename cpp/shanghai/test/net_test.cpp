@@ -149,7 +149,7 @@ TEST(NetTest, Simple_SLOW) {
 
 TEST(NetTest, NotFound404_SLOW) {
 	EXPECT_THROW(
-		net.Download("https://httpbin.org/aaaaa"s),
+		net.Download("https://httpbin.org/status/404"s),
 		NetworkError);
 }
 
