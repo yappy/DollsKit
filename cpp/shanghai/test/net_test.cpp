@@ -131,17 +131,6 @@ TEST(NetTest, HmacSha1_7) {
 	HmacSha1Body(key, sizeof(key), data, sizeof(data) - 1, expect);
 }
 
-TEST(NetTest, OAuthHeader) {
-	puts("TODO: temp test!");
-	std::vector<char> test = net.DownloadOAuth(
-		"https://shanghai.doll/test.json"s,
-		"GET"s, {{"a", "1"}, {"b", "2"}},
-		"consumer_key"s, "access_token"s,
-		"consumer_secret"s, "token_secret"s);
-	std::string s(test.data(), test.size());
-	puts(s.c_str());
-}
-
 TEST(NetTest, Simple_SLOW) {
 	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);

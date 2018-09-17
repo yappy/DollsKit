@@ -22,6 +22,30 @@ struct CurlDeleter {
 };
 using SafeCurl = std::unique_ptr<CURL, CurlDeleter>;
 
+class SafeSlist {
+public:
+	SafeSlist() : m_slist(nullptr) {}
+	~SafeSlist()
+	{
+		::curl_slist_free_all(m_slist);
+	}
+	struct curl_slist *get() const noexcept
+	{
+		return m_slist;
+	}
+	void Append(const char *str)
+	{
+		struct curl_slist *result = ::curl_slist_append(m_slist, str);
+		if (result == nullptr) {
+			throw NetworkError("slist append failed");
+		}
+		m_slist = result;
+	}
+
+private:
+	struct curl_slist *m_slist;
+};
+
 void CheckError(CURLcode code)
 {
 	if (code != CURLE_OK) {
@@ -334,7 +358,7 @@ std::vector<char> Network::DownloadOAuth(const std::string &base_url,
 	// /en/docs/basics/authentication/guides/authorizing-a-request
 	// "Building the header string"
 	// Authorization HTTP ヘッダ
-	std::string auth_str = "OAuth "s;
+	std::string auth_str = "Authorization: OAuth "s;
 	{
 		bool is_first = true;
 		for (const auto &entry : auth_param) {
@@ -352,9 +376,15 @@ std::vector<char> Network::DownloadOAuth(const std::string &base_url,
 		}
 	}
 
-	// TODO
-	return std::vector<char>(auth_str.begin(), auth_str.end());
-	// return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
+	SafeSlist slist;
+	slist.Append(auth_str.c_str());
+	return DownloadInternal(url, timeout_sec, cancel,
+		[&slist](const SafeCurl &curl){
+			CURLcode ret;
+			ret = curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, slist.get());
+			CheckError(ret);
+			printf("%p\n", slist.get());
+		});
 }
 
 
