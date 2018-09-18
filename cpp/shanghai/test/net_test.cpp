@@ -132,7 +132,7 @@ TEST(NetTest, HmacSha1_7) {
 }
 
 TEST(NetTest, Simple_SLOW) {
-	std::vector<char> data = net.Download("https://httpbin.org/ip"s);
+	std::string data = net.Download("https://httpbin.org/ip"s);
 	EXPECT_GT(data.size(), 16U);
 }
 
@@ -173,7 +173,7 @@ TEST(NetTest, BasicAuth_SLOW) {
 	const auto user = "a"s;
 	const auto pass = "b"s;
 	const auto url = "https://httpbin.org/basic-auth/"s + user + "/"s + pass;
-	std::vector<char> data = net.DownloadBasicAuth(url, user, pass);
+	std::string data = net.DownloadBasicAuth(url, user, pass);
 	EXPECT_GT(data.size(), 0U);
 }
 

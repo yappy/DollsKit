@@ -122,11 +122,11 @@ void Network::HmacSha1(const void *key, int key_len,
 
 namespace {
 // 受信コールバック
-// userp: 格納先 vector<char> へのポインタ
+// userp: 格納先 string へのポインタ
 size_t WriteFunc(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	auto cbuf = static_cast<char *>(buffer);
-	auto data = static_cast<std::vector<char> *>(userp);
+	auto data = static_cast<std::string *>(userp);
 
 	data->insert(data->end(), cbuf, cbuf + size * nmemb);
 
@@ -148,7 +148,7 @@ int ProgressFunc(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
 }	// namespace
 
 template <class F>
-std::vector<char> Network::DownloadInternal(
+std::string Network::DownloadInternal(
 	const std::string &url, int timeout_sec,
 	const std::atomic<bool> &cancel, F prepair)
 {
@@ -158,7 +158,7 @@ std::vector<char> Network::DownloadInternal(
 	}
 
 	CURLcode ret;
-	std::vector<char> data;
+	std::string data;
 
 	// シグナルは危険なので無効にする
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
@@ -201,13 +201,13 @@ std::vector<char> Network::DownloadInternal(
 	return data;
 }
 
-std::vector<char> Network::Download(const std::string &url, int timeout_sec,
+std::string Network::Download(const std::string &url, int timeout_sec,
 	const std::atomic<bool> &cancel)
 {
 	return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
 }
 
-std::vector<char> Network::DownloadBasicAuth(const std::string &url,
+std::string Network::DownloadBasicAuth(const std::string &url,
 	const std::string &user, const std::string &pass,
 	int timeout_sec, const std::atomic<bool> &cancel)
 {
@@ -321,7 +321,7 @@ Network::KeyValue Network::CreateOAuthField(
 	return param;
 }
 
-std::vector<char> Network::DownloadOAuth(const std::string &base_url,
+std::string Network::DownloadOAuth(const std::string &base_url,
 	const std::string &http_method, const KeyValue &query,
 	const std::string &consumer_key, const std::string &access_token,
 	const std::string &consumer_secret, const std::string &token_secret,

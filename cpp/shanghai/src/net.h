@@ -3,7 +3,6 @@
 
 #include <stdexcept>
 #include <atomic>
-#include <vector>
 #include <map>
 #include <random>
 
@@ -45,10 +44,10 @@ public:
 
 	// 完了するまでブロックする
 	// タイムアウトは 0 で無限待ち
-	std::vector<char> Download(const std::string &url, int timeout_sec = 0,
+	std::string Download(const std::string &url, int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
 	// BASIC
-	std::vector<char> DownloadBasicAuth(const std::string &url,
+	std::string DownloadBasicAuth(const std::string &url,
 		const std::string &user, const std::string &pass,
 		int timeout_sec = 0,
 		const std::atomic<bool> &cancel = std::atomic<bool>(false));
@@ -61,7 +60,7 @@ public:
 		const std::string &consumer_key, const std::string &access_token);
 	// URL の終わりにつく query (?a=b&c=d...) は署名が必要なため
 	// url に含めず query に渡すこと
-	std::vector<char> DownloadOAuth(const std::string &base_url,
+	std::string DownloadOAuth(const std::string &base_url,
 		const std::string &http_method, const KeyValue &query,
 		const std::string &consumer_key, const std::string &access_token,
 		const std::string &consumer_secret, const std::string &token_secret,
@@ -72,7 +71,7 @@ private:
 	std::random_device m_secure_rand;
 
 	template <class F>
-	std::vector<char> DownloadInternal(const std::string &url, int timeout_sec,
+	std::string DownloadInternal(const std::string &url, int timeout_sec,
 		const std::atomic<bool> &cancel, F prepair);
 };
 
