@@ -6,6 +6,7 @@
 #include "../taskserver.h"
 
 namespace shanghai {
+// 一定周期でリリースされるタスク群
 namespace task {
 
 using namespace std::string_literals;

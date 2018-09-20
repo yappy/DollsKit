@@ -2,6 +2,7 @@
 #include "config.h"
 #include "util.h"
 #include "taskserver.h"
+#include "system/system.h"
 #include "task/task.h"
 #include <unistd.h>
 #include <signal.h>
@@ -116,6 +117,9 @@ int main()
 #endif
 			}
 
+			// システムコンポーネントの全初期化
+			system::SafeSystem system;
+
 			// サーバの作成、初期化
 			auto server = std::make_unique<TaskServer>();
 			SetupTasks(server);
@@ -157,6 +161,7 @@ int main()
 				break;
 			}
 			// destruct server
+			// destruct system
 		}
 	}
 	catch (std::runtime_error &e) {

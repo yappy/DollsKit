@@ -3,6 +3,13 @@
 	{
 		"AllTasksFirst"		: true
 	},
+	"Twitter":
+	{
+		"ConsumerKey"		: "",
+		"ConsumerSecret"	: "",
+		"AccessToken"		: "",
+		"AccessSecret"		: ""
+	},
 	"Ddns":
 	{
 		"Enabled"	: false,
