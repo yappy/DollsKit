@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
 
-enable_testing()
-
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")
 

@@ -10,9 +10,6 @@ add_executable(${PROJECT_NAME} ${SRCS})
 file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
-# Add gtest to cmake test
-include(GoogleTest)
-gtest_add_tests(TARGET ${PROJECT_NAME}-test)
 
 # std::thread depends on thread
 set(INCS ${CURL_INCLUDE_DIRS})
@@ -36,6 +33,9 @@ add_custom_target("run"
 	COMMAND "./${PROJECT_NAME}"
 	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
+# make fulltest
+add_custom_target("fulltest"
+COMMAND $<TARGET_FILE:${PROJECT_NAME}-test>)
 # make shorttest
 add_custom_target("shorttest"
 	COMMAND $<TARGET_FILE:${PROJECT_NAME}-test> "--gtest_filter=-*_SLOW")
