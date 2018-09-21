@@ -102,6 +102,25 @@ std::string GetCpuUsage(const std::atomic<bool> &cancel)
 	return result;
 }
 
+// raspi only
+std::string GetCpuTemp()
+{
+	double temp = 0.0;
+	try {
+		const char *DevFilePath = "/sys/class/thermal/thermal_zone0/temp";
+		std::string str = util::ReadStringFromFile(DevFilePath);
+		temp = std::stod(str) / 1000.0;
+	}
+	catch (std::runtime_error &e) {
+		logger.Log(LogLevel::Warn, "%s", e.what());
+		temp = std::numeric_limits<double>::signaling_NaN();
+	}
+
+	std::string result = "CPU Temp: "s;
+	result += util::ToString("%.1f", temp);
+	return result;
+}
+
 }	// namespace
 
 HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
@@ -112,6 +131,7 @@ HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	logger.Log(LogLevel::Info, "%s", GetCpuUsage(cancel).c_str());
+	logger.Log(LogLevel::Info, "%s", GetCpuTemp().c_str());
 }
 
 }	// namespace task

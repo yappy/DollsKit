@@ -10,8 +10,8 @@ std::string ToString(const char *fmt, double d)
 {
 	char buf[32];
 	int n = std::snprintf(buf, sizeof(buf), fmt, d);
-	if (n < 0) {
-		return std::string();
+	if (n < 0 || n >= static_cast<int>(sizeof(buf))) {
+		throw std::logic_error("snprintf failed");
 	}
 	return std::string(buf, n);
 }
