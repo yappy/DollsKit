@@ -8,6 +8,12 @@
 
 namespace shanghai {
 
+class CancelError : public std::runtime_error {
+public:
+	CancelError(const char *msg) : runtime_error(msg) {}
+	CancelError(const std::string &msg) : runtime_error(msg) {}
+};
+
 class FileError : public std::runtime_error {
 public:
 	FileError(const char *msg) : runtime_error(msg) {}
@@ -25,6 +31,10 @@ inline int SysCall(R ret)
 	}
 	return ret;
 }
+
+std::string ToString(const char *fmt, double d);
+std::vector<std::string> Split(const std::string& input,
+	char delim, bool remove_empty = false);
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
 std::string ReadStringFromFile(const std::string &file_name);

@@ -1,9 +1,35 @@
 #include "util.h"
 #include <memory>
 #include <cstdio>
+#include <sstream>
 
 namespace shanghai {
 namespace util{
+
+std::string ToString(const char *fmt, double d)
+{
+	char buf[32];
+	int n = std::snprintf(buf, sizeof(buf), fmt, d);
+	if (n < 0) {
+		return std::string();
+	}
+	return std::string(buf, n);
+}
+
+std::vector<std::string> Split(const std::string& input,
+	char delim, bool remove_empty)
+{
+	std::istringstream stream(input);
+
+	std::string elem;
+	std::vector<std::string> result;
+	while (std::getline(stream, elem, delim)) {
+		if (!remove_empty || elem != "") {
+			result.push_back(elem);
+		}
+	}
+	return result;
+}
 
 namespace {
 
