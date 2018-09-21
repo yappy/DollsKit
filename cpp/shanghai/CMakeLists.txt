@@ -11,9 +11,12 @@ file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
+# Dependencies
 # std::thread depends on thread
-set(INCS ${CURL_INCLUDE_DIRS})
-set(LIBS "Threads::Threads" "OpenSSL::SSL" ${CURL_LIBRARIES} "json11")
+set(INCS ${CURL_INCLUDE_DIRS} ${MHD_INCLUDE_DIRS})
+set(LIBS
+	"Threads::Threads"
+	"OpenSSL::SSL" ${CURL_LIBRARIES} ${MHD_LIBRARIES} "json11")
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})
 target_link_libraries(${PROJECT_NAME} ${LIBS})

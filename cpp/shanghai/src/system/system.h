@@ -2,6 +2,7 @@
 #define SHANGHAI_SYSTEM_SYSTEM_H
 
 #include "twitterconfig.h"
+#include "httpserver.h"
 
 namespace shanghai {
 // 初期化時、タスク起動前に初期化され、全タスク終了後に破棄されるコンポーネント群
@@ -10,6 +11,7 @@ namespace system {
 
 struct System {
 	TwitterConfig Twitter;
+	HttpServer Http;
 };
 
 void Initialize();

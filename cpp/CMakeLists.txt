@@ -21,6 +21,8 @@ endif()
 # Libraries
 #
 
+find_package(PkgConfig REQUIRED)
+
 # thread library for std::thread
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -31,6 +33,8 @@ find_package(OpenSSL REQUIRED)
 # libcurl
 find_package(CURL REQUIRED)
 
+# libmicrohttpd
+pkg_check_modules(MHD libmicrohttpd REQUIRED)
 
 #
 # Externals

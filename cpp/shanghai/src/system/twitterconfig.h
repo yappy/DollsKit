@@ -17,4 +17,4 @@ public:
 }	// namespace system
 }	// namespace shanghai
 
-#endif	// SHANGHAI_SYSTEM_SYSTEM_H
+#endif	// SHANGHAI_SYSTEM_TWITTERCONFIG_H

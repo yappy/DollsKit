@@ -10,6 +10,10 @@
 		"AccessToken"		: "",
 		"AccessSecret"		: ""
 	},
+	"HttpServer":
+	{
+		"Port"	: 8888
+	},
 	"Ddns":
 	{
 		"Enabled"	: false,
