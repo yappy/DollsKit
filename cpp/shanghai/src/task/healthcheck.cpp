@@ -3,6 +3,7 @@
 #include "../exec.h"
 #include <chrono>
 #include <thread>
+#include <sys/statvfs.h>
 
 // Sample:
 // [Health Check] CPU Temp: 48.9 cpu:0.5%
@@ -148,11 +149,30 @@ std::string GetMemInfo()
 	return result;
 }
 
+std::string GetDiskInfo()
+{
+	struct statvfs st;
+	util::SysCall(statvfs("/", &st));
+
+	uint64_t frsize = st.f_frsize;
+	double total = st.f_blocks * frsize / 1024.0 / 1024.0 / 1024.0;
+	double avail = st.f_bavail * frsize / 1024.0 / 1024.0 / 1024.0;;
+	double ratio = (double)avail / total * 100.0;
+
+	std::string result = "Disk: ";
+	result += util::ToString("%.1f", avail);
+	result += '/';
+	result += util::ToString("%.1f", total);
+	result += "G Avail (";
+	result += util::ToString("%.1f", ratio);
+	result += "%)";
+	return result;
+}
+
 }	// namespace
 
 HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 {
-
 }
 
 void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
@@ -160,6 +180,7 @@ void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 	logger.Log(LogLevel::Info, "%s", GetCpuUsage(cancel).c_str());
 	logger.Log(LogLevel::Info, "%s", GetCpuTemp().c_str());
 	logger.Log(LogLevel::Info, "%s", GetMemInfo().c_str());
+	logger.Log(LogLevel::Info, "%s", GetDiskInfo().c_str());
 }
 
 }	// namespace task
