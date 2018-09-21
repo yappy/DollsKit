@@ -138,6 +138,7 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 		"%s (%s) [%s]: %s",
 		timestr, tidstr.c_str(), LogLevelStr.at(static_cast<int>(level)), msg);
 	logstr[sizeof(logstr) - 1] = '\0';
+	// それぞれのターゲットに書き込む
 	{
 		mtx_guard lock(m_mtx);
 
@@ -152,6 +153,10 @@ void Logger::Log(LogLevel level, const char *fmt, ...) noexcept
 			}
 		}
 	}	// unlock
+	// Fatal はデストラクタ無視の abort も多いので強制 flush しておく
+	if (level == LogLevel::Fatal) {
+		Flush();
+	}
 }
 
 void Logger::Flush() noexcept
