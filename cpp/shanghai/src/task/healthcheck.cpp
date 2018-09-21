@@ -1,5 +1,6 @@
 #include "task.h"
 #include "../util.h"
+#include "../exec.h"
 #include <chrono>
 #include <thread>
 
@@ -121,6 +122,32 @@ std::string GetCpuTemp()
 	return result;
 }
 
+std::string GetMemInfo()
+{
+	std::string result = "Mem: ";
+	try {
+		Process p("/usr/bin/free"s, {});
+		p.WaitForExit(1);
+		std::vector<std::string> lines = util::Split(p.GetOut(), '\n', true);
+		std::vector<std::string> elems = util::Split(lines.at(1), ' ', true);
+		// kB -> mB
+		double total = std::stod(elems.at(1)) / 1024.0;
+		double avail = std::stod(elems.at(6)) / 1024.0;
+		double ratio = avail / total * 100.0;
+		result += util::ToString("%.1f", avail);
+		result += '/';
+		result += util::ToString("%.1f", total);
+		result += "M Avail (";
+		result += util::ToString("%.1f", ratio);
+		result += "%)";
+	}
+	catch (std::exception &e) {
+		logger.Log(LogLevel::Warn, "%s", e.what());
+		result += "?";
+	}
+	return result;
+}
+
 }	// namespace
 
 HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
@@ -132,6 +159,7 @@ void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	logger.Log(LogLevel::Info, "%s", GetCpuUsage(cancel).c_str());
 	logger.Log(LogLevel::Info, "%s", GetCpuTemp().c_str());
+	logger.Log(LogLevel::Info, "%s", GetMemInfo().c_str());
 }
 
 }	// namespace task
