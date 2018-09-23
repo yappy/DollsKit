@@ -13,7 +13,9 @@ https://tools.ietf.org/html/rfc7235
 
 #include <stddef.h>
 #include <stdint.h>
+#include <mutex>
 #include <unordered_map>
+#include <regex>
 
 struct MHD_Daemon;
 struct MHD_Connection;
@@ -23,7 +25,7 @@ namespace system {
 
 using KeyValueSet = std::unordered_map<std::string, std::string>;
 
-struct HttpResponse {
+struct HttpResponse final {
 	uint32_t Status;
 	KeyValueSet Header;
 	std::string Body;
@@ -42,21 +44,27 @@ struct HttpResponse {
 	HttpResponse &operator=(const HttpResponse &) = default;
 	HttpResponse(HttpResponse &&) = default;
 	~HttpResponse() = default;
-
 };
 
 class WebPage {
 public:
 	WebPage() = default;
 	virtual ~WebPage() = default;
+	WebPage(const WebPage &) = delete;
+	WebPage &operator =(const WebPage &) = delete;
 
-	virtual void Get() = 0;
+	virtual HttpResponse Do(
+		const std::string &method, const std::string &url_match,
+		const KeyValueSet &header, const KeyValueSet &query) = 0;
 };
 
-class HttpServer {
+class HttpServer final {
 public:
 	HttpServer();
 	~HttpServer();
+
+	void AddPage(const std::regex &method, const std::regex &url,
+		std::shared_ptr<WebPage> page);
 
 private:
 	// 1 connection あたりのメモリリミット
@@ -70,7 +78,12 @@ private:
 	// スレッド数
 	static const uint32_t ThreadPoolSize = 4;
 
+	// method, url, func
+	using Route = std::tuple<std::regex, std::regex, std::shared_ptr<WebPage>>;
+
 	struct MHD_Daemon *m_daemon;
+	std::mutex m_mtx;
+	std::vector<Route> m_routes;
 
 	HttpResponse ProcessRequest(struct MHD_Connection *connection,
 		const std::string &url, const std::string &method,

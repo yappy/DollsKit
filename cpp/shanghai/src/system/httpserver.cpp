@@ -8,6 +8,9 @@ namespace system {
 
 namespace {
 
+using mtx_guard = std::lock_guard<std::mutex>;
+
+// libmicrohttpd の内部アサートっぽいので諦めて死ぬ
 void AtPanic(void *cls, const char *file, unsigned int line, const char *reason)
 {
 	logger.Log(LogLevel::Fatal, "libmicrohttpd panic");
@@ -15,6 +18,7 @@ void AtPanic(void *cls, const char *file, unsigned int line, const char *reason)
 	std::terminate();
 }
 
+// イテレートコールバックを map<string, string> に変換する
 int IterateToMap(void *cls, enum MHD_ValueKind kind,
 	const char *key, const char *value) noexcept
 {
@@ -30,11 +34,13 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 {
 	logger.Log(LogLevel::Info, "Initialize HttpServer...");
 
+	// 設定の読み出し
 	int port = config.GetInt({"HttpServer", "Port"});
 	if (port < 0 || port > 0xffff) {
 		throw ConfigError("Invalid HttpServer port");
 	}
 
+	// サーバスタート (失敗時はコンストラクト失敗、デストラクトなし)
 	::MHD_set_panic_func(AtPanic, nullptr);
 	m_daemon = ::MHD_start_daemon(
 		MHD_USE_SELECT_INTERNALLY, port, nullptr, nullptr,
@@ -55,8 +61,17 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 
 HttpServer::~HttpServer()
 {
+	// デストラクタでサーバ停止
 	::MHD_stop_daemon(m_daemon);
 	m_daemon = nullptr;
+}
+
+void HttpServer::AddPage(const std::regex &method, const std::regex &url,
+	std::shared_ptr<WebPage> page)
+{
+	mtx_guard lock(m_mtx);
+	m_routes.emplace_back(method, url, page);
+	// unlock
 }
 
 HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
@@ -67,15 +82,14 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	logger.Log(LogLevel::Info, "[HTTP] %s %s %s",
 		version.c_str(), method.c_str(), url.c_str());
 
-	// version: "505 HTTP Version Not Supported"
+	// version: HTTP/1.1 以外は "505 HTTP Version Not Supported"
 	if (version != "HTTP/1.1") {
 		return HttpResponse(505);
 	}
 
-	// method: GET, HEAD, POST 以外は "501 Not Implemented"
-	if (method != "GET" && method != "HEAD" && method != "POST") {
-		return HttpResponse(501);
-	}
+	// HEAD は libmicrohttpd が自動で Response body をカットしてくれるので
+	// GET と同じ処理をしてあとは任せる
+	const std::string &vmethod = (method == "HEAD") ? "GET"s : method;
 
 	// HTTP request header と query を map に変換する
 	KeyValueSet request_header;
@@ -84,18 +98,28 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 		IterateToMap, &request_header);
 	::MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND,
 		IterateToMap, &get_args);
-	for (const auto &entry : request_header) {
-		logger.Log(LogLevel::Trace, "%s: %s",
-			entry.first.c_str(), entry.second.c_str());
-	}
-	for (const auto &entry : get_args) {
-		logger.Log(LogLevel::Trace, "%s=%s",
-			entry.first.c_str(), entry.second.c_str());
-	}
 
-	return HttpResponse(200,
-		{{"Content-Type", "text/html; charset=utf-8"}},
-		"<!DOCTYPE html>\n<html><body>Hello</body></html>\n");
+	std::shared_ptr<WebPage> page = nullptr;
+	{
+		mtx_guard lock(m_mtx);
+		for (const auto &elem : m_routes) {
+			const std::regex method_re = std::get<0>(elem);
+			const std::regex url_re = std::get<1>(elem);
+			if (!std::regex_match(vmethod, method_re)) {
+				continue;
+			}
+			if (!std::regex_match(url, url_re)) {
+				continue;
+			}
+			page = std::get<2>(elem);
+			break;
+		}
+	}
+	if (page != nullptr) {
+		return page->Do(vmethod, url, request_header, get_args);
+	}
+	// マッチするものがなかった場合は 404 とする
+	return HttpResponse(404);
 }
 
 int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
