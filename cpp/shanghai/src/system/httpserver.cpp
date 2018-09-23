@@ -82,8 +82,8 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	logger.Log(LogLevel::Info, "[HTTP] %s %s %s",
 		version.c_str(), method.c_str(), url.c_str());
 
-	// version: HTTP/1.1 以外は "505 HTTP Version Not Supported"
-	if (version != "HTTP/1.1") {
+	// version: HTTP/1.0 HTTP/1.1 以外は "505 HTTP Version Not Supported"
+	if (version != "HTTP/1.0" && version != "HTTP/1.1") {
 		return HttpResponse(505);
 	}
 
