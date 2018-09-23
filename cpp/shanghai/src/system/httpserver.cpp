@@ -134,6 +134,24 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 	HttpResponse resp = self->ProcessRequest(
 		connection, url, method, version,
 		upload_data, upload_data_size, con_cls);
+	// エラー (4xx, 5xx) で body がない場合はここで自動生成する
+	if (resp.Status / 100 == 4 || resp.Status / 100 == 5) {
+		if (resp.Body.size() == 0) {
+			const std::string status_str = std::to_string(resp.Status);
+			resp.Header["Content-Type"] = "text/html; charset=utf-8";
+			resp.Body = R"(<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Error: )" + status_str + R"(</title>
+</head>
+<body>
+<h1>Error: )" + status_str + R"(</h1>
+Sorry.
+</body>
+</html>
+)";
+		}
+	}
 
 	// HttpResponse を変換処理してクライアントに返す
 	// ソースを確認したが malloc してそこに memcpy しているだけなので
