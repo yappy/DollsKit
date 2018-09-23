@@ -50,7 +50,7 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 		MHD_OPTION_CONNECTION_TIMEOUT, TimeoutSec,
 		MHD_OPTION_PER_IP_CONNECTION_LIMIT, IpConnLimit,
 		MHD_OPTION_THREAD_POOL_SIZE, ThreadPoolSize,
-		MHD_OPTION_LISTENING_ADDRESS_REUSE,
+		MHD_OPTION_LISTENING_ADDRESS_REUSE, 1U,
 		MHD_OPTION_END);
 	if (m_daemon == nullptr) {
 		throw std::runtime_error("Starting HTTP server failed");
