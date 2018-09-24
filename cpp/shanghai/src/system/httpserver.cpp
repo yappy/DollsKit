@@ -39,7 +39,7 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 	if (port < 0 || port > 0xffff) {
 		throw ConfigError("Invalid HttpServer port");
 	}
-	std::string m_rewrite = config.GetStr({"HttpServer", "Rewrite"});
+	m_rewrite = config.GetStr({"HttpServer", "Rewrite"});
 
 	// サーバスタート (失敗時はコンストラクト失敗、デストラクトなし)
 	::MHD_set_panic_func(AtPanic, nullptr);
@@ -93,9 +93,11 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	const std::string &vmethod = (method == "HEAD") ? "GET"s : method;
 	//
 	std::string vurl = url;
-	if (url.find(m_rewrite) == 0) {
+	if (m_rewrite.size() > 0 && url.find(m_rewrite) == 0) {
 		vurl = vurl.substr(m_rewrite.size());
 	}
+	logger.Log(LogLevel::Trace, "Rewrite(%s) to: %s",
+		m_rewrite.c_str(), vurl.c_str());
 
 	// HTTP request header と query を map に変換する
 	KeyValueSet request_header;
