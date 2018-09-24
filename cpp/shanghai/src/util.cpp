@@ -16,6 +16,24 @@ std::string ToString(const char *fmt, double d)
 	return std::string(buf, n);
 }
 
+std::string Format(const char *fmt, std::initializer_list<std::string> args)
+{
+	std::string result = fmt;
+	int num = 0;
+	for (const auto &arg : args) {
+		std::string target = "{";
+		target += std::to_string(num);
+		target += '}';
+		std::string::size_type pos = 0;
+		while ((pos = result.find(target, pos)) != std::string::npos) {
+			result.replace(pos, target.size(), arg);
+			pos += arg.size();
+		}
+		num++;
+	}
+	return result;
+}
+
 std::vector<std::string> Split(const std::string& input,
 	char delim, bool remove_empty)
 {

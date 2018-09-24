@@ -84,6 +84,7 @@ private:
 	struct MHD_Daemon *m_daemon;
 	std::mutex m_mtx;
 	std::vector<Route> m_routes;
+	std::string m_rewrite;
 
 	HttpResponse ProcessRequest(struct MHD_Connection *connection,
 		const std::string &url, const std::string &method,

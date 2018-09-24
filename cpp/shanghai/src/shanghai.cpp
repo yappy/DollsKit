@@ -4,6 +4,7 @@
 #include "taskserver.h"
 #include "system/system.h"
 #include "task/task.h"
+#include "web/webpage.h"
 #include <unistd.h>
 #include <signal.h>
 #include <cstdio>
@@ -119,6 +120,8 @@ int main()
 
 			// システムコンポーネントの全初期化
 			system::SafeSystem system;
+			// web ページの初期化
+			web::SetupPages();
 
 			// サーバの作成、初期化
 			auto server = std::make_unique<TaskServer>();

@@ -12,7 +12,8 @@
 	},
 	"HttpServer":
 	{
-		"Port"	: 8888
+		"Port"		: 8888,
+		"Rewrite"	: "/house"
 	},
 	"Ddns":
 	{

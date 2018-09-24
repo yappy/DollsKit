@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <system_error>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@ inline int SysCall(R ret)
 }
 
 std::string ToString(const char *fmt, double d);
+std::string Format(const char *fmt, std::initializer_list<std::string> args);
 std::vector<std::string> Split(const std::string& input,
 	char delim, bool remove_empty = false);
 

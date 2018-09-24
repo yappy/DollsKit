@@ -39,6 +39,7 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 	if (port < 0 || port > 0xffff) {
 		throw ConfigError("Invalid HttpServer port");
 	}
+	std::string m_rewrite = config.GetStr({"HttpServer", "Rewrite"});
 
 	// サーバスタート (失敗時はコンストラクト失敗、デストラクトなし)
 	::MHD_set_panic_func(AtPanic, nullptr);
@@ -90,6 +91,11 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	// HEAD は libmicrohttpd が自動で Response body をカットしてくれるので
 	// GET と同じ処理をしてあとは任せる
 	const std::string &vmethod = (method == "HEAD") ? "GET"s : method;
+	//
+	std::string vurl = url;
+	if (url.find(m_rewrite) == 0) {
+		vurl = vurl.substr(m_rewrite.size());
+	}
 
 	// HTTP request header と query を map に変換する
 	KeyValueSet request_header;
@@ -108,7 +114,7 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 			if (!std::regex_match(vmethod, method_re)) {
 				continue;
 			}
-			if (!std::regex_match(url, url_re)) {
+			if (!std::regex_match(vurl, url_re)) {
 				continue;
 			}
 			page = std::get<2>(elem);
@@ -116,7 +122,8 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 		}
 	}
 	if (page != nullptr) {
-		return page->Do(vmethod, url, request_header, get_args);
+		// TODO: URL 全体ではなく部分列を渡す
+		return page->Do(vmethod, vurl, request_header, get_args);
 	}
 	// マッチするものがなかった場合は 404 とする
 	return HttpResponse(404);
