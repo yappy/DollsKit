@@ -11,14 +11,14 @@ HttpResponse EchoPage::Do(
 	std::string header_str = "<ul>\n";
 	for (const auto &entry : header) {
 		header_str += util::Format("  <li>{0}: {1}</li>\n",
-			{entry.first, entry.second});
+			{HtmlEscape(entry.first), HtmlEscape(entry.second)});
 	}
 	header_str += "</ul>";
 
 	std::string query_str = "<ul>\n";
 	for (const auto &entry : query) {
 		query_str += util::Format("  <li>{0}: {1}</li>\n",
-			{entry.first, entry.second});
+			{HtmlEscape(entry.first), HtmlEscape(entry.second)});
 	}
 	query_str += "</ul>";
 
