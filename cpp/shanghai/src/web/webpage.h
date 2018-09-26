@@ -23,12 +23,24 @@ public:
 		const KeyValueSet &header, const KeyValueSet &query) override;
 };
 
+class PostPage : public WebPage {
+public:
+	PostPage() = default;
+	virtual ~PostPage() = default;
+
+	HttpResponse Do(
+		const std::string &method, const std::string &url_match,
+		const KeyValueSet &header, const KeyValueSet &query) override;
+};
+
 inline void SetupPages()
 {
 	system::HttpServer &server = system::Get().Http;
 
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/echo/\w*)"),
 		std::make_shared<EchoPage>());
+	server.AddPage(std::regex("GET|POST"), std::regex(R"(/post/\w*)"),
+		std::make_shared<PostPage>());
 }
 
 inline std::string HtmlEscape(const std::string &src)
