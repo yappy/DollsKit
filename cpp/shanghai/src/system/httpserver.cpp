@@ -65,8 +65,9 @@ int ProcessPost(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
 	// TODO
 	logger.Log(LogLevel::Trace,
 		"key=%s filename=%s content_type=%s transfer_encoding=%s "
-		"off=%lu size=%zu",
-		key, filename, content_type, transfer_encoding, off, size);
+		"off=%llu size=%zu",
+		key, filename, content_type, transfer_encoding,
+		static_cast<unsigned long long>(off), size);
 	return MHD_YES;
 }
 
