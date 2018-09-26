@@ -11,6 +11,7 @@ namespace web {
 using namespace std::string_literals;
 using system::WebPage;
 using system::KeyValueSet;
+using system::PostKeyValueSet;
 using system::HttpResponse;
 
 class EchoPage : public WebPage {
@@ -20,7 +21,8 @@ public:
 
 	HttpResponse Do(
 		const std::string &method, const std::string &url_match,
-		const KeyValueSet &header, const KeyValueSet &query) override;
+		const KeyValueSet &header, const KeyValueSet &query,
+		const PostKeyValueSet &post) override;
 };
 
 class PostPage : public WebPage {
@@ -30,7 +32,8 @@ public:
 
 	HttpResponse Do(
 		const std::string &method, const std::string &url_match,
-		const KeyValueSet &header, const KeyValueSet &query) override;
+		const KeyValueSet &header, const KeyValueSet &query,
+		const PostKeyValueSet &post) override;
 };
 
 inline void SetupPages()

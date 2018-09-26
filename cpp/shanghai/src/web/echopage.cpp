@@ -6,7 +6,8 @@ namespace web {
 
 HttpResponse EchoPage::Do(
 	const std::string &method, const std::string &url_match,
-	const KeyValueSet &header, const KeyValueSet &query)
+	const KeyValueSet &header, const KeyValueSet &query,
+	const PostKeyValueSet &post)
 {
 	std::string header_str = "<ul>\n";
 	for (const auto &entry : header) {

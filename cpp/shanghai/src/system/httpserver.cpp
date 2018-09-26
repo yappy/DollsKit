@@ -20,10 +20,20 @@ struct PostProcessorDeleter {
 using SafePostProcessor = std::unique_ptr<
 	struct MHD_PostProcessor, PostProcessorDeleter>;
 
-struct RequestContext {
-	RequestContext() : post_proc(nullptr) {}
+struct RequestContext final {
+	RequestContext(uint64_t max_total_size, uint32_t max_in_memory_size) :
+		MaxTotalSize(max_total_size), MaxInMemorySize(max_in_memory_size),
+		PostProc(nullptr), HttpStatus(0), TotalSize(0), PostData()
+	{}
+	~RequestContext() = default;
 
-	SafePostProcessor post_proc;
+	const uint64_t MaxTotalSize;
+	const uint32_t MaxInMemorySize;
+	SafePostProcessor PostProc;
+	// 0以外なら処理中にエラー
+	uint32_t HttpStatus;
+	uint64_t TotalSize;
+	PostKeyValueSet PostData;
 };
 
 const char * const ErrorPageTmpl =
@@ -47,7 +57,7 @@ void AtPanic(void *cls, const char *file, unsigned int line, const char *reason)
 	std::terminate();
 }
 
-// イテレートコールバックを map<string, string> に変換する
+// GET イテレートコールバックを map<string, string> に変換する
 int IterateToMap(void *cls, enum MHD_ValueKind kind,
 	const char *key, const char *value) noexcept
 {
@@ -58,16 +68,40 @@ int IterateToMap(void *cls, enum MHD_ValueKind kind,
 }
 
 // POST プロセッサのイテレーションコールバック
-int ProcessPost(void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
+int ProcessPost(void *cls, enum MHD_ValueKind kind, const char *key,
 	const char *filename, const char *content_type,
 	const char *transfer_encoding, const char *data, uint64_t off, size_t size)
 {
-	// TODO
+	auto req_ctx = static_cast<RequestContext *>(cls);
+	PostKeyValueSet &post_data = req_ctx->PostData;
+
 	logger.Log(LogLevel::Trace,
 		"key=%s filename=%s content_type=%s transfer_encoding=%s "
 		"off=%llu size=%zu",
 		key, filename, content_type, transfer_encoding,
 		static_cast<unsigned long long>(off), size);
+
+	// この POST 中での総サイズチェック
+	req_ctx->TotalSize += size;
+	if (req_ctx->TotalSize > req_ctx->MaxTotalSize) {
+		// 413 Payload Too Large
+		req_ctx->HttpStatus = 413;
+		return MHD_YES;
+	}
+
+	// 存在しないならデフォルトコンストラクト
+	PostData &value = post_data[key];
+	value.FileName = (filename == nullptr) ? "" : filename;
+	value.Size += size;
+	value.DataInMemory.append(data, size);
+	if (value.DataInMemory.size() > req_ctx->MaxInMemorySize) {
+		value.DataInMemory.resize(req_ctx->MaxInMemorySize);
+		// 413 Payload Too Large
+		// 巨大ファイルは tmp ファイルに書く必要がある
+		req_ctx->HttpStatus = 413;
+		return MHD_YES;
+	}
+
 	return MHD_YES;
 }
 
@@ -78,9 +112,44 @@ void RequestCompleted(void *cls, struct MHD_Connection *connection,
 	void **con_cls, enum MHD_RequestTerminationCode toe)
 {
 	logger.Log(LogLevel::Trace, "RequestCompleted");
-	std::unique_ptr<RequestContext> req_cxt(
+	std::unique_ptr<RequestContext> req_ctx(
 		static_cast<RequestContext *>(*con_cls));
 	// unique_ptr に復帰させてここでデストラクト
+}
+
+// HTTP response を送信する
+int SendResponse(struct MHD_Connection *connection, HttpResponse &&resp)
+{
+	// エラー (4xx, 5xx) で body がない場合はここで自動生成する
+	if (resp.Status / 100 == 4 || resp.Status / 100 == 5) {
+		if (resp.Body.size() == 0) {
+			const std::string status_str = std::to_string(resp.Status);
+			resp.Header["Content-Type"] = "text/html; charset=utf-8";
+			resp.Body = util::Format(ErrorPageTmpl, {status_str});
+		}
+	}
+
+	// HttpResponse を変換処理してクライアントに返す
+	// ソースを確認したが malloc してそこに memcpy しているだけなので
+	// const を外しても問題ない
+	auto resp_del = [](MHD_Response *r) {
+		::MHD_destroy_response(r);
+	};
+	MHD_Response *tmp = ::MHD_create_response_from_buffer(
+		resp.Body.size(), const_cast<char *>(resp.Body.c_str()),
+		MHD_RESPMEM_MUST_COPY);
+	std::unique_ptr<MHD_Response, decltype(resp_del)> mhd_resp(tmp, resp_del);
+	if (mhd_resp == nullptr) {
+		logger.Log(LogLevel::Error, "MHD_create_response_from_buffer failed");
+		return MHD_NO;
+	}
+	int ret = ::MHD_queue_response(connection, resp.Status, mhd_resp.get());
+	if (ret != MHD_YES) {
+		logger.Log(LogLevel::Error, "MHD_queue_response failed");
+		return MHD_NO;
+	}
+
+	return MHD_YES;
 }
 
 }	// namespace
@@ -133,8 +202,7 @@ void HttpServer::AddPage(const std::regex &method, const std::regex &url,
 
 HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	const std::string &url, const std::string &method,
-	const std::string &version, const char *upload_data,
-	size_t *upload_data_size, void **con_cls) noexcept
+	const std::string &version, const PostKeyValueSet &post) noexcept
 {
 	logger.Log(LogLevel::Info, "[HTTP] %s %s %s",
 		version.c_str(), method.c_str(), url.c_str());
@@ -181,11 +249,14 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	}
 	if (page != nullptr) {
 		// TODO: URL 全体ではなく部分列を渡す
-		return page->Do(vmethod, vurl, request_header, get_args);
+		return page->Do(vmethod, vurl, request_header, get_args, post);
 	}
 	// マッチするものがなかった場合は 404 とする
 	return HttpResponse(404);
 }
+
+const uint64_t HttpServer::PostTotalLimit;
+const uint32_t HttpServer::PostMemoryLimit;
 
 int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 	const char *url, const char *method,
@@ -196,12 +267,13 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 
 	// 最初の1回は同一リクエスト内で保存される con_cls を生成する
 	if (*con_cls == nullptr) {
-		auto req_ctx = std::make_unique<RequestContext>();
+		auto req_ctx = std::make_unique<RequestContext>(
+			PostTotalLimit, PostMemoryLimit);
 		if (is_post) {
 			// POST プロセッサを作成する
-			req_ctx->post_proc.reset(::MHD_create_post_processor(
+			req_ctx->PostProc.reset(::MHD_create_post_processor(
 				connection, PostBufferSize, ProcessPost, req_ctx.get()));
-			if (req_ctx->post_proc == nullptr) {
+			if (req_ctx->PostProc == nullptr) {
 				return MHD_NO;
 			}
 		}
@@ -213,12 +285,12 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 
 	// 以下、2回目以降
 
+	auto req_ctx = static_cast<RequestContext *>(*con_cls);
 	if (is_post) {
-		auto req_ctx = static_cast<RequestContext *>(*con_cls);
 		// POST データの処理中
 		if (*upload_data_size != 0) {
 			// POST プロセッサを呼び出す (ProcessPost() が複数回呼ばれる)
-			int ret = ::MHD_post_process(req_ctx->post_proc.get(),
+			int ret = ::MHD_post_process(req_ctx->PostProc.get(),
 				upload_data, *upload_data_size);
 			if (ret != MHD_YES) {
 				return MHD_NO;
@@ -227,45 +299,22 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 			// レスポンスはせずに返る
 			return MHD_YES;
 		}
-		// upload_data_size == 0 なら処理完了しているので次に進む
+	}
+
+	// 以下、upload_data_size == 0 であり POST データの残りなし
+
+	if (req_ctx->HttpStatus != 0) {
+		// POST プロセスハンドラが中断した
+		return SendResponse(connection, HttpResponse(req_ctx->HttpStatus));
 	}
 
 	auto self = static_cast<HttpServer *>(cls);
 	// non-static に移行
 	// HttpResponse オブジェクトを返してもらう
 	HttpResponse resp = self->ProcessRequest(
-		connection, url, method, version,
-		upload_data, upload_data_size, con_cls);
-	// エラー (4xx, 5xx) で body がない場合はここで自動生成する
-	if (resp.Status / 100 == 4 || resp.Status / 100 == 5) {
-		if (resp.Body.size() == 0) {
-			const std::string status_str = std::to_string(resp.Status);
-			resp.Header["Content-Type"] = "text/html; charset=utf-8";
-			resp.Body = util::Format(ErrorPageTmpl, {status_str});
-		}
-	}
+		connection, url, method, version, req_ctx->PostData);
 
-	// HttpResponse を変換処理してクライアントに返す
-	// ソースを確認したが malloc してそこに memcpy しているだけなので
-	// const を外しても問題ない
-	auto resp_del = [](MHD_Response *r) {
-		::MHD_destroy_response(r);
-	};
-	MHD_Response *tmp = MHD_create_response_from_buffer(
-		resp.Body.size(), const_cast<char *>(resp.Body.c_str()),
-		MHD_RESPMEM_MUST_COPY);
-	std::unique_ptr<MHD_Response, decltype(resp_del)> mhd_resp(tmp, resp_del);
-	if (mhd_resp == nullptr) {
-		logger.Log(LogLevel::Error, "MHD_create_response_from_buffer failed");
-		return MHD_NO;
-	}
-	int ret = MHD_queue_response(connection, resp.Status, mhd_resp.get());
-	if (ret != MHD_YES) {
-		logger.Log(LogLevel::Error, "MHD_queue_response failed");
-		return MHD_NO;
-	}
-
-	return MHD_YES;
+	return SendResponse(connection, std::move(resp));
 }
 
 }	// namespace system

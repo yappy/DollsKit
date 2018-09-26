@@ -23,7 +23,17 @@ struct MHD_Connection;
 namespace shanghai {
 namespace system {
 
+struct PostData final {
+	uint64_t Size;
+	std::string DataInMemory;
+	std::string FileName;
+
+	PostData() : Size(0) {}
+	~PostData() = default;
+};
+
 using KeyValueSet = std::unordered_map<std::string, std::string>;
+using PostKeyValueSet = std::unordered_map<std::string, PostData>;
 
 struct HttpResponse final {
 	uint32_t Status;
@@ -55,7 +65,8 @@ public:
 
 	virtual HttpResponse Do(
 		const std::string &method, const std::string &url_match,
-		const KeyValueSet &header, const KeyValueSet &query) = 0;
+		const KeyValueSet &header, const KeyValueSet &query,
+		const PostKeyValueSet &post) = 0;
 };
 
 class HttpServer final {
@@ -80,6 +91,11 @@ private:
 	// POST の処理に使うバッファサイズ
 	static const uint32_t PostBufferSize = 64 * 1024;
 
+	// POST データ量合計制限
+	static const uint64_t PostTotalLimit = 64 * 1024;
+	// POST InMemory データ量制限
+	static const uint32_t PostMemoryLimit = 4 * 1024;
+
 	// method, url, func
 	using Route = std::tuple<std::regex, std::regex, std::shared_ptr<WebPage>>;
 
@@ -90,8 +106,7 @@ private:
 
 	HttpResponse ProcessRequest(struct MHD_Connection *connection,
 		const std::string &url, const std::string &method,
-		const std::string &version, const char *upload_data,
-		size_t *upload_data_size, void **con_cls) noexcept;
+		const std::string &version, const PostKeyValueSet &post) noexcept;
 	static int OnRequest(void *cls, struct MHD_Connection *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
