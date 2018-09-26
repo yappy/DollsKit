@@ -77,6 +77,8 @@ private:
 	static const uint32_t IpConnLimit = 16;
 	// スレッド数
 	static const uint32_t ThreadPoolSize = 4;
+	// POST の処理に使うバッファサイズ
+	static const uint32_t PostBufferSize = 64 * 1024;
 
 	// method, url, func
 	using Route = std::tuple<std::regex, std::regex, std::shared_ptr<WebPage>>;
