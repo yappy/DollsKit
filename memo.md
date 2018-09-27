@@ -30,6 +30,12 @@
 
 
 # アップデート
+## 日本のミラーサイト
+http://raspbian.org/RaspbianMirrors
+* http://ftp.jaist.ac.jp/raspbian/
+* http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
+* http://ftp.yz.yamagata-u.ac.jp/pub/linux/raspbian/raspbian/
+
 ## パッケージの更新
 * `sudo apt-get update`
 * `sudo apt-get upgrade`
@@ -84,6 +90,9 @@
     - AuthorizedKeysFile  %h/.ssh/authorized_keys
   - パスワード認証の無効化
     - `#PasswordAuthentication yes`
+
+# VNC (remote desktop)
+https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 
 # カメラモジュール
