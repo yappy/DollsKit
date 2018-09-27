@@ -23,7 +23,7 @@ using SafePostProcessor = std::unique_ptr<
 
 // 1つの POST リクエストの間保持される状態
 // (1) libmicrohttpd post_processor
-//     "application/x-www-form-urlencoded" or "mulitpart/formdata" のみ対応
+//     "application/x-www-form-urlencoded" or "multipart/form-data" のみ対応
 // (2) plain (自力パース、というかパースしない)
 //     "application/json"
 
@@ -87,12 +87,6 @@ private:
 		auto req_ctx = static_cast<MhdRequestContext *>(cls);
 		PostKeyValueSet &post_data = req_ctx->m_post_data;
 
-		logger.Log(LogLevel::Trace,
-			"key=%s filename=%s content_type=%s transfer_encoding=%s "
-			"off=%llu size=%zu",
-			key, filename, content_type, transfer_encoding,
-			static_cast<unsigned long long>(off), size);
-
 		// この POST 中での総サイズチェック
 		req_ctx->m_total_size += size;
 		if (req_ctx->m_total_size > req_ctx->MaxTotalSize) {
@@ -119,9 +113,57 @@ private:
 	}
 };
 
-class InvalidRequestContext : public RequestContext {
+class PlainRequestContext : public RequestContext {
 public:
-	InvalidRequestContext() : RequestContext(0, 0) {}
+	PlainRequestContext(uint64_t max_total_size, uint32_t max_in_memory_size) :
+		RequestContext(max_total_size, max_in_memory_size)
+	{}
+
+	virtual bool Process(const char *upload_data, size_t upload_data_size)
+		override
+	{
+		// この POST 中での総サイズチェック
+		m_total_size += upload_data_size;
+		if (m_total_size > MaxTotalSize) {
+			// 413 Payload Too Large
+			m_http_status = 413;
+			return true;
+		}
+		// キーが存在しないならデフォルトコンストラクト
+		// 値の文字列に追加する
+		auto &value = m_post_data["payload"];
+		value.Size += upload_data_size;
+		value.DataInMemory.append(upload_data, upload_data_size);
+		if (value.DataInMemory.size() > MaxInMemorySize) {
+			value.DataInMemory.resize(MaxInMemorySize);
+			// 413 Payload Too Large
+			// 巨大ファイルは tmp ファイルに書く必要がある
+			m_http_status = 413;
+			return true;
+		}
+		return true;
+	}
+};
+
+// 最初から HTTP エラー状態でデータは読んで即捨てる
+class ErrorRequestContext : public RequestContext {
+public:
+	ErrorRequestContext(uint32_t http_status) : RequestContext(0, 0)
+	{
+		m_http_status = http_status;
+	}
+
+	virtual bool Process(const char *upload_data, size_t upload_data_size)
+		override
+	{
+		return true;
+	}
+};
+
+// HTTP エラーはなく、データが読めたらエラー切断する
+class NotPostRequestContext : public RequestContext {
+public:
+	NotPostRequestContext() : RequestContext(0, 0) {}
 
 	virtual bool Process(const char *upload_data, size_t upload_data_size)
 		override
@@ -207,6 +249,27 @@ int SendResponse(struct MHD_Connection *connection, HttpResponse &&resp)
 	}
 
 	return MHD_YES;
+}
+
+// Content-Type 前半のイコール判定
+// https://tools.ietf.org/html/rfc7231#section-3.1.1.1
+// media-type = type "/" subtype *( OWS ";" OWS parameter )
+// 例
+// Content-Type: text/html; charset=utf-8
+// Content-Type: multipart/form-data; boundary=something
+// ignore case
+//
+inline bool CheckContentType(const char *field, const char *type)
+{
+	size_t typelen = strlen(type);
+	if (strncasecmp(field, type, typelen) != 0) {
+		return false;
+	}
+	char next = field[typelen];
+	if (next == '\0' || next == ';' || isspace(next)) {
+		return true;
+	}
+	return false;
 }
 
 }	// namespace
@@ -331,16 +394,36 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 		std::unique_ptr<RequestContext> req_ctx;
 		// method と Content-Type で処理タイプを決定する
 		if (is_post) {
-			// MHD POST プロセッサを作成する
-			auto mhd_req_ctx = std::make_unique<MhdRequestContext>(
-				PostTotalLimit, PostMemoryLimit);
-			if (!mhd_req_ctx->Initialize(connection, PostBufferSize)) {
-				return MHD_NO;
+			const char *content_type = MHD_lookup_connection_value (
+				connection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
+			content_type = (content_type == nullptr) ? "" : content_type;
+			if (CheckContentType(content_type, "application/json")) {
+				logger.Log(LogLevel::Trace, "POST plain");
+				// plain text processor
+				req_ctx = std::make_unique<PlainRequestContext>(
+					PostTotalLimit, PostMemoryLimit);
 			}
-			req_ctx = std::move(mhd_req_ctx);
+			else if (CheckContentType(content_type,
+				"application/x-www-form-urlencoded") ||
+				CheckContentType(content_type, "multipart/form-data")) {
+				logger.Log(LogLevel::Trace, "POST form");
+				// MHD post processor
+				auto mhd_req_ctx = std::make_unique<MhdRequestContext>(
+					PostTotalLimit, PostMemoryLimit);
+				if (!mhd_req_ctx->Initialize(connection, PostBufferSize)) {
+					return MHD_NO;
+				}
+				req_ctx = std::move(mhd_req_ctx);
+			}
+			else {
+				logger.Log(LogLevel::Trace, "POST unknown: %s", content_type);
+				// 415 Unsupported Media Type
+				req_ctx = std::make_unique<ErrorRequestContext>(415);
+			}
 		}
 		else {
-			req_ctx = std::make_unique<InvalidRequestContext>();
+			// OK but fatal if there is upload_data
+			req_ctx = std::make_unique<NotPostRequestContext>();
 		}
 		// unique_ptr の管理から外して libmicrohttpd の管理下に
 		*con_cls = (void *)req_ctx.release();
