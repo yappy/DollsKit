@@ -1,7 +1,14 @@
 ﻿{
+	"Database":
+	{
+		"Server"	: "localhost",
+		"User"		: "",
+		"Pass"		: "",
+		"DbName"	: ""
+	},
 	"Twitter":
 	{
-		"WriteEnabled"		: false,
+		"WriteEnabled"		: false
 	},
 	"Ddns":
 	{
