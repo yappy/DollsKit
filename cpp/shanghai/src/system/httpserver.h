@@ -24,8 +24,11 @@ namespace shanghai {
 namespace system {
 
 struct PostData final {
+	// 真のサイズ (未対応)
 	uint64_t Size;
+	// メモリに入った場合はそのデータ
 	std::string DataInMemory;
+	// 大きなデータは tmp ファイルに書き出す (未対応)
 	std::string FileName;
 
 	PostData() : Size(0) {}
