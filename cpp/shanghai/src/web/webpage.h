@@ -4,6 +4,7 @@
 #include "../logger.h"
 #include "../config.h"
 #include "../system/system.h"
+#include <json11.hpp>
 
 namespace shanghai {
 namespace web {
@@ -13,6 +14,7 @@ using system::WebPage;
 using system::KeyValueSet;
 using system::PostKeyValueSet;
 using system::HttpResponse;
+using mtx_guard = std::lock_guard<std::mutex>;
 
 class EchoPage : public WebPage {
 public:
@@ -36,6 +38,21 @@ public:
 		const PostKeyValueSet &post) override;
 };
 
+class GithubPage : public WebPage {
+public:
+	GithubPage() = default;
+	virtual ~GithubPage() = default;
+
+	HttpResponse Do(
+		const std::string &method, const std::string &url_match,
+		const KeyValueSet &header, const KeyValueSet &query,
+		const PostKeyValueSet &post) override;
+
+private:
+	std::mutex m_mtx;
+	json11::Json m_last_push;
+};
+
 inline void SetupPages()
 {
 	system::HttpServer &server = system::Get().Http;
@@ -44,6 +61,8 @@ inline void SetupPages()
 		std::make_shared<EchoPage>());
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/post/\w*)"),
 		std::make_shared<PostPage>());
+	server.AddPage(std::regex("GET|POST"), std::regex(R"(/github/\w*)"),
+		std::make_shared<GithubPage>());
 }
 
 inline std::string HtmlEscape(const std::string &src)

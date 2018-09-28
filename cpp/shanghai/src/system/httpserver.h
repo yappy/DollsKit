@@ -97,7 +97,7 @@ private:
 	// POST データ量合計制限
 	static const uint64_t PostTotalLimit = 64 * 1024;
 	// POST InMemory データ量制限
-	static const uint32_t PostMemoryLimit = 4 * 1024;
+	static const uint32_t PostMemoryLimit = 64 * 1024;
 
 	// method, url, func
 	using Route = std::tuple<std::regex, std::regex, std::shared_ptr<WebPage>>;
