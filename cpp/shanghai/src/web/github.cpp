@@ -1,5 +1,8 @@
+// https://developer.github.com/webhooks/
+
 #include "webpage.h"
 #include "../util.h"
+#include "../net.h"
 
 namespace shanghai {
 namespace web {
@@ -53,6 +56,12 @@ R"(<!DOCTYPE html>
 		util::Format(tmpl, {"OK"}));
 }
 
+}	// namespace
+
+GithubPage::GithubPage()
+{
+	m_enabled = config.GetBool({"HttpServer", "GithubHook", "Enabled"});
+	m_secret = config.GetStr({"HttpServer", "GithubHook", "Secret"});
 }
 
 HttpResponse GithubPage::Do(
@@ -60,6 +69,10 @@ HttpResponse GithubPage::Do(
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
 {
+	if (!m_enabled) {
+		return HttpResponse(404);
+	}
+
 	if (method == "GET") {
 		json11::Json json;
 		{
@@ -69,13 +82,35 @@ HttpResponse GithubPage::Do(
 		return PrintJson(m_last_push);
 	}
 	else if (method == "POST") {
+		// github hook event type
+		const auto &event = header.find("X-GitHub-Event");
+		// message GUID
+		const auto &delivery = header.find("X-GitHub-Delivery");
+		// SHA-1 signature
+		const auto &signature = header.find("X-Hub-Signature");
+		// application/json POST payload
 		const auto &payload = post.find("payload");
-		if (payload == post.end()) {
+		if (event == header.end() || delivery == header.end() ||
+			signature == header.end() || payload == post.end()) {
 			// Bad Request
 			return HttpResponse(400);
 		}
+		const std::string &payload_str = payload->second.DataInMemory;
+
+		// 署名検証
+		std::string my_signature = "sha1=";
+		Network::ShaDigest digest;
+		net.HmacSha1(m_secret.data(), static_cast<int>(m_secret.size()),
+			payload_str.data(), payload_str.size(),
+			digest);
+		my_signature += net.HexEncode(digest, sizeof(digest));
+		if (!net.ConstTimeEqual(signature->second, my_signature)) {
+			return HttpResponse(400);
+		}
+
+		// JSON パースと処理
 		json11::Json json;
-		HttpResponse resp = ProcessPost(payload->second.DataInMemory, json);
+		HttpResponse resp = ProcessPost(payload_str, json);
 		{
 			mtx_guard lock(m_mtx);
 			m_last_push = json;

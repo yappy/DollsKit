@@ -10,15 +10,20 @@
 		"AccessToken"		: "",
 		"AccessSecret"		: ""
 	},
-	"HttpServer":
-	{
-		"Port"		: 8888,
-		"Rewrite"	: "/house"
-	},
 	"Ddns":
 	{
 		"Enabled"	: false,
 		"User"		: "",
 		"Pass"		: ""
+	},
+	"HttpServer":
+	{
+		"Port"			: 8888,
+		"Rewrite"		: "/house",
+		"GithubHook"	:
+		{
+			"Enabled"	: true,
+			"Secret"	: ""
+		}
 	}
 }

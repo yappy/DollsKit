@@ -40,7 +40,7 @@ public:
 
 class GithubPage : public WebPage {
 public:
-	GithubPage() = default;
+	GithubPage();
 	virtual ~GithubPage() = default;
 
 	HttpResponse Do(
@@ -51,6 +51,8 @@ public:
 private:
 	std::mutex m_mtx;
 	json11::Json m_last_push;
+	bool m_enabled;
+	std::string m_secret;
 };
 
 inline void SetupPages()

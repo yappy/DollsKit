@@ -37,10 +37,21 @@ public:
 	std::string Escape(const std::string &str);
 	// BASE64 改行無し
 	std::string Base64Encode(const void *buf, int size);
+	// 16進小文字
+	std::string HexEncode(const void *buf, int size);
 	// HMAC-SHA1
 	void HmacSha1(const void *key, int key_len,
-		const unsigned char *buf, size_t size,
+		const void *buf, size_t size,
 		ShaDigest &result);
+	// かかる時間が内容に関わらず len にのみ依存する安全なメモリ比較
+	bool ConstTimeEqual(const void *a, const void *b, size_t len);
+	inline bool ConstTimeEqual(const std::string &a, const std::string &b)
+	{
+		if (a.size() != b.size()) {
+			return false;
+		}
+		return ConstTimeEqual(a.data(), b.data(), a.size());
+	}
 
 	// 完了するまでブロックする
 	// タイムアウトは 0 で無限待ち

@@ -105,8 +105,23 @@ std::string Network::Base64Encode(const void *buf, int size)
 	return result;
 }
 
+std::string Network::HexEncode(const void *buf, int size)
+{
+	static const char table[] = "0123456789abcdef";
+	const auto *p = static_cast<const uint8_t *>(buf);
+	std::string result;
+	for (int i = 0; i < size; i++) {
+		uint8_t x = p[i];
+		uint8_t hi = (x & 0xf0) >> 4;
+		uint8_t lo = (x & 0x0f);
+		result += table[hi];
+		result += table[lo];
+	}
+	return result;
+}
+
 void Network::HmacSha1(const void *key, int key_len,
-	const unsigned char *buf, size_t size,
+	const void *buf, size_t size,
 	ShaDigest &result)
 {
 	static_assert(ShaDigestLen == SHA_DIGEST_LENGTH, "SHA_DIGEST_LENGTH");
@@ -114,10 +129,16 @@ void Network::HmacSha1(const void *key, int key_len,
 	unsigned int reslen = 0;
 
 	unsigned char *ret = HMAC(EVP_sha1(),
-		key, key_len, buf, size, result, &reslen);
+		key, key_len, static_cast<const unsigned char *>(buf), size,
+		result, &reslen);
 	if (ret == nullptr || reslen != ShaDigestLen) {
 		throw NetworkError("HMAC-SHA1 error");
 	}
+}
+
+bool Network::ConstTimeEqual(const void *a, const void *b, size_t len)
+{
+	return CRYPTO_memcmp(a, b, len) == 0;
 }
 
 namespace {
