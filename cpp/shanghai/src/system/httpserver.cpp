@@ -372,7 +372,13 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	}
 	if (page != nullptr) {
 		// TODO: URL 全体ではなく部分列を渡す
-		return page->Do(vmethod, vurl, request_header, get_args, post);
+		try {
+			return page->Do(vmethod, vurl, request_header, get_args, post);
+		}
+		catch (std::runtime_error &e) {
+			logger.Log(LogLevel::Error, "[HTTP] Error in a page: %s", e.what());
+			return HttpResponse(500);
+		}
 	}
 	// マッチするものがなかった場合は 404 とする
 	return HttpResponse(404);
