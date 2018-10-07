@@ -39,6 +39,7 @@ void SetupSignalMask(sigset_t &sigset)
 
 	util::SysCall(sigemptyset(&sigset));
 	util::SysCall(sigaddset(&sigset, SIGINT));
+	util::SysCall(sigaddset(&sigset, SIGTERM));
 	util::SysCall(sigaddset(&sigset, SIGHUP));
 	util::SysCall(sigaddset(&sigset, SIGUSR1));
 	ret = pthread_sigmask(SIG_BLOCK, &sigset, NULL);
@@ -63,6 +64,10 @@ void SignalThreadEntry(const sigset_t &sigset,
 		switch (sig) {
 		case SIGINT:
 			logger.Log(LogLevel::Info, "SIGINT");
+			server->RequestShutdown(ServerResult::Shutdown);
+			break;
+		case SIGTERM:
+			logger.Log(LogLevel::Info, "SIGTERM");
 			server->RequestShutdown(ServerResult::Shutdown);
 			break;
 		case SIGHUP:
