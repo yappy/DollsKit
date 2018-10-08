@@ -34,6 +34,19 @@ private:
 	std::string m_pass;
 };
 
+class TwitterTask : public PeriodicTask {
+public:
+	TwitterTask(ReleaseFunc rel_func);
+	~TwitterTask() = default;
+
+	std::string GetName() override { return "Twitter"s; }
+	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
+
+private:
+	bool m_fake_tweet;
+	std::vector<std::string> m_black_list;
+};
+
 }	// namespace task
 }	// namespace shanghai
 

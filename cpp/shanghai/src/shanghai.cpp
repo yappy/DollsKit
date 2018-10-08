@@ -117,6 +117,7 @@ void ParseArgs(int argc, char * const argv[])
 const char * const ConfigFile = "config.json";
 const char * const ConfigFileFallback = "config.template.json";
 
+// タスクの登録
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
 	server->RegisterPeriodicTask(
@@ -125,6 +126,10 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 		}));
 	server->RegisterPeriodicTask(
 		std::make_unique<task::DdnsTask>([](const struct tm &) {
+			return true;
+		}));
+	server->RegisterPeriodicTask(
+		std::make_unique<task::TwitterTask>([](const struct tm &) {
 			return true;
 		}));
 }

@@ -9,10 +9,10 @@ Twitter::Twitter()
 {
 	logger.Log(LogLevel::Info, "Initialize Twitter...");
 
-	ConsumerKey = config.GetStr({"Twitter", "ConsumerKey"});
-	ConsumerSecret = config.GetStr({"Twitter", "ConsumerSecret"});
-	AccessToken = config.GetStr({"Twitter", "AccessToken"});
-	AccessSecret = config.GetStr({"Twitter", "AccessSecret"});
+	ConsumerKey = config.GetStr({"TwitterConfig", "ConsumerKey"});
+	ConsumerSecret = config.GetStr({"TwitterConfig", "ConsumerSecret"});
+	AccessToken = config.GetStr({"TwitterConfig", "AccessToken"});
+	AccessSecret = config.GetStr({"TwitterConfig", "AccessSecret"});
 
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }

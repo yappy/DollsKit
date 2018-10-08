@@ -26,6 +26,8 @@ public:
 	bool GetBool(std::initializer_list<const char *> keys);
 	int GetInt(std::initializer_list<const char *> keys);
 	std::string GetStr(std::initializer_list<const char *> keys);
+	std::vector<std::string> GetStrArray(
+		std::initializer_list<const char *> keys);
 
 private:
 	json11::Json m_json;
