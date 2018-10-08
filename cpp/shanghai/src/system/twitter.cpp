@@ -1,20 +1,20 @@
-#include "twitterconfig.h"
+#include "twitter.h"
 #include "../logger.h"
 #include "../config.h"
 
 namespace shanghai {
 namespace system {
 
-TwitterConfig::TwitterConfig()
+Twitter::Twitter()
 {
-	logger.Log(LogLevel::Info, "Initialize TwitterConfig...");
+	logger.Log(LogLevel::Info, "Initialize Twitter...");
 
 	ConsumerKey = config.GetStr({"Twitter", "ConsumerKey"});
 	ConsumerSecret = config.GetStr({"Twitter", "ConsumerSecret"});
 	AccessToken = config.GetStr({"Twitter", "AccessToken"});
 	AccessSecret = config.GetStr({"Twitter", "AccessSecret"});
 
-	logger.Log(LogLevel::Info, "Initialize TwitterConfig OK");
+	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
 
 }	// namespace system

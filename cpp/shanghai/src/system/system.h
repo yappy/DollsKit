@@ -1,7 +1,7 @@
 #ifndef SHANGHAI_SYSTEM_SYSTEM_H
 #define SHANGHAI_SYSTEM_SYSTEM_H
 
-#include "twitterconfig.h"
+#include "twitter.h"
 #include "httpserver.h"
 
 namespace shanghai {
@@ -10,7 +10,7 @@ namespace shanghai {
 namespace system {
 
 struct System {
-	TwitterConfig Twitter;
+	Twitter TwitterSystem;
 	HttpServer Http;
 };
 
