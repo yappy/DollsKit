@@ -7,7 +7,7 @@
 namespace shanghai {
 namespace system {
 
-class Twitter {
+class Twitter final {
 public:
 	using Parameters = std::map<std::string, std::string>;
 
@@ -25,6 +25,10 @@ private:
 	bool m_fake_tweet;
 	std::string m_consumer_key, m_consumer_secret;
 	std::string m_access_token, m_access_secret;
+	uint64_t m_id;
+
+	json11::Json Account_VerifyCredentials(
+		const Parameters &param = Parameters());
 
 	json11::Json Request(const std::string &url, const std::string &method,
 		const Parameters &param);

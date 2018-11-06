@@ -1,5 +1,6 @@
 #include "twitter.h"
 #include "../logger.h"
+#include "../util.h"
 #include "../config.h"
 #include "../net.h"
 
@@ -7,6 +8,10 @@ namespace shanghai {
 namespace system {
 
 namespace {
+	const std::string URL_ACCOUNT = "https://api.twitter.com/1.1/account/"s;
+	const std::string URL_ACCOUNT_VERIFY_CREDENTIALS =
+		URL_ACCOUNT + "verify_credentials.json";
+
 	const std::string URL_STATUSES = "https://api.twitter.com/1.1/statuses/"s;
 	const std::string URL_STATUSES_UPDATE =
 		URL_STATUSES + "update.json";
@@ -25,6 +30,10 @@ Twitter::Twitter()
 	m_consumer_secret = config.GetStr({"TwitterConfig", "ConsumerSecret"});
 	m_access_token = config.GetStr({"TwitterConfig", "AccessToken"});
 	m_access_secret = config.GetStr({"TwitterConfig", "AccessSecret"});
+
+	json11::Json cred_result = Account_VerifyCredentials();
+	m_id = util::to_uint64(cred_result["id_str"].string_value());
+	logger.Log(LogLevel::Info, "Verify credentials OK: id=%" PRIu64, m_id);
 
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
@@ -52,6 +61,11 @@ json11::Json Twitter::Statuses_HomeTimeline(const Parameters &param)
 json11::Json Twitter::Statuses_UserTimeline(const Parameters &param)
 {
 	return Get(URL_STATUSES_USER_TIMELINE, param);
+}
+
+json11::Json Twitter::Account_VerifyCredentials(const Parameters &param)
+{
+	return Get(URL_ACCOUNT_VERIFY_CREDENTIALS, param);
 }
 
 json11::Json Twitter::Request(const std::string &url, const std::string &method,
