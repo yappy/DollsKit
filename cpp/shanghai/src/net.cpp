@@ -404,7 +404,6 @@ std::string Network::DownloadOAuth(const std::string &base_url,
 			CURLcode ret;
 			ret = curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, slist.get());
 			CheckError(ret);
-			printf("%p\n", slist.get());
 		});
 }
 

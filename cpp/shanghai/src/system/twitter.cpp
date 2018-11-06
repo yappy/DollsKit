@@ -10,6 +10,8 @@ namespace {
 	const std::string URL_STATUSES = "https://api.twitter.com/1.1/statuses/"s;
 	const std::string URL_STATUSES_HOME_TIMELINE =
 		URL_STATUSES + "home_timeline.json";
+	const std::string URL_STATUSES_USER_TIMELINE =
+		URL_STATUSES + "user_timeline.json";
 }	// namespace
 
 Twitter::Twitter()
@@ -25,11 +27,20 @@ Twitter::Twitter()
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
 
-json11::Json Twitter::Statuses_HomeTimeline(int count)
+json11::Json Twitter::Statuses_HomeTimeline(const Parameters &param)
+{
+	return Get(URL_STATUSES_HOME_TIMELINE, param);
+}
+
+json11::Json Twitter::Statuses_UserTimeline(const Parameters &param)
+{
+	return Get(URL_STATUSES_USER_TIMELINE, param);
+}
+
+json11::Json Twitter::Get(const std::string &url, const Parameters &param)
 {
 	std::string src = net.DownloadOAuth(
-		URL_STATUSES_HOME_TIMELINE,
-		"GET", {{ {"count", std::to_string(count)} }},
+		url, "GET", param,
 		m_consumer_key, m_access_token, m_consumer_secret, m_access_secret);
 	std::string err;
 	return json11::Json::parse(src, err);

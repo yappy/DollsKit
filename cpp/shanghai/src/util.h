@@ -33,6 +33,12 @@ inline int SysCall(R ret)
 	return ret;
 }
 
+inline uint64_t to_uint64(const std::string &str)
+{
+	static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "ull");
+	return std::stoll(str);
+}
+
 std::string ToString(const char *fmt, double d);
 std::string Format(const char *fmt, std::initializer_list<std::string> args);
 std::vector<std::string> Split(const std::string& input,

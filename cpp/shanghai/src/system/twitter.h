@@ -9,15 +9,20 @@ namespace system {
 
 class Twitter {
 public:
+	using Parameters = std::map<std::string, std::string>;
+
 	Twitter();
 	~Twitter() = default;
 
-	json11::Json Statuses_HomeTimeline(int count = 20);
+	json11::Json Statuses_HomeTimeline(const Parameters &param = Parameters());
+	json11::Json Statuses_UserTimeline(const Parameters &param = Parameters());
 
 private:
 	bool m_fake_tweet;
 	std::string m_consumer_key, m_consumer_secret;
 	std::string m_access_token, m_access_secret;
+
+	json11::Json Get(const std::string &url, const Parameters &param);
 };
 
 }	// namespace system

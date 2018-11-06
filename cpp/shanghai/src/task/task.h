@@ -44,6 +44,9 @@ public:
 
 private:
 	std::vector<std::string> m_black_list;
+	uint64_t m_since_id = 0;
+
+	uint64_t GetInitialSinceId();
 };
 
 }	// namespace task

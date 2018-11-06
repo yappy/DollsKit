@@ -1,6 +1,7 @@
 #ifndef SHANGHAI_NET_H
 #define SHANGHAI_NET_H
 
+#include <cinttypes>
 #include <stdexcept>
 #include <atomic>
 #include <map>
