@@ -14,6 +14,7 @@ public:
 	Twitter();
 	~Twitter() = default;
 
+	uint64_t MyId() { return m_id; }
 	// auto fake
 	void Tweet(const std::string &msg);
 

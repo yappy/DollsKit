@@ -29,6 +29,14 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		{"count", "200"}});
 
 	for (const auto &entry : json.array_items()) {
+		// 自分のツイートには反応しない
+		if (util::to_uint64(entry["id_str"].string_value()) == twitter.MyId()) {
+			continue;
+		}
+		// リツイートには反応しない
+		if (!entry["retweeted_status"].is_null()) {
+			continue;
+		}
 		if (IsBlack(entry)) {
 			logger.Log(LogLevel::Info, "Find Black");
 			logger.Log(LogLevel::Info, "id=%s screen=%s name=%s",
