@@ -43,7 +43,6 @@ public:
 	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
 
 private:
-	bool m_fake_tweet;
 	std::vector<std::string> m_black_list;
 };
 

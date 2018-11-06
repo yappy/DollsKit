@@ -16,10 +16,11 @@ Twitter::Twitter()
 {
 	logger.Log(LogLevel::Info, "Initialize Twitter...");
 
-	ConsumerKey = config.GetStr({"TwitterConfig", "ConsumerKey"});
-	ConsumerSecret = config.GetStr({"TwitterConfig", "ConsumerSecret"});
-	AccessToken = config.GetStr({"TwitterConfig", "AccessToken"});
-	AccessSecret = config.GetStr({"TwitterConfig", "AccessSecret"});
+	m_fake_tweet = config.GetBool({"TwitterConfig", "FakeTweet"});
+	m_consumer_key = config.GetStr({"TwitterConfig", "ConsumerKey"});
+	m_consumer_secret = config.GetStr({"TwitterConfig", "ConsumerSecret"});
+	m_access_token = config.GetStr({"TwitterConfig", "AccessToken"});
+	m_access_secret = config.GetStr({"TwitterConfig", "AccessSecret"});
 
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
@@ -29,7 +30,7 @@ json11::Json Twitter::Statuses_HomeTimeline(int count)
 	std::string src = net.DownloadOAuth(
 		URL_STATUSES_HOME_TIMELINE,
 		"GET", {{ {"count", std::to_string(count)} }},
-		ConsumerKey, AccessToken, ConsumerSecret, AccessSecret);
+		m_consumer_key, m_access_token, m_consumer_secret, m_access_secret);
 	std::string err;
 	return json11::Json::parse(src, err);
 }

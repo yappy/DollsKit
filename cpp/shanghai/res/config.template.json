@@ -5,6 +5,7 @@
 	},
 	"TwitterConfig":
 	{
+		"FakeTweet"			: true,
 		"ConsumerKey"		: "",
 		"ConsumerSecret"	: "",
 		"AccessToken"		: "",
@@ -12,7 +13,6 @@
 	},
 	"Twitter":
 	{
-		"FakeTweet"			: true,
 		"BlackList":[
 			"Mewdra", "nippy2284", "metto0226", "CucumberDragon",
 			"superpokan", "joinjoinginYa", "Kuraot", "taiga8899",

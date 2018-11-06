@@ -14,7 +14,10 @@ public:
 
 	json11::Json Statuses_HomeTimeline(int count = 20);
 
-	std::string ConsumerKey, ConsumerSecret, AccessToken, AccessSecret;
+private:
+	bool m_fake_tweet;
+	std::string m_consumer_key, m_consumer_secret;
+	std::string m_access_token, m_access_secret;
 };
 
 }	// namespace system
