@@ -18,7 +18,21 @@
 			"superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
 			"kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
 			"ora_dll", "boil_dll", "marcan3253", "tekomo_ahaha",
-			"satoukakeru"]
+			"satoukakeru"],
+		"BlackWords": [
+			"ホワイト", "ブラック", "ほわ", "ぶらっく",
+			"定時", "退社", "帰宅", "到着", "ただいま", "残業", "終電", "代休"
+		],
+		"WhiteWords": [
+			"ホワイト", "ほわいと", "退社", "帰宅"
+		],
+		"ReplaceList": [
+			["きたーく",	"帰宅"],
+			["とーちゃく",	"到着"],
+			["おうち",		"お家"],
+			["ただーいま",	"ただいま"],
+			["たーだいま",	"ただいま"]
+		]
 	},
 	"Ddns":
 	{

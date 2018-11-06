@@ -43,6 +43,8 @@ std::string ToString(const char *fmt, double d);
 std::string Format(const char *fmt, std::initializer_list<std::string> args);
 std::vector<std::string> Split(const std::string& input,
 	char delim, bool remove_empty = false);
+std::string ReplaceAll(const std::string &str,
+	const std::string &from, const std::string &to);
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
 std::string ReadStringFromFile(const std::string &file_name);

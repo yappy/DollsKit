@@ -28,6 +28,8 @@ public:
 	std::string GetStr(std::initializer_list<const char *> keys);
 	std::vector<std::string> GetStrArray(
 		std::initializer_list<const char *> keys);
+	std::vector<std::pair<std::string, std::string>> GetStrPairArray(
+		std::initializer_list<const char *> keys);
 
 private:
 	json11::Json m_json;

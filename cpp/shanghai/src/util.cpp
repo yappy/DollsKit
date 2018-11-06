@@ -49,6 +49,24 @@ std::vector<std::string> Split(const std::string& input,
 	return result;
 }
 
+std::string ReplaceAll(const std::string &str,
+	const std::string &from, const std::string &to)
+{
+	if (from.empty()) {
+		return str;
+	}
+
+	std::string result = str;
+	size_t to_len = to.length();
+
+	size_t pos = 0;
+	while ((pos = result.find(from, pos)) != std::string::npos) {
+		result.replace(pos, from.length(), to);
+		pos += to_len;
+	}
+	return result;
+}
+
 namespace {
 
 struct FileDeleter {

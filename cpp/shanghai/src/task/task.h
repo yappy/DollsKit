@@ -44,9 +44,12 @@ public:
 
 private:
 	std::vector<std::string> m_black_list;
+	std::vector<std::string> m_black_words;
+	std::vector<std::pair<std::string, std::string>> m_replace_list;
 	uint64_t m_since_id = 0;
 
 	uint64_t GetInitialSinceId();
+	bool IsBlack(const json11::Json &status);
 };
 
 }	// namespace task
