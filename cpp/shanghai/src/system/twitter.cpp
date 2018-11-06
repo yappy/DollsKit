@@ -8,6 +8,8 @@ namespace system {
 
 namespace {
 	const std::string URL_STATUSES = "https://api.twitter.com/1.1/statuses/"s;
+	const std::string URL_STATUSES_UPDATE =
+		URL_STATUSES + "update.json";
 	const std::string URL_STATUSES_HOME_TIMELINE =
 		URL_STATUSES + "home_timeline.json";
 	const std::string URL_STATUSES_USER_TIMELINE =
@@ -27,6 +29,21 @@ Twitter::Twitter()
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
 
+void Twitter::Tweet(const std::string &msg)
+{
+	if (!m_fake_tweet) {
+		Statuses_Update({{"status", msg}});
+	}
+	else {
+		logger.Log(LogLevel::Info, "Fake Tweet: %s", msg.c_str());
+	}
+}
+
+json11::Json Twitter::Statuses_Update(const Parameters &param)
+{
+	return Post(URL_STATUSES_UPDATE, param);
+}
+
 json11::Json Twitter::Statuses_HomeTimeline(const Parameters &param)
 {
 	return Get(URL_STATUSES_HOME_TIMELINE, param);
@@ -37,13 +54,24 @@ json11::Json Twitter::Statuses_UserTimeline(const Parameters &param)
 	return Get(URL_STATUSES_USER_TIMELINE, param);
 }
 
-json11::Json Twitter::Get(const std::string &url, const Parameters &param)
+json11::Json Twitter::Request(const std::string &url, const std::string &method,
+	const Parameters &param)
 {
 	std::string src = net.DownloadOAuth(
-		url, "GET", param,
+		url, method, param,
 		m_consumer_key, m_access_token, m_consumer_secret, m_access_secret);
 	std::string err;
 	return json11::Json::parse(src, err);
+}
+
+json11::Json Twitter::Get(const std::string &url, const Parameters &param)
+{
+	return Request(url, "GET"s, param);
+}
+
+json11::Json Twitter::Post(const std::string &url, const Parameters &param)
+{
+	return Request(url, "POST"s, param);
 }
 
 }	// namespace system

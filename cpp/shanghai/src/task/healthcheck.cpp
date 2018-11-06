@@ -1,6 +1,7 @@
 #include "task.h"
 #include "../util.h"
 #include "../exec.h"
+#include "../system/system.h"
 #include <chrono>
 #include <thread>
 #include <sys/statvfs.h>
@@ -177,10 +178,18 @@ HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 
 void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
-	logger.Log(LogLevel::Info, "%s", GetCpuUsage(cancel).c_str());
-	logger.Log(LogLevel::Info, "%s", GetCpuTemp().c_str());
-	logger.Log(LogLevel::Info, "%s", GetMemInfo().c_str());
-	logger.Log(LogLevel::Info, "%s", GetDiskInfo().c_str());
+	auto twitter = system::Get().TwitterSystem;
+
+	std::string msg;
+	msg += GetCpuUsage(cancel);
+	msg += '\n';
+	msg += GetCpuTemp();
+	msg += '\n';
+	msg += GetMemInfo();
+	msg += '\n';
+	msg += GetDiskInfo();
+
+	twitter.Tweet(msg);
 }
 
 }	// namespace task

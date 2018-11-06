@@ -170,7 +170,7 @@ int ProgressFunc(void *clientp, curl_off_t dltotal, curl_off_t dlnow,
 
 template <class F>
 std::string Network::DownloadInternal(
-	const std::string &url, int timeout_sec,
+	const std::string &url, const std::string &method, int timeout_sec,
 	const std::atomic<bool> &cancel, F prepair)
 {
 	SafeCurl curl(::curl_easy_init());
@@ -190,6 +190,13 @@ std::string Network::DownloadInternal(
 	// タイムアウト(全体)
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT,
 		static_cast<long>(timeout_sec));
+	// POST
+	if (method == "POST") {
+		ret = ::curl_easy_setopt(curl.get(), CURLOPT_POST, 1L);
+		CheckError(ret);
+		ret = ::curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDSIZE, 0);
+		CheckError(ret);
+	}
 	// データ受信コールバックと引数
 	ret = ::curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, WriteFunc);
 	CheckError(ret);
@@ -215,7 +222,8 @@ std::string Network::DownloadInternal(
 	ret = ::curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &http_code);
 	CheckError(ret);
 	if (http_code < 200 || http_code >= 300) {
-		throw NetworkError("HTTP failed status: "s + std::to_string(http_code));
+		throw NetworkError("HTTP failed status: "s + std::to_string(http_code) +
+			"\n"s + data);
 	}
 
 	// move
@@ -225,14 +233,15 @@ std::string Network::DownloadInternal(
 std::string Network::Download(const std::string &url, int timeout_sec,
 	const std::atomic<bool> &cancel)
 {
-	return DownloadInternal(url, timeout_sec, cancel, [](const SafeCurl &){});
+	return DownloadInternal(url, "GET"s, timeout_sec, cancel,
+		[](const SafeCurl &){});
 }
 
 std::string Network::DownloadBasicAuth(const std::string &url,
 	const std::string &user, const std::string &pass,
 	int timeout_sec, const std::atomic<bool> &cancel)
 {
-	return DownloadInternal(url, timeout_sec, cancel,
+	return DownloadInternal(url, "GET"s, timeout_sec, cancel,
 		[&user, &pass](const SafeCurl &curl) {
 			CURLcode ret;
 
@@ -399,7 +408,7 @@ std::string Network::DownloadOAuth(const std::string &base_url,
 
 	SafeSlist slist;
 	slist.Append(auth_str.c_str());
-	return DownloadInternal(url, timeout_sec, cancel,
+	return DownloadInternal(url, http_method, timeout_sec, cancel,
 		[&slist](const SafeCurl &curl){
 			CURLcode ret;
 			ret = curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, slist.get());

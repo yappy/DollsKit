@@ -83,8 +83,10 @@ private:
 	std::random_device m_secure_rand;
 
 	template <class F>
-	std::string DownloadInternal(const std::string &url, int timeout_sec,
-		const std::atomic<bool> &cancel, F prepair);
+	std::string DownloadInternal(const std::string &url,
+		const std::string &method,
+		int timeout_sec, const std::atomic<bool> &cancel,
+		F prepair);
 };
 
 extern Network net;
