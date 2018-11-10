@@ -58,6 +58,26 @@ private:
 	ReleaseFunc m_rel_func;
 };
 
+class OneShotTask {
+public:
+	using TaskFunc = std::function<
+		void(TaskServer &server, const std::atomic<bool> &cancel)>;
+
+	OneShotTask(std::string name, TaskFunc func) : m_name(name), m_func(func)
+	{}
+	~OneShotTask() = default;
+
+	const std::string &GetName() { return m_name; }
+	void Entry(TaskServer &server, const std::atomic<bool> &cancel)
+	{
+		m_func(server, cancel);
+	}
+
+private:
+	std::string m_name;
+	TaskFunc m_func;
+};
+
 /*
  * スレッドプール
  */
@@ -91,6 +111,7 @@ public:
 	~TaskServer() = default;
 
 	void RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task);
+	void RegisterOneShotTask(OneShotTask &&task);
 	void ReleaseAllForTest();
 
 	ServerResult Run();
