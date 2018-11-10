@@ -67,6 +67,19 @@ std::string ReplaceAll(const std::string &str,
 	return result;
 }
 
+std::string DateTimeStr(std::time_t timestamp)
+{
+	struct tm local;
+	char timecs[64] = "";
+
+	::localtime_r(&timestamp, &local);
+	if (std::strftime(timecs, sizeof(timecs), "%Y-%m-%d %T", &local) == 0) {
+		timecs[0] = '\0';
+	}
+
+	return std::string(timecs);
+}
+
 namespace {
 
 struct FileDeleter {

@@ -137,20 +137,10 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	auto &twitter = system::Get().TwitterSystem;
-	std::string time_str;
-	{
-		struct tm local;
-		char timecs[64] = "";
-		std::time_t timestamp = std::time(nullptr);
-		::localtime_r(&timestamp, &local);
-		if (std::strftime(timecs, sizeof(timecs), "%Y-%m-%d %T", &local) == 0) {
-			timecs[0] = '\0';
-		}
-		time_str = timecs;
-	}
+
 	std::string msg;
 	msg += '[';
-	msg += time_str;
+	msg += util::DateTimeStr();
 	msg += "] Boot... (C++ testing)";
 
 	twitter.Tweet(msg);
