@@ -122,6 +122,10 @@ const char * const ConfigFileFallback = "config.template.json";
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
 	server->RegisterPeriodicTask(
+		std::make_unique<task::TaskConsumeTask>([](const struct tm &tm) {
+			return true;
+		}));
+	server->RegisterPeriodicTask(
 		std::make_unique<task::HealthCheckTask>([](const struct tm &tm) {
 			const std::array<int, 2> hours = { 6, 18 };
 			return tm.tm_min == 0 && std::find(
