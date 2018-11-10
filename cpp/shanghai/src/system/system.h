@@ -1,6 +1,7 @@
 #ifndef SHANGHAI_SYSTEM_SYSTEM_H
 #define SHANGHAI_SYSTEM_SYSTEM_H
 
+#include "taskqueue.h"
 #include "twitter.h"
 #include "httpserver.h"
 
@@ -10,6 +11,7 @@ namespace shanghai {
 namespace system {
 
 struct System {
+	TaskQueue task_queue;
 	Twitter twitter;
 	HttpServer http_server;
 };
