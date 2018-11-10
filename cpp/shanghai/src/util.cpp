@@ -34,6 +34,17 @@ std::string Format(const char *fmt, std::initializer_list<std::string> args)
 	return result;
 }
 
+std::string OneLine(const std::string str)
+{
+	size_t lf = str.find('\n');
+	if (lf != std::string::npos) {
+		return str.substr(0, lf);
+	}
+	else {
+		return str;
+	}
+}
+
 std::vector<std::string> Split(const std::string& input,
 	char delim, bool remove_empty)
 {

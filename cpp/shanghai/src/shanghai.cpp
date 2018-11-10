@@ -1,6 +1,7 @@
 #include "logger.h"
 #include "config.h"
 #include "util.h"
+#include "exec.h"
 #include "taskserver.h"
 #include "system/system.h"
 #include "task/task.h"
@@ -138,10 +139,26 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	auto &twitter = system::Get().TwitterSystem;
 
+	std::string git_branch, git_hash;
+	{
+		Process p("/usr/bin/git",
+			{"rev-parse", "--symbolic-full-name", "HEAD"});
+		p.WaitForExit();
+		git_branch = util::OneLine(p.GetOut());
+	}
+	{
+		Process p("/usr/bin/git", {"rev-parse", "HEAD"});
+		p.WaitForExit();
+		git_hash = util::OneLine(p.GetOut());
+	}
+
 	std::string msg;
 	msg += '[';
 	msg += util::DateTimeStr();
-	msg += "] Boot... (C++ testing)";
+	msg += "] Boot... (C++ testing)\n";
+	msg += git_branch;
+	msg += '\n';
+	msg += git_hash;
 
 	twitter.Tweet(msg);
 }

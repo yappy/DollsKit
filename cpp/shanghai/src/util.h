@@ -46,6 +46,7 @@ std::vector<std::string> Split(const std::string& input,
 	char delim, bool remove_empty = false);
 std::string ReplaceAll(const std::string &str,
 	const std::string &from, const std::string &to);
+std::string OneLine(const std::string str);
 std::string DateTimeStr(std::time_t timestamp = std::time(nullptr));
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
