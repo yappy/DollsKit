@@ -58,6 +58,21 @@ R"(<!DOCTYPE html>
 			util::Format(tmpl, {HtmlEscape(err)}));
 	}
 
+	// OK
+	std::string msg = "Pushed to Github: ";
+	msg += result["ref"].string_value();
+	msg += '\n';
+	msg += result["compare"].string_value();
+
+	auto task_func = [msg = std::move(msg)]
+		(TaskServer &server, const std::atomic<bool> &cancel)
+		{
+			auto &twitter = system::Get().twitter;
+			twitter.Tweet(msg);
+		};
+	auto &task_queue = system::Get().task_queue;
+	task_queue.Enqueue(task_func);
+
 	return HttpResponse(200,
 		{{"Content-Type", "text/html; charset=utf-8"}},
 		util::Format(tmpl, {"OK"}));
