@@ -111,7 +111,7 @@ public:
 	~TaskServer() = default;
 
 	void RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task);
-	void RegisterOneShotTask(OneShotTask &&task);
+	void RegisterOneShotTask(std::unique_ptr<OneShotTask> &&task);
 	void ReleaseAllForTest();
 
 	ServerResult Run();
@@ -121,14 +121,16 @@ private:
 	static const int ShutdownTimeout = 60;
 
 	std::mutex m_mtx;
-	std::condition_variable m_shutdown_cond;
+	std::condition_variable m_wakeup_cond;
 	ThreadPool m_thread_pool;
 
 	bool m_started;
 	ServerResult m_result;
 	std::vector<std::unique_ptr<PeriodicTask>> m_periodic_list;
+	std::deque<std::unique_ptr<OneShotTask>> m_oneshot_list;
 
 	std::future<void> ReleaseTask(const std::unique_ptr<PeriodicTask> &task);
+	std::future<void> ReleaseTask(std::unique_ptr<OneShotTask> &&task);
 };
 
 }	// namespace shanghai

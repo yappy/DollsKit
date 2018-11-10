@@ -101,6 +101,15 @@ void TaskServer::RegisterPeriodicTask(std::unique_ptr<PeriodicTask> &&task)
 	m_periodic_list.emplace_back(std::move(task));
 }
 
+void TaskServer::RegisterOneShotTask(std::unique_ptr<OneShotTask> &&task)
+{
+	std::lock_guard<std::mutex> lock(m_mtx);
+	// move construct
+	m_oneshot_list.emplace_back(std::move(task));
+	// タスクサーバを起こす
+	m_wakeup_cond.notify_all();
+}
+
 void TaskServer::ReleaseAllForTest()
 {
 	std::lock_guard<std::mutex> lock(m_mtx);
@@ -124,6 +133,25 @@ ServerResult TaskServer::Run()
 	ServerResult result = ServerResult::None;
 	std::vector<std::future<void>> future_list;
 
+	auto check_periodic = [this, &future_list](const struct tm &ltime) {
+		std::lock_guard<std::mutex> lock(m_mtx);
+		for (auto &task : m_periodic_list) {
+			if (task->CheckRelease(ltime)) {
+				// 結果は void だが未キャッチ例外の確認のため future を保存
+				future_list.emplace_back(ReleaseTask(task));;
+			}
+		}
+	};
+	auto check_oneshot = [this, &future_list]() {
+		std::lock_guard<std::mutex> lock(m_mtx);
+		while (!m_oneshot_list.empty()) {
+			// 結果は void だが未キャッチ例外の確認のため future を保存
+			future_list.emplace_back(std::move(ReleaseTask(
+				std::move(m_oneshot_list.front()))));
+			m_oneshot_list.pop_front();
+		}
+	};
+
 	logger.Log(LogLevel::Info, "TaskServer start");
 	while (1) {
 		std::time_t now = std::time(nullptr);
@@ -139,6 +167,9 @@ ServerResult TaskServer::Run()
 		target_time += 60;
 		// target_time 以上になるまで待つ
 		do {
+			// ワンショットの追加で起きる場合もあるのでチェック
+			check_oneshot();
+
 			now = std::time(nullptr);
 			std::time_t sleep_time = (target_time >= now) ?
 				target_time - now : 0;
@@ -147,7 +178,7 @@ ServerResult TaskServer::Run()
 			// シャットダウン条件変数をタイムアウト付きで待つ
 			{
 				std::unique_lock<std::mutex> lock(m_mtx);
-				bool shutdown = m_shutdown_cond.wait_for(
+				bool shutdown = m_wakeup_cond.wait_for(
 					lock, std::chrono::seconds(sleep_time),
 					[this]() -> bool {
 						return m_result != ServerResult::None;
@@ -182,15 +213,9 @@ ServerResult TaskServer::Run()
 
 		// 時間で判定してスレッドプールにポスト
 		::localtime_r(&now, &local);
-		{
-			std::lock_guard<std::mutex> lock(m_mtx);
-			for (auto &task : m_periodic_list) {
-				if (task->CheckRelease(local)) {
-					// 結果は void だが未キャッチ例外の確認のため future を保存
-					future_list.emplace_back(ReleaseTask(task));;
-				}
-			}
-		}
+		check_periodic(local);
+		// ワンショットもチェック
+		check_oneshot();
 	}
 END:
 	// スレッドプールにシャットダウン要求を入れて終了待ち
@@ -216,7 +241,7 @@ void TaskServer::RequestShutdown(ServerResult result)
 	{
 		std::unique_lock<std::mutex> lock(m_mtx);
 		m_result = result;
-		m_shutdown_cond.notify_all();
+		m_wakeup_cond.notify_all();
 	}
 }
 
@@ -239,6 +264,32 @@ std::future<void> TaskServer::ReleaseTask(
 					"[%s] finish (error)", task->GetName().c_str());
 				logger.Log(LogLevel::Error,
 					"[%s] %s", task->GetName().c_str(), e.what());
+			}
+		});
+	return future;
+}
+
+// task の所有権はスレッドへ移譲
+std::future<void> TaskServer::ReleaseTask(
+	std::unique_ptr<OneShotTask> &&task)
+{
+	// shared_ptr にしてラムダ式内にコピー
+	std::shared_ptr<OneShotTask> sh_task(std::move(task));
+	std::future<void> future = m_thread_pool.PostTask(
+		[this, sh_task](const std::atomic<bool> &cancel) {
+			logger.Log(LogLevel::Info,
+				"[%s] start", sh_task->GetName().c_str());
+			try {
+				sh_task->Entry(*this, cancel);
+				logger.Log(LogLevel::Info,
+					"[%s] finish (OK)", sh_task->GetName().c_str());
+			}
+			catch (std::runtime_error &e) {
+				// runtime_error はログを出して処理完了
+				logger.Log(LogLevel::Error,
+					"[%s] finish (error)", sh_task->GetName().c_str());
+				logger.Log(LogLevel::Error,
+					"[%s] %s", sh_task->GetName().c_str(), e.what());
 			}
 		});
 	return future;
