@@ -39,8 +39,9 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		}
 		if (IsBlack(entry)) {
 			logger.Log(LogLevel::Info, "Find Black");
-			logger.Log(LogLevel::Info, "id=%s screen=%s name=%s",
+			logger.Log(LogLevel::Info, "id=%s time=%s screen=%s name=%s",
 				entry["id_str"].string_value().c_str(),
+				entry["created_at"].string_value().c_str(),
 				entry["user"]["screen_name"].string_value().c_str(),
 				entry["user"]["name"].string_value().c_str());
 			logger.Log(LogLevel::Info, "%s", entry["text"].string_value().c_str());
