@@ -57,7 +57,7 @@ private:
 
 inline void SetupPages()
 {
-	system::HttpServer &server = system::Get().Http;
+	system::HttpServer &server = system::Get().http_server;
 
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/echo/\w*)"),
 		std::make_shared<EchoPage>());

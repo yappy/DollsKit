@@ -139,7 +139,7 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 
 void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
-	auto &twitter = system::Get().TwitterSystem;
+	auto &twitter = system::Get().twitter;
 
 	std::string git_branch, git_hash;
 	{

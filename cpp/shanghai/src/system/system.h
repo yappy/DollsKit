@@ -10,8 +10,8 @@ namespace shanghai {
 namespace system {
 
 struct System {
-	Twitter TwitterSystem;
-	HttpServer Http;
+	Twitter twitter;
+	HttpServer http_server;
 };
 
 void Initialize();

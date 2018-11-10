@@ -23,7 +23,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 	}
 
 	// ホームタイムラインを取得
-	auto twitter = system::Get().TwitterSystem;
+	auto twitter = system::Get().twitter;
 	auto json = twitter.Statuses_HomeTimeline({
 		{"since_id", std::to_string(m_since_id)},
 		{"count", "200"}});
@@ -53,7 +53,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 uint64_t TwitterTask::GetInitialSinceId()
 {
 	uint64_t since_id = 0;
-	auto twitter = system::Get().TwitterSystem;
+	auto twitter = system::Get().twitter;
 	auto json = twitter.Statuses_UserTimeline();
 	for (const auto &entry : json.array_items()) {
 		uint64_t id = util::to_uint64(entry["id_str"].string_value());

@@ -178,7 +178,7 @@ HealthCheckTask::HealthCheckTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 
 void HealthCheckTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
-	auto twitter = system::Get().TwitterSystem;
+	auto twitter = system::Get().twitter;
 
 	std::string msg;
 	msg += GetCpuUsage(cancel);
