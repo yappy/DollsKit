@@ -1,3 +1,9 @@
+/*
+ * Github repository -> Settings -> Webhhoks
+ * Content type: application/json を指定のこと
+ * application/x-www-form-urlencoded では libmicrohttpd の POST プロセッサが
+ * パースしてしまい、元の生データを署名検証できない
+ */
 // https://developer.github.com/webhooks/
 
 #include "webpage.h"
