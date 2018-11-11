@@ -17,6 +17,8 @@ public:
 	uint64_t MyId() { return m_id; }
 	// auto fake
 	void Tweet(const std::string &msg);
+	// auto fake, @user が本文中に必要
+	void Tweet(const std::string &msg, const std::string &reply_to);
 
 	json11::Json Statuses_Update(const Parameters &param = Parameters());
 	json11::Json Statuses_HomeTimeline(const Parameters &param = Parameters());

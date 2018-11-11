@@ -45,6 +45,12 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 				entry["user"]["screen_name"].string_value().c_str(),
 				entry["user"]["name"].string_value().c_str());
 			logger.Log(LogLevel::Info, "%s", entry["text"].string_value().c_str());
+
+			std::string msg = u8"@";
+			msg += entry["user"]["screen_name"].string_value();
+			msg += ' ';
+			msg += u8"ブラック";
+			twitter.Tweet(msg, entry["id_str"].string_value());
 		}
 	}
 }

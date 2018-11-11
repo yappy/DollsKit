@@ -41,10 +41,24 @@ Twitter::Twitter()
 void Twitter::Tweet(const std::string &msg)
 {
 	if (!m_fake_tweet) {
+		logger.Log(LogLevel::Info, "Tweet: %s", msg.c_str());
 		Statuses_Update({{"status", msg}});
 	}
 	else {
 		logger.Log(LogLevel::Info, "Fake Tweet: %s", msg.c_str());
+	}
+}
+
+void Twitter::Tweet(const std::string &msg, const std::string &reply_to)
+{
+	if (!m_fake_tweet) {
+		logger.Log(LogLevel::Info, "Tweet reply to %s: %s",
+			reply_to.c_str(), msg.c_str());
+		Statuses_Update({{"status", msg}, {"in_reply_to_status_id", reply_to}});
+	}
+	else {
+		logger.Log(LogLevel::Info, "Fake Tweet reply to %s: %s",
+			reply_to.c_str(), msg.c_str());
 	}
 }
 
