@@ -51,6 +51,12 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		if (IsWhite(entry)) {
 			logger.Log(LogLevel::Info, "Find White");
 			log_tweet(entry);
+
+			std::string msg = u8"@";
+			msg += entry["user"]["screen_name"].string_value();
+			msg += ' ';
+			msg += u8"ホワイト";
+			twitter.Tweet(msg, entry["id_str"].string_value());
 		}
 		if (IsBlack(entry)) {
 			logger.Log(LogLevel::Info, "Find Black");
