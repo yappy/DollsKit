@@ -11,6 +11,8 @@ TwitterTask::TwitterTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 	m_black_list = config.GetStrArray({"Twitter", "BlackList"});
 	m_black_words = config.GetStrArray({"Twitter", "BlackWords"});
 	m_replace_list = config.GetStrPairArray({"Twitter", "ReplaceList"});
+	m_white_list = config.GetStrArray({"Twitter", "WhiteList"});
+	m_white_words = config.GetStrArray({"Twitter", "WhiteWords"});
 }
 
 void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
@@ -28,6 +30,15 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		{"since_id", std::to_string(m_since_id)},
 		{"count", "200"}});
 
+	auto log_tweet = [](const json11::Json &status) {
+		logger.Log(LogLevel::Info, "id=%s time=%s screen=%s name=%s",
+			status["id_str"].string_value().c_str(),
+			status["created_at"].string_value().c_str(),
+			status["user"]["screen_name"].string_value().c_str(),
+			status["user"]["name"].string_value().c_str());
+		logger.Log(LogLevel::Info, "%s", status["text"].string_value().c_str());
+	};
+
 	for (const auto &entry : json.array_items()) {
 		// 自分のツイートには反応しない
 		if (util::to_uint64(entry["id_str"].string_value()) == twitter.MyId()) {
@@ -37,14 +48,13 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		if (!entry["retweeted_status"].is_null()) {
 			continue;
 		}
+		if (IsWhite(entry)) {
+			logger.Log(LogLevel::Info, "Find White");
+			log_tweet(entry);
+		}
 		if (IsBlack(entry)) {
 			logger.Log(LogLevel::Info, "Find Black");
-			logger.Log(LogLevel::Info, "id=%s time=%s screen=%s name=%s",
-				entry["id_str"].string_value().c_str(),
-				entry["created_at"].string_value().c_str(),
-				entry["user"]["screen_name"].string_value().c_str(),
-				entry["user"]["name"].string_value().c_str());
-			logger.Log(LogLevel::Info, "%s", entry["text"].string_value().c_str());
+			log_tweet(entry);
 
 			std::string msg = u8"@";
 			msg += entry["user"]["screen_name"].string_value();
@@ -94,6 +104,28 @@ bool TwitterTask::IsBlack(const json11::Json &status)
 	};
 	if (std::find_if(m_black_words.begin(), m_black_words.end(), match_word) !=
 		m_black_words.end()) {
+		return true;
+	}
+	return false;
+}
+
+bool TwitterTask::IsWhite(const json11::Json &status)
+{
+	// white list filter
+	auto in_list = [&status](const std::string elem) {
+		return status["user"]["screen_name"].string_value() == elem;
+	};
+	if (std::find_if(m_white_list.begin(), m_white_list.end(), in_list) ==
+		m_white_list.end()) {
+		return false;
+	}
+
+	// keyword search
+	auto match_word = [&status](const std::string elem) {
+		return status["text"].string_value().find(elem) != std::string::npos;
+	};
+	if (std::find_if(m_white_words.begin(), m_white_words.end(), match_word) !=
+		m_white_words.end()) {
 		return true;
 	}
 	return false;
