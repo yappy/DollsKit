@@ -41,11 +41,14 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 	};
 
 	for (const auto &status : json.array_items()) {
+		// ID
+		uint64_t id = util::to_uint64(status["id_str"].string_value());
 		// ローカルタイムに変換
 		std::time_t timestamp = util::StrToTimeTwitter(
 			status["created_at"].string_value());
 		struct tm local;
 		::localtime_r(&timestamp, &local);
+
 		// 自分のツイートには反応しない
 		if (util::to_uint64(status["id_str"].string_value()) == twitter.MyId()) {
 			continue;
@@ -63,6 +66,8 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			msg += ' ';
 			msg += u8"ホワイト！";
 			twitter.Tweet(msg, status["id_str"].string_value());
+
+			m_since_id = std::max(id, m_since_id);
 		}
 		if (IsBlack(status)) {
 			logger.Log(LogLevel::Info, "Find Black");
@@ -73,6 +78,8 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			msg += ' ';
 			msg += u8"ブラック";
 			twitter.Tweet(msg, status["id_str"].string_value());
+
+			m_since_id = std::max(id, m_since_id);
 		}
 	}
 }
@@ -83,8 +90,8 @@ uint64_t TwitterTask::GetInitialSinceId()
 	uint64_t since_id = 0;
 	auto twitter = system::Get().twitter;
 	auto json = twitter.Statuses_UserTimeline();
-	for (const auto &entry : json.array_items()) {
-		uint64_t id = util::to_uint64(entry["id_str"].string_value());
+	for (const auto &status : json.array_items()) {
+		uint64_t id = util::to_uint64(status["id_str"].string_value());
 		since_id = std::max(since_id, id);
 	}
 	return since_id;
