@@ -55,7 +55,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			std::string msg = u8"@";
 			msg += entry["user"]["screen_name"].string_value();
 			msg += ' ';
-			msg += u8"ホワイト";
+			msg += u8"ホワイト！";
 			twitter.Tweet(msg, entry["id_str"].string_value());
 		}
 		if (IsBlack(entry)) {
