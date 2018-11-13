@@ -30,43 +30,49 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		{"since_id", std::to_string(m_since_id)},
 		{"count", "200"}});
 
-	auto log_tweet = [](const json11::Json &status) {
-		logger.Log(LogLevel::Info, "id=%s time=%s screen=%s name=%s",
+	auto log_tweet = [](const json11::Json &status, std::time_t timestamp) {
+		logger.Log(LogLevel::Info, "id=%s time=%s local=%s screen=%s name=%s",
 			status["id_str"].string_value().c_str(),
 			status["created_at"].string_value().c_str(),
+			util::DateTimeStr(timestamp).c_str(),
 			status["user"]["screen_name"].string_value().c_str(),
 			status["user"]["name"].string_value().c_str());
 		logger.Log(LogLevel::Info, "%s", status["text"].string_value().c_str());
 	};
 
-	for (const auto &entry : json.array_items()) {
+	for (const auto &status : json.array_items()) {
+		// ローカルタイムに変換
+		std::time_t timestamp = util::StrToTimeTwitter(
+			status["created_at"].string_value());
+		struct tm local;
+		::localtime_r(&timestamp, &local);
 		// 自分のツイートには反応しない
-		if (util::to_uint64(entry["id_str"].string_value()) == twitter.MyId()) {
+		if (util::to_uint64(status["id_str"].string_value()) == twitter.MyId()) {
 			continue;
 		}
 		// リツイートには反応しない
-		if (!entry["retweeted_status"].is_null()) {
+		if (!status["retweeted_status"].is_null()) {
 			continue;
 		}
-		if (IsWhite(entry)) {
+		if (IsWhite(status)) {
 			logger.Log(LogLevel::Info, "Find White");
-			log_tweet(entry);
+			log_tweet(status, timestamp);
 
 			std::string msg = u8"@";
-			msg += entry["user"]["screen_name"].string_value();
+			msg += status["user"]["screen_name"].string_value();
 			msg += ' ';
 			msg += u8"ホワイト！";
-			twitter.Tweet(msg, entry["id_str"].string_value());
+			twitter.Tweet(msg, status["id_str"].string_value());
 		}
-		if (IsBlack(entry)) {
+		if (IsBlack(status)) {
 			logger.Log(LogLevel::Info, "Find Black");
-			log_tweet(entry);
+			log_tweet(status, timestamp);
 
 			std::string msg = u8"@";
-			msg += entry["user"]["screen_name"].string_value();
+			msg += status["user"]["screen_name"].string_value();
 			msg += ' ';
 			msg += u8"ブラック";
-			twitter.Tweet(msg, entry["id_str"].string_value());
+			twitter.Tweet(msg, status["id_str"].string_value());
 		}
 	}
 }

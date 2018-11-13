@@ -1,10 +1,13 @@
 #include "util.h"
 #include <memory>
-#include <cstdio>
+#include <cstring>
 #include <sstream>
+#include <algorithm>
 
 namespace shanghai {
 namespace util{
+
+using namespace std::string_literals;
 
 std::string ToString(const char *fmt, double d)
 {
@@ -34,7 +37,7 @@ std::string Format(const char *fmt, std::initializer_list<std::string> args)
 	return result;
 }
 
-std::string OneLine(const std::string str)
+std::string OneLine(const std::string &str)
 {
 	size_t lf = str.find('\n');
 	if (lf != std::string::npos) {
@@ -89,6 +92,35 @@ std::string DateTimeStr(std::time_t timestamp)
 	}
 
 	return std::string(timecs);
+}
+
+// sample: "Thu Apr 06 15:24:15 +0000 2017"
+std::time_t StrToTimeTwitter(const std::string &str)
+{
+	const std::array<const std::string, 12> mon_str = {
+		"Jan"s, "Feb"s, "Mar"s, "Apr"s, "May"s, "Jun"s,
+		"Jul"s, "Aug"s, "Sep"s, "Oct"s, "Nov"s, "Dec"s,
+	};
+	std::vector<std::string> tokens = Split(str, ' ');
+	try {
+		struct tm tm;
+		std::memset(&tm, 0, sizeof(tm));
+		{
+			std::vector<std::string> timestr = Split(tokens.at(3), ':');
+			tm.tm_hour = std::stoi(timestr.at(0));
+			tm.tm_min = std::stoi(timestr.at(1));
+			tm.tm_sec = std::stoi(timestr.at(2));
+		}
+		tm.tm_year = std::stoi(tokens.at(5)) - 1900;
+		tm.tm_mon = std::distance(mon_str.begin(),
+			std::find(mon_str.begin(), mon_str.end(), tokens.at(1)));
+		tm.tm_mday = std::stoi(tokens.at(2));
+
+		return ::timegm(&tm);
+	}
+	catch (std::exception &e) {
+		throw std::runtime_error(e.what());
+	}
 }
 
 namespace {
