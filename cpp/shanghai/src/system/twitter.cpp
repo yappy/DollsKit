@@ -31,9 +31,20 @@ Twitter::Twitter()
 	m_access_token = config.GetStr({"TwitterConfig", "AccessToken"});
 	m_access_secret = config.GetStr({"TwitterConfig", "AccessSecret"});
 
-	json11::Json cred_result = Account_VerifyCredentials();
-	m_id = util::to_uint64(cred_result["id_str"].string_value());
-	logger.Log(LogLevel::Info, "Verify credentials OK: id=%" PRIu64, m_id);
+	try {
+		json11::Json cred_result = Account_VerifyCredentials();
+		m_id = util::to_uint64(cred_result["id_str"].string_value());
+		logger.Log(LogLevel::Info, "Verify credentials OK: id=%" PRIu64, m_id);
+	}
+	catch (NetworkError &e) {
+		m_id = 0;
+		logger.Log(LogLevel::Warn, "Verify credentials NG: %s", e.what());
+		logger.Log(LogLevel::Warn, "Will not able to identify self tweet");
+		// フェイク設定の時のみ続行する
+		if (!m_fake_tweet) {
+			throw;
+		}
+	}
 
 	logger.Log(LogLevel::Info, "Initialize Twitter OK");
 }
