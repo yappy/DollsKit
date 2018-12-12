@@ -4,6 +4,7 @@
 #include "../logger.h"
 #include "../config.h"
 #include "../taskserver.h"
+#include <random>
 
 namespace shanghai {
 // 一定周期でリリースされるタスク群
@@ -62,6 +63,19 @@ private:
 	uint64_t GetInitialSinceId();
 	bool IsBlack(const json11::Json &status);
 	bool IsWhite(const json11::Json &status);
+};
+
+class RandomTweetTask : public PeriodicTask {
+public:
+	RandomTweetTask(ReleaseFunc rel_func);
+	~RandomTweetTask() = default;
+
+	std::string GetName() override { return "RandomTweet"s; }
+	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
+
+private:
+	std::mt19937 m_mt;
+	std::vector<std::string> m_random_list;
 };
 
 }	// namespace task

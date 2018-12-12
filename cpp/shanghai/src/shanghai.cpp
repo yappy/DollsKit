@@ -116,7 +116,7 @@ void ParseArgs(int argc, char * const argv[])
 
 // 設定ファイル名
 const std::array<const char *, 3> ConfigFiles = {
-	"twconf.json",
+	"tw.json",
 	"config.default.json",
 	"config.json",
 };
@@ -141,6 +141,10 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 	server->RegisterPeriodicTask(
 		std::make_unique<task::TwitterTask>([](const struct tm &tm) {
 			return (tm.tm_min + 2) % 5 == 0;
+		}));
+	server->RegisterPeriodicTask(
+		std::make_unique<task::RandomTweetTask>([](const struct tm &tm) {
+			return tm.tm_min == 0 && tm.tm_hour == 10;
 		}));
 }
 

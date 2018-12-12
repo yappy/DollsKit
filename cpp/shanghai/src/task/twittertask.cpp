@@ -150,5 +150,22 @@ bool TwitterTask::IsWhite(const json11::Json &status)
 	return false;
 }
 
+
+RandomTweetTask::RandomTweetTask(ReleaseFunc rel_func) :
+	PeriodicTask(rel_func), m_mt(std::random_device()())
+{
+	m_random_list = config.GetStrArray({"Twitter", "RandomList"});
+}
+
+void RandomTweetTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
+{
+	auto twitter = system::Get().twitter;
+	if (m_random_list.size() == 0) {
+		return;
+	}
+	uint32_t random_ind = m_mt() % m_random_list.size();
+	twitter.Tweet(m_random_list.at(random_ind));
+}
+
 }	// namespace task
 }	// namespace shanghai
