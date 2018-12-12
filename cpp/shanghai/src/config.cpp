@@ -30,7 +30,7 @@ void Config::LoadString(const std::string &src)
 	if (json.is_null()) {
 		throw ConfigError(err);
 	}
-	m_json = json;
+	m_json.emplace_front(std::move(json));
 }
 
 void Config::LoadFile(const std::string &file_name)
@@ -110,13 +110,23 @@ std::vector<std::pair<std::string, std::string>> Config::GetStrPairArray(
 	return result;
 }
 
-const json11::Json &Config::GetValue(std::initializer_list<const char *> keys)
+const json11::Json &Config::GetValue(std::initializer_list<const char *> keys,
+	size_t index)
 {
-	const json11::Json *cur = &m_json;
+	if (index >= m_json.size()) {
+		// return static null
+		return json11::Json()[0];
+	}
+	const json11::Json *cur = &m_json.at(index);
 	for (const char *key : keys) {
 		cur = &(*cur)[key];
 	}
-	return *cur;
+	if (!cur->is_null()) {
+		return *cur;
+	}
+	else {
+		return GetValue(keys, index + 1);
+	}
 }
 
 // global instance

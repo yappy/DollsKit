@@ -4,6 +4,7 @@
 #include <json11.hpp>
 #include <stdexcept>
 #include <string>
+#include <deque>
 
 namespace shanghai {
 
@@ -32,9 +33,10 @@ public:
 		std::initializer_list<const char *> keys);
 
 private:
-	json11::Json m_json;
+	std::deque<json11::Json> m_json;
 
-	const json11::Json &GetValue(std::initializer_list<const char *> keys);
+	const json11::Json &GetValue(std::initializer_list<const char *> keys,
+		size_t index = 0);
 };
 
 extern Config config;
