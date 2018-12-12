@@ -115,8 +115,11 @@ void ParseArgs(int argc, char * const argv[])
 }
 
 // 設定ファイル名
-const char * const ConfigFile = "config.json";
-const char * const ConfigFileFallback = "config.template.json";
+const std::array<const char *, 3> ConfigFiles = {
+	"twconf.json",
+	"config.default.json",
+	"config.json",
+};
 
 // タスクの登録
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
@@ -190,23 +193,9 @@ int main(int argc, char *argv[])
 	try {
 		while (1) {
 			// 設定ファイルのロード
-			try {
-				logger.Log(LogLevel::Info, "Load: %s", ConfigFile);
-				config.LoadFile(ConfigFile);
-			}
-			catch (std::runtime_error &e) {
-#ifndef NDEBUG
-				// DEBUG
-				logger.Log(LogLevel::Error, "Load config failed");
-				logger.Log(LogLevel::Error, "%s", e.what());
-				logger.Log(LogLevel::Warn,
-					"DEBUG BUILD ONLY: load template file instead");
-				logger.Log(LogLevel::Info, "Load: %s", ConfigFileFallback);
-				config.LoadFile(ConfigFileFallback);
-#else
-				// RELEASE
-				throw;
-#endif
+			for (const auto &file_name : ConfigFiles) {
+				logger.Log(LogLevel::Info, "Load: %s", file_name);
+				config.LoadFile(file_name);
 			}
 
 			// システムコンポーネントの全初期化

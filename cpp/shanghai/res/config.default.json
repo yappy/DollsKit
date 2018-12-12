@@ -1,0 +1,30 @@
+{
+	"System":
+	{
+		"AllTasksFirst"		: true
+	},
+	"TwitterConfig":
+	{
+		"FakeTweet"			: true,
+		"ConsumerKey"		: "",
+		"ConsumerSecret"	: "",
+		"AccessToken"		: "",
+		"AccessSecret"		: ""
+	},
+	"Ddns":
+	{
+		"Enabled"	: false,
+		"User"		: "",
+		"Pass"		: ""
+	},
+	"HttpServer":
+	{
+		"Port"			: 8888,
+		"Rewrite"		: "/house",
+		"GithubHook"	:
+		{
+			"Enabled"	: true,
+			"Secret"	: ""
+		}
+	}
+}
