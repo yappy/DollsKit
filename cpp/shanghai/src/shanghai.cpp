@@ -7,9 +7,12 @@
 #include "task/task.h"
 #include "web/webpage.h"
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
-#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <thread>
 #include <json11.hpp>
@@ -18,6 +21,18 @@ namespace {
 
 using namespace shanghai;
 using namespace std::string_literals;
+
+const char * const PidFileName = "shanghai.pid";
+
+class SafeFd {
+public:
+	explicit SafeFd(int fd) : m_fd(fd) {}
+	~SafeFd() { close(m_fd); m_fd = -1; }
+	int Get() { return m_fd; }
+
+private:
+	int m_fd;
+};
 
 // 処理したいシグナルを全てブロックし、シグナル処理スレッドでハンドルする
 // ブロックしたシグナルセットを sigset に返す
@@ -184,17 +199,61 @@ int main(int argc, char *argv[])
 	// コマンドライン引数のパース
 	ParseArgs(argc, argv);
 
-	// ログシステムの設定
-	logger.AddStdOut(LogLevel::Trace);
-	logger.AddFile(LogLevel::Info);
+	if (boot_opts.daemon) {
+		// `cd /` ?
+		int nochdir = 1;
+		// stdin/out/err を閉じて /dev/null にリダイレクトするか
+		int noclose = 0;
+		// fork() して親プロセスは _exit(0)
+		int ret = daemon(nochdir, noclose);
+		// fork() に失敗した場合は親プロセスに返る
+		// 成功した場合は親プロセスは _exit(0) する
+		// その後の失敗は子プロセスに失敗が返る
+		if (ret < 0) {
+			// 子プロセスで stderr が閉じられた後にエラーを返した場合
+			// エラー詳細が虚空に消えるがその場合は諦める
+			// (ファイルをいじりだすより前に子プロセス一本モードにしておきたいため)
+			// 少なくとも glibc の実装では起こらなさそう
+			perror("daemon()");
+			return EXIT_FAILURE;
+		}
+	}
 
-	// メインスレッドでシグナルマスクを設定する
-	// メインスレッドから生成されたサブスレッドはこの設定を継承する
-	// ref. man pthread_sigmask
-	sigset_t sigset;
-	SetupSignalMask(sigset);
+	// ログシステムの設定
+	if (!boot_opts.daemon) {
+		logger.AddStdOut(LogLevel::Trace);
+	}
+	logger.AddFile(LogLevel::Info);
+	logger.Log(LogLevel::Info, "Initializing (daemon=%s)",
+		boot_opts.daemon ? "yes" : "no");
 
 	try {
+		{
+			// pid ファイルを作る(新規作成できなければ失敗)
+			int pid_fd_raw = util::SysCall(
+				open(PidFileName, O_WRONLY | O_CREAT | O_EXCL, 0600));
+			SafeFd pid_fd(pid_fd_raw);
+
+			// 終了時に pid ファイルを消すよう登録する
+			// std::quick_exit() では呼ばれない
+			// fork した子プロセスが exec 失敗して終了する時など
+			std::atexit([](){
+				unlink(PidFileName);
+			});
+
+			// pid を文字列で書いて閉じる
+			std::string pid_str = std::to_string(getpid());
+			pid_str += '\n';
+			util::SysCall(write(pid_fd.Get(), pid_str.c_str(), pid_str.size()));
+			// close
+		}
+
+		// メインスレッドでシグナルマスクを設定する
+		// メインスレッドから生成されたサブスレッドはこの設定を継承する
+		// ref. man pthread_sigmask
+		sigset_t sigset;
+		SetupSignalMask(sigset);
+
 		while (1) {
 			// 設定ファイルのロード
 			for (const auto &file_name : ConfigFiles) {
@@ -231,7 +290,7 @@ int main(int argc, char *argv[])
 				// サーバスタート
 				result = server->Run();
 			}
-			catch(...) {
+			catch (...) {
 				teardown();
 				throw;
 			}
@@ -257,7 +316,7 @@ int main(int argc, char *argv[])
 	catch (std::runtime_error &e) {
 		logger.Log(LogLevel::Fatal, "Runtime error");
 		logger.Log(LogLevel::Fatal, "%s", e.what());
-		return 1;
+		return EXIT_FAILURE;
 	}
 	catch (std::exception &e) {
 		logger.Log(LogLevel::Fatal, "Fatal error");

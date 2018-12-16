@@ -26,7 +26,7 @@ namespace util {
 
 // 負の返り値の場合に errno から system_error を生成して投げる
 template <typename R>
-inline int SysCall(R ret)
+inline R SysCall(R ret)
 {
 	if (ret < 0) {
 		throw std::system_error(errno, std::generic_category());
