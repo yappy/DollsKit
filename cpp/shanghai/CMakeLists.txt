@@ -41,11 +41,6 @@ add_custom_target("run"
 add_custom_target("start"
 	COMMAND "./${PROJECT_NAME}" "--daemon"
 	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
-# make stop
-file(READ "${CMAKE_INSTALL_PREFIX}/shanghai.pid" pid)
-add_custom_target("stop"
-	COMMAND "kill" ${pid}
-	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
 # make fulltest
 add_custom_target("fulltest"
