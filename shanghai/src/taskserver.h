@@ -83,7 +83,7 @@ private:
  */
 class ThreadPool final {
 public:
-	using TaskFunc = void(const std::atomic<bool> &cancel) noexcept;
+	using TaskFunc = void(const std::atomic<bool> &cancel);
 
 	explicit ThreadPool(int thnum);
 	~ThreadPool();
