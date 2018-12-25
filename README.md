@@ -1,4 +1,7 @@
 # DollsKit
+
+Branch ci: [![Build Status](https://travis-ci.org/yappy/DollsKit.svg?branch=ci)](https://travis-ci.org/yappy/DollsKit)
+
 yappy家の管理プログラム
 
 ## ビルド
