@@ -13,6 +13,11 @@ env:
     - BUILD_TYPE=Debug
     - BUILD_TYPE=Release
 
+addons:
+  apt:
+    packages:
+    - libmicrohttpd-dev
+
 script:
   - mkdir build
   - cd build
