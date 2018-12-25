@@ -2,52 +2,37 @@
 yappy家の管理プログラム
 
 ## ビルド
-環境の整った人形の中で
-
-> % make all
-
-次回以降は
-
-> % make
-
-(詳細は Makefile 参照)
-
-## ビルド(Windows)
-C# の入った Visual Studio で DollsKit.sln を開く
-
-> ビルド > ソリューションのビルド
-
-## 人形の実行
+環境の整った人形、または PC の中で
 ```
-% cd deploy
-% mono Shanghai.exe
-```
-```
-(Visual Studio)
-Shanghai をスタートアッププロジェクトに設定
-デバッグ > デバッグ開始
+% mkdir build
+% cd build
+% cmake -DCMAKE_BUILD_TYPE=Release ..
+% make -j4
+% make install
 ```
 
-### 注意
+## 管理プログラムの実行開始
+```
+% make run
+```
+
+## テストの実行
+```
+% make shorttest
+% make fulltest
+```
+
+## 注意
+### 設定
+起動には設定ファイルが必要です。
+デフォルトファイルをコピーして作成してください。
 ほぼすべての機能はデフォルトでは無効になっています。
-以下のディレクトリにある設定ファイルの編集が必要です。
-> ./deploy/settings/
+存在しないキーはデフォルトファイルの内容が使われます。
+> config.default.json => config.json
 
-deploy/www/twque/
-は CGI から書き込み可能に手動で変更する必要があります。
+### Build Type
+CMAKE_BUILD_TYPE は Debug, Release, RelWithDebInfo, MinSizeRel が指定可能です。
 
-## 人形語のテスト用インタプリタを実行
-```
-% ./LangTest/bin/Debug/LangTest.exe
-```
-```
-(Visual Studio)
-LangTest をスタートアッププロジェクトに設定
-デバッグ > デバッグ開始
-```
-
-* 1行入力するごとに別に実行
-* 空行入力で終了
-
-## 人形語の仕様書
-> DollsLang/spec.MD
+### 並列 make
+-jn の n の値は論理コア数に応じて適切な数を指定してください。
+人形はメモリが少ないので -j として無制限にするとメモリ不足で死にます。
