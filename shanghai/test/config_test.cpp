@@ -18,7 +18,7 @@ TEST(ConfigTest, Parse) {
 TEST(ConfigTest, Bool) {
 	Config config;
 	config.LoadString(TestSrc);
-	EXPECT_EQ(true, config.GetBool({"testval", "a"}));
+	EXPECT_TRUE(config.GetBool({"testval", "a"}));
 }
 
 TEST(ConfigTest, Int) {
@@ -64,7 +64,7 @@ TEST(ConfigTest, Multi) {
 	config.LoadString(TestSrc1);
 	config.LoadString(TestSrc2);
 
-	EXPECT_EQ(false, config.GetBool({"x", "a"}));
+	EXPECT_FALSE(config.GetBool({"x", "a"}));
 	EXPECT_EQ(42, config.GetInt({"x", "b"}));
 	EXPECT_EQ("str", config.GetStr({"x", "c"}));
 
