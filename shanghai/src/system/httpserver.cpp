@@ -333,8 +333,16 @@ void HttpServer::AddPage(const std::regex &method, const std::regex &url,
 	// unlock
 }
 
-// 整形後のリクエストデータから HttpResponse オブジェクトを返す
 HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
+	const std::string &url, const std::string &method,
+	const std::string &version, const PostKeyValueSet &post) noexcept
+{
+	return ProcessResponse(ProcessRequestRaw(
+		connection, url, method, version, post));
+}
+
+// 整形後のリクエストデータから HttpResponse オブジェクトを返す
+HttpResponse HttpServer::ProcessRequestRaw(struct MHD_Connection *connection,
 	const std::string &url, const std::string &method,
 	const std::string &version, const PostKeyValueSet &post) noexcept
 {
@@ -397,6 +405,19 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	}
 	// マッチするものがなかった場合は 404 とする
 	return HttpResponse(404);
+}
+
+HttpResponse HttpServer::ProcessResponse(HttpResponse &&resp) noexcept
+{
+	// Location ヘッダがあった場合は rewrite で消した分を前に付け加える
+	for (auto &entry : resp.Header) {
+		const std::string &key = entry.first;
+		std::string &val = entry.second;
+		if (key == "Location") {
+			val = m_rewrite + val;
+		}
+	}
+	return resp;
 }
 
 const uint64_t HttpServer::PostTotalLimit;

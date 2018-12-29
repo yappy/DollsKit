@@ -111,6 +111,10 @@ private:
 	HttpResponse ProcessRequest(struct MHD_Connection *connection,
 		const std::string &url, const std::string &method,
 		const std::string &version, const PostKeyValueSet &post) noexcept;
+	HttpResponse ProcessRequestRaw(struct MHD_Connection *connection,
+		const std::string &url, const std::string &method,
+		const std::string &version, const PostKeyValueSet &post) noexcept;
+	HttpResponse ProcessResponse(HttpResponse &&resp) noexcept;
 	static int OnRequest(void *cls, struct MHD_Connection *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
