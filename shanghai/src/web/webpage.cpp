@@ -5,6 +5,7 @@
 #include "postpage.h"
 #include "github.h"
 #include "travisci.h"
+#include "pic.h"
 
 namespace shanghai {
 namespace web {
@@ -21,6 +22,8 @@ void SetupPages()
 		std::make_shared<GithubPage>());
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/travisci/\w*)"),
 		std::make_shared<TravisCiPage>());
+	server.AddPage(std::regex("GET|POST"), std::regex(R"(/pic/\w*)"),
+		std::make_shared<PicPage>());
 }
 
 }	// namespace web
