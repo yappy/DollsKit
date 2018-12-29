@@ -243,6 +243,18 @@ int SendResponse(struct MHD_Connection *connection, HttpResponse &&resp)
 		logger.Log(LogLevel::Error, "MHD_create_response_from_buffer failed");
 		return MHD_NO;
 	}
+
+	for (const auto &entry : resp.Header) {
+		const std::string &key = entry.first;
+		const std::string &val = entry.second;
+		int ret = ::MHD_add_response_header(mhd_resp.get(),
+			key.c_str(), val.c_str());
+		if (ret != MHD_YES) {
+			logger.Log(LogLevel::Error, "MHD_add_response_header failed");
+			return MHD_NO;
+		}
+	}
+
 	int ret = ::MHD_queue_response(connection, resp.Status, mhd_resp.get());
 	if (ret != MHD_YES) {
 		logger.Log(LogLevel::Error, "MHD_queue_response failed");
