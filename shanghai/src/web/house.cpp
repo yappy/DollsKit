@@ -72,8 +72,8 @@ HttpResponse SwitchPage::Do(
 	// TODO
 	logger.Log(LogLevel::Info, "Switch access: %s", url_match.c_str());
 
-	// 201 Created
-	return HttpResponse(201, {{"Location", "/priv/house/"}});
+	// 303 See other
+	return HttpResponse(303, {{"Location", "/priv/house/"}});
 }
 
 }	// namespace web
