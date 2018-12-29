@@ -22,6 +22,7 @@ struct MHD_Connection;
 
 namespace shanghai {
 namespace system {
+namespace http {
 
 struct PostData final {
 	// 真のサイズ (未対応)
@@ -116,6 +117,7 @@ private:
 		size_t *upload_data_size, void **con_cls) noexcept;
 };
 
+}	// namespace http
 }	// namespace system
 }	// namespace shanghai
 

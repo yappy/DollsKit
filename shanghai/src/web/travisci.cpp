@@ -6,8 +6,10 @@
  */
 // https://docs.travis-ci.com/user/notifications/#configuring-webhook-notifications
 
-#include "webpage.h"
+#include "travisci.h"
+#include "../system/system.h"
 #include "../util.h"
+#include "../config.h"
 #include "../net.h"
 
 namespace shanghai {
@@ -31,7 +33,7 @@ R"(<!DOCTYPE html>
 	std::string json_str = json.is_null() ? "NO DATA" : json.dump();
 	return HttpResponse(200,
 		{{"Content-Type", "text/html; charset=utf-8"}},
-		util::Format(tmpl, {HtmlEscape(json_str)}));
+		util::Format(tmpl, {util::HtmlEscape(json_str)}));
 }
 
 HttpResponse ProcessPost(const std::string &json_str, json11::Json &result)
@@ -55,7 +57,7 @@ R"(<!DOCTYPE html>
 		// Bad Request
 		return HttpResponse(400,
 			{{"Content-Type", "text/html; charset=utf-8"}},
-			util::Format(tmpl, {HtmlEscape(err)}));
+			util::Format(tmpl, {util::HtmlEscape(err)}));
 	}
 
 	// OK

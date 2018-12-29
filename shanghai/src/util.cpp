@@ -123,6 +123,36 @@ std::time_t StrToTimeTwitter(const std::string &str)
 	}
 }
 
+std::string HtmlEscape(const std::string &src)
+{
+	std::string dst;
+	dst.reserve(src.size());
+	for (const char &c : src) {
+		switch (c) {
+		case '&':
+			dst += "&amp;";
+			break;
+		case '"':
+			dst += "&quot";
+			break;
+		case '\'':
+			// since HTML5 spec!
+			dst += "&apos";
+			break;
+		case '<':
+			dst += "&lt;";
+			break;
+		case '>':
+			dst += "&gt;";
+			break;
+		default:
+			dst += c;
+			break;
+		}
+	}
+	return dst;
+}
+
 namespace {
 
 struct FileDeleter {

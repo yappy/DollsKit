@@ -8,8 +8,10 @@
  */
 // https://developer.github.com/webhooks/
 
-#include "webpage.h"
+#include "github.h"
+#include "../system/system.h"
 #include "../util.h"
+#include "../config.h"
 #include "../net.h"
 
 namespace shanghai {
@@ -33,7 +35,7 @@ R"(<!DOCTYPE html>
 	std::string json_str = json.is_null() ? "NO DATA" : json.dump();
 	return HttpResponse(200,
 		{{"Content-Type", "text/html; charset=utf-8"}},
-		util::Format(tmpl, {HtmlEscape(json_str)}));
+		util::Format(tmpl, {util::HtmlEscape(json_str)}));
 }
 
 HttpResponse ProcessPost(const std::string &json_str, json11::Json &result)
@@ -57,7 +59,7 @@ R"(<!DOCTYPE html>
 		// Bad Request
 		return HttpResponse(400,
 			{{"Content-Type", "text/html; charset=utf-8"}},
-			util::Format(tmpl, {HtmlEscape(err)}));
+			util::Format(tmpl, {util::HtmlEscape(err)}));
 	}
 
 	// OK
@@ -96,14 +98,13 @@ HttpResponse GithubPage::Do(
 	if (!m_enabled) {
 		return HttpResponse(404);
 	}
-
 	if (method == "GET") {
 		json11::Json json;
 		{
-			mtx_guard lock(m_mtx);
+			rlock lock(m_mtx);
 			json = m_last_push;
 		}
-		return PrintJson(m_last_push);
+		return PrintJson(json);
 	}
 	else if (method == "POST") {
 		// github hook event type
@@ -136,7 +137,7 @@ HttpResponse GithubPage::Do(
 		json11::Json json;
 		HttpResponse resp = ProcessPost(payload_str, json);
 		{
-			mtx_guard lock(m_mtx);
+			wlock lock(m_mtx);
 			m_last_push = json;
 		}
 		return resp;

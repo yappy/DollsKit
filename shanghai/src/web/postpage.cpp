@@ -1,4 +1,4 @@
-#include "webpage.h"
+#include "postpage.h"
 #include "../util.h"
 
 namespace shanghai {
@@ -12,7 +12,7 @@ HttpResponse PostPage::Do(
 	std::string header_str = "<ul>\n";
 	for (const auto &entry : header) {
 		header_str += util::Format("  <li>{0}: {1}</li>\n",
-			{HtmlEscape(entry.first), HtmlEscape(entry.second)});
+			{util::HtmlEscape(entry.first), util::HtmlEscape(entry.second)});
 	}
 	header_str += "</ul>";
 
@@ -20,9 +20,9 @@ HttpResponse PostPage::Do(
 	for (const auto &entry : post) {
 		post_str += util::Format("  <li>{0}: (file: {1}){2}</li>\n",
 			{
-				HtmlEscape(entry.first),
-				HtmlEscape(entry.second.FileName),
-				HtmlEscape(entry.second.DataInMemory)
+				util::HtmlEscape(entry.first),
+				util::HtmlEscape(entry.second.FileName),
+				util::HtmlEscape(entry.second.DataInMemory)
 			});
 	}
 	post_str += "</ul>";

@@ -13,7 +13,7 @@ namespace system {
 struct System {
 	TaskQueue task_queue;
 	Twitter twitter;
-	HttpServer http_server;
+	http::HttpServer http_server;
 };
 
 void Initialize();

@@ -6,6 +6,7 @@
 
 namespace shanghai {
 namespace system {
+namespace http {
 
 namespace {
 
@@ -466,5 +467,6 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 	return SendResponse(connection, std::move(resp));
 }
 
+}	// namespace http
 }	// namespace system
 }	// namespace shanghai
