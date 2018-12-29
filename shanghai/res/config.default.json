@@ -23,8 +23,12 @@
 		"Rewrite"		: "/house",
 		"GithubHook"	:
 		{
-			"Enabled"	: true,
+			"Enabled"	: false,
 			"Secret"	: ""
+		},
+		"TravisCiHook"	:
+		{
+			"Enabled"	: false
 		}
 	}
 }

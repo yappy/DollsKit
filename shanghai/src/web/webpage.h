@@ -5,6 +5,8 @@
 #include "../config.h"
 #include "../system/system.h"
 #include <json11.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 namespace shanghai {
 namespace web {
@@ -15,6 +17,8 @@ using system::KeyValueSet;
 using system::PostKeyValueSet;
 using system::HttpResponse;
 using mtx_guard = std::lock_guard<std::mutex>;
+using wlock = std::lock_guard<std::shared_timed_mutex>;
+using rlock = std::shared_lock<std::shared_timed_mutex>;
 
 class EchoPage : public WebPage {
 public:
@@ -53,6 +57,22 @@ private:
 	json11::Json m_last_push;
 	bool m_enabled;
 	std::string m_secret;
+};
+
+class TravisCiPage : public WebPage {
+public:
+	TravisCiPage();
+	virtual ~TravisCiPage() = default;
+
+	HttpResponse Do(
+		const std::string &method, const std::string &url_match,
+		const KeyValueSet &header, const KeyValueSet &query,
+		const PostKeyValueSet &post) override;
+
+private:
+	std::shared_timed_mutex m_mtx;
+	json11::Json m_last_build;
+	bool m_enabled;
 };
 
 inline void SetupPages()
