@@ -36,6 +36,23 @@ R"(<!DOCTYPE html>
 		util::Format(tmpl, {util::HtmlEscape(json_str)}));
 }
 
+std::string FetchPublicKey()
+{
+	const std::string url = "https://api.travis-ci.com/config"s;
+	const int timeout_sec = 5;
+
+	std::string src = net.Download(url, timeout_sec);
+	std::string err;
+	auto json = json11::Json::parse(src, err);
+
+	// エラーもここに含める
+	const auto &val = json["config"]["notifications"]["webhook"]["public_key"];
+	if (!val.is_string()) {
+		throw std::runtime_error("Fetching public key failed");
+	}
+	return val.string_value();
+}
+
 HttpResponse ProcessPost(const std::string &json_str, json11::Json &result)
 {
 	const char *tmpl =
