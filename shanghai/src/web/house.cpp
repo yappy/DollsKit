@@ -97,6 +97,11 @@ HttpResponse SwitchPage::Do(
 	// TODO
 	logger.Log(LogLevel::Info, "Switch access: %s", url_match.c_str());
 
+	int id = std::stoi(url_match);
+	Process p("/usr/bin/gatttool", {
+		"-t", "random", "-b", m_mac_list.at(id),
+		"--char-write-req", "-a" "0x0016", "-n", "570100"});
+
 	// 303 See other
 	return HttpResponse(303, {{"Location", "/priv/house/"}});
 }
