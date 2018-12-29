@@ -75,6 +75,7 @@ HttpResponse PicPage::Do(
 		{"-o", "-", "-t", Timeout, "-w", ImgW, "-h", ImgH, "-th", ImgTh});
 	int exitcode = p.WaitForExit(10);
 	if (exitcode != 0) {
+		logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
 		return HttpResponse(500);
 	}
 
@@ -103,6 +104,7 @@ HttpResponse SwitchPage::Do(
 		"--char-write-req", "-a" "0x0016", "-n", "570100"});
 	int exitcode = p.WaitForExit(5);
 	if (exitcode != 0) {
+		logger.Log(LogLevel::Error, "gatttool: %d", exitcode);
 		return HttpResponse(500);
 	}
 
