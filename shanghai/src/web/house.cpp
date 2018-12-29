@@ -101,6 +101,10 @@ HttpResponse SwitchPage::Do(
 	Process p("/usr/bin/gatttool", {
 		"-t", "random", "-b", m_mac_list.at(id),
 		"--char-write-req", "-a" "0x0016", "-n", "570100"});
+	int exitcode = p.WaitForExit(5);
+	if (exitcode != 0) {
+		return HttpResponse(500);
+	}
 
 	// 303 See other
 	return HttpResponse(303, {{"Location", "/priv/house/"}});
