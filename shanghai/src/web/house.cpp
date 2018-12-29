@@ -9,8 +9,8 @@ namespace web {
 
 namespace {
 	const char * const Timeout = "1";
-	const char * const ImgW = "1024";
-	const char * const ImgH = "768";
+	const char * const ImgW = "320";
+	const char * const ImgH = "240";
 	const char * const ImgTh = "160:120:100";
 }	// namespace
 
