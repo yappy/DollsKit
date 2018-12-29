@@ -1,6 +1,7 @@
 #include "house.h"
 #include "../util.h"
 #include "../logger.h"
+#include "../config.h"
 #include "../exec.h"
 
 namespace shanghai {
@@ -13,6 +14,11 @@ namespace {
 	const char * const ImgTh = "160:120:100";
 }	// namespace
 
+
+HouseTopPage::HouseTopPage()
+{
+	m_mac_list = config.GetStrArray({"Switch", "MacList"});
+}
 
 HttpResponse HouseTopPage::Do(
 	const std::string &method, const std::string &url_match,
@@ -34,15 +40,29 @@ R"(<!DOCTYPE html>
 <img src="./pic/take" />
 
 <h2>Switch Control</h2>
-<form action="./switch/0" method="POST">
-  <input type="submit" value="switch 0">
-</form>
+{0}
 
 </body>
 </html>
 )";
+
+	std::string switch_part;
+	if (m_mac_list.size() > 0) {
+		for (size_t i = 0; i < m_mac_list.size(); i++) {
+			switch_part += util::Format(
+R"(<form action="./switch/{0}" method="POST">
+  <p><input type="submit" value="switch {0}"/>&nbsp;{1}</p>
+</form>
+)",
+			{std::to_string(i), util::HtmlEscape(m_mac_list.at(i))});
+		}
+	}
+	else {
+		switch_part = "<p>No switches are available.</p>";
+	}
+
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
-		tmpl);
+		util::Format(tmpl, {switch_part}));
 }
 
 HttpResponse PicPage::Do(
@@ -62,6 +82,11 @@ HttpResponse PicPage::Do(
 	return HttpResponse(200,
 		{{"Content-Type", "image/jpeg"}},
 		p.GetOut());
+}
+
+SwitchPage::SwitchPage()
+{
+	m_mac_list = config.GetStrArray({"Switch", "MacList"});
 }
 
 HttpResponse SwitchPage::Do(

@@ -17,6 +17,10 @@
 		"User"		: "",
 		"Pass"		: ""
 	},
+	"Switch":
+	{
+		"MacList"	: []
+	},
 	"HttpServer":
 	{
 		"Port"			: 8888,
