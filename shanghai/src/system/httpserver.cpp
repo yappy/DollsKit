@@ -356,6 +356,7 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 
 	// Route list から条件にマッチするものを探して実行する
 	std::shared_ptr<WebPage> page = nullptr;
+	std::smatch match;
 	{
 		mtx_guard lock(m_mtx);
 		for (const auto &elem : m_routes) {
@@ -364,7 +365,7 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 			if (!std::regex_match(vmethod, method_re)) {
 				continue;
 			}
-			if (!std::regex_match(vurl, url_re)) {
+			if (!std::regex_match(vurl, match, url_re)) {
 				continue;
 			}
 			page = std::get<2>(elem);
@@ -372,9 +373,10 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 		}
 	}
 	if (page != nullptr) {
-		// TODO: URL 全体ではなく部分列を渡す
 		try {
-			return page->Do(vmethod, vurl, request_header, get_args, post);
+			return page->Do(vmethod,
+				(match.size() >= 2) ? match[1] : match[0],
+				request_header, get_args, post);
 		}
 		catch (std::runtime_error &e) {
 			logger.Log(LogLevel::Error, "[HTTP] Error in a page: %s", e.what());

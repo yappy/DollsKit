@@ -16,6 +16,7 @@ HttpResponse PicPage::Do(
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
 {
+	// 写真を stdout に出力する
 	Process p("/usr/bin/raspistill",
 		{"-o", "-", "-w", ImgW, "-h", ImgH, "-th", ImgTh});
 	int exitcode = p.WaitForExit(10);
@@ -23,6 +24,7 @@ HttpResponse PicPage::Do(
 		return HttpResponse(500);
 	}
 
+	// stdout を image/jpeg として HTTP レスポンスにセット
 	return HttpResponse(200,
 		{{"Content-Type", "image/jpeg"}},
 		p.GetOut());
