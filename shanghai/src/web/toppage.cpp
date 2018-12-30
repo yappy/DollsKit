@@ -13,6 +13,19 @@ HttpResponse TopPage::Do(
 	auto &sys_info = system::Get().sys_info;
 	system::SysInfoData data = sys_info.Get();
 
+	std::time_t now = std::time(nullptr);
+	std::time_t dur = static_cast<int64_t>(now - data.start_time);
+	int64_t day = dur / (60 * 60 * 24);
+	dur %= (60 * 60 * 24);
+	int64_t hour = dur / (60 * 60);
+	dur %= (60 * 60);
+	int64_t min = dur / 60;
+	dur %= 60;
+	int64_t sec = dur;
+	std::string durstr = util::Format("{0} day, {1} hour, {2} min, {3} sec", {
+		std::to_string(day), std::to_string(hour),
+		std::to_string(min), std::to_string(sec)});
+
 	const char *tmpl =
 R"(<!DOCTYPE html>
 
@@ -26,10 +39,12 @@ R"(<!DOCTYPE html>
 
 <h2>Summary</h2>
 <ul>
-  <li>Git branch: {0}</li>
-  <li>Git hash: {1}</li>
-  <li>White: {2}</li>
-  <li>Black: {3}</li>
+  <li>Started: {0}</li>
+  <li>Operating time: {1}</li>
+  <li>Git branch: {2}</li>
+  <li>Git hash: {3}</li>
+  <li>White: {4}</li>
+  <li>Black: {5}</li>
 </ul>
 
 </body>
@@ -38,6 +53,7 @@ R"(<!DOCTYPE html>
 	return HttpResponse(200,
 		{{"Content-Type", "text/html; charset=utf-8"}},
 		util::Format(tmpl, {
+			util::DateTimeStr(data.start_time), durstr,
 			data.git_branch, data.git_hash,
 			std::to_string(data.white), std::to_string(data.black)
 		}));

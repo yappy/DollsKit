@@ -184,6 +184,7 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 	sys_info.GetAndSet(
 		[&git_branch, &git_hash]
 		(system::SysInfoData &data) {
+			data.start_time = std::time(nullptr);
 			data.git_branch = git_branch;
 			data.git_hash = git_hash;
 		});
