@@ -183,7 +183,7 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 	std::string msg;
 	msg += '[';
 	msg += util::DateTimeStr();
-	msg += "] Boot... (C++ testing)\n";
+	msg += "] Boot...\n";
 	msg += git_branch;
 	msg += '\n';
 	msg += git_hash;
