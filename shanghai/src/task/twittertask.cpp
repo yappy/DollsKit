@@ -24,8 +24,9 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		logger.Log(LogLevel::Info, "Initial since_id: %" PRIu64, m_since_id);
 	}
 
+	auto &sys_info = system::Get().sys_info;
+	auto &twitter = system::Get().twitter;
 	// ホームタイムラインを取得
-	auto twitter = system::Get().twitter;
 	auto json = twitter.Statuses_HomeTimeline({
 		{"since_id", std::to_string(m_since_id)},
 		{"count", "200"}});
@@ -61,6 +62,10 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			logger.Log(LogLevel::Info, "Find White");
 			log_tweet(status, timestamp);
 
+			sys_info.GetAndSet([](system::SysInfoData &data) {
+				data.white++;
+			});
+
 			std::string msg = u8"@";
 			msg += status["user"]["screen_name"].string_value();
 			msg += ' ';
@@ -72,6 +77,10 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		if (IsBlack(status)) {
 			logger.Log(LogLevel::Info, "Find Black");
 			log_tweet(status, timestamp);
+
+			sys_info.GetAndSet([](system::SysInfoData &data) {
+				data.black++;
+			});
 
 			std::string msg = u8"@";
 			msg += status["user"]["screen_name"].string_value();
@@ -88,7 +97,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 uint64_t TwitterTask::GetInitialSinceId()
 {
 	uint64_t since_id = 0;
-	auto twitter = system::Get().twitter;
+	auto &twitter = system::Get().twitter;
 	auto json = twitter.Statuses_UserTimeline();
 	for (const auto &status : json.array_items()) {
 		uint64_t id = util::to_uint64(status["id_str"].string_value());
@@ -159,7 +168,7 @@ RandomTweetTask::RandomTweetTask(ReleaseFunc rel_func) :
 
 void RandomTweetTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
-	auto twitter = system::Get().twitter;
+	auto &twitter = system::Get().twitter;
 	if (m_random_list.size() == 0) {
 		return;
 	}

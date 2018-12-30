@@ -165,6 +165,7 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 
 void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
+	auto &sys_info = system::Get().sys_info;
 	auto &twitter = system::Get().twitter;
 
 	std::string git_branch, git_hash;
@@ -179,6 +180,13 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 		p.WaitForExit();
 		git_hash = util::OneLine(p.GetOut());
 	}
+
+	sys_info.GetAndSet(
+		[&git_branch, &git_hash]
+		(system::SysInfoData &data) {
+			data.git_branch = git_branch;
+			data.git_hash = git_hash;
+		});
 
 	std::string msg;
 	msg += '[';

@@ -1,6 +1,7 @@
 #include "webpage.h"
 #include "../system/system.h"
 
+#include "toppage.h"
 #include "echopage.h"
 #include "postpage.h"
 #include "github.h"
@@ -30,6 +31,9 @@ void SetupPages()
 		std::make_shared<SwitchPage>());
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/priv/house/(\w*))"),
 		std::make_shared<HouseTopPage>());
+
+	server.AddPage(std::regex("GET|POST"), std::regex(R"(/(\w*))"),
+		std::make_shared<TopPage>());
 }
 
 }	// namespace web
