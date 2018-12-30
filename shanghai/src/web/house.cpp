@@ -8,10 +8,13 @@ namespace shanghai {
 namespace web {
 
 namespace {
-	const char * const Timeout = "1";
-	const char * const ImgW = "320";
-	const char * const ImgH = "240";
-	const char * const ImgTh = "160:120:100";
+	const int PicMaxW = 3280;
+	const int PicMaxH = 2464;
+	const int PicMinW = 32;
+	const int PicMinH = 24;
+	const int PicDefaultW = PicMaxW;
+	const int PicDefaultH = PicMaxH;
+	const char * const PicTimeout = "1";
 }	// namespace
 
 
@@ -37,7 +40,7 @@ R"(<!DOCTYPE html>
 <h1>House Management Top Page</h1>
 
 <h2>Camera View</h2>
-<img src="./pic/take" />
+<img src="./pic/take?w=320&h=240" />
 
 <h2>Switch Control</h2>
 {0}
@@ -70,9 +73,22 @@ HttpResponse PicPage::Do(
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
 {
+	// GET w, h
+	const auto went = query.find("w");
+	const auto hent = query.find("h");
+	int w = PicDefaultW;
+	int h = PicDefaultH;
+	if (went != query.end()) {
+		w = util::to_int(went->second, PicMinW, PicMaxW);
+	}
+	if (hent != query.end()) {
+		h = util::to_int(hent->second, PicMinH, PicMaxH);
+	}
+
 	// 写真を stdout に出力する
-	Process p("/usr/bin/raspistill",
-		{"-o", "-", "-t", Timeout, "-w", ImgW, "-h", ImgH, "-th", ImgTh});
+	Process p("/usr/bin/raspistill", {
+		"-o", "-", "-t", PicTimeout,
+		"-w", std::to_string(w), "-h", std::to_string(h)});
 	int exitcode = p.WaitForExit(10);
 	if (exitcode != 0) {
 		logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
@@ -95,7 +111,6 @@ HttpResponse SwitchPage::Do(
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
 {
-	// TODO
 	logger.Log(LogLevel::Info, "Switch access: %s", url_match.c_str());
 
 	int id = 0;
