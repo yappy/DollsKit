@@ -20,21 +20,33 @@ Headless と書かれた節を参考にすればディスプレイやキーボ�
 
 # 初期設定
 `$sudo raspi-config`
-- (1) Expand Filesystem
-  - SDカード全体を使うようにする
-- (2) Change User Password
+
+- (1) Change User Password
   - パスワードを raspberry から変更する
-- (4) Internationalization Options
-  - タイムゾーンは東京にしておいたほうがいいかも
-  - wifi は日本にしておいたほうがいいかも
-    - (変な設定にすると法規制に触れたりする？？？)
-- (9) Advanced Options
-  - hostname とか
-  - raspi-config 自体のアップデートが一番下にある
+- (2) Network Options
+  - Hostname
+  - Wifi
+    - 国と SSID を聞かれる
+- (4) Localisation Options
+  - Change Locale
+    - 日本語にしたいなら `ja_JP.UTF-8 UTF-8`
+    - システムデフォルトに設定するといつもの出力がいろいろ変わる
+  - Change Timezone
+    - 東京に
+  - Change Wi-fi Country
+    - JP Japan にしておく
+- (7) Advanced Options
+  - Expand Filesystem
+    - SDカード全体を使うようにする
+    - Advanced Options に移動になった
+    - 自動で行われるようになった気もする？
+	- 確認は `df -h`
+- (8) Update
+  - raspi-config 自体のアップデート
+  - apt update しているだけに見える
 
-
-# 無線
-忘れた。ググってなんかうまくやる。
+`ifconfig` で wlan の MAC addr を見てルータに DHCP 固定割り当てを設定する。
+または普通の Linux のやり方で固定アドレスを設定する。
 
 
 # アップデート
