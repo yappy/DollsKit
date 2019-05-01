@@ -130,6 +130,79 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
     - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
 
 
+# SSL (Let's Encrypt)
+- `sudo apt install certbot`
+  - backports でなくても入っているみたい。
+  - ただしバージョンはかなり古い模様。(certbot 0.10.2)
+
+`sudo certbot`
+```
+Certbot doesn't know how to automatically configure the web server on this system. However, it can still get a certificate for you. Please run "certbot certonly" to do so. You'll need to manually configure your web server to use the resulting certificate.
+```
+`sudo certbot certonly`
+```
+How would you like to authenticate with the ACME CA?
+-------------------------------------------------------------------------------
+1: Place files in webroot directory (webroot)
+2: Spin up a temporary webserver (standalone)
+-------------------------------------------------------------------------------
+Select the appropriate number [1-2] then [enter] (press 'c' to cancel): 1
+Enter email address (used for urgent renewal and security notices) (Enter 'c' to
+cancel): (メール)
+
+-------------------------------------------------------------------------------
+Please read the Terms of Service at
+https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf. You must
+agree in order to register with the ACME server at
+https://acme-v01.api.letsencrypt.org/directory
+-------------------------------------------------------------------------------
+(A)gree/(C)ancel: a
+Please enter in your domain name(s) (comma and/or space separated)  (Enter 'c'
+to cancel): (ドメイン名)
+Obtaining a new certificate
+Performing the following challenges:
+http-01 challenge for (ドメイン名)
+
+Select the webroot for (ドメイン名):
+-------------------------------------------------------------------------------
+1: Enter a new webroot
+-------------------------------------------------------------------------------
+Press 1 [enter] to confirm the selection (press 'c' to cancel): 1
+Input the webroot for yappy.mydns.jp: (Enter 'c' to cancel):/var/www/html/
+(lighttpd のデフォルトドキュメントルートの場合; tab 補完が効く)
+Waiting for verification...
+Cleaning up challenges
+Generating key (2048 bits): /etc/letsencrypt/keys/0000_key-certbot.pem
+Creating CSR: /etc/letsencrypt/csr/0000_csr-certbot.pem
+
+IMPORTANT NOTES:
+ - Congratulations! Your certificate and chain have been saved at
+   /etc/letsencrypt/live/(ドメイン名)/fullchain.pem. Your cert will
+   expire on 2019-01-01. To obtain a new or tweaked version of this
+   certificate in the future, simply run certbot again. To
+   non-interactively renew *all* of your certificates, run "certbot
+   renew"
+ - If you like Certbot, please consider supporting our work by:
+
+   Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+   Donating to EFF:                    https://eff.org/donate-le
+```
+
+- 秘密鍵と証明書を結合する。
+  - `sudo -sE`
+  - `cd /etc/letsencrypt/live/(ドメイン)`
+  - `cat privkey.pem ccert.pem > ssl.pem`
+- lighttpd に設定する。
+  - /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
+  - セキュアな設定は https://cipherli.st/ がよい。
+  - `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
+  - `sudo service lighttpd force-reload`
+```
+ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/ssl.pem"
+ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
+```
+
+
 # MySQL
 - `apt-get install mysql-server`
 - Debian 9 では中身は MariaDB になっている。
