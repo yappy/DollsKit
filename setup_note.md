@@ -51,6 +51,9 @@ Headless と書かれた節を参考にすればディスプレイやキーボ�
 
 # アップデート
 ## 日本のミラーサイト
+`/etc/apt/sources.list` に書かれているサーバは遠くて遅いので
+以下のうちどれかに差し替える。
+
 http://raspbian.org/RaspbianMirrors
 * http://ftp.jaist.ac.jp/raspbian/
 * http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
@@ -59,7 +62,6 @@ http://raspbian.org/RaspbianMirrors
 ## パッケージの更新
 * `sudo apt-get update`
 * `sudo apt-get upgrade`
-* `sudo apt-get dist-upgrade`
 
 ## Raspberry Piのファームウェア更新(危険)
 `sudo rpi-update`
@@ -73,25 +75,8 @@ http://raspbian.org/RaspbianMirrors
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
 
-# Mono (C#)
-- mono は古い
-- 公開鍵取得
-  - `sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF`
-- サーバー追加
-  - `echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.lis`
-- update
-  - `sudo apt-get update`
-- install とか upgrade とか擦るといける
-  - `sudo apt-get update`
-  - `sudo apt-get install mono-complete`
-- nuget もこれでいける(多分)
-  - `sudo apt-get install nuget`
-- 自己アップデート
-  - `sudo nuget update -self`
-
-
 # screen
-- nohup だと ssh 切れた後プロセスが死んでしまう(原因は不明)
+- nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
 - `sudo apt-get install screen`
   - デタッチ: C-a d
 
