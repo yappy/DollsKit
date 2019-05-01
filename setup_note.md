@@ -1,13 +1,21 @@
+# 参考資料
+Raspberry Pi Documentation:
+https://www.raspberrypi.org/documentation/
+
+Headless と書かれた節を参考にすればディスプレイやキーボードやマウスなしでセットアップできる。
+
 # 準備
 - raspbian の img を落とす
-- Win32DiskImager を (zipで) 落とす
+- Etcher を落とす (全 OS でこれが推奨になったらしい)
 - microSD に焼く
+- エクスプローラ等で開き、`ssh`という名前の空ファイルを作る
 - メモカを本体に入れてから電源をつなぐ
   - あと有線 LAN も
 - マウスと HDMI をつないでネットワーク設定を見るか、なんかほかの方法で IP addr を特定する
+  - DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して ping, ssh して試す
 - `ssh <IP addr>`
   - user, pass = pi, raspberry
-  - インターネット公開前にはポートを変えておいたほうがよい
+  - これで入れたら当たり
 
 
 # 初期設定
