@@ -91,10 +91,10 @@ http://raspbian.org/RaspbianMirrors
     - Port 22 <-変える
   - disable root login
     - PermitRootLogin no
-  - 公開鍵認証
-    - AuthorizedKeysFile  %h/.ssh/authorized_keys
   - パスワード認証の無効化
     - `#PasswordAuthentication yes`
+  - pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
+    - `DenyUsers pi`
 
 # VNC (remote desktop)
 https://www.raspberrypi.org/documentation/remote-access/vnc/
@@ -119,11 +119,6 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   - GetThumbnailImage()
 
 
-# 形態素解析
-- MeCab
-  - `sudo apt-get install mecab mecab-ipadic-utf8`
-
-
 # HTTP Server
 - lighttpd
   - `sudo apt-get install lighttp`
@@ -131,6 +126,14 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   - `sudo apt-get install php-cgi`
 
 - lighttpd
+  - `/etc/lighttpd`
+  - `lighttpd-enable-mod`, `lighttpd-disable-mod`
+  - `service lighttpd force-reload`
+  - 以下などを必要に応じて変更しながら enable する
+    - accesslog
+	- userdir
+	- fastcgi
+	- fastcgi-php
   - CGI の stderr
     - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
 
@@ -208,11 +211,11 @@ ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ```
 
 
-# MySQL
+# MySQL (not used now)
 - `apt-get install mysql-server`
 - Debian 9 では中身は MariaDB になっている。
 
-## Ruby (Mysql2)
+## Ruby (Mysql2) (not used now)
 MySQL クライアント用の C ライブラリが必要。
 default-libmysqlclient-dev っていうのが MySQL 用と互換性高そうな MariaDB 用ライブラリへの依存になってた。
 こいつを追いかけておくのがよさそう。
