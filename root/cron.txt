@@ -1,4 +1,9 @@
+# How to use
+# $ crontab crontab.txt
+# How to confirm
+# $ crontab -l
+
 # min hour day month dayoftheweek
 
 # Wednesday 4:00
-00 04 * * 3 /root/DollsKit/autobkup/bkup.sh
+00 04 * * 3 /root/DollsKit/root/bkup.sh
