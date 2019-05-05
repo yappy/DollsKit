@@ -199,7 +199,7 @@ IMPORTANT NOTES:
 - 秘密鍵と証明書を結合する。
   - `sudo -sE`
   - `cd /etc/letsencrypt/live/(ドメイン)`
-  - `cat privkey.pem ccert.pem > ssl.pem`
+  - `cat privkey.pem cert.pem > server.pem`
 - lighttpd に設定する。
   - /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
   - セキュアな設定は https://cipherli.st/ がよい。
