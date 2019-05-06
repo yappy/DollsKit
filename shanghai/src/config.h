@@ -24,6 +24,7 @@ public:
 	void LoadString(const std::string &src);
 	void LoadFile(const std::string &file_name);
 
+	static std::string CreateKeyName(std::initializer_list<const char *> keys);
 	bool GetBool(std::initializer_list<const char *> keys);
 	int GetInt(std::initializer_list<const char *> keys);
 	std::string GetStr(std::initializer_list<const char *> keys);
@@ -32,11 +33,12 @@ public:
 	std::vector<std::pair<std::string, std::string>> GetStrPairArray(
 		std::initializer_list<const char *> keys);
 
-private:
-	std::deque<json11::Json> m_json;
-
+	// raw
 	const json11::Json &GetValue(std::initializer_list<const char *> keys,
 		size_t index = 0);
+
+private:
+	std::deque<json11::Json> m_json;
 };
 
 extern Config config;

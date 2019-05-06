@@ -9,10 +9,10 @@ namespace task {
 TwitterTask::TwitterTask(ReleaseFunc rel_func) : PeriodicTask(rel_func)
 {
 	m_black_list = config.GetStrArray({"Twitter", "BlackList"});
-	m_black_words = config.GetStrArray({"Twitter", "BlackWords"});
+	m_black_reply = GetMatchList({"Twitter", "BlackReply"});
 	m_replace_list = config.GetStrPairArray({"Twitter", "ReplaceList"});
 	m_white_list = config.GetStrArray({"Twitter", "WhiteList"});
-	m_white_words = config.GetStrArray({"Twitter", "WhiteWords"});
+	m_white_reply = GetMatchList({"Twitter", "WhiteReply"});
 }
 
 void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
@@ -93,6 +93,19 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 	}
 }
 
+TwitterTask::MatchList
+TwitterTask::GetMatchList(std::initializer_list<const char *> keys)
+{
+	const json11::Json &root = config.GetValue(keys);
+	if (!root.is_array()) {
+		throw ConfigError("String array required: " + CreateKeyName(keys));
+	}
+
+	MatchList result;
+
+	return result;
+}
+
 // 自分のタイムラインの最新 ID を取得する
 uint64_t TwitterTask::GetInitialSinceId()
 {
@@ -107,7 +120,7 @@ uint64_t TwitterTask::GetInitialSinceId()
 }
 
 // 最先端のヒューリスティクスによるブラック判定
-bool TwitterTask::IsBlack(const json11::Json &status)
+std::string TwitterTask::IsBlack(const json11::Json &status)
 {
 	// black list filter
 	auto in_list = [&status](const std::string elem) {
@@ -115,7 +128,7 @@ bool TwitterTask::IsBlack(const json11::Json &status)
 	};
 	if (std::find_if(m_black_list.begin(), m_black_list.end(), in_list) ==
 		m_black_list.end()) {
-		return false;
+		return "";
 	}
 
 	// replace words
@@ -127,18 +140,27 @@ bool TwitterTask::IsBlack(const json11::Json &status)
 	}
 
 	// keyword search
-	auto match_word = [&replaced_text](const std::string elem) {
-		return replaced_text.find(elem) != std::string::npos;
-	};
-	if (std::find_if(m_black_words.begin(), m_black_words.end(), match_word) !=
-		m_black_words.end()) {
+	auto match_word = [&replaced_text](const MatchElem &elem) {
+		for (const std::string &word : elem.first) {
+			if (replaced_text.find(word) == std::string::npos) {
+				return false;
+			}
+		}
 		return true;
+	};
+	const auto result = std::find_if(
+		m_black_reply.begin(), m_black_reply.end(), match_word);
+	if (result != m_black_reply.end())
+		return result->second.at(0);
 	}
-	return false;
+	else {
+		return ""s;
+	}
 }
 
-bool TwitterTask::IsWhite(const json11::Json &status)
+std::string TwitterTask::IsWhite(const json11::Json &status)
 {
+	/*
 	// white list filter
 	auto in_list = [&status](const std::string elem) {
 		return status["user"]["screen_name"].string_value() == elem;
@@ -156,7 +178,8 @@ bool TwitterTask::IsWhite(const json11::Json &status)
 		m_white_words.end()) {
 		return true;
 	}
-	return false;
+	return false;*/
+	return ""s;
 }
 
 

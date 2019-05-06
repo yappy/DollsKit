@@ -53,16 +53,21 @@ public:
 	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
 
 private:
+	using MatchElem = std::pair<
+		std::vector<std::string>, std::vector<std::string>>;
+	using MatchList = std::vector<MatchElem>;
+
 	std::vector<std::string> m_black_list;
-	std::vector<std::string> m_black_words;
+	MatchList m_black_reply;
 	std::vector<std::pair<std::string, std::string>> m_replace_list;
 	std::vector<std::string> m_white_list;
-	std::vector<std::string> m_white_words;
+	MatchList m_white_reply;
 	uint64_t m_since_id = 0;
 
+	MatchList GetMatchList(std::initializer_list<const char *> keys);
 	uint64_t GetInitialSinceId();
-	bool IsBlack(const json11::Json &status);
-	bool IsWhite(const json11::Json &status);
+	std::string IsBlack(const json11::Json &status);
+	std::string IsWhite(const json11::Json &status);
 };
 
 class RandomTweetTask : public PeriodicTask {
