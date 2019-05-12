@@ -7,16 +7,30 @@ yappy家の管理プログラム
 ## ビルド
 環境の整った人形、または PC の中で
 ```
-% mkdir build
-% cd build
-% cmake -DCMAKE_BUILD_TYPE=Release ..
-% make -j4
-% make install
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make -j4
+$ make install
 ```
 
 ## 管理プログラムの実行開始
 ```
-% make run
+$ make run
+```
+
+daemon として実行
+```
+$ make start
+
+# kill
+$ kill `cat shanghai.pid`
+```
+
+## システム起動時に自動起動
+インストール先ディレクトリに cron.txt ができます。
+```
+$ crontab < cron.txt
 ```
 
 ## テストの実行
