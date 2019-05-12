@@ -135,7 +135,7 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 	- fastcgi
 	- fastcgi-php
   - CGI の stderr
-    - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
+    - `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
 
 
 # SSL (Let's Encrypt)
