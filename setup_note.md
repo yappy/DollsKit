@@ -1,36 +1,59 @@
+# 参考資料
+Raspberry Pi Documentation:
+https://www.raspberrypi.org/documentation/
+
+Headless と書かれた節を参考にすればディスプレイやキーボードやマウスなしでセットアップできる。
+
 # 準備
 - raspbian の img を落とす
-- Win32DiskImager を (zipで) 落とす
+- Etcher を落とす (全 OS でこれが推奨になったらしい)
 - microSD に焼く
+- エクスプローラ等で開き、`ssh`という名前の空ファイルを作る
 - メモカを本体に入れてから電源をつなぐ
   - あと有線 LAN も
 - マウスと HDMI をつないでネットワーク設定を見るか、なんかほかの方法で IP addr を特定する
+  - DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して ping, ssh して試す
 - `ssh <IP addr>`
   - user, pass = pi, raspberry
-  - インターネット公開前にはポートを変えておいたほうがよい
+  - これで入れたら当たり
 
 
 # 初期設定
 `$sudo raspi-config`
-- (1) Expand Filesystem
-  - SDカード全体を使うようにする
-- (2) Change User Password
+
+- (1) Change User Password
   - パスワードを raspberry から変更する
-- (4) Internationalization Options
-  - タイムゾーンは東京にしておいたほうがいいかも
-  - wifi は日本にしておいたほうがいいかも
-    - (変な設定にすると法規制に触れたりする？？？)
-- (9) Advanced Options
-  - hostname とか
-  - raspi-config 自体のアップデートが一番下にある
+- (2) Network Options
+  - Hostname
+  - Wifi
+    - 国と SSID を聞かれる
+- (4) Localisation Options
+  - Change Locale
+    - 日本語にしたいなら `ja_JP.UTF-8 UTF-8`
+    - システムデフォルトに設定するといつもの出力がいろいろ変わる
+  - Change Timezone
+    - 東京に
+  - Change Wi-fi Country
+    - JP Japan にしておく
+- (7) Advanced Options
+  - Expand Filesystem
+    - SDカード全体を使うようにする
+    - Advanced Options に移動になった
+    - 自動で行われるようになった気もする？
+	- 確認は `df -h`
+- (8) Update
+  - raspi-config 自体のアップデート
+  - apt update しているだけに見える
 
-
-# 無線
-忘れた。ググってなんかうまくやる。
+`ifconfig` で wlan の MAC addr を見てルータに DHCP 固定割り当てを設定する。
+または普通の Linux のやり方で固定アドレスを設定する。
 
 
 # アップデート
 ## 日本のミラーサイト
+`/etc/apt/sources.list` に書かれているサーバは遠くて遅いので
+以下のうちどれかに差し替える。
+
 http://raspbian.org/RaspbianMirrors
 * http://ftp.jaist.ac.jp/raspbian/
 * http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
@@ -39,7 +62,6 @@ http://raspbian.org/RaspbianMirrors
 ## パッケージの更新
 * `sudo apt-get update`
 * `sudo apt-get upgrade`
-* `sudo apt-get dist-upgrade`
 
 ## Raspberry Piのファームウェア更新(危険)
 `sudo rpi-update`
@@ -53,25 +75,8 @@ http://raspbian.org/RaspbianMirrors
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
 
-# Mono (C#)
-- mono は古い
-- 公開鍵取得
-  - `sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF`
-- サーバー追加
-  - `echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.lis`
-- update
-  - `sudo apt-get update`
-- install とか upgrade とか擦るといける
-  - `sudo apt-get update`
-  - `sudo apt-get install mono-complete`
-- nuget もこれでいける(多分)
-  - `sudo apt-get install nuget`
-- 自己アップデート
-  - `sudo nuget update -self`
-
-
 # screen
-- nohup だと ssh 切れた後プロセスが死んでしまう(原因は不明)
+- nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
 - `sudo apt-get install screen`
   - デタッチ: C-a d
 
@@ -86,10 +91,10 @@ http://raspbian.org/RaspbianMirrors
     - Port 22 <-変える
   - disable root login
     - PermitRootLogin no
-  - 公開鍵認証
-    - AuthorizedKeysFile  %h/.ssh/authorized_keys
   - パスワード認証の無効化
     - `#PasswordAuthentication yes`
+  - pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
+    - `DenyUsers pi`
 
 # VNC (remote desktop)
 https://www.raspberrypi.org/documentation/remote-access/vnc/
@@ -114,11 +119,6 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   - GetThumbnailImage()
 
 
-# 形態素解析
-- MeCab
-  - `sudo apt-get install mecab mecab-ipadic-utf8`
-
-
 # HTTP Server
 - lighttpd
   - `sudo apt-get install lighttp`
@@ -126,8 +126,16 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   - `sudo apt-get install php-cgi`
 
 - lighttpd
+  - `/etc/lighttpd`
+  - `lighttpd-enable-mod`, `lighttpd-disable-mod`
+  - `service lighttpd force-reload`
+  - 以下などを必要に応じて変更しながら enable する
+    - accesslog
+	- userdir
+	- fastcgi
+	- fastcgi-php
   - CGI の stderr
-    - `server.breakagelog = "/var/log/lighttpd/stderr.log"`
+    - `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
 
 
 # SSL (Let's Encrypt)
@@ -191,7 +199,7 @@ IMPORTANT NOTES:
 - 秘密鍵と証明書を結合する。
   - `sudo -sE`
   - `cd /etc/letsencrypt/live/(ドメイン)`
-  - `cat privkey.pem ccert.pem > ssl.pem`
+  - `cat privkey.pem cert.pem > server.pem`
 - lighttpd に設定する。
   - /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
   - セキュアな設定は https://cipherli.st/ がよい。
@@ -203,11 +211,11 @@ ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ```
 
 
-# MySQL
+# MySQL (not used now)
 - `apt-get install mysql-server`
 - Debian 9 では中身は MariaDB になっている。
 
-## Ruby (Mysql2)
+## Ruby (Mysql2) (not used now)
 MySQL クライアント用の C ライブラリが必要。
 default-libmysqlclient-dev っていうのが MySQL 用と互換性高そうな MariaDB 用ライブラリへの依存になってた。
 こいつを追いかけておくのがよさそう。

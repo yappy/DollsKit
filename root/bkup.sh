@@ -26,7 +26,7 @@ exc="${exc} --exclude=/mnt"
 exc="${exc} --exclude=/tmp"
 exc="${exc} --exclude=/var/tmp"
 exc="${exc} --exclude=/etc/fstab"
-exc="${exc} --exclude=/etc/recolv.conf"
+exc="${exc} --exclude=/etc/resolv.conf"
 exc="${exc} --exclude=/var/log"
 
 echo "Backup media mount check..."
