@@ -6,6 +6,12 @@ project(shanghai)
 file(GLOB_RECURSE SRCS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRCS})
 
+# Scripts
+configure_file(
+	"script/cron.txt.in"
+	"${CMAKE_CURRENT_BINARY_DIR}/cron.txt"
+	@ONLY)
+
 # Test executable
 file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
@@ -32,6 +38,7 @@ install(TARGETS ${PROJECT_NAME}
 install(DIRECTORY "res/" DESTINATION "."
 	FILE_PERMISSIONS OWNER_READ OWNER_WRITE
 	DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/cron.txt" DESTINATION ".")
 
 # make run
 add_custom_target("run"
