@@ -75,6 +75,23 @@ http://raspbian.org/RaspbianMirrors
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
 
+# 自動アップデート
+1. `sudo apt install unattended-upgrades`
+1. `sudo dpkg-reconfigure -plow unattended-upgrades`
+1. `/etc/apt/apt.conf.d/50unattended-upgrades` を編集
+
+このあたりを運用に合わせて設定する。
+```
+// Do automatic removal of new unused dependencies after the upgrade
+// (equivalent to apt-get autoremove)
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+// Automatically reboot *WITHOUT CONFIRMATION* if
+//  the file /var/run/reboot-required is found after the upgrade
+Unattended-Upgrade::Automatic-Reboot "true";
+```
+
+
 # screen
 - nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
 - `sudo apt-get install screen`
