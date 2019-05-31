@@ -3,7 +3,7 @@
 # How to verify
 # $ crontab -l
 
-# workaround: wait for 10 sec to wait for network
+# workaround: wait for 30 sec to wait for network
 # It seems that DNS fails just after reboot
 
-@reboot sleep 10; cd @CMAKE_INSTALL_PREFIX@; rm -f @PROJECT_NAME@.pid; ./@PROJECT_NAME@ --daemon
+@reboot sleep 30; cd @CMAKE_INSTALL_PREFIX@; rm -f @PROJECT_NAME@.pid; ./@PROJECT_NAME@ --daemon
