@@ -151,15 +151,16 @@ uint64_t TwitterTask::GetInitialSinceId()
 	return since_id;
 }
 
-// 最先端のヒューリスティクスによるブラック判定
-std::string TwitterTask::IsBlack(const json11::Json &status)
+std::string TwitterTask::Match(const json11::Json &status,
+	const std::vector<std::string> &user_filter,
+	const MatchList &match_list)
 {
-	// black list filter
-	auto in_list = [&status](const std::string elem) {
+	// white/black list filter
+	auto in_list = [&status](const std::string &elem) {
 		return status["user"]["screen_name"].string_value() == elem;
 	};
-	if (std::find_if(m_black_list.begin(), m_black_list.end(), in_list) ==
-		m_black_list.end()) {
+	if (std::find_if(user_filter.begin(), user_filter.end(), in_list) ==
+		user_filter.end()) {
 		return "";
 	}
 
@@ -181,8 +182,8 @@ std::string TwitterTask::IsBlack(const json11::Json &status)
 		return true;
 	};
 	const auto &result = std::find_if(
-		m_black_reply.begin(), m_black_reply.end(), match_word);
-	if (result != m_black_reply.end()) {
+		match_list.begin(), match_list.end(), match_word);
+	if (result != match_list.end()) {
 		const auto &list = result->second;
 		uint32_t random_ind = m_mt() % list.size();
 		return list.at(0);
@@ -192,28 +193,16 @@ std::string TwitterTask::IsBlack(const json11::Json &status)
 	}
 }
 
+// 最先端のヒューリスティクスによるブラック判定
+std::string TwitterTask::IsBlack(const json11::Json &status)
+{
+	return Match(status, m_black_list, m_black_reply);
+}
+
+// 最先端のヒューリスティクスによるホワイト判定
 std::string TwitterTask::IsWhite(const json11::Json &status)
 {
-	/*
-	// white list filter
-	auto in_list = [&status](const std::string elem) {
-		return status["user"]["screen_name"].string_value() == elem;
-	};
-	if (std::find_if(m_white_list.begin(), m_white_list.end(), in_list) ==
-		m_white_list.end()) {
-		return false;
-	}
-
-	// keyword search
-	auto match_word = [&status](const std::string elem) {
-		return status["text"].string_value().find(elem) != std::string::npos;
-	};
-	if (std::find_if(m_white_words.begin(), m_white_words.end(), match_word) !=
-		m_white_words.end()) {
-		return true;
-	}
-	return false;*/
-	return ""s;
+	return Match(status, m_white_list, m_white_reply);
 }
 
 

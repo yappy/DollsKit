@@ -67,6 +67,9 @@ private:
 
 	MatchList GetMatchList(std::initializer_list<const char *> keys);
 	uint64_t GetInitialSinceId();
+	std::string Match(const json11::Json &status,
+		const std::vector<std::string> &user_filter,
+		const MatchList &match_list);
 	std::string IsBlack(const json11::Json &status);
 	std::string IsWhite(const json11::Json &status);
 };
