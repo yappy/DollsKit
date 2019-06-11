@@ -58,7 +58,10 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 		if (!status["retweeted_status"].is_null()) {
 			continue;
 		}
-		if (IsWhite(status)) {
+
+		std::string white_rep = IsWhite(status);
+		std::string black_rep = IsBlack(status);
+		if (white_rep != ""s) {
 			logger.Log(LogLevel::Info, "Find White");
 			log_tweet(status, timestamp);
 
@@ -69,12 +72,12 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			std::string msg = u8"@";
 			msg += status["user"]["screen_name"].string_value();
 			msg += ' ';
-			msg += u8"ホワイト！";
+			msg += white_rep;
 			twitter.Tweet(msg, status["id_str"].string_value());
 
 			m_since_id = std::max(id, m_since_id);
 		}
-		if (IsBlack(status)) {
+		else if (black_rep != ""s) {
 			logger.Log(LogLevel::Info, "Find Black");
 			log_tweet(status, timestamp);
 
@@ -85,7 +88,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			std::string msg = u8"@";
 			msg += status["user"]["screen_name"].string_value();
 			msg += ' ';
-			msg += u8"ブラック";
+			msg += black_rep;
 			twitter.Tweet(msg, status["id_str"].string_value());
 
 			m_since_id = std::max(id, m_since_id);
@@ -98,10 +101,39 @@ TwitterTask::GetMatchList(std::initializer_list<const char *> keys)
 {
 	const json11::Json &root = config.GetValue(keys);
 	if (!root.is_array()) {
-		throw ConfigError("String array required: " + CreateKeyName(keys));
+		throw ConfigError("Array required: " + Config::CreateKeyName(keys));
 	}
 
+	auto string_or_array =
+	[&keys](const json11::Json &item) -> std::vector<std::string> {
+		std::vector<std::string> result;
+		if (item.is_string()) {
+			result.emplace_back(item.string_value());
+		}
+		else if (item.is_array()) {
+			for (const auto &elem : item.array_items()) {
+				result.emplace_back(elem.string_value());
+			}
+		}
+		else {
+			throw ConfigError("String or Array required: " +
+				Config::CreateKeyName(keys));
+		}
+		if (result.size() == 0) {
+			throw ConfigError("Array size must be > 0: " +
+				Config::CreateKeyName(keys));
+		}
+		return result;
+	};
+
 	MatchList result;
+	for (const auto &item : root.array_items()) {
+		if (item[0].is_null() || item[1].is_null()) {
+			throw ConfigError("Array[2] required: " +
+				Config::CreateKeyName(keys));
+		}
+		result.emplace_back(string_or_array(item[0]), string_or_array(item[1]));
+	}
 
 	return result;
 }
@@ -139,7 +171,7 @@ std::string TwitterTask::IsBlack(const json11::Json &status)
 		replaced_text = util::ReplaceAll(replaced_text, from, to);
 	}
 
-	// keyword search
+	// keyword search (AND)
 	auto match_word = [&replaced_text](const MatchElem &elem) {
 		for (const std::string &word : elem.first) {
 			if (replaced_text.find(word) == std::string::npos) {
@@ -148,10 +180,12 @@ std::string TwitterTask::IsBlack(const json11::Json &status)
 		}
 		return true;
 	};
-	const auto result = std::find_if(
+	const auto &result = std::find_if(
 		m_black_reply.begin(), m_black_reply.end(), match_word);
-	if (result != m_black_reply.end())
-		return result->second.at(0);
+	if (result != m_black_reply.end()) {
+		const auto &list = result->second;
+		uint32_t random_ind = m_mt() % list.size();
+		return list.at(0);
 	}
 	else {
 		return ""s;

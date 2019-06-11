@@ -57,6 +57,7 @@ private:
 		std::vector<std::string>, std::vector<std::string>>;
 	using MatchList = std::vector<MatchElem>;
 
+	std::mt19937 m_mt;
 	std::vector<std::string> m_black_list;
 	MatchList m_black_reply;
 	std::vector<std::pair<std::string, std::string>> m_replace_list;
