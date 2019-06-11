@@ -23,6 +23,7 @@ public:
 
 	void LoadString(const std::string &src);
 	void LoadFile(const std::string &file_name);
+	void Clear();
 
 	static std::string CreateKeyName(std::initializer_list<const char *> keys);
 	bool GetBool(std::initializer_list<const char *> keys);

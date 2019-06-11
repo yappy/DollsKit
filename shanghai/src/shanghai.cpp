@@ -265,6 +265,7 @@ int main(int argc, char *argv[])
 
 		while (1) {
 			// 設定ファイルのロード
+			config.Clear();
 			for (const auto &file_name : ConfigFiles) {
 				logger.Log(LogLevel::Info, "Load: %s", file_name);
 				config.LoadFile(file_name);

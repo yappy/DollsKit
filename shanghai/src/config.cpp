@@ -25,6 +25,11 @@ void Config::LoadFile(const std::string &file_name)
 	LoadString(src);
 }
 
+void Config::Clear()
+{
+	m_json.clear();
+}
+
 std::string Config::CreateKeyName(std::initializer_list<const char *> keys)
 {
 	std::string result;
