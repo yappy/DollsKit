@@ -165,6 +165,7 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 
 void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
+	auto &sys_info = system::Get().sys_info;
 	auto &twitter = system::Get().twitter;
 
 	std::string git_branch, git_hash;
@@ -180,10 +181,18 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 		git_hash = util::OneLine(p.GetOut());
 	}
 
+	sys_info.GetAndSet(
+		[&git_branch, &git_hash]
+		(system::SysInfoData &data) {
+			data.start_time = std::time(nullptr);
+			data.git_branch = git_branch;
+			data.git_hash = git_hash;
+		});
+
 	std::string msg;
 	msg += '[';
 	msg += util::DateTimeStr();
-	msg += "] Boot... (C++ testing)\n";
+	msg += "] Boot...\n";
 	msg += git_branch;
 	msg += '\n';
 	msg += git_hash;
@@ -256,6 +265,7 @@ int main(int argc, char *argv[])
 
 		while (1) {
 			// 設定ファイルのロード
+			config.Clear();
 			for (const auto &file_name : ConfigFiles) {
 				logger.Log(LogLevel::Info, "Load: %s", file_name);
 				config.LoadFile(file_name);

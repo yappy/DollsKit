@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <system_error>
 #include <initializer_list>
+#include <limits>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -34,10 +35,50 @@ inline R SysCall(R ret)
 	return ret;
 }
 
-inline uint64_t to_uint64(const std::string &str)
+inline int to_int(const std::string &str,
+	int min = std::numeric_limits<int>::min(),
+	int max = std::numeric_limits<int>::max())
+{
+	int n;
+	try {
+		n = std::stoi(str);
+	}
+	catch (std::logic_error &e) {
+		throw std::runtime_error(e.what());
+	}
+	if (n < min) {
+		throw std::overflow_error(
+			str + " must less than " + std::to_string(min));
+	}
+	if (n > max) {
+		throw std::overflow_error(
+			str + " must greater than " + std::to_string(max));
+	}
+	return n;
+}
+
+inline uint64_t to_uint64(const std::string &str,
+	uint64_t min = std::numeric_limits<uint64_t>::min(),
+	uint64_t max = std::numeric_limits<uint64_t>::max())
 {
 	static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "ull");
-	return std::stoll(str);
+
+	uint64_t n;
+	try {
+		n = std::stoull(str);
+	}
+	catch (std::logic_error &e) {
+		throw std::runtime_error(e.what());
+	}
+	if (n < min) {
+		throw std::overflow_error(
+			str + " must less than " + std::to_string(min));
+	}
+	if (n > max) {
+		throw std::overflow_error(
+			str + " must greater than " + std::to_string(max));
+	}
+	return n;
 }
 
 std::string ToString(const char *fmt, double d);
@@ -49,6 +90,7 @@ std::string ReplaceAll(const std::string &str,
 std::string OneLine(const std::string &str);
 std::string DateTimeStr(std::time_t timestamp = std::time(nullptr));
 std::time_t StrToTimeTwitter(const std::string &str);
+std::string HtmlEscape(const std::string &src);
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
 std::string ReadStringFromFile(const std::string &file_name);

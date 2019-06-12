@@ -1,14 +1,12 @@
 /*
- * Github webhook receiver
+ * Travis CI webhook receiver
  *
- * Github repository -> Settings -> Webhhoks
- * Content type: application/json を指定のこと
- * application/x-www-form-urlencoded では libmicrohttpd の POST プロセッサが
- * パースしてしまい、元の生データを署名検証できない
+ * application/x-www-form-urlencoded のみ使用可能だが、
+ * github と違って URL decode 済みの payload value に署名されているのでなんとかなる
  */
-// https://developer.github.com/webhooks/
+// https://docs.travis-ci.com/user/notifications/#configuring-webhook-notifications
 
-#include "github.h"
+#include "travisci.h"
 #include "../system/system.h"
 #include "../util.h"
 #include "../config.h"
@@ -25,7 +23,7 @@ HttpResponse PrintJson(const json11::Json &json)
 R"(<!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Github hook</title>
+<title>Travis CI hook</title>
 </head>
 <body>
 <code>{0}</code>
@@ -38,13 +36,30 @@ R"(<!DOCTYPE html>
 		util::Format(tmpl, {util::HtmlEscape(json_str)}));
 }
 
+std::string FetchPublicKey()
+{
+	const std::string url = "https://api.travis-ci.com/config"s;
+	const int timeout_sec = 5;
+
+	std::string src = net.Download(url, timeout_sec);
+	std::string err;
+	auto json = json11::Json::parse(src, err);
+
+	// エラーもここに含める
+	const auto &val = json["config"]["notifications"]["webhook"]["public_key"];
+	if (!val.is_string()) {
+		throw std::runtime_error("Fetching public key failed");
+	}
+	return val.string_value();
+}
+
 HttpResponse ProcessPost(const std::string &json_str, json11::Json &result)
 {
 	const char *tmpl =
 R"(<!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Github hook</title>
+<title>Travis CI hook</title>
 </head>
 <body>
 {0}
@@ -63,10 +78,10 @@ R"(<!DOCTYPE html>
 	}
 
 	// OK
-	std::string msg = "Pushed to Github: ";
-	msg += result["ref"].string_value();
+	std::string msg = "Travis CI build: ";
+	msg += result["status_message"].string_value();
 	msg += '\n';
-	msg += result["compare"].string_value();
+	msg += result["build_url"].string_value();
 
 	auto task_func = [msg = std::move(msg)]
 		(TaskServer &server, const std::atomic<bool> &cancel)
@@ -84,13 +99,12 @@ R"(<!DOCTYPE html>
 
 }	// namespace
 
-GithubPage::GithubPage()
+TravisCiPage::TravisCiPage()
 {
-	m_enabled = config.GetBool({"HttpServer", "GithubHook", "Enabled"});
-	m_secret = config.GetStr({"HttpServer", "GithubHook", "Secret"});
+	m_enabled = config.GetBool({"HttpServer", "TravisCiHook", "Enabled"});
 }
 
-HttpResponse GithubPage::Do(
+HttpResponse TravisCiPage::Do(
 	const std::string &method, const std::string &url_match,
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
@@ -98,32 +112,29 @@ HttpResponse GithubPage::Do(
 	if (!m_enabled) {
 		return HttpResponse(404);
 	}
+
 	if (method == "GET") {
 		json11::Json json;
 		{
 			rlock lock(m_mtx);
-			json = m_last_push;
+			json = m_last_build;
 		}
 		return PrintJson(json);
 	}
 	else if (method == "POST") {
-		// github hook event type
-		const auto &event = header.find("X-GitHub-Event");
-		// message GUID
-		const auto &delivery = header.find("X-GitHub-Delivery");
 		// SHA-1 signature
-		const auto &signature = header.find("X-Hub-Signature");
-		// application/json POST payload
+		const auto &signature = header.find("Signature");
+		// application/x-www-form-urlencoded POST payload
 		const auto &payload = post.find("payload");
-		if (event == header.end() || delivery == header.end() ||
-			signature == header.end() || payload == post.end()) {
+		if (signature == header.end() || payload == post.end()) {
 			// Bad Request
 			return HttpResponse(400);
 		}
 		const std::string &payload_str = payload->second.DataInMemory;
 
 		// 署名検証
-		std::string my_signature = "sha1=";
+		// TODO
+		/*
 		Network::ShaDigest digest;
 		net.HmacSha1(m_secret.data(), static_cast<int>(m_secret.size()),
 			payload_str.data(), payload_str.size(),
@@ -132,13 +143,14 @@ HttpResponse GithubPage::Do(
 		if (!net.ConstTimeEqual(signature->second, my_signature)) {
 			return HttpResponse(400);
 		}
+		*/
 
 		// JSON パースと処理
 		json11::Json json;
 		HttpResponse resp = ProcessPost(payload_str, json);
 		{
 			wlock lock(m_mtx);
-			m_last_push = json;
+			m_last_build = json;
 		}
 		return resp;
 	}

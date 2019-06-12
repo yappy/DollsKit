@@ -17,14 +17,23 @@
 		"User"		: "",
 		"Pass"		: ""
 	},
+	"Switch":
+	{
+		"MacList"	: []
+	},
 	"HttpServer":
 	{
+		"Enabled"		: false,
 		"Port"			: 8888,
 		"Rewrite"		: "/house",
 		"GithubHook"	:
 		{
-			"Enabled"	: true,
+			"Enabled"	: false,
 			"Secret"	: ""
+		},
+		"TravisCiHook"	:
+		{
+			"Enabled"	: false
 		}
 	}
 }

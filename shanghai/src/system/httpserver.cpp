@@ -6,6 +6,7 @@
 
 namespace shanghai {
 namespace system {
+namespace http {
 
 namespace {
 
@@ -242,6 +243,18 @@ int SendResponse(struct MHD_Connection *connection, HttpResponse &&resp)
 		logger.Log(LogLevel::Error, "MHD_create_response_from_buffer failed");
 		return MHD_NO;
 	}
+
+	for (const auto &entry : resp.Header) {
+		const std::string &key = entry.first;
+		const std::string &val = entry.second;
+		int ret = ::MHD_add_response_header(mhd_resp.get(),
+			key.c_str(), val.c_str());
+		if (ret != MHD_YES) {
+			logger.Log(LogLevel::Error, "MHD_add_response_header failed");
+			return MHD_NO;
+		}
+	}
+
 	int ret = ::MHD_queue_response(connection, resp.Status, mhd_resp.get());
 	if (ret != MHD_YES) {
 		logger.Log(LogLevel::Error, "MHD_queue_response failed");
@@ -279,6 +292,11 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 	logger.Log(LogLevel::Info, "Initialize HttpServer...");
 
 	// 設定の読み出し
+	bool enabled = config.GetBool({"HttpServer", "Enabled"});
+	if (!enabled) {
+		logger.Log(LogLevel::Info, "HttpServer is disabled");
+		return;
+	}
 	int port = config.GetInt({"HttpServer", "Port"});
 	if (port < 0 || port > 0xffff) {
 		throw ConfigError("Invalid HttpServer port");
@@ -308,8 +326,12 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 HttpServer::~HttpServer()
 {
 	// デストラクタでサーバ停止
-	::MHD_stop_daemon(m_daemon);
-	m_daemon = nullptr;
+	if (m_daemon != nullptr) {
+		logger.Log(LogLevel::Info, "Finalize HttpServer...");
+		::MHD_stop_daemon(m_daemon);
+		logger.Log(LogLevel::Info, "Finalize HttpServer OK");
+		m_daemon = nullptr;
+	}
 }
 
 void HttpServer::AddPage(const std::regex &method, const std::regex &url,
@@ -320,8 +342,16 @@ void HttpServer::AddPage(const std::regex &method, const std::regex &url,
 	// unlock
 }
 
-// 整形後のリクエストデータから HttpResponse オブジェクトを返す
 HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
+	const std::string &url, const std::string &method,
+	const std::string &version, const PostKeyValueSet &post) noexcept
+{
+	return ProcessResponse(ProcessRequestRaw(
+		connection, url, method, version, post));
+}
+
+// 整形後のリクエストデータから HttpResponse オブジェクトを返す
+HttpResponse HttpServer::ProcessRequestRaw(struct MHD_Connection *connection,
 	const std::string &url, const std::string &method,
 	const std::string &version, const PostKeyValueSet &post) noexcept
 {
@@ -355,6 +385,7 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 
 	// Route list から条件にマッチするものを探して実行する
 	std::shared_ptr<WebPage> page = nullptr;
+	std::smatch match;
 	{
 		mtx_guard lock(m_mtx);
 		for (const auto &elem : m_routes) {
@@ -363,7 +394,7 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 			if (!std::regex_match(vmethod, method_re)) {
 				continue;
 			}
-			if (!std::regex_match(vurl, url_re)) {
+			if (!std::regex_match(vurl, match, url_re)) {
 				continue;
 			}
 			page = std::get<2>(elem);
@@ -371,9 +402,10 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 		}
 	}
 	if (page != nullptr) {
-		// TODO: URL 全体ではなく部分列を渡す
 		try {
-			return page->Do(vmethod, vurl, request_header, get_args, post);
+			return page->Do(vmethod,
+				(match.size() >= 2) ? match[1] : match[0],
+				request_header, get_args, post);
 		}
 		catch (std::runtime_error &e) {
 			logger.Log(LogLevel::Error, "[HTTP] Error in a page: %s", e.what());
@@ -382,6 +414,19 @@ HttpResponse HttpServer::ProcessRequest(struct MHD_Connection *connection,
 	}
 	// マッチするものがなかった場合は 404 とする
 	return HttpResponse(404);
+}
+
+HttpResponse HttpServer::ProcessResponse(HttpResponse &&resp) noexcept
+{
+	// Location ヘッダがあった場合は rewrite で消した分を前に付け加える
+	for (auto &entry : resp.Header) {
+		const std::string &key = entry.first;
+		std::string &val = entry.second;
+		if (key == "Location") {
+			val = m_rewrite + val;
+		}
+	}
+	return resp;
 }
 
 const uint64_t HttpServer::PostTotalLimit;
@@ -466,5 +511,6 @@ int HttpServer::OnRequest(void *cls, struct MHD_Connection *connection,
 	return SendResponse(connection, std::move(resp));
 }
 
+}	// namespace http
 }	// namespace system
 }	// namespace shanghai

@@ -3,26 +3,6 @@
 
 namespace shanghai {
 
-namespace {
-
-std::string CreateKeyName(std::initializer_list<const char *> keys)
-{
-	std::string result;
-	bool is_first = true;
-	for (const char *key : keys) {
-		if (is_first) {
-			is_first = false;
-		}
-		else {
-			result += ".";
-		}
-		result += key;
-	}
-	return result;
-}
-
-}	// namespace
-
 void Config::LoadString(const std::string &src)
 {
 	std::string err;
@@ -43,6 +23,27 @@ void Config::LoadFile(const std::string &file_name)
 		throw ConfigError(e.what());
 	}
 	LoadString(src);
+}
+
+void Config::Clear()
+{
+	m_json.clear();
+}
+
+std::string Config::CreateKeyName(std::initializer_list<const char *> keys)
+{
+	std::string result;
+	bool is_first = true;
+	for (const char *key : keys) {
+		if (is_first) {
+			is_first = false;
+		}
+		else {
+			result += ".";
+		}
+		result += key;
+	}
+	return result;
 }
 
 bool Config::GetBool(std::initializer_list<const char *> keys)

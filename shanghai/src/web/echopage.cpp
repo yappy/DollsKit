@@ -1,4 +1,4 @@
-#include "webpage.h"
+#include "echopage.h"
 #include "../util.h"
 
 namespace shanghai {
@@ -12,14 +12,14 @@ HttpResponse EchoPage::Do(
 	std::string header_str = "<ul>\n";
 	for (const auto &entry : header) {
 		header_str += util::Format("  <li>{0}: {1}</li>\n",
-			{HtmlEscape(entry.first), HtmlEscape(entry.second)});
+			{util::HtmlEscape(entry.first), util::HtmlEscape(entry.second)});
 	}
 	header_str += "</ul>";
 
 	std::string query_str = "<ul>\n";
 	for (const auto &entry : query) {
 		query_str += util::Format("  <li>{0}: {1}</li>\n",
-			{HtmlEscape(entry.first), HtmlEscape(entry.second)});
+			{util::HtmlEscape(entry.first), util::HtmlEscape(entry.second)});
 	}
 	query_str += "</ul>";
 
