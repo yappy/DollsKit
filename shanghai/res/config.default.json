@@ -23,6 +23,7 @@
 	},
 	"HttpServer":
 	{
+		"Enabled"		: false,
 		"Port"			: 8888,
 		"Rewrite"		: "/house",
 		"GithubHook"	:

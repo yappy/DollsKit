@@ -292,6 +292,11 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 	logger.Log(LogLevel::Info, "Initialize HttpServer...");
 
 	// 設定の読み出し
+	bool enabled = config.GetBool({"HttpServer", "Enabled"});
+	if (!enabled) {
+		logger.Log(LogLevel::Info, "HttpServer is disabled");
+		return;
+	}
 	int port = config.GetInt({"HttpServer", "Port"});
 	if (port < 0 || port > 0xffff) {
 		throw ConfigError("Invalid HttpServer port");
@@ -321,8 +326,12 @@ HttpServer::HttpServer() : m_daemon(nullptr)
 HttpServer::~HttpServer()
 {
 	// デストラクタでサーバ停止
-	::MHD_stop_daemon(m_daemon);
-	m_daemon = nullptr;
+	if (m_daemon != nullptr) {
+		logger.Log(LogLevel::Info, "Finalize HttpServer...");
+		::MHD_stop_daemon(m_daemon);
+		logger.Log(LogLevel::Info, "Finalize HttpServer OK");
+		m_daemon = nullptr;
+	}
 }
 
 void HttpServer::AddPage(const std::regex &method, const std::regex &url,
