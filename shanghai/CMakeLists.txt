@@ -48,6 +48,10 @@ add_custom_target("run"
 add_custom_target("start"
 	COMMAND "./${PROJECT_NAME}" "--daemon"
 	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
+# make stop
+add_custom_target("stop"
+	COMMAND "xargs" "-t" "-a" "${PROJECT_NAME}.pid" "kill"
+	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
 # make fulltest
 add_custom_target("fulltest"
