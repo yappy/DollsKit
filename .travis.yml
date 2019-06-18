@@ -17,6 +17,7 @@ addons:
   apt:
     packages:
     - libmicrohttpd-dev
+    - graphviz
 
 script:
   - mkdir build
@@ -24,3 +25,4 @@ script:
   - cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
   - make
   - make fulltest
+  - make doc
