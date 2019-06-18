@@ -59,6 +59,18 @@ endforeach()
 # make doc
 add_custom_target("doc"
 	SOURCES ${BIN_LIST})
+add_custom_target("doc_update"
+	DEPENDS "doc_git_add")
+
+add_custom_target("doc_git_add"
+	COMMAND "git" "add" "${DOC_INSTALL_DIR}"
+	COMMAND "git" "status"
+	DEPENDS "doc_install")
 add_custom_target("doc_install"
 	DEPENDS "doc"
+	DEPENDS "doc_git_clean"
 	SOURCES ${INST_LIST})
+add_custom_target("doc_git_clean"
+	COMMAND "git" "rm" "--ignore-unmatch" "-f" "${DOC_INSTALL_DIR}/?*.*"
+	COMMAND "git" "clean" "-fxd" "${DOC_INSTALL_DIR}"
+	COMMAND "git" "status")
