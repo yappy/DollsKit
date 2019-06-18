@@ -91,3 +91,4 @@ ExternalProject_Add(JSON11
 # projects
 #
 add_subdirectory("shanghai")
+add_subdirectory("document")
