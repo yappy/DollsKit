@@ -1,0 +1,27 @@
+graph graphname {
+	graph [
+		charset = "UTF-8",
+		label = "yappy house management program",
+	];
+
+	task_twit [label="Twitter\nTask"];
+	twit_fabd [label="Full Auto\nBlack Detection"];
+	twit_rand [label="Random Tweet"];
+	task_health [label="Health Check\nTask"];
+	web_console [label="Web\nConsole"];
+	web_github [label="Github\nWebhook"];
+	web_ci [label="Travis CI\nWebhook"];
+
+	subgraph cluster_ts {
+		label="Task Server";
+		task_twit -- twit_fabd;
+		task_twit -- twit_rand;
+		task_health;
+	}
+	subgraph cluster_web {
+		label="HTTP Server";
+		web_console;
+		web_github;
+		web_ci;
+	}
+}
