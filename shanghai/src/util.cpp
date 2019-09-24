@@ -3,6 +3,7 @@
 #include <cstring>
 #include <sstream>
 #include <algorithm>
+#include <glob.h>
 
 namespace shanghai {
 namespace util{
@@ -230,6 +231,28 @@ std::string ReadStringFromFile(const std::string &file_name)
 {
 	std::vector<uint8_t> buf = ReadFile(file_name);
 	return std::string(reinterpret_cast<char *>(buf.data()), buf.size());
+}
+
+std::vector<std::string> EnumFiles(const std::string &pat)
+{
+	std::vector<std::string> result;
+	glob_t gl;
+
+	gl.gl_pathc = 0;
+	int ret = glob(pat.c_str(), GLOB_MARK, NULL, &gl);
+	if (ret == GLOB_NOMATCH) {
+		// empty
+		return result;
+	}
+	else if (ret != 0) {
+		throw FileError("glob failed");
+	}
+	for (size_t i = 0; i < gl.gl_pathc; i++) {
+		result.emplace_back(gl.gl_pathv[i]);
+	}
+	globfree(&gl);
+
+	return result;
 }
 
 }	// namespace util

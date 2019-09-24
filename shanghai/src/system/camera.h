@@ -1,6 +1,7 @@
 #ifndef SHANGHAI_SYSTEM_CAMERA_H
 #define SHANGHAI_SYSTEM_CAMERA_H
 
+#include <mutex>
 #include <string>
 
 namespace shanghai {
@@ -12,8 +13,11 @@ public:
 	~Camera() = default;
 
 	std::string Take();
+	void RemoveOldFiles();
 
 private:
+	// 周期タスクと web からアクセスされるので排他する
+	std::mutex m_mtx;
 	std::string m_picdir;
 };
 
