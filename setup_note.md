@@ -127,6 +127,7 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 # カメラモジュール
 - カメラモジュールの有効化
   - sudo raspi-config
+  - Interfacing options
   - Enable Camera
 
 - 静止画撮影(要 video グループ)
@@ -141,6 +142,29 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 - C# からサムネイルの取り出し
   - GetThumbnailImage()
+
+
+# I2C
+- I2C の有効化
+  - `sudo raspi-config`
+  - Interfacing Options
+  - Enable I2C
+
+- Device files
+  - `ls /sys/bus/i2c/devices`
+
+- i2c-tools
+  - `sudo apt install i2c-tools`
+
+- i2c-detect
+  - `i2cdetect -l`
+    - バスの列挙
+    - i2c-X の X が識別子
+  - `i2cdetect -F <X>`
+    - 利用可能な機能
+  - `i2cdetect [-y] <X>`
+    - 応答のある I2C アドレスを表示
+    - 警告が出る通り、変な状態になる可能性は否定できないのでその場合はリセット
 
 
 # HTTP Server
