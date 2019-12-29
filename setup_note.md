@@ -4,16 +4,25 @@ https://www.raspberrypi.org/documentation/
 
 Headless と書かれた節を参考にすればディスプレイやキーボードやマウスなしでセットアップできる。
 
+## 最終実践環境
+Raspbian Buster Lite
+
+
 # 準備
+https://www.raspberrypi.org/documentation/configuration/wireless/headless.md
+
 - raspbian の img を落とす
-- Etcher を落とす (全 OS でこれが推奨になったらしい)
+- balenaEtcher を落とす (全 OS でこれが推奨になったらしい)
 - microSD に焼く
-- エクスプローラ等で開き、`ssh`という名前の空ファイルを作る
+  - 128 GB 以上のに焼いたら警告が出た。。
+- エクスプローラ等で FAT32 のブートパーティションを開き、`ssh`という名前の空ファイルを作る
+- (無線を使う場合)
+  - `wpa_supplicant.conf`という名前のファイルを作り、例に従って country, ssd, pass を書く
+  - 保存後いきなり抜いたりしないこと
 - メモカを本体に入れてから電源をつなぐ
-  - あと有線 LAN も
 - マウスと HDMI をつないでネットワーク設定を見るか、なんかほかの方法で IP addr を特定する
   - DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して ping, ssh して試す
-- `ssh <IP addr>`
+- `ssh pi@<IP addr>`
   - user, pass = pi, raspberry
   - これで入れたら当たり
 
@@ -38,12 +47,8 @@ Headless と書かれた節を参考にすればディスプレイやキーボ�
 - (7) Advanced Options
   - Expand Filesystem
     - SDカード全体を使うようにする
-    - Advanced Options に移動になった
-    - 自動で行われるようになった気もする？
+    - 自動で行われるようになったっぽい
 	- 確認は `df -h`
-- (8) Update
-  - raspi-config 自体のアップデート
-  - apt update しているだけに見える
 
 `ifconfig` で wlan の MAC addr を見てルータに DHCP 固定割り当てを設定する。
 または普通の Linux のやり方で固定アドレスを設定する。
@@ -59,9 +64,11 @@ http://raspbian.org/RaspbianMirrors
 * http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
 * http://ftp.yz.yamagata-u.ac.jp/pub/linux/raspbian/raspbian/
 
+なんか `/etc/apt/sources.list.d/raspi.list` も増えてるみたいだがこちらのミラーは謎。
+
 ## パッケージの更新
-* `sudo apt-get update`
-* `sudo apt-get upgrade`
+* `sudo apt update`
+* `sudo apt upgrade`
 
 ## Raspberry Piのファームウェア更新(危険)
 `sudo rpi-update`
@@ -69,7 +76,7 @@ http://raspbian.org/RaspbianMirrors
 開発中の最新版になるので注意
 
 ## パッケージの削除
-`sudo apt-get remove --purge <PKGNAME>` or `sudo apt-get purge <PKGNAME>`
+`sudo apt remove --purge <PKGNAME>` or `sudo apt purge <PKGNAME>`
 
 ## 設定ファイルを後から消す
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
@@ -120,6 +127,7 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 # カメラモジュール
 - カメラモジュールの有効化
   - sudo raspi-config
+  - Interfacing options
   - Enable Camera
 
 - 静止画撮影(要 video グループ)
@@ -134,6 +142,29 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 - C# からサムネイルの取り出し
   - GetThumbnailImage()
+
+
+# I2C
+- I2C の有効化
+  - `sudo raspi-config`
+  - Interfacing Options
+  - Enable I2C
+
+- Device files
+  - `ls /sys/bus/i2c/devices`
+
+- i2c-tools
+  - `sudo apt install i2c-tools`
+
+- i2c-detect
+  - `i2cdetect -l`
+    - バスの列挙
+    - i2c-X の X が識別子
+  - `i2cdetect -F <X>`
+    - 利用可能な機能
+  - `i2cdetect [-y] <X>`
+    - 応答のある I2C アドレスを表示
+    - 警告が出る通り、変な状態になる可能性は否定できないのでその場合はリセット
 
 
 # HTTP Server
