@@ -1,5 +1,16 @@
 # ユーザアカウント管理
 
+## 秘密鍵/公開鍵ペアの作成方法
+```
+$ ssh-keygen -C <Comment>
+# アルゴリズムと強度をデフォルトから変える場合
+$ ssh-keygen -t rsa -b 2048 -C <Comment>
+```
+画面にも出るが、`.ssh/` 以下に出力される。
+* `id_rsa`: 秘密鍵
+  * 取り扱い注意
+* `id_rsa.pub`: 公開鍵
+
 ## 追加
 ```
 $ useradd -s /bin/bash [-u <UID>] <NAME>
