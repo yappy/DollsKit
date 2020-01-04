@@ -121,6 +121,7 @@ Unattended-Upgrade::Automatic-Reboot "true";
 - root password
   - `sudo passwd root`
   - 最終的には /etc/shadow で * にしておく方がよいかも
+  - raspberry だと怖すぎるので最初から空(無効化)されている？
 - ssh 設定
   - `sudo vi /etc/ssh/sshd_config`
   - Change ssh port
@@ -128,9 +129,13 @@ Unattended-Upgrade::Automatic-Reboot "true";
   - disable root login
     - PermitRootLogin no
   - パスワード認証の無効化
-    - `#PasswordAuthentication yes`
+    - `#PasswordAuthentication yes` をコメントアウト解除して `no` に
   - pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
     - `DenyUsers pi`
+  - 設定確認
+    - `sshd -t`
+  - sshd 再起動
+    - `service ssh restart`
 
 # VNC (remote desktop)
 https://www.raspberrypi.org/documentation/remote-access/vnc/
