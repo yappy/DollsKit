@@ -110,6 +110,12 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::Automatic-Reboot "true";
 ```
 
+# 自動補完の Beep 音がうるさい
+```
+$ sudo nano /etc/inputrc
+# uncomment
+set bell-style none
+```
 
 # screen
 - nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
