@@ -26,6 +26,18 @@ https://www.raspberrypi.org/documentation/configuration/wireless/headless.md
   - user, pass = pi, raspberry
   - これで入れたら当たり
 
+例: wpa_supplicant.conf
+```
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=JP
+
+network={
+ ssid="<Name of your WiFi>"
+ psk="<Password for your WiFi>"
+}
+```
+
 
 # 初期設定
 `$sudo raspi-config`
