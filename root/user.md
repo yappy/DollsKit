@@ -6,6 +6,18 @@ $ useradd -s /bin/bash [-u <UID>] <NAME>
 ```
 なぜか自分のシェルも chsh できないようなので root から bash にしてあげる。
 
+```
+$ adduser <NAME>
+```
+対話式で、パスワードの設定もしてくれるし bash にしてくれるらしいしで
+これが使えるならばこちらの方が楽。ホームディレクトリも作ってくれる。
+
+# 削除
+```
+$ userdel -r <NAME>
+```
+`-r` はホームディレクトリとメールスプールも削除する。
+
 ## ssh 対応
 ```
 # (そのユーザになって)
@@ -34,3 +46,11 @@ sudo グループが sudoers に書かれているのでそのグループに追
 $nano /etc/sudoers.d/010_pi-nopasswd
 ```
 パスワードを聞かれたくない場合はこれを真似して追加する。
+
+## バックアップからの復旧
+* /etc/
+  * passwd
+  * shadow
+  * group
+  * sudoers.d/
+    * 010_pi-nopasswd
