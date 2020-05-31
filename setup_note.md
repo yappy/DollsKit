@@ -277,7 +277,7 @@ IMPORTANT NOTES:
   - `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   - `sudo service lighttpd force-reload`
 ```
-ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/ssl.pem"
+ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/server.pem"
 ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ```
 
