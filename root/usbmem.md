@@ -31,15 +31,25 @@ $ mkfs -t ext4 /dev/sd[a][1]
 $ blkid
 ```
 
+## マウントポイントの作成
+```
+$ mkdir /media/usbbkup
+```
+
 ## 起動時 (または mount -a 時) に USB メモリをマウント
 /etc/fstab に追加。
 バックアップしたい / (ext4) のマウント設定に合わせるとよいと思う。
 抜けている状態でブート失敗になるとよくないので nofail を付けた方がよいと思う。
 
 ```
-/dev/mmcblk0p1  /boot           vfat    defaults          0       2
-/dev/mmcblk0p2  /               ext4    defaults,noatime  0       1
-UUID=<uuid> /media/usbbkup ext4 defaults,noatime,nofail 0 0
+PARTUUID=6c586e13-01  /boot           vfat    defaults          0       2
+PARTUUID=6c586e13-02  /               ext4    defaults,noatime  0       1
+UUID=<uuid>           /media/usbbkup  ext4    defaults,noatime,nofail 0 0
+```
+
+ブート時に死なないか以下で確認すること。
+```
+$ mount -a
 ```
 
 ## (主にスクリプト等からの)マウント状態の確認
