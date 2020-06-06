@@ -1,3 +1,4 @@
+#include "buildinfo.h"
 #include "logger.h"
 #include "config.h"
 #include "util.h"
