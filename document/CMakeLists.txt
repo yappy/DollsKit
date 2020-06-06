@@ -43,18 +43,18 @@ foreach(ELEM ${SRCS_OTHER})
 	list(APPEND BIN_LIST ${DEST})
 endforeach()
 
-foreach(ELEM ${BIN_LIST})
-	set(SRC  ${ELEM})
-	file(RELATIVE_PATH REL "${CMAKE_CURRENT_BINARY_DIR}/src" ${ELEM})
-	set(DEST "${DOC_INSTALL_DIR}/${REL}")
-	get_filename_component(DEST_DIR ${DEST} DIRECTORY)
-	add_custom_command(
-		OUTPUT ${DEST}
-		COMMAND "mkdir" "-p" ${DEST_DIR}
-		COMMAND "cp" ${SRC} ${DEST}
-		DEPENDS ${SRC})
-	list(APPEND INST_LIST ${DEST})
-endforeach()
+#foreach(ELEM ${BIN_LIST})
+#	set(SRC  ${ELEM})
+#	file(RELATIVE_PATH REL "${CMAKE_CURRENT_BINARY_DIR}/src" ${ELEM})
+#	set(DEST "${DOC_INSTALL_DIR}/${REL}")
+#	get_filename_component(DEST_DIR ${DEST} DIRECTORY)
+#	add_custom_command(
+#		OUTPUT ${DEST}
+#		COMMAND "mkdir" "-p" ${DEST_DIR}
+#		COMMAND "cp" ${SRC} ${DEST}
+#		DEPENDS ${SRC})
+#	list(APPEND INST_LIST ${DEST})
+#endforeach()
 
 # make doc
 add_custom_target("doc"
