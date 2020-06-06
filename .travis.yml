@@ -2,7 +2,7 @@ language: cpp
 sudo: false
 
 os: linux
-dist: xenial
+dist: bionic
 compiler:
   - clang
   - gcc
