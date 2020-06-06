@@ -17,6 +17,23 @@ file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
+# Build info
+set(BUILD_INFO_FILE "buildinfo.h")
+find_package(Git REQUIRED)
+add_custom_command(OUTPUT ${BUILD_INFO_FILE}
+	COMMAND "${CMAKE_COMMAND}" "-E" "echo"
+		"\\#define" "GIT_BRANCH"
+		"\\\"`" "${GIT_EXECUTABLE}" "rev-parse" "--symbolic-full-name" "HEAD" "`\\\""
+		">" "${BUILD_INFO_FILE}"
+	COMMAND "${CMAKE_COMMAND}" "-E" "echo"
+		"\\#define" "GIT_HASH"
+		"\\\"`" "${GIT_EXECUTABLE}" "rev-parse" "HEAD" "`\\\""
+		">>" "${BUILD_INFO_FILE}"
+	)
+add_custom_target(buildinfo DEPENDS ${BUILD_INFO_FILE})
+add_dependencies(${PROJECT_NAME} buildinfo)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 # Dependencies
 # std::thread depends on thread
 set(INCS ${CURL_INCLUDE_DIRS} ${MHD_INCLUDE_DIRS})
