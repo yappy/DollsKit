@@ -10,7 +10,7 @@ namespace system {
 struct SysInfoData {
 public:
 	std::time_t start_time;
-	std::string git_branch, git_hash;
+	std::string build_type, git_branch, git_hash;
 	uint32_t task_total, task_comp, task_suc, task_fail;
 	uint32_t white, black;
 };

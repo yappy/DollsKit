@@ -169,34 +169,24 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 	auto &sys_info = system::Get().sys_info;
 	auto &twitter = system::Get().twitter;
 
-	std::string git_branch, git_hash;
-	{
-		Process p("/usr/bin/git",
-			{"rev-parse", "--symbolic-full-name", "HEAD"});
-		p.WaitForExit();
-		git_branch = util::OneLine(p.GetOut());
-	}
-	{
-		Process p("/usr/bin/git", {"rev-parse", "HEAD"});
-		p.WaitForExit();
-		git_hash = util::OneLine(p.GetOut());
-	}
-
 	sys_info.GetAndSet(
-		[&git_branch, &git_hash]
-		(system::SysInfoData &data) {
+		[](system::SysInfoData &data) {
 			data.start_time = std::time(nullptr);
-			data.git_branch = git_branch;
-			data.git_hash = git_hash;
+			data.build_type = buildinfo::BuildType();
+			data.git_branch = buildinfo::GitBranch();
+			data.git_hash = buildinfo::GitHash();
 		});
 
 	std::string msg;
 	msg += '[';
 	msg += util::DateTimeStr();
 	msg += "] Boot...\n";
-	msg += git_branch;
+	msg += "Build Type: ";
+	msg += buildinfo::BuildType();
 	msg += '\n';
-	msg += git_hash;
+	msg += buildinfo::GitBranch();
+	msg += '\n';
+	msg += buildinfo::GitHash();
 
 	twitter.Tweet(msg);
 }
