@@ -19,11 +19,11 @@ target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
 # Build info
 find_package(Git REQUIRED)
-set(BUILD_INFO_FILE "buildinfo.h")
+set(BUILD_INFO_FILE "buildinfo_cmake.h")
 if (CMAKE_BUILD_TYPE)
 	set(BUILD_TYPE_DEF ${CMAKE_BUILD_TYPE})
 else()
-	set(BUILD_TYPE_DEF "Build Type Unknown")
+	set(BUILD_TYPE_DEF "Unknown")
 endif()
 add_custom_command(OUTPUT ${BUILD_INFO_FILE} "__always_generate"
 	COMMAND "${CMAKE_COMMAND}" "-E" "remove" "-f" "${BUILD_INFO_FILE}"
