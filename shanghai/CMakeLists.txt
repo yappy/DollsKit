@@ -17,6 +17,46 @@ file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
+# Build info
+find_package(Git REQUIRED)
+set(BUILD_INFO_FILE "buildinfo_cmake.h")
+set(BUILD_INFO_TMP "buildinfo_cmake.h.tmp")
+if (CMAKE_BUILD_TYPE)
+	set(BUILD_TYPE_DEF ${CMAKE_BUILD_TYPE})
+else()
+	set(BUILD_TYPE_DEF "Unknown")
+endif()
+add_custom_command(OUTPUT "__always_generate"
+	COMMAND ${CMAKE_COMMAND} "-E" "remove" "-f" "${BUILD_INFO_TMP}"
+	COMMAND ${CMAKE_COMMAND} "-E" "touch" "${BUILD_INFO_TMP}"
+	COMMAND ${CMAKE_COMMAND} "-E" "echo"
+		"\\#define" "BUILD_INFO_BUILD_TYPE" "\\\"${BUILD_TYPE_DEF}\\\""
+		">>" "${BUILD_INFO_TMP}"
+	COMMAND ${CMAKE_COMMAND} "-E" "echo"
+		"\\#define" "BUILD_INFO_GIT_BRANCH"
+		"\\\"`" "${GIT_EXECUTABLE}" "rev-parse" "--symbolic-full-name" "HEAD" "`\\\""
+		">>" "${BUILD_INFO_TMP}"
+	COMMAND ${CMAKE_COMMAND} "-E" "echo"
+		"\\#define" "BUILD_INFO_GIT_HASH"
+		"\\\"`" "${GIT_EXECUTABLE}" "rev-parse" "HEAD" "`\\\""
+		">>" "${BUILD_INFO_TMP}"
+
+	COMMAND ${CMAKE_COMMAND} "-E" "compare_files" ${BUILD_INFO_FILE} ${BUILD_INFO_TMP} ";"
+		"if" "[" "$$?" "-eq" "0" "];" "then"
+			${CMAKE_COMMAND} "-E" "echo" "No difference" ${BUILD_INFO_TMP} ${BUILD_INFO_FILE} ";"
+		"else"
+			${CMAKE_COMMAND} "-E" "echo" "copy" ${BUILD_INFO_TMP} ${BUILD_INFO_FILE} ";"
+			${CMAKE_COMMAND} "-E" "copy" ${BUILD_INFO_TMP} ${BUILD_INFO_FILE} ";"
+		"fi"
+
+	COMMENT "Generating ${BUILD_INFO_FILE}..."
+	)
+add_custom_target(buildinfo DEPENDS "__always_generate")
+add_dependencies(${PROJECT_NAME} buildinfo)
+add_dependencies(${PROJECT_NAME}-test buildinfo)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME}-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 # Dependencies
 # std::thread depends on thread
 set(INCS ${CURL_INCLUDE_DIRS} ${MHD_INCLUDE_DIRS})
