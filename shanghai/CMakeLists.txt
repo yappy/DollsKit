@@ -62,15 +62,16 @@ target_include_directories(${PROJECT_NAME}-test PRIVATE ${CMAKE_CURRENT_BINARY_D
 set(INCS ${CURL_INCLUDE_DIRS} ${MHD_INCLUDE_DIRS})
 set(LIBS
 	"Threads::Threads"
-	"OpenSSL::SSL" ${CURL_LIBRARIES} ${MHD_LIBRARIES} "json11")
+	"OpenSSL::SSL" ${CURL_LIBRARIES} ${MHD_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})
 target_link_libraries(${PROJECT_NAME} ${LIBS})
-target_link_libraries(${PROJECT_NAME}-test "gtest_main" "gtest" ${LIBS})
+target_link_libraries(${PROJECT_NAME}-test ${LIBS})
 
-# External projects must be built before this
-add_dependencies(${PROJECT_NAME} JSON11)
-add_dependencies(${PROJECT_NAME}-test GTEST JSON11)
+# submodules
+target_link_libraries(${PROJECT_NAME} "json11")
+target_link_libraries(${PROJECT_NAME}-test "json11")
+target_link_libraries(${PROJECT_NAME}-test "gtest_main")
 
 # install
 install(TARGETS ${PROJECT_NAME}

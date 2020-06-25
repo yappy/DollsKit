@@ -37,55 +37,10 @@ find_package(CURL REQUIRED)
 pkg_check_modules(MHD libmicrohttpd REQUIRED)
 
 #
-# Externals
+# submodules
 #
-include(ExternalProject)
-include_directories(
-	"${CMAKE_CURRENT_BINARY_DIR}/include"
-	"${CMAKE_CURRENT_BINARY_DIR}/include/${CMAKE_LIBRARY_ARCHITECTURE}")
-link_directories(
-	"${CMAKE_CURRENT_BINARY_DIR}/lib"
-	"${CMAKE_CURRENT_BINARY_DIR}/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
-
-# gtest
-ExternalProject_Add(GTEST
-	PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/googletest"
-	INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-	# download
-	GIT_REPOSITORY "https://github.com/google/googletest"
-	GIT_TAG "release-1.8.0"
-	GIT_SHALLOW 1
-	# update
-	# update causes build slow down...
-	# version is fixed to be used; no update
-	UPDATE_COMMAND ""
-	# configure
-	CMAKE_ARGS
-		"-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}"
-		"-DBUILD_GMOCK=OFF"
-		"-DBUILD_GTEST=ON"
-	# build
-	# install
-)
-
-# json11
-ExternalProject_Add(JSON11
-	PREFIX "${CMAKE_CURRENT_BINARY_DIR}/external/json11"
-	INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-	# download
-	GIT_REPOSITORY "https://github.com/dropbox/json11"
-	# 21 Jun 2017
-	GIT_TAG "ec4e45219af1d7cde3d58b49ed762376fccf1ace"
-	GIT_SHALLOW 1
-	# update
-	# update causes build slow down...
-	# version is fixed to be used; no update
-	UPDATE_COMMAND ""
-	# configure
-	CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}"
-	# build
-	# install
-)
+add_subdirectory("external/googletest")
+add_subdirectory("external/json11")
 
 #
 # projects
