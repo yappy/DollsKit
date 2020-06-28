@@ -93,6 +93,29 @@ http://raspbian.org/RaspbianMirrors
 ## 設定ファイルを後から消す
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
+# Debian-Backports
+主にgit や cmake が古い場合。
+最新を追いかけるなら公式のリポジトリを sources.list に登録するのが確実だが、
+こちらで十分なら設定は一回で済む。
+
+以下を `/etc/apt/sources.list` に追加。
+```
+deb http://ftp.jp.debian.org/debian buster-backports main contrib non-free
+```
+その後 `sudo apt update`。
+おそらく鍵エラーが出るので、NO_PUBKEY と言われた鍵(16進)を控えて、
+```
+sudo apt-key adv --keyserver keyserver.ubuntu.com 110 --recv-keys <PUBKEY>
+...
+```
+
+`apt show` で backports に別バージョンがあるなら
+`-a` ですべて表示できると注意が出る。
+backports は `-t` で明示的に指定しなければ使われることはない。
+```
+apt show -a <pkg>
+apt install -t <version>-backports <pkg>
+```
 
 # 自動アップデート
 1. `sudo apt install unattended-upgrades`
