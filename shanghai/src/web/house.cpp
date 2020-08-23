@@ -1,5 +1,6 @@
 #include "house.h"
 #include "../util.h"
+#include "../system/system.h"
 #include "../logger.h"
 #include "../config.h"
 #include "../exec.h"
@@ -86,19 +87,12 @@ HttpResponse PicPage::Do(
 	}
 
 	// 写真を stdout に出力する
-	Process p("/usr/bin/raspistill", {
-		"-o", "-", "-t", PicTimeout,
-		"-w", std::to_string(w), "-h", std::to_string(h)});
-	int exitcode = p.WaitForExit(10);
-	if (exitcode != 0) {
-		logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
-		return HttpResponse(500);
-	}
+	auto &camera = system::Get().camera;
+	std::string stdout;
+	camera.Take("-", true, &stdout, system::Camera::MIN_TIMEOUT_MS, w, h);
 
 	// stdout を image/jpeg として HTTP レスポンスにセット
-	return HttpResponse(200,
-		{{"Content-Type", "image/jpeg"}},
-		p.GetOut());
+	return HttpResponse(200, {{"Content-Type", "image/jpeg"}}, stdout);
 }
 
 SwitchPage::SwitchPage()

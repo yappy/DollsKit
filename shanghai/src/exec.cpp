@@ -193,7 +193,7 @@ void Process::InputAndClose(const std::string &data)
 	PipeClose(fd);
 }
 
-const std::string &Process::GetOut()
+std::string &Process::GetOut()
 {
 	if (!m_exit) {
 		throw std::logic_error("Not exit yet");
@@ -201,7 +201,7 @@ const std::string &Process::GetOut()
 	return m_outbuf;
 }
 
-const std::string &Process::GetErr()
+std::string &Process::GetErr()
 {
 	if (!m_exit) {
 		throw std::logic_error("Not exit yet");

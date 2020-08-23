@@ -30,8 +30,8 @@ public:
 	void Kill();
 	int WaitForExit(int timeout_sec = -1);
 	void InputAndClose(const std::string &data);
-	const std::string &GetOut();
-	const std::string &GetErr();
+	std::string &GetOut();
+	std::string &GetErr();
 
 private:
 	Pipe CreatePipe();

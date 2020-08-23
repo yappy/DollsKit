@@ -17,6 +17,7 @@ namespace system {
 class Camera final {
 public:
 	static const uint32_t DEFAULT_TIMEOUT_MS = 5000;
+	static const uint32_t MIN_TIMEOUT_MS = 500;
 	// Camera Module v2
 	static const uint32_t DEFAULT_W = 3280;
 	static const uint32_t DEFAULT_H = 2464;
@@ -28,8 +29,10 @@ public:
 	Camera();
 	~Camera() = default;
 
-	void Take(const std::string &path,
-		uint32_t timeout_ms = DEFAULT_TIMEOUT_MS,
+	// !abspath ならば json で設定された写真用ディレクトリを起点とする
+	void Take(const std::string &path, bool abspath = false,
+		std::string *stdout = nullptr,
+		uint32_t timeout_ms = MIN_TIMEOUT_MS,
 		uint32_t w = DEFAULT_W, uint32_t h = DEFAULT_H,
 		uint32_t th_w = DEFAULT_THUMB_W, uint32_t th_h = DEFAULT_THUMB_H,
 		uint32_t th_quality = DEFAULT_THUMB_QUALITY);

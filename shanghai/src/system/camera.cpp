@@ -5,6 +5,10 @@
 #include "../exec.h"
 #include <filesystem>
 
+/*
+https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
+*/
+
 namespace fs = std::filesystem;
 using mtx_guard = std::lock_guard<std::mutex>;
 
@@ -34,7 +38,8 @@ Camera::Camera()
 	logger.Log(LogLevel::Info, "Initialize Camera OK");
 }
 
-void Camera::Take(const std::string &path,
+void Camera::Take(const std::string &path, bool abspath,
+	std::string *stdout,
 	uint32_t timeout_ms,
 	uint32_t w, uint32_t h,
 	uint32_t th_w, uint32_t th_h,
@@ -42,9 +47,16 @@ void Camera::Take(const std::string &path,
 {
 	mtx_guard lock{m_mtx};
 
+	fs::path outpath;
+	if (!abspath) {
+		outpath /= m_picdir;
+	}
+	outpath /= path;
+
 	// raspistill -o <path> -w <wsize> -h <hsize> -th <w>:<h>:<quality>
-	Process p{"/usr/bin/raspistill", {
-		"-o", path,
+	Process p {"/usr/bin/raspistill", {
+		"-o", outpath.string(),
+		"-t", std::to_string(timeout_ms),
 		"-w", std::to_string(w),
 		"-h", std::to_string(h),
 		"-th", util::Format("{0}:{1}:{2}", {
@@ -52,7 +64,16 @@ void Camera::Take(const std::string &path,
 			std::to_string(th_quality)
 		}),
 	}};
-	p.WaitForExit();
+	// 5秒余計に待ってみる (タイムアウトは例外発生)
+	int exitcode = p.WaitForExit(5 + timeout_ms / 1000);
+	if (exitcode != 0) {
+		logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
+		throw ProcessError("raspistill exit code is not 0");
+	}
+
+	if (stdout != nullptr) {
+		p.GetOut().swap(*stdout);
+	}
 }
 
 void Camera::RemoveOldFiles()
