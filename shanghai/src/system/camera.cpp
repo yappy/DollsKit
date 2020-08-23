@@ -20,7 +20,12 @@ Camera::Camera()
 	bool mkdir = fs::create_directories(m_picdir);
 	logger.Log(LogLevel::Info, "Created: %s", mkdir ? "Yes" : "No");
 
-	std::vector<std::string> files = util::EnumFiles(m_picdir + "/*.jpg");
+	std::vector<std::string> files;
+	for (const auto &entry : fs::directory_iterator(m_picdir)) {
+		if (fs::is_regular_file(entry.path())) {
+			files.emplace_back(entry.path().u8string());
+		}
+	}
 	logger.Log(LogLevel::Info, "Camera picture: %zu files", files.size());
 	for (const auto &file : files) {
 		logger.Log(LogLevel::Trace, "%s", file.c_str());

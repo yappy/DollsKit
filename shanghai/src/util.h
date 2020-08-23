@@ -97,7 +97,6 @@ std::string UrlEncode(const std::string &src);
 
 std::vector<uint8_t> ReadFile(const std::string &file_name);
 std::string ReadStringFromFile(const std::string &file_name);
-std::vector<std::string> EnumFiles(const std::string &pat);
 
 }	// namespace util
 }	// namespace shanghai
