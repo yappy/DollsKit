@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace shanghai {
 namespace system {
@@ -36,6 +37,7 @@ public:
 		uint32_t w = DEFAULT_W, uint32_t h = DEFAULT_H,
 		uint32_t th_w = DEFAULT_THUMB_W, uint32_t th_h = DEFAULT_THUMB_H,
 		uint32_t th_quality = DEFAULT_THUMB_QUALITY);
+	std::vector<std::string> GetFileList();
 	void RemoveOldFiles();
 
 private:

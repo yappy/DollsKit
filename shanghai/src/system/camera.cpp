@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../util.h"
 #include "../exec.h"
+#include <algorithm>
 #include <filesystem>
 
 /*
@@ -23,17 +24,6 @@ Camera::Camera()
 	logger.Log(LogLevel::Info, "Picture dir: %s", m_picdir.c_str());
 	bool mkdir = fs::create_directories(m_picdir);
 	logger.Log(LogLevel::Info, "Created: %s", mkdir ? "Yes" : "No");
-
-	std::vector<std::string> files;
-	for (const auto &entry : fs::directory_iterator(m_picdir)) {
-		if (fs::is_regular_file(entry.path())) {
-			files.emplace_back(entry.path().u8string());
-		}
-	}
-	logger.Log(LogLevel::Info, "Camera picture: %zu files", files.size());
-	for (const auto &file : files) {
-		logger.Log(LogLevel::Trace, "%s", file.c_str());
-	}
 
 	logger.Log(LogLevel::Info, "Initialize Camera OK");
 }
@@ -74,6 +64,18 @@ void Camera::Take(const std::string &path, bool abspath,
 	if (stdout != nullptr) {
 		p.GetOut().swap(*stdout);
 	}
+}
+
+std::vector<std::string> Camera::GetFileList()
+{
+	std::vector<std::string> files;
+	for (const auto &entry : fs::directory_iterator(m_picdir)) {
+		if (fs::is_regular_file(entry.path())) {
+			files.emplace_back(entry.path().u8string());
+		}
+	}
+	std::sort(files.begin(), files.end());
+	return files;
 }
 
 void Camera::RemoveOldFiles()
