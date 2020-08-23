@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.7)
 
+project(DollsKit
+	DESCRIPTION "House management system"
+	HOMEPAGE_URL "https://github.com/yappy/DollsKit")
+
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")
 
