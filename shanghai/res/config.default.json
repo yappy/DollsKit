@@ -29,7 +29,7 @@
 	},
 	"Camera":
 	{
-		"PicDir"	: "/tmp/dollspic"
+		"PicDir"	: "/var/tmp/dollspic"
 	},
 	"Switch":
 	{
