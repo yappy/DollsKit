@@ -29,6 +29,7 @@
 	},
 	"Camera":
 	{
+		"Enabled"	: false,
 		"PicDir"	: "/var/tmp/dollspic"
 	},
 	"Switch":

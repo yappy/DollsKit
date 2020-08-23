@@ -141,27 +141,39 @@ const std::array<const char *, 3> ConfigFiles = {
 // タスクの登録
 void SetupTasks(const std::unique_ptr<TaskServer> &server)
 {
+	// キューイングされたタスク処理: 1分ごと
 	server->RegisterPeriodicTask(
 		std::make_unique<task::TaskConsumeTask>([](const struct tm &tm) {
 			return true;
 		}));
+	// 定時連絡: 6:00, 18:00
 	server->RegisterPeriodicTask(
 		std::make_unique<task::HealthCheckTask>([](const struct tm &tm) {
 			const std::array<int, 2> hours = { 6, 18 };
 			return tm.tm_min == 0 && std::find(
 				hours.begin(), hours.end(), tm.tm_hour) != hours.end();
 		}));
+	// DDNS: 3:00
 	server->RegisterPeriodicTask(
 		std::make_unique<task::DdnsTask>([](const struct tm &tm) {
 			return tm.tm_min == 0 && tm.tm_hour == 3;
 		}));
+	// Twitter: 5分おき
 	server->RegisterPeriodicTask(
 		std::make_unique<task::TwitterTask>([](const struct tm &tm) {
 			return (tm.tm_min + 2) % 5 == 0;
 		}));
+	// ランダムツイート: 10:00
 	server->RegisterPeriodicTask(
 		std::make_unique<task::RandomTweetTask>([](const struct tm &tm) {
 			return tm.tm_min == 0 && tm.tm_hour == 10;
+		}));
+	// 写真自動撮影: 3時間ごと
+	server->RegisterPeriodicTask(
+		std::make_unique<task::CameraTask>([](const struct tm &tm) {
+			const std::array<int, 8> hours = { 0, 3, 6, 9, 12, 15, 18, 21};
+			return tm.tm_min == 0 && std::find(
+				hours.begin(), hours.end(), tm.tm_hour) != hours.end();
 		}));
 }
 
