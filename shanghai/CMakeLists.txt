@@ -83,10 +83,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Dependencies
-# std::thread depends on thread
 set(INCS ${CURL_INCLUDE_DIRS} ${MHD_INCLUDE_DIRS})
 set(LIBS
 	"Threads::Threads"
+	"stdc++fs"
 	"OpenSSL::SSL" ${CURL_LIBRARIES} ${MHD_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})

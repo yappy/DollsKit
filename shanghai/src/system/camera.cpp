@@ -3,7 +3,9 @@
 #include "../config.h"
 #include "../util.h"
 #include "../exec.h"
+#include <filesystem>
 
+namespace fs = std::filesystem;
 using mtx_guard = std::lock_guard<std::mutex>;
 
 namespace shanghai {
@@ -15,14 +17,8 @@ Camera::Camera()
 
 	m_picdir = config.GetStr({"Camera", "PicDir"});
 	logger.Log(LogLevel::Info, "Picture dir: %s", m_picdir.c_str());
-	// std::filesystem が gcc 6.3.0 ではまだ experimental であり、
-	// コンパイラバージョン依存のソースとリンク設定(cmake)を書くのが煩雑なので
-	// mkdir -p を呼ぶ
-	Process p{"/bin/mkdir", {"-p", m_picdir}};
-	int exitcode = p.WaitForExit();
-	if (exitcode != 0) {
-		throw FileError(p.GetErr());
-	}
+	bool mkdir = fs::create_directories(m_picdir);
+	logger.Log(LogLevel::Info, "Created: %s", mkdir ? "Yes" : "No");
 
 	std::vector<std::string> files = util::EnumFiles(m_picdir + "/*.jpg");
 	logger.Log(LogLevel::Info, "Camera picture: %zu files", files.size());
