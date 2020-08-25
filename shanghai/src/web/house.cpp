@@ -87,8 +87,38 @@ HttpResponse PicPage::Do(
 
 HttpResponse PicPage::Index(const KeyValueSet &query)
 {
-	// TODO
-	return HttpResponse(404);
+	const int page_size = 20;
+	const char *tmpl =
+R"(<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<title>Picture List</title>
+</head>
+
+<body>
+<h1>Picture List</h1>
+{0}
+
+</body>
+</html>
+)";
+	const auto offset_it = query.find("offset");
+	int offset = 0;
+	if (offset_it != query.end()) {
+		try {
+			offset = util::to_int(offset_it->second, 0);
+		}
+		catch (...) {}
+	}
+
+	auto &camera = system::Get().camera;
+	std::string switch_part;
+	std::vector<std::string> list = camera.GetFileList();
+
+
+	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
+		util::Format(tmpl, {"TODO"}));
 }
 
 HttpResponse PicPage::Take(const KeyValueSet &query)
