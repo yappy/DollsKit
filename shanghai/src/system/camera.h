@@ -30,9 +30,13 @@ public:
 	Camera();
 	~Camera() = default;
 
-	// !abspath ならば json で設定された写真用ディレクトリを起点とする
-	void Take(const std::string &path, bool abspath = false,
-		std::string *stdout = nullptr,
+	void Take(
+		const std::string &id,
+		uint32_t timeout_ms = MIN_TIMEOUT_MS,
+		uint32_t w = DEFAULT_W, uint32_t h = DEFAULT_H,
+		uint32_t th_w = DEFAULT_THUMB_W, uint32_t th_h = DEFAULT_THUMB_H,
+		uint32_t th_quality = DEFAULT_THUMB_QUALITY);
+	std::string TakeToStdout(
 		uint32_t timeout_ms = MIN_TIMEOUT_MS,
 		uint32_t w = DEFAULT_W, uint32_t h = DEFAULT_H,
 		uint32_t th_w = DEFAULT_THUMB_W, uint32_t th_h = DEFAULT_THUMB_H,
@@ -44,6 +48,12 @@ private:
 	// 周期タスクと web からアクセスされるので排他する
 	std::mutex m_mtx;
 	std::string m_picdir;
+
+	std::string TakeInternal(
+		const std::string &path,
+		uint32_t timeout_ms,
+		uint32_t w, uint32_t h, uint32_t th_w, uint32_t th_h,
+		uint32_t th_quality);
 };
 
 }	// namespace system

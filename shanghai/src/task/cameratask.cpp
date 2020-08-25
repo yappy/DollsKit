@@ -19,23 +19,23 @@ void CameraTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 	auto &camera = system::Get().camera;
 
 	std::time_t timestamp = std::time(nullptr);
-	std::string path;
+	std::string id;
 	{
 		struct tm local;
 		char timestr[64] = "";
 		::localtime_r(&timestamp, &local);
 		int ret = std::strftime(timestr, sizeof(timestr),
-			"%Y%m%d_%H%M%S.jpg", &local);
+			"%Y%m%d_%H%M%S", &local);
 		if (ret != 0) {
-			path = timestr;
+			id = timestr;
 		}
 		else {
-			path = "unknown.jpg";
+			id = "unknown";
 		}
 	}
 	logger.Log(LogLevel::Info, "[%s] Take a picture: %s",
-		GetName().c_str(), path.c_str());
-	camera.Take(path);
+		GetName().c_str(), id.c_str());
+	camera.Take(id);
 }
 
 }	// namespace task

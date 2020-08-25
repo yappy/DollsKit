@@ -137,8 +137,8 @@ HttpResponse PicPage::Take(const KeyValueSet &query)
 
 	// 写真を stdout に出力する
 	auto &camera = system::Get().camera;
-	std::string stdout;
-	camera.Take("-", true, &stdout, system::Camera::MIN_TIMEOUT_MS, w, h);
+	std::string stdout = camera.TakeToStdout(
+		system::Camera::MIN_TIMEOUT_MS, w, h);
 
 	// stdout を image/jpeg として HTTP レスポンスにセット
 	return HttpResponse(200, {{"Content-Type", "image/jpeg"}}, stdout);

@@ -28,8 +28,7 @@ Camera::Camera()
 	logger.Log(LogLevel::Info, "Initialize Camera OK");
 }
 
-void Camera::Take(const std::string &path, bool abspath,
-	std::string *stdout,
+void Camera::Take(const std::string &id,
 	uint32_t timeout_ms,
 	uint32_t w, uint32_t h,
 	uint32_t th_w, uint32_t th_h,
@@ -37,15 +36,57 @@ void Camera::Take(const std::string &path, bool abspath,
 {
 	mtx_guard lock{m_mtx};
 
-	fs::path outpath;
-	if (!abspath) {
-		outpath /= m_picdir;
-	}
-	outpath /= path;
+	fs::path outpath, thpath;
+	outpath /= m_picdir;
+	outpath /= util::Format("{0}.jpg", {id});
+	thpath /= m_picdir;
+	thpath /= util::Format("{0}_th.jpg", {id});
 
+	TakeInternal(outpath, timeout_ms, w, h, th_w, th_h, th_quality);
+
+	// Exif 情報を削除して上書き
+	{
+		Process p {"/usr/bin/convert", {
+			outpath, "-thumbnail", "100%", outpath
+		}};
+		int exitcode = p.WaitForExit();
+		if (exitcode != 0) {
+			logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
+			throw ProcessError("raspistill exit code is not 0");
+		}
+	}
+	// サムネイルを作る
+	{
+		Process p {"/usr/bin/convert", {
+			outpath, "-thumbnail", "160x", thpath
+		}};
+		int exitcode = p.WaitForExit();
+		if (exitcode != 0) {
+			logger.Log(LogLevel::Error, "convert: %d", exitcode);
+			throw ProcessError("convert exit code is not 0");
+		}
+	}
+}
+
+std::string Camera::TakeToStdout(
+	uint32_t timeout_ms,
+	uint32_t w, uint32_t h,
+	uint32_t th_w, uint32_t th_h,
+	uint32_t th_quality)
+{
+	mtx_guard lock{m_mtx};
+	return TakeInternal("-", timeout_ms, w, h, th_w, th_h, th_quality);
+}
+
+std::string Camera::TakeInternal(
+	const std::string &path,
+	uint32_t timeout_ms,
+	uint32_t w, uint32_t h, uint32_t th_w, uint32_t th_h,
+	uint32_t th_quality)
+{
 	// raspistill -o <path> -w <wsize> -h <hsize> -th <w>:<h>:<quality>
 	Process p {"/usr/bin/raspistill", {
-		"-o", outpath.string(),
+		"-o", path,
 		"-t", std::to_string(timeout_ms),
 		"-w", std::to_string(w),
 		"-h", std::to_string(h),
@@ -60,14 +101,15 @@ void Camera::Take(const std::string &path, bool abspath,
 		logger.Log(LogLevel::Error, "raspistill: %d", exitcode);
 		throw ProcessError("raspistill exit code is not 0");
 	}
-
-	if (stdout != nullptr) {
-		p.GetOut().swap(*stdout);
-	}
+	std::string stdout;
+	p.GetOut().swap(stdout);
+	return stdout;
 }
 
 std::vector<std::string> Camera::GetFileList()
 {
+	mtx_guard lock{m_mtx};
+
 	std::vector<std::string> files;
 	for (const auto &entry : fs::directory_iterator(m_picdir)) {
 		if (fs::is_regular_file(entry.path())) {
@@ -80,6 +122,7 @@ std::vector<std::string> Camera::GetFileList()
 
 void Camera::RemoveOldFiles()
 {
+	mtx_guard lock{m_mtx};
 	throw std::logic_error("not implemented");
 }
 
