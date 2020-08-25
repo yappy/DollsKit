@@ -43,6 +43,9 @@ R"(<!DOCTYPE html>
 <h2>Camera View</h2>
 <img src="./pic/take?w=320&h=240" />
 
+<h2>Picture List</h2>
+<p><a href="./pic/">Here</a></p>
+
 <h2>Switch Control</h2>
 {0}
 
@@ -73,6 +76,22 @@ HttpResponse PicPage::Do(
 	const std::string &method, const std::string &url_match,
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
+{
+	if (url_match == "take") {
+		return Take(query);
+	}
+	else {
+		return Index(query);
+	}
+}
+
+HttpResponse PicPage::Index(const KeyValueSet &query)
+{
+	// TODO
+	return HttpResponse(404);
+}
+
+HttpResponse PicPage::Take(const KeyValueSet &query)
 {
 	// GET w, h
 	const auto went = query.find("w");

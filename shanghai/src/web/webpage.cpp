@@ -25,7 +25,7 @@ void SetupPages()
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/travisci/(\w*))"),
 		std::make_shared<TravisCiPage>());
 
-	server.AddPage(std::regex("GET|POST"), std::regex(R"(/priv/house/pic/take)"),
+	server.AddPage(std::regex("GET|POST"), std::regex(R"(/priv/house/pic/(\w*))"),
 		std::make_shared<PicPage>());
 	server.AddPage(std::regex("GET|POST"), std::regex(R"(/priv/house/switch/(\d+))"),
 		std::make_shared<SwitchPage>());

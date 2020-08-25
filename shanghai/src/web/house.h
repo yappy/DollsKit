@@ -31,6 +31,10 @@ public:
 		const std::string &method, const std::string &url_match,
 		const KeyValueSet &header, const KeyValueSet &query,
 		const PostKeyValueSet &post) override;
+
+private:
+	HttpResponse Index(const KeyValueSet &query);
+	HttpResponse Take(const KeyValueSet &query);
 };
 
 class SwitchPage : public WebPage {
