@@ -4,6 +4,7 @@
 #include "../logger.h"
 #include "../config.h"
 #include "../exec.h"
+#include "../net.h"
 
 namespace shanghai {
 namespace web {
@@ -121,8 +122,19 @@ R"(<!DOCTYPE html>
 			continue;
 		}
 		auto ind = list.size() - 1 - i;
+		const std::string &id        = std::get<0>(list[ind]);
+		const std::string &main_path = std::get<1>(list[ind]);
+		const std::string &th_path   = std::get<2>(list[ind]);
 		pic_part += util::Format("<p>{0} - {1} - {2}</p>\n",
-			{std::get<0>(list[ind]), std::get<1>(list[ind]), std::get<2>(list[ind])});
+			{id, main_path, th_path});
+
+		try {
+			std::vector<uint8_t> th_bin = util::ReadFile(th_path);
+			pic_part += util::Format(
+				"<p><img src='data:image/png;base64,{0}' /></p>\n",
+				{net.Base64Encode(th_bin.data(), th_bin.size())});
+		}
+		catch(FileError &e) {}
 	}
 
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},

@@ -28,6 +28,7 @@ public:
 	static const uint32_t DEFAULT_THUMB_H = 120;
 	static const uint32_t DEFAULT_THUMB_QUALITY = 100;
 
+	// (id, main_pic_path, thumb_pic_path)
 	using PicEntry = std::tuple<
 		std::string,
 		std::string,
