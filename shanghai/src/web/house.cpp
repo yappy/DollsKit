@@ -116,7 +116,7 @@ R"(<!DOCTYPE html>
 	auto &camera = system::Get().camera;
 	std::string pic_part;
 	auto list = camera.GetFileList();
-	pic_part += util::Format("<p>{0} Files</p>", {std::to_string(list.size())});
+	pic_part += util::Format("<p>{0} Files</p>\n", {std::to_string(list.size())});
 	for (size_t i = offset; i < page_size; i++) {
 		if (i >= list.size()) {
 			continue;
@@ -125,16 +125,16 @@ R"(<!DOCTYPE html>
 		const std::string &id        = std::get<0>(list[ind]);
 		const std::string &main_path = std::get<1>(list[ind]);
 		const std::string &th_path   = std::get<2>(list[ind]);
-		pic_part += util::Format("<p>{0} - {1} - {2}</p>\n",
-			{id, main_path, th_path});
-
+		pic_part += "<p>";
 		try {
 			std::vector<uint8_t> th_bin = util::ReadFile(th_path);
 			pic_part += util::Format(
-				"<p><img src='data:image/png;base64,{0}' /></p>\n",
+				"<img src='data:image/jpeg;base64,{0}' />\n",
 				{net.Base64Encode(th_bin.data(), th_bin.size())});
 		}
 		catch(FileError &e) {}
+		pic_part += id;
+		pic_part += "</p>\n";
 	}
 
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
