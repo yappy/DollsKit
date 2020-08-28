@@ -113,12 +113,20 @@ R"(<!DOCTYPE html>
 	}
 
 	auto &camera = system::Get().camera;
-	std::string switch_part;
-	std::vector<std::string> list = camera.GetFileList();
-
+	std::string pic_part;
+	auto list = camera.GetFileList();
+	pic_part += util::Format("<p>{0} Files</p>", {std::to_string(list.size())});
+	for (size_t i = offset; i < page_size; i++) {
+		if (i >= list.size()) {
+			continue;
+		}
+		auto ind = list.size() - 1 - i;
+		pic_part += util::Format("<p>{0} - {1} - {2}</p>\n",
+			{std::get<0>(list[ind]), std::get<1>(list[ind]), std::get<2>(list[ind])});
+	}
 
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
-		util::Format(tmpl, {"TODO"}));
+		util::Format(tmpl, {pic_part}));
 }
 
 HttpResponse PicPage::Take(const KeyValueSet &query)

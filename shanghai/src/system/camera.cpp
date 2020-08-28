@@ -4,6 +4,7 @@
 #include "../util.h"
 #include "../exec.h"
 #include <algorithm>
+#include <regex>
 #include <filesystem>
 
 /*
@@ -106,14 +107,25 @@ std::string Camera::TakeInternal(
 	return stdout;
 }
 
-std::vector<std::string> Camera::GetFileList()
+std::vector<Camera::PicEntry> Camera::GetFileList()
 {
 	mtx_guard lock{m_mtx};
 
-	std::vector<std::string> files;
+	// (/path/to/dir/(id))_th.jpg
+	std::regex th_re(R"((.*/(\w+))_th\.jpg)");
+	std::smatch match;
+
+	std::vector<PicEntry> files;
 	for (const auto &entry : fs::directory_iterator(m_picdir)) {
-		if (fs::is_regular_file(entry.path())) {
-			files.emplace_back(entry.path().u8string());
+		const auto &path = entry.path();
+		const auto &pathstr = path.u8string();
+		if (fs::is_regular_file(path)) {
+			if (std::regex_match(pathstr, match, th_re)) {
+				files.emplace_back(
+					match[2],
+					util::Format("{0}.jpg", {match[1]}),
+					pathstr);
+			}
 		}
 	}
 	std::sort(files.begin(), files.end());

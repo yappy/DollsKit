@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace shanghai {
@@ -27,6 +28,11 @@ public:
 	static const uint32_t DEFAULT_THUMB_H = 120;
 	static const uint32_t DEFAULT_THUMB_QUALITY = 100;
 
+	using PicEntry = std::tuple<
+		std::string,
+		std::string,
+		std::string>;
+
 	Camera();
 	~Camera() = default;
 
@@ -41,7 +47,7 @@ public:
 		uint32_t w = DEFAULT_W, uint32_t h = DEFAULT_H,
 		uint32_t th_w = DEFAULT_THUMB_W, uint32_t th_h = DEFAULT_THUMB_H,
 		uint32_t th_quality = DEFAULT_THUMB_QUALITY);
-	std::vector<std::string> GetFileList();
+	std::vector<PicEntry> GetFileList();
 	void RemoveOldFiles();
 
 private:
