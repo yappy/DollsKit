@@ -34,6 +34,7 @@ public:
 
 private:
 	HttpResponse Index(const KeyValueSet &query);
+	HttpResponse View(const KeyValueSet &query);
 	HttpResponse Take(const KeyValueSet &query);
 };
 

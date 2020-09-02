@@ -78,7 +78,10 @@ HttpResponse PicPage::Do(
 	const KeyValueSet &header, const KeyValueSet &query,
 	const PostKeyValueSet &post)
 {
-	if (url_match == "take") {
+	if (url_match == "view") {
+		return View(query);
+	}
+	else if (url_match == "take") {
 		return Take(query);
 	}
 	else {
@@ -129,8 +132,13 @@ R"(<!DOCTYPE html>
 		try {
 			std::vector<uint8_t> th_bin = util::ReadFile(th_path);
 			pic_part += util::Format(
-				"<img src='data:image/jpeg;base64,{0}' />\n",
-				{net.Base64Encode(th_bin.data(), th_bin.size())});
+				"<a href='./view?id={0}'>"
+				"<img src='data:image/jpeg;base64,{1}' />"
+				"</a>\n",
+				{
+					util::HtmlEscape(id),
+					net.Base64Encode(th_bin.data(), th_bin.size())
+				});
 		}
 		catch(FileError &e) {}
 		pic_part += id;
@@ -139,6 +147,35 @@ R"(<!DOCTYPE html>
 
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
 		util::Format(tmpl, {pic_part}));
+}
+
+HttpResponse PicPage::View(const KeyValueSet &query)
+{
+	// GET ID
+	const auto ident = query.find("id");
+	std::string id;
+	if (ident != query.end()) {
+		id = ident->second;
+	}
+
+	auto &camera = system::Get().camera;
+	auto list = camera.GetFileList();
+	auto found = std::find_if(list.begin(), list.end(),
+		[&id](const system::Camera::PicEntry &ent) {
+			return std::get<0>(ent) == id;
+		});
+
+	if (found == list.end()) {
+		return HttpResponse(400);
+	}
+
+	try {
+		std::string img = util::ReadStringFromFile(std::get<1>(*found));
+		return HttpResponse(200, {{"Content-Type", "image/jpeg"}}, img);
+	}
+	catch (FileError &e) {
+		return HttpResponse(500);
+	}
 }
 
 HttpResponse PicPage::Take(const KeyValueSet &query)
