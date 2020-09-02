@@ -389,15 +389,14 @@ HttpResponse HttpServer::ProcessRequestRaw(struct MHD_Connection *connection,
 	{
 		mtx_guard lock(m_mtx);
 		for (const auto &elem : m_routes) {
-			const std::regex method_re = std::get<0>(elem);
-			const std::regex url_re = std::get<1>(elem);
+			auto &[method_re, url_re, page_tmp] = elem;
 			if (!std::regex_match(vmethod, method_re)) {
 				continue;
 			}
 			if (!std::regex_match(vurl, match, url_re)) {
 				continue;
 			}
-			page = std::get<2>(elem);
+			page = page_tmp;
 			break;
 		}
 	}

@@ -133,9 +133,7 @@ R"(<!DOCTYPE html>
 			continue;
 		}
 		auto ind = list.size() - 1 - i;
-		const std::string &id        = std::get<0>(list[ind]);
-		const std::string &main_path = std::get<1>(list[ind]);
-		const std::string &th_path   = std::get<2>(list[ind]);
+		const auto &[id, main_path, th_path] = list[ind];
 		pic_part += "<figure>";
 		try {
 			std::vector<uint8_t> th_bin = util::ReadFile(th_path);
@@ -180,8 +178,9 @@ HttpResponse PicPage::View(const KeyValueSet &query)
 		return HttpResponse(400);
 	}
 
+	const auto &[id_found, main_path, th_path] = *found;
 	try {
-		std::string img = util::ReadStringFromFile(std::get<1>(*found));
+		std::string img = util::ReadStringFromFile(main_path);
 		return HttpResponse(200, {{"Content-Type", "image/jpeg"}}, img);
 	}
 	catch (FileError &e) {
