@@ -98,6 +98,12 @@ R"(<!DOCTYPE html>
 <html lang="en">
 <head>
 <title>Picture List</title>
+<style>
+.grid {
+	display: flex;
+	flex-wrap: wrap;
+}
+</style>
 </head>
 
 <body>
@@ -120,6 +126,8 @@ R"(<!DOCTYPE html>
 	std::string pic_part;
 	auto list = camera.GetFileList();
 	pic_part += util::Format("<p>{0} Files</p>\n", {std::to_string(list.size())});
+
+	pic_part += "<div class='grid'>\n";
 	for (size_t i = offset; i < page_size; i++) {
 		if (i >= list.size()) {
 			continue;
@@ -128,7 +136,7 @@ R"(<!DOCTYPE html>
 		const std::string &id        = std::get<0>(list[ind]);
 		const std::string &main_path = std::get<1>(list[ind]);
 		const std::string &th_path   = std::get<2>(list[ind]);
-		pic_part += "<p>";
+		pic_part += "<figure>";
 		try {
 			std::vector<uint8_t> th_bin = util::ReadFile(th_path);
 			pic_part += util::Format(
@@ -141,9 +149,12 @@ R"(<!DOCTYPE html>
 				});
 		}
 		catch(FileError &e) {}
+		pic_part += "<figcaption>";
 		pic_part += id;
-		pic_part += "</p>\n";
+		pic_part += "</figcaption>";
+		pic_part += "</figure>\n";
 	}
+	pic_part += "</div>\n";
 
 	return HttpResponse(200, {{"Content-Type", "text/html; charset=utf-8"}},
 		util::Format(tmpl, {pic_part}));
