@@ -114,7 +114,7 @@ std::string DateTimeStr(std::time_t timestamp)
 // sample: "Thu Apr 06 15:24:15 +0000 2017"
 std::time_t StrToTimeTwitter(const std::string &str)
 {
-	const std::array<const std::string, 12> mon_str = {
+	const std::array mon_str = {
 		"Jan"s, "Feb"s, "Mar"s, "Apr"s, "May"s, "Jun"s,
 		"Jul"s, "Aug"s, "Sep"s, "Oct"s, "Nov"s, "Dec"s,
 	};

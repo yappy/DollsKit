@@ -149,7 +149,7 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 	// 定時連絡: 6:00, 18:00
 	server->RegisterPeriodicTask(
 		std::make_unique<task::HealthCheckTask>([](const struct tm &tm) {
-			const std::array<int, 2> hours = { 6, 18 };
+			const std::array hours = { 6, 18 };
 			return tm.tm_min == 0 && std::find(
 				hours.begin(), hours.end(), tm.tm_hour) != hours.end();
 		}));
@@ -171,7 +171,7 @@ void SetupTasks(const std::unique_ptr<TaskServer> &server)
 	// 写真自動撮影: 3時間ごと
 	server->RegisterPeriodicTask(
 		std::make_unique<task::CameraTask>([](const struct tm &tm) {
-			const std::array<int, 8> hours = { 0, 3, 6, 9, 12, 15, 18, 21};
+			const std::array hours = { 0, 3, 6, 9, 12, 15, 18, 21};
 			return tm.tm_min == 0 && std::find(
 				hours.begin(), hours.end(), tm.tm_hour) != hours.end();
 		}));
