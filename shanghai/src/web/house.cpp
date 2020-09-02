@@ -113,22 +113,27 @@ R"(<!DOCTYPE html>
 </body>
 </html>
 )";
+
+	auto &camera = system::Get().camera;
+	auto list = camera.GetFileList();
+
 	const auto offset_it = query.find("offset");
-	int offset = 0;
+	std::optional<int> offset;
 	if (offset_it != query.end()) {
 		try {
-			offset = util::to_int(offset_it->second, 0);
+			offset = std::clamp(
+				util::to_int(offset_it->second),
+				0, static_cast<int>(list.size()));
 		}
 		catch (...) {}
 	}
 
-	auto &camera = system::Get().camera;
 	std::string pic_part;
-	auto list = camera.GetFileList();
-	pic_part += util::Format("<p>{0} Files</p>\n", {std::to_string(list.size())});
+	pic_part += util::Format("<p>{0} Files</p>\n",
+		{std::to_string(list.size())});
 
 	pic_part += "<div class='grid'>\n";
-	for (size_t i = offset; i < page_size; i++) {
+	for (size_t i = offset.value_or(0); i < page_size; i++) {
 		if (i >= list.size()) {
 			continue;
 		}
@@ -162,7 +167,7 @@ HttpResponse PicPage::View(const KeyValueSet &query)
 {
 	// GET ID
 	const auto ident = query.find("id");
-	std::string id;
+	std::optional<std::string> id;
 	if (ident != query.end()) {
 		id = ident->second;
 	}
@@ -171,7 +176,7 @@ HttpResponse PicPage::View(const KeyValueSet &query)
 	auto list = camera.GetFileList();
 	auto found = std::find_if(list.begin(), list.end(),
 		[&id](const system::Camera::PicEntry &ent) {
-			return std::get<0>(ent) == id;
+			return std::get<0>(ent) == id.value_or("");
 		});
 
 	if (found == list.end()) {
@@ -193,19 +198,24 @@ HttpResponse PicPage::Take(const KeyValueSet &query)
 	// GET w, h
 	const auto went = query.find("w");
 	const auto hent = query.find("h");
-	int w = PicDefaultW;
-	int h = PicDefaultH;
+	std::optional<int> w;
+	std::optional<int> h;
 	if (went != query.end()) {
-		w = util::to_int(went->second, PicMinW, PicMaxW);
+		try {
+			w = std::clamp(util::to_int(went->second), PicMinW, PicMaxW);
+		} catch (...) {}
 	}
 	if (hent != query.end()) {
-		h = util::to_int(hent->second, PicMinH, PicMaxH);
+		try {
+			h = std::clamp(util::to_int(hent->second), PicMinH, PicMaxH);
+		} catch (...) {}
 	}
 
 	// 写真を stdout に出力する
 	auto &camera = system::Get().camera;
 	std::string stdout = camera.TakeToStdout(
-		system::Camera::MIN_TIMEOUT_MS, w, h);
+		system::Camera::MIN_TIMEOUT_MS,
+		w.value_or(PicDefaultW), h.value_or(PicDefaultH));
 
 	// stdout を image/jpeg として HTTP レスポンスにセット
 	return HttpResponse(200, {{"Content-Type", "image/jpeg"}}, stdout);
