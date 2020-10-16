@@ -1,4 +1,6 @@
-#include "task.h"
+#include "twittertask.h"
+#include "../config.h"
+#include "../logger.h"
 #include "../util.h"
 #include "../net.h"
 #include "../system/system.h"

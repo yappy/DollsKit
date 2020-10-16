@@ -1,4 +1,6 @@
-#include "task.h"
+#include "ddns.h"
+#include "../config.h"
+#include "../logger.h"
 #include "../net.h"
 
 namespace shanghai {

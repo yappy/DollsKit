@@ -1,4 +1,6 @@
-#include "task.h"
+#include "healthcheck.h"
+#include "../config.h"
+#include "../logger.h"
 #include "../util.h"
 #include "../exec.h"
 #include "../system/system.h"
