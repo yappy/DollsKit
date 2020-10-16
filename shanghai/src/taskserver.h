@@ -48,6 +48,7 @@ public:
 	virtual ~PeriodicTask() = default;
 
 	virtual std::string GetName() = 0;
+	virtual bool IsQuiet() { return false; }
 	bool CheckRelease(const struct tm &local_time)
 	{
 		return m_rel_func(local_time);
