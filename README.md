@@ -74,6 +74,11 @@ $ kill `cat shanghai.pid`
 ```
 $ kill -SIGUSR1 `cat shanghai.pid`
 ```
+```
+$ make <stop|reload|flush>
+or
+$ ninja <stop|reload|flush>
+```
 
 ## システム起動時に自動起動
 インストール先ディレクトリに cron.txt ができます。
