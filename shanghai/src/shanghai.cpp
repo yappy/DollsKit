@@ -285,8 +285,11 @@ int main(int argc, char *argv[])
 			auto teardown = [&sigth]() {
 				// シグナル処理スレッドを SIGTERM で終了させて join
 				// (既に終了している場合はそのまま join)
+				logger.Log(LogLevel::Info, "Send SIGTERM to signal thread");
 				util::SysCall(kill(getpid(), SIGTERM));
+				logger.Log(LogLevel::Info, "Join signal thread...");
 				sigth.join();
+				logger.Log(LogLevel::Info, "Join signal thread complete");
 			};
 			ServerResult result = ServerResult::None;
 			try {
