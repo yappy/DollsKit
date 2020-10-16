@@ -251,12 +251,16 @@ std::future<void> TaskServer::ReleaseTask(
 {
 	std::future<void> future = m_thread_pool.PostTask(
 		[this, &task](const std::atomic<bool> &cancel) {
-			logger.Log(LogLevel::Info,
-				"[%s] start", task->GetName().c_str());
+			if (!task->IsQuiet()) {
+				logger.Log(LogLevel::Info,
+					"[%s] start", task->GetName().c_str());
+			}
 			try {
 				task->Entry(*this, cancel);
-				logger.Log(LogLevel::Info,
-					"[%s] finish (OK)", task->GetName().c_str());
+				if (!task->IsQuiet()) {
+					logger.Log(LogLevel::Info,
+						"[%s] finish (OK)", task->GetName().c_str());
+				}
 			}
 			catch (std::runtime_error &e) {
 				// runtime_error はログを出して処理完了

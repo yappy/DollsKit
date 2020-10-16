@@ -18,6 +18,7 @@ public:
 	~TaskConsumeTask() = default;
 
 	std::string GetName() override { return "TaskQueue"s; }
+	bool IsQuiet() override { return true; }
 	void Entry(TaskServer &server, const std::atomic<bool> &cancel) override;
 };
 
