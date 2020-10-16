@@ -60,6 +60,26 @@ $ ninja stop
 $ kill `cat shanghai.pid`
 ```
 
+### シグナル
+* SIGINT
+* SIGTERM
+  * プログラムを終了します。
+* SIGHUP
+  * (プロセスを終了せずに) 再起動します。設定やリソースファイルのリロードに使えます。
+* SIGUSR1
+  * ログをフラッシュします。
+    SD カード保護のため、ログはなるべくメモリに保持する設計になっています。
+
+例
+```
+$ kill -SIGUSR1 `cat shanghai.pid`
+```
+```
+$ make <stop|reload|flush>
+or
+$ ninja <stop|reload|flush>
+```
+
 ## システム起動時に自動起動
 インストール先ディレクトリに cron.txt ができます。
 ```

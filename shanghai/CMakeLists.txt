@@ -93,6 +93,14 @@ add_custom_target("start"
 add_custom_target("stop"
 	COMMAND "xargs" "-t" "-a" "${PROJECT_NAME}.pid" "kill"
 	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
+# make reload
+add_custom_target("reload"
+	COMMAND "xargs" "-t" "-a" "${PROJECT_NAME}.pid" "kill" "-SIGHUP"
+	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
+# make flush
+add_custom_target("flush"
+	COMMAND "xargs" "-t" "-a" "${PROJECT_NAME}.pid" "kill" "-SIGUSR1"
+	WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
 
 # make fulltest
 add_custom_target("fulltest"
