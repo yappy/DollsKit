@@ -52,7 +52,7 @@ void SetupSignalMask(sigset_t &sigset)
 	}
 }
 
-// シグナル処理スレッド (SIGUSR1 で終了)
+// シグナル処理スレッド (SIGINT or SIGTERM で thread exit)
 void SignalThreadEntry(const sigset_t &sigset,
 	std::unique_ptr<TaskServer> &server)
 {
@@ -69,20 +69,21 @@ void SignalThreadEntry(const sigset_t &sigset,
 
 		switch (sig) {
 		case SIGINT:
-			logger.Log(LogLevel::Info, "SIGINT");
+			logger.Log(LogLevel::Info, "SIGINT: Request shutdown");
 			server->RequestShutdown(ServerResult::Shutdown);
-			break;
+			goto EXIT;
 		case SIGTERM:
-			logger.Log(LogLevel::Info, "SIGTERM");
+			logger.Log(LogLevel::Info, "SIGTERM: Request shutdown");
 			server->RequestShutdown(ServerResult::Shutdown);
-			break;
+			goto EXIT;
 		case SIGHUP:
-			logger.Log(LogLevel::Info, "SIGHUP");
+			logger.Log(LogLevel::Info, "SIGHUP: Request hot reboot");
 			server->RequestShutdown(ServerResult::Reboot);
 			break;
 		case SIGUSR1:
-			logger.Log(LogLevel::Info, "SIGUSR1");
-			goto EXIT;
+			logger.Log(LogLevel::Info, "SIGUSR1: Log flush");
+			logger.Flush();
+			break;
 		default:
 			logger.Log(LogLevel::Fatal, "Unknown signal: %d", sig);
 			throw std::logic_error("unknown signal");
@@ -282,8 +283,9 @@ int main(int argc, char *argv[])
 			// シグナルセットとタスクサーバへの参照を渡す
 			std::thread sigth(SignalThreadEntry, sigset, std::ref(server));
 			auto teardown = [&sigth]() {
-				// シグナル処理スレッドを SIGUSR1 で終了させて join
-				util::SysCall(kill(getpid(), SIGUSR1));
+				// シグナル処理スレッドを SIGTERM で終了させて join
+				// (既に終了している場合はそのまま join)
+				util::SysCall(kill(getpid(), SIGTERM));
 				sigth.join();
 			};
 			ServerResult result = ServerResult::None;
