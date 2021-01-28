@@ -11,6 +11,11 @@
 		"AccessToken"		: "",
 		"AccessSecret"		: ""
 	},
+	"Discord":
+	{
+		"Enabled"	: false,
+		"Token"		: ""
+	},
 	"Ddns":
 	{
 		"Enabled"	: false,
