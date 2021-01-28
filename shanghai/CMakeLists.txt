@@ -13,7 +13,7 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 		-Wno-c++98-compat -Wno-c++98-compat-pedantic
 		-Wno-unused-parameter -Wno-unused-variable)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-	add_compile_options(-Werror -Wall -Wextra -Wnoexcept -Wno-unused)
+	add_compile_options(-Werror -Wall -Wextra -Wnoexcept -Wno-unused -Wno-ignored-qualifiers)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	add_compile_options(/W4)
 endif()
@@ -85,8 +85,10 @@ target_link_libraries(${PROJECT_NAME} ${LIBS})
 target_link_libraries(${PROJECT_NAME}-test ${LIBS})
 
 # submodules
-target_link_libraries(${PROJECT_NAME} "json11")
+target_link_libraries(${PROJECT_NAME}      "json11")
+target_link_libraries(${PROJECT_NAME}      "sleepy-discord")
 target_link_libraries(${PROJECT_NAME}-test "json11")
+target_link_libraries(${PROJECT_NAME}-test "sleepy-discord")
 target_link_libraries(${PROJECT_NAME}-test "gtest_main")
 
 # install
