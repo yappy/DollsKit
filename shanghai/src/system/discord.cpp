@@ -4,6 +4,7 @@
 #include "../util.h"
 #include "../config.h"
 #include <sleepy_discord/sleepy_discord.h>
+#include <random>
 
 namespace shanghai {
 namespace system {
@@ -19,6 +20,8 @@ R"(/help
     Show server list
 /ch <server_id>
     Show channel list
+/dice [<max>] [<times>]
+    Roll a dice
 )";
 
 struct DiscordConfig {
@@ -39,6 +42,8 @@ public:
 
 private:
 	DiscordConfig m_conf;
+	// 非決定論的乱数生成器 (連打禁止)
+	std::random_device m_rng;
 
 	// コマンドとして処理出来たら true
 	bool ExecuteCommand(SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
@@ -97,6 +102,63 @@ private:
 				msg += ch.ID;
 				msg += ' ';
 				msg += ch.name;
+			}
+			sendMessage(ch, msg);
+			return true;
+		}
+		else if (args.at(0) == "/dice") {
+			const uint64_t DICE_MAX = 1ULL << 56;
+			const uint64_t COUNT_MAX = 100;
+			//     d * c < U64
+			// <=> d < U64 / c
+			static_assert(
+				DICE_MAX <
+				std::numeric_limits<uint64_t>::max() / COUNT_MAX);
+
+			uint64_t d = 6;
+			uint64_t count = 1;
+			bool error = false;
+			if (args.size() >= 2) {
+				try {
+					d = util::to_uint64(args.at(1), 1, DICE_MAX);
+				}
+				catch(...){
+					error = true;
+				}
+			}
+			if (args.size() >= 3) {
+				try {
+					count = util::to_uint64(args.at(2), 1, COUNT_MAX);
+				}
+				catch(...){
+					error = true;
+				}
+			}
+			if (error) {
+				std::string msg = util::Format(
+					"1 <= DICE <= {0}\n"
+					"1 <= COUNT <= {1}",
+					{std::to_string(DICE_MAX), std::to_string(COUNT_MAX)});
+				sendMessage(ch, msg);
+				return true;
+			}
+
+			std::string seq = "";
+			uint64_t sum = 0;
+			for (uint64_t i = 0; i < count; i++) {
+				std::uniform_int_distribution<uint64_t> dist(1, d);
+				uint64_t r = dist(m_rng);
+				sum += r;
+				if (seq.size() != 0) {
+					seq += ", ";
+				}
+				seq += std::to_string(r);
+			}
+			std::string msg;
+			if (count == 1) {
+				msg = std::to_string(sum);
+			} else {
+				msg = util::Format("{0}\n({1})", {std::to_string(sum), seq});
 			}
 			sendMessage(ch, msg);
 			return true;
