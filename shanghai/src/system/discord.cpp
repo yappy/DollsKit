@@ -1,4 +1,5 @@
 #include "discord.h"
+#include "system.h"
 #include "../logger.h"
 #include "../util.h"
 #include "../config.h"
@@ -12,6 +13,8 @@ namespace {
 const std::string HELP_TEXT =
 R"(/help
     Show this help
+/info
+    Print system information
 /server
     Show server list
 /ch <server_id>
@@ -48,6 +51,17 @@ private:
 			sendMessage(ch, HELP_TEXT);
 			return true;
 		}
+		else if (args.at(0) == "/info") {
+			auto &sys_info = system::Get().sys_info;
+			system::SysInfoData data = sys_info.Get();
+			std::string msg = util::Format(
+				"Build Type: {0}\n"
+				"Branch: {1}\n"
+				"Commit: {2}",
+				{data.build_type, data.git_branch, data.git_hash});
+			sendMessage(ch, msg);
+			return true;
+		}
 		else if (args.at(0) == "/server") {
 			std::vector<SleepyDiscord::Server> resp = getServers();
 			std::string msg = util::Format("{0} Server(s)",
@@ -68,7 +82,7 @@ private:
 			}
 			std::vector<SleepyDiscord::Channel> resp =
 				getServerChannels(args.at(1));
-			std::string msg = util::Format("{0} Channels(s)",
+			std::string msg = util::Format("Channel(s)",
 				{std::to_string(resp.size())});
 			for (const auto &ch : resp) {
 				if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
