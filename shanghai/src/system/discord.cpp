@@ -7,10 +7,26 @@
 namespace shanghai {
 namespace system {
 
+namespace {
+
+struct DiscordConfig {
+	std::string DefaultReply = "";
+};
+
+}	// namespace
+
 class Discord::MyClient : public SleepyDiscord::DiscordClient {
 public:
 	// コンストラクタ
-	using SleepyDiscord::DiscordClient::DiscordClient;
+	MyClient(const DiscordConfig &conf,
+		const std::string &token, char numOfThreads)
+		: SleepyDiscord::DiscordClient(token, numOfThreads),
+		m_conf(conf)
+	{}
+	virtual ~MyClient() = default;
+
+private:
+	DiscordConfig m_conf;
 
 protected:
 	void onReady(SleepyDiscord::Ready ready) override
@@ -27,8 +43,26 @@ protected:
 
 	void onMessage(SleepyDiscord::Message message) override
 	{
+		// ミラーマッチ対策として bot には反応しないようにする
+		if (message.author.bot) {
+			return;
+		}
+
+		logger.Log(LogLevel::Info, "[Discord] Message");
+		logger.Log(LogLevel::Info, "[Discord] %s", message.content.c_str());
+		// メンション時のみでフィルタ
 		if (message.isMentioned(getID())) {
-			sendMessage(message.channelID, "はい");
+			// 半角スペースで区切ってメンションを削除
+			// 例: <@!123456789>
+			std::vector<std::string> tokens = util::Split(
+				message.content, ' ', true);
+			auto result = std::remove_if(tokens.begin(), tokens.end(),
+				[](const std::string &s) {
+					return s.find("<") == 0 && s.rfind(">") == s.size() - 1;
+				});
+			tokens.erase(result, tokens.end());
+
+			sendMessage(message.channelID, m_conf.DefaultReply);
 		}
 	}
 
@@ -47,7 +81,11 @@ Discord::Discord()
 	std::string token = config.GetStr({"Discord", "Token"});
 
 	if (enabled) {
-		m_client = std::make_unique<MyClient>(token, SleepyDiscord::USE_RUN_THREAD);
+		DiscordConfig dconf;
+		dconf.DefaultReply = config.GetStr({"Discord", "DefaultReply"});
+
+		m_client = std::make_unique<MyClient>(
+			dconf, token, SleepyDiscord::USE_RUN_THREAD);
 		m_thread = std::thread([this]() {
 			try {
 				m_client->run();

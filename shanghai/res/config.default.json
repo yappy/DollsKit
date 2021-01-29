@@ -13,8 +13,9 @@
 	},
 	"Discord":
 	{
-		"Enabled"	: false,
-		"Token"		: ""
+		"Enabled"		: false,
+		"Token"			: "",
+		"DefaultReply"	: "はい"
 	},
 	"Ddns":
 	{
