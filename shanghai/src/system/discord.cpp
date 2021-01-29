@@ -143,7 +143,9 @@ protected:
 			// コマンドとして実行
 			// できなかったらデフォルト返信
 			if (!ExecuteCommand(message.channelID, tokens)) {
-				sendMessage(message.channelID, m_conf.DefaultReply);
+				std::string msg = m_conf.DefaultReply;
+				msg += "\n(Help command: /help)";
+				sendMessage(message.channelID, msg);
 			}
 		}
 	}
