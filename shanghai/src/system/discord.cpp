@@ -9,10 +9,33 @@ namespace system {
 
 class Discord::MyClient : public SleepyDiscord::DiscordClient {
 public:
+	// コンストラクタ
 	using SleepyDiscord::DiscordClient::DiscordClient;
-	void onMessage(SleepyDiscord::Message message) override {
-		if (message.startsWith("whcg hello"))
-			sendMessage(message.channelID, "Hello " + message.author.username);
+
+protected:
+	void onReady(SleepyDiscord::Ready ready) override
+	{
+		logger.Log(LogLevel::Info, "[Discord] Ready");
+		{
+			const SleepyDiscord::User &user = ready.user;
+			const std::string &id = user.ID;
+			logger.Log(LogLevel::Info, "[Discord] user %s %s bot:%s",
+				id.c_str(), user.username.c_str(),
+				user.bot ? "Yes" : "No");
+		}
+	}
+
+	void onMessage(SleepyDiscord::Message message) override
+	{
+		if (message.isMentioned(getID())) {
+			sendMessage(message.channelID, "はい");
+		}
+	}
+
+	void onError(SleepyDiscord::ErrorCode errorCode,
+		const std::string errorMessage) override
+	{
+		logger.Log(LogLevel::Error, "[Discord] %s", errorMessage.c_str());
 	}
 };
 
