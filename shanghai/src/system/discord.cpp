@@ -22,6 +22,8 @@ R"(/help
     Show channel list
 /dice [<max>] [<times>]
     Nondeterministic dice roll
+/haipai
+    Deal piles (MT19937)
 )";
 
 struct DiscordConfig {
@@ -159,6 +161,30 @@ private:
 				msg = std::to_string(sum);
 			} else {
 				msg = util::Format("{0}\n({1})", {std::to_string(sum), seq});
+			}
+			sendMessage(ch, msg);
+			return true;
+		}
+		else if (args.at(0) == "/haipai") {
+			// 文字コード順だと
+			// 🀀🀁🀂🀃🀄🀅🀆🀇🀈🀉🀊🀋🀌🀍🀏🀏🀐🀑🀒🀓🀕🀕🀖🀗🀘🀙🀚🀛🀜🀝🀞🀟🀠🀡
+			// になってしまう
+			const char RES[] = u8"🀇🀈🀉🀊🀋🀌🀍🀏🀏🀙🀚🀛🀜🀝🀞🀟🀠🀡🀐🀑🀒🀓🀕🀕🀖🀗🀘🀀🀁🀂🀃🀆🀅🀄";
+			// sizeof(emoji_hai) == 4
+			static_assert(sizeof(RES) == 4 * 34 + 1);
+
+			std::array<int, 136> deck;
+			for (int i = 0; i < 34; i++) {
+				deck[i * 4 + 0] = deck[i * 4 + 1] =
+				deck[i * 4 + 2] = deck[i * 4 + 3] = i;
+			}
+			std::mt19937 engine(m_rng());
+			std::shuffle(deck.begin(), deck.end(), engine);
+			std::sort(deck.begin(), deck.begin() + 14);
+			std::string msg;
+			for (int i = 0; i < 14; i++) {
+				int x = deck.at(i);
+				msg += std::string(RES, x * 4, 4);
 			}
 			sendMessage(ch, msg);
 			return true;
