@@ -21,7 +21,7 @@ R"(/help
 /ch <server_id>
     Show channel list
 /dice [<max>] [<times>]
-    Roll a dice
+    Nondeterministic dice roll
 )";
 
 struct DiscordConfig {
