@@ -57,8 +57,13 @@ private:
 			std::string msg = util::Format(
 				"Build Type: {0}\n"
 				"Branch: {1}\n"
-				"Commit: {2}",
-				{data.build_type, data.git_branch, data.git_hash});
+				"Commit: {2}\n"
+				"White: {3}\n"
+				"Black: {4}",
+				{
+					data.build_type, data.git_branch, data.git_hash,
+					std::to_string(data.white), std::to_string(data.black)
+				});
 			sendMessage(ch, msg);
 			return true;
 		}
