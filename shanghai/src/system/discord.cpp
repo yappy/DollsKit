@@ -14,6 +14,8 @@ R"(/help
     Show this help
 /server
     Show server list
+/ch <server_id>
+    Show channel list
 )";
 
 struct DiscordConfig {
@@ -35,6 +37,7 @@ public:
 private:
 	DiscordConfig m_conf;
 
+	// コマンドとして処理出来たら true
 	bool ExecuteCommand(SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
 		std::vector<std::string> args)
 	{
@@ -58,7 +61,30 @@ private:
 			sendMessage(ch, msg);
 			return true;
 		}
-		return false;
+		else if (args.at(0) == "/ch") {
+			if (args.size() < 2) {
+				sendMessage(ch, "Argument error.");
+				return true;
+			}
+			std::vector<SleepyDiscord::Channel> resp =
+				getServerChannels(args.at(1));
+			std::string msg = util::Format("{0} Channels(s)",
+				{std::to_string(resp.size())});
+			for (const auto &ch : resp) {
+				if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
+					continue;
+				}
+				msg += '\n';
+				msg += ch.ID;
+				msg += ' ';
+				msg += ch.name;
+			}
+			sendMessage(ch, msg);
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 protected:
