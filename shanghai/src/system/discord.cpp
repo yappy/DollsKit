@@ -9,6 +9,13 @@ namespace system {
 
 namespace {
 
+const std::string HELP_TEXT =
+R"(/help
+    Show this help
+/server
+    Show server list
+)";
+
 struct DiscordConfig {
 	std::string DefaultReply = "";
 };
@@ -27,6 +34,32 @@ public:
 
 private:
 	DiscordConfig m_conf;
+
+	bool ExecuteCommand(SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
+		std::vector<std::string> args)
+	{
+		if (args.size() == 0) {
+			return false;
+		}
+		if (args.at(0) == "/help") {
+			sendMessage(ch, HELP_TEXT);
+			return true;
+		}
+		else if (args.at(0) == "/server") {
+			std::vector<SleepyDiscord::Server> resp = getServers();
+			std::string msg = util::Format("{0} Server(s)",
+				{std::to_string(resp.size())});
+			for (const auto &server : resp) {
+				msg += '\n';
+				msg += server.ID;
+				msg += ' ';
+				msg += server.name;
+			}
+			sendMessage(ch, msg);
+			return true;
+		}
+		return false;
+	}
 
 protected:
 	void onReady(SleepyDiscord::Ready ready) override
@@ -62,7 +95,11 @@ protected:
 				});
 			tokens.erase(result, tokens.end());
 
-			sendMessage(message.channelID, m_conf.DefaultReply);
+			// コマンドとして実行
+			// できなかったらデフォルト返信
+			if (!ExecuteCommand(message.channelID, tokens)) {
+				sendMessage(message.channelID, m_conf.DefaultReply);
+			}
 		}
 	}
 
