@@ -30,7 +30,7 @@ configure_file(
 
 # Test executable
 file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
-add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
+add_executable(${PROJECT_NAME}-test EXCLUDE_FROM_ALL ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
 # Build info
