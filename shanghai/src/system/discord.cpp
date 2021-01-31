@@ -30,220 +30,264 @@ struct DiscordConfig {
 	std::string DefaultReply = "";
 };
 
+template <class F>
+inline void CallNoExcept(F f) noexcept
+{
+	try {
+		f();
+	}
+	catch (std::exception &e) {
+		logger.Log(LogLevel::Error, "[Discord] Error in handler: %s", e.what());
+	}
+	catch (...) {
+		logger.Log(LogLevel::Error, "[Discord] Unknown error in handler");
+	}
+}
+
 }	// namespace
 
-class Discord::MyClient : public SleepyDiscord::DiscordClient {
+class MyDiscordClient : public SleepyDiscord::DiscordClient {
 public:
 	// コンストラクタ
-	MyClient(const DiscordConfig &conf,
+	MyDiscordClient(const DiscordConfig &conf,
 		const std::string &token, char numOfThreads)
 		: SleepyDiscord::DiscordClient(token, numOfThreads),
 		m_conf(conf)
 	{}
-	virtual ~MyClient() = default;
+	virtual ~MyDiscordClient() = default;
 
 private:
 	DiscordConfig m_conf;
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
 
+	// イベントハンドラ本処理 (例外送出あり)
+	void DoOnReady(SleepyDiscord::Ready &ready);
+	void DoOnMessage(SleepyDiscord::Message &message);
+	void DoOnError(SleepyDiscord::ErrorCode errorCode,
+		const std::string &errorMessage);
+
+	// メンション時の OnMessage 処理
 	// コマンドとして処理出来たら true
-	bool ExecuteCommand(SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
-		std::vector<std::string> args)
-	{
-		if (args.size() == 0) {
-			return false;
-		}
-		if (args.at(0) == "/help") {
-			sendMessage(ch, HELP_TEXT);
-			return true;
-		}
-		else if (args.at(0) == "/info") {
-			auto &sys_info = system::Get().sys_info;
-			system::SysInfoData data = sys_info.Get();
-			std::string msg = util::Format(
-				"Build Type: {0}\n"
-				"Branch: {1}\n"
-				"Commit: {2}\n"
-				"White: {3}\n"
-				"Black: {4}",
-				{
-					data.build_type, data.git_branch, data.git_hash,
-					std::to_string(data.white), std::to_string(data.black)
-				});
-			sendMessage(ch, msg);
-			return true;
-		}
-		else if (args.at(0) == "/server") {
-			std::vector<SleepyDiscord::Server> resp = getServers();
-			std::string msg = util::Format("{0} Server(s)",
-				{std::to_string(resp.size())});
-			for (const auto &server : resp) {
-				msg += '\n';
-				msg += server.ID;
-				msg += ' ';
-				msg += server.name;
-			}
-			sendMessage(ch, msg);
-			return true;
-		}
-		else if (args.at(0) == "/ch") {
-			if (args.size() < 2) {
-				sendMessage(ch, "Argument error.");
-				return true;
-			}
-			std::vector<SleepyDiscord::Channel> resp =
-				getServerChannels(args.at(1));
-			std::string msg = util::Format("Channel(s)",
-				{std::to_string(resp.size())});
-			for (const auto &ch : resp) {
-				if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
-					continue;
-				}
-				msg += '\n';
-				msg += ch.ID;
-				msg += ' ';
-				msg += ch.name;
-			}
-			sendMessage(ch, msg);
-			return true;
-		}
-		else if (args.at(0) == "/dice") {
-			const uint64_t DICE_MAX = 1ULL << 56;
-			const uint64_t COUNT_MAX = 100;
-			//     d * c < U64
-			// <=> d < U64 / c
-			static_assert(
-				DICE_MAX <
-				std::numeric_limits<uint64_t>::max() / COUNT_MAX);
-
-			uint64_t d = 6;
-			uint64_t count = 1;
-			bool error = false;
-			if (args.size() >= 2) {
-				try {
-					d = util::to_uint64(args.at(1), 1, DICE_MAX);
-				}
-				catch(...){
-					error = true;
-				}
-			}
-			if (args.size() >= 3) {
-				try {
-					count = util::to_uint64(args.at(2), 1, COUNT_MAX);
-				}
-				catch(...){
-					error = true;
-				}
-			}
-			if (error) {
-				std::string msg = util::Format(
-					"1 <= DICE <= {0}\n"
-					"1 <= COUNT <= {1}",
-					{std::to_string(DICE_MAX), std::to_string(COUNT_MAX)});
-				sendMessage(ch, msg);
-				return true;
-			}
-
-			std::string seq = "";
-			uint64_t sum = 0;
-			for (uint64_t i = 0; i < count; i++) {
-				std::uniform_int_distribution<uint64_t> dist(1, d);
-				uint64_t r = dist(m_rng);
-				sum += r;
-				if (seq.size() != 0) {
-					seq += ", ";
-				}
-				seq += std::to_string(r);
-			}
-			std::string msg;
-			if (count == 1) {
-				msg = std::to_string(sum);
-			} else {
-				msg = util::Format("{0}\n({1})", {std::to_string(sum), seq});
-			}
-			sendMessage(ch, msg);
-			return true;
-		}
-		else if (args.at(0) == "/haipai") {
-			// 文字コード順だと
-			// 🀀🀁🀂🀃🀄🀅🀆🀇🀈🀉🀊🀋🀌🀍🀏🀏🀐🀑🀒🀓🀕🀕🀖🀗🀘🀙🀚🀛🀜🀝🀞🀟🀠🀡
-			// になってしまう
-			const char RES[] = u8"🀇🀈🀉🀊🀋🀌🀍🀏🀏🀙🀚🀛🀜🀝🀞🀟🀠🀡🀐🀑🀒🀓🀕🀕🀖🀗🀘🀀🀁🀂🀃🀆🀅🀄";
-			// sizeof(emoji_hai) == 4
-			static_assert(sizeof(RES) == 4 * 34 + 1);
-
-			std::array<int, 136> deck;
-			for (int i = 0; i < 34; i++) {
-				deck[i * 4 + 0] = deck[i * 4 + 1] =
-				deck[i * 4 + 2] = deck[i * 4 + 3] = i;
-			}
-			std::mt19937 engine(m_rng());
-			std::shuffle(deck.begin(), deck.end(), engine);
-			std::sort(deck.begin(), deck.begin() + 14);
-			std::string msg;
-			for (int i = 0; i < 14; i++) {
-				int x = deck.at(i);
-				msg += std::string(RES, x * 4, 4);
-			}
-			sendMessage(ch, msg);
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
+	bool ExecuteCommand(
+		SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
+		std::vector<std::string> args);
 
 protected:
-	void onReady(SleepyDiscord::Ready ready) override
+	// イベントハンドラ override
+	// 例外送出するとスレッドによってクラッシュする場合があるので
+	// 外に漏らさないようにしつつ private 関数を呼ぶ
+	void onReady(SleepyDiscord::Ready ready) noexcept override
 	{
-		logger.Log(LogLevel::Info, "[Discord] Ready");
-		{
-			const SleepyDiscord::User &user = ready.user;
-			const std::string &id = user.ID;
-			logger.Log(LogLevel::Info, "[Discord] user %s %s bot:%s",
-				id.c_str(), user.username.c_str(),
-				user.bot ? "Yes" : "No");
-		}
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnReady, this, ready));
 	}
-
-	void onMessage(SleepyDiscord::Message message) override
+	void onMessage(SleepyDiscord::Message message) noexcept override
 	{
-		// ミラーマッチ対策として bot には反応しないようにする
-		if (message.author.bot) {
-			return;
-		}
-
-		logger.Log(LogLevel::Info, "[Discord] Message");
-		logger.Log(LogLevel::Info, "[Discord] %s", message.content.c_str());
-		// メンション時のみでフィルタ
-		if (message.isMentioned(getID())) {
-			// 半角スペースで区切ってメンションを削除
-			// 例: <@!123456789>
-			std::vector<std::string> tokens = util::Split(
-				message.content, ' ', true);
-			auto result = std::remove_if(tokens.begin(), tokens.end(),
-				[](const std::string &s) {
-					return s.find("<") == 0 && s.rfind(">") == s.size() - 1;
-				});
-			tokens.erase(result, tokens.end());
-
-			// コマンドとして実行
-			// できなかったらデフォルト返信
-			if (!ExecuteCommand(message.channelID, tokens)) {
-				std::string msg = m_conf.DefaultReply;
-				msg += "\n(Help command: /help)";
-				sendMessage(message.channelID, msg);
-			}
-		}
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnMessage, this, message));
 	}
-
 	void onError(SleepyDiscord::ErrorCode errorCode,
-		const std::string errorMessage) override
+		const std::string errorMessage) noexcept override
 	{
-		logger.Log(LogLevel::Error, "[Discord] %s", errorMessage.c_str());
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnError,
+			this, errorCode, errorMessage));
 	}
 };
+
+void MyDiscordClient::DoOnReady(SleepyDiscord::Ready &ready)
+{
+	logger.Log(LogLevel::Info, "[Discord] Ready");
+	{
+		const SleepyDiscord::User &user = ready.user;
+		const std::string &id = user.ID;
+		logger.Log(LogLevel::Info, "[Discord] user %s %s bot:%s",
+			id.c_str(), user.username.c_str(),
+			user.bot ? "Yes" : "No");
+	}
+}
+
+void MyDiscordClient::DoOnMessage(SleepyDiscord::Message &message)
+{
+	// ミラーマッチ対策として bot には反応しないようにする
+	if (message.author.bot) {
+		return;
+	}
+
+	logger.Log(LogLevel::Info, "[Discord] Message");
+	logger.Log(LogLevel::Info, "[Discord] %s", message.content.c_str());
+	// メンション時のみでフィルタ
+	if (message.isMentioned(getID())) {
+		// 半角スペースで区切ってメンションを削除
+		// 例: <@!123456789>
+		std::vector<std::string> tokens = util::Split(
+			message.content, ' ', true);
+		auto result = std::remove_if(tokens.begin(), tokens.end(),
+			[](const std::string &s) {
+				return s.find("<") == 0 && s.rfind(">") == s.size() - 1;
+			});
+		tokens.erase(result, tokens.end());
+
+		// コマンドとして実行
+		// できなかったらデフォルト返信
+		if (!ExecuteCommand(message.channelID, tokens)) {
+			std::string msg = m_conf.DefaultReply;
+			msg += "\n(Help command: /help)";
+			sendMessage(message.channelID, msg);
+		}
+	}
+}
+
+void MyDiscordClient::DoOnError(SleepyDiscord::ErrorCode errorCode,
+	const std::string &errorMessage)
+{
+	logger.Log(LogLevel::Error, "[Discord] %s", errorMessage.c_str());
+}
+
+bool MyDiscordClient::ExecuteCommand(
+	SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
+	std::vector<std::string> args)
+{
+	if (args.size() == 0) {
+		return false;
+	}
+	if (args.at(0) == "/help") {
+		sendMessage(ch, HELP_TEXT);
+		return true;
+	}
+	else if (args.at(0) == "/info") {
+		auto &sys_info = system::Get().sys_info;
+		system::SysInfoData data = sys_info.Get();
+		std::string msg = util::Format(
+			"Build Type: {0}\n"
+			"Branch: {1}\n"
+			"Commit: {2}\n"
+			"White: {3}\n"
+			"Black: {4}",
+			{
+				data.build_type, data.git_branch, data.git_hash,
+				std::to_string(data.white), std::to_string(data.black)
+			});
+		sendMessage(ch, msg);
+		return true;
+	}
+	else if (args.at(0) == "/server") {
+		std::vector<SleepyDiscord::Server> resp = getServers();
+		std::string msg = util::Format("{0} Server(s)",
+			{std::to_string(resp.size())});
+		for (const auto &server : resp) {
+			msg += '\n';
+			msg += server.ID;
+			msg += ' ';
+			msg += server.name;
+		}
+		sendMessage(ch, msg);
+		return true;
+	}
+	else if (args.at(0) == "/ch") {
+		if (args.size() < 2) {
+			sendMessage(ch, "Argument error.");
+			return true;
+		}
+		std::vector<SleepyDiscord::Channel> resp =
+			getServerChannels(args.at(1));
+		std::string msg = util::Format("Channel(s)",
+			{std::to_string(resp.size())});
+		for (const auto &ch : resp) {
+			if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
+				continue;
+			}
+			msg += '\n';
+			msg += ch.ID;
+			msg += ' ';
+			msg += ch.name;
+		}
+		sendMessage(ch, msg);
+		return true;
+	}
+	else if (args.at(0) == "/dice") {
+		const uint64_t DICE_MAX = 1ULL << 56;
+		const uint64_t COUNT_MAX = 100;
+		//     d * c < U64
+		// <=> d < U64 / c
+		static_assert(
+			DICE_MAX <
+			std::numeric_limits<uint64_t>::max() / COUNT_MAX);
+
+		uint64_t d = 6;
+		uint64_t count = 1;
+		bool error = false;
+		if (args.size() >= 2) {
+			try {
+				d = util::to_uint64(args.at(1), 1, DICE_MAX);
+			}
+			catch(...){
+				error = true;
+			}
+		}
+		if (args.size() >= 3) {
+			try {
+				count = util::to_uint64(args.at(2), 1, COUNT_MAX);
+			}
+			catch(...){
+				error = true;
+			}
+		}
+		if (error) {
+			std::string msg = util::Format(
+				"1 <= DICE <= {0}\n"
+				"1 <= COUNT <= {1}",
+				{std::to_string(DICE_MAX), std::to_string(COUNT_MAX)});
+			sendMessage(ch, msg);
+			return true;
+		}
+
+		std::string seq = "";
+		uint64_t sum = 0;
+		for (uint64_t i = 0; i < count; i++) {
+			std::uniform_int_distribution<uint64_t> dist(1, d);
+			uint64_t r = dist(m_rng);
+			sum += r;
+			if (seq.size() != 0) {
+				seq += ", ";
+			}
+			seq += std::to_string(r);
+		}
+		std::string msg;
+		if (count == 1) {
+			msg = std::to_string(sum);
+		} else {
+			msg = util::Format("{0}\n({1})", {std::to_string(sum), seq});
+		}
+		sendMessage(ch, msg);
+		return true;
+	}
+	else if (args.at(0) == "/haipai") {
+		// 文字コード順だと
+		// 🀀🀁🀂🀃🀄🀅🀆🀇🀈🀉🀊🀋🀌🀍🀏🀏🀐🀑🀒🀓🀕🀕🀖🀗🀘🀙🀚🀛🀜🀝🀞🀟🀠🀡
+		// になってしまう
+		const char RES[] = u8"🀇🀈🀉🀊🀋🀌🀍🀏🀏🀙🀚🀛🀜🀝🀞🀟🀠🀡🀐🀑🀒🀓🀕🀕🀖🀗🀘🀀🀁🀂🀃🀆🀅🀄";
+		// sizeof(emoji_hai) == 4
+		static_assert(sizeof(RES) == 4 * 34 + 1);
+
+		std::array<int, 136> deck;
+		for (int i = 0; i < 34; i++) {
+			deck[i * 4 + 0] = deck[i * 4 + 1] =
+			deck[i * 4 + 2] = deck[i * 4 + 3] = i;
+		}
+		std::mt19937 engine(m_rng());
+		std::shuffle(deck.begin(), deck.end(), engine);
+		std::sort(deck.begin(), deck.begin() + 14);
+		std::string msg;
+		for (int i = 0; i < 14; i++) {
+			int x = deck.at(i);
+			msg += std::string(RES, x * 4, 4);
+		}
+		sendMessage(ch, msg);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
 
 Discord::Discord()
 {
@@ -256,7 +300,7 @@ Discord::Discord()
 		DiscordConfig dconf;
 		dconf.DefaultReply = config.GetStr({"Discord", "DefaultReply"});
 
-		m_client = std::make_unique<MyClient>(
+		m_client = std::make_unique<MyDiscordClient>(
 			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);
 		m_thread = std::thread([this]() {
 			bool retry = false;

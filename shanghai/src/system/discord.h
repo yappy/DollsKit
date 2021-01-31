@@ -7,15 +7,16 @@
 namespace shanghai {
 namespace system {
 
+class MyDiscordClient;
+
 class Discord final {
 public:
 	Discord();
 	~Discord();
 
 private:
-	class MyClient;
 	std::thread m_thread;
-	std::unique_ptr<MyClient> m_client;
+	std::unique_ptr<MyDiscordClient> m_client;
 };
 
 }	// namespace system
