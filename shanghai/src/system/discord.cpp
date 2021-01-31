@@ -257,14 +257,27 @@ Discord::Discord()
 		dconf.DefaultReply = config.GetStr({"Discord", "DefaultReply"});
 
 		m_client = std::make_unique<MyClient>(
-			dconf, token, SleepyDiscord::USE_RUN_THREAD);
+			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);
 		m_thread = std::thread([this]() {
-			try {
-				m_client->run();
-			}
-			catch (std::exception &e) {
-				logger.Log(LogLevel::Error, "Discord thread error: %s", e.what());
-			}
+			bool retry = false;
+			do {
+				try {
+					logger.Log(LogLevel::Info, "Discord client run");
+					m_client->run();
+					logger.Log(LogLevel::Info, "Discord client run returned");
+				}
+				catch (std::exception &e) {
+					logger.Log(LogLevel::Error, "Discord thread error: %s", e.what());
+					retry = true;
+				}
+				catch (...) {
+					logger.Log(LogLevel::Error, "Discord thread unknown error");
+					retry = true;
+				}
+				if (retry) {
+					std::this_thread::sleep_for(std::chrono::seconds(10));
+				}
+			} while (retry);
 		});
 		logger.Log(LogLevel::Info, "Initialize Discord OK");
 	}
