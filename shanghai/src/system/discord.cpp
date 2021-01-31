@@ -21,6 +21,9 @@ R"(/help
     Show server list
 /ch <server_id>
     Show channel list
+/user <server_id>
+    Show member list (<=1000 only)
+    To enable this, Bot settings > "Privileged Gateway Intents" > "Server Members Intent"
 /dice [<max>] [<times>]
     Nondeterministic dice roll
 /haipai
@@ -85,6 +88,7 @@ private:
 	void CmdInfo(Ch ch, const std::vector<std::string> &args);
 	void CmdServer(Ch ch, const std::vector<std::string> &args);
 	void CmdCh(Ch ch, const std::vector<std::string> &args);
+	void CmdUser(Ch ch, const std::vector<std::string> &args);
 	void CmdDice(Ch ch, const std::vector<std::string> &args);
 	void CmdHaipai(Ch ch, const std::vector<std::string> &args);
 
@@ -168,6 +172,8 @@ void MyDiscordClient::RegisterCommands()
 		std::bind(&MyDiscordClient::CmdServer, this, _1, _2));
 	m_cmdmap.emplace("/ch",
 		std::bind(&MyDiscordClient::CmdCh, this, _1, _2));
+	m_cmdmap.emplace("/user",
+		std::bind(&MyDiscordClient::CmdUser, this, _1, _2));
 	m_cmdmap.emplace("/dice",
 		std::bind(&MyDiscordClient::CmdDice, this, _1, _2));
 	m_cmdmap.emplace("/haipai",
@@ -236,7 +242,7 @@ void MyDiscordClient::CmdCh(Ch ch, const std::vector<std::string> &args)
 	}
 	std::vector<SleepyDiscord::Channel> resp =
 		getServerChannels(args.at(1));
-	std::string msg = util::Format("Channel(s)",
+	std::string msg = util::Format("{0} Channel(s)",
 		{std::to_string(resp.size())});
 	for (const auto &ch : resp) {
 		if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
@@ -246,6 +252,29 @@ void MyDiscordClient::CmdCh(Ch ch, const std::vector<std::string> &args)
 		msg += ch.ID;
 		msg += ' ';
 		msg += ch.name;
+	}
+	sendMessage(ch, msg);
+}
+
+void MyDiscordClient::CmdUser(Ch ch, const std::vector<std::string> &args)
+{
+	if (args.size() < 2) {
+		sendMessage(ch, "Argument error.");
+		return;
+	}
+	// 最大 1000 件まで
+	// それ以上は複数回に分ける必要がある(未対応)
+	std::vector<SleepyDiscord::ServerMember> resp =
+		listMembers(args.at(1), 1000);
+	std::string msg = util::Format("{0} User(s)",
+		{std::to_string(resp.size())});
+	for (const auto &member : resp) {
+		const SleepyDiscord::User &user = member.user;
+		msg += '\n';
+		msg += user.ID;
+		msg += ' ';
+		msg += user.username;
+		msg += user.bot ? " [BOT]" : "";
 	}
 	sendMessage(ch, msg);
 }
