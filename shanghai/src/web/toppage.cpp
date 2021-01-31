@@ -43,8 +43,9 @@ R"(<!DOCTYPE html>
   <li>Operating time: {1}</li>
   <li>Git branch: {2}</li>
   <li>Git hash: {3}</li>
-  <li>White: {4}</li>
-  <li>Black: {5}</li>
+  <li>Git date: {4}</li>
+  <li>White: {5}</li>
+  <li>Black: {6}</li>
 </ul>
 
 </body>
@@ -54,7 +55,7 @@ R"(<!DOCTYPE html>
 		{{"Content-Type", "text/html; charset=utf-8"}},
 		util::Format(tmpl, {
 			util::DateTimeStr(data.start_time), durstr,
-			data.git_branch, data.git_hash,
+			data.git_branch, data.git_hash, data.git_date,
 			std::to_string(data.white), std::to_string(data.black)
 		}));
 }

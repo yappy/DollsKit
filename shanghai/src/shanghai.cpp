@@ -176,6 +176,7 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 			data.build_type = buildinfo::BuildType();
 			data.git_branch = buildinfo::GitBranch();
 			data.git_hash = buildinfo::GitHash();
+			data.git_date = buildinfo::GitDate();
 		});
 
 	std::string msg;

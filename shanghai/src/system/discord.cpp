@@ -204,10 +204,11 @@ void MyDiscordClient::CmdInfo(Ch ch, const std::vector<std::string> &args)
 		"Build Type: {0}\n"
 		"Branch: {1}\n"
 		"Commit: {2}\n"
-		"White: {3}\n"
-		"Black: {4}",
+		"Date: {3}\n"
+		"White: {4}\n"
+		"Black: {5}",
 		{
-			data.build_type, data.git_branch, data.git_hash,
+			data.build_type, data.git_branch, data.git_hash, data.git_date,
 			std::to_string(data.white), std::to_string(data.black)
 		});
 	sendMessage(ch, msg);
