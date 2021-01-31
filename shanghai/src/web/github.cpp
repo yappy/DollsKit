@@ -68,14 +68,21 @@ R"(<!DOCTYPE html>
 	msg += '\n';
 	msg += result["compare"].string_value();
 
-	auto task_func = [msg = std::move(msg)]
+	auto task_func_tw = [msg]
 		(TaskServer &server, const std::atomic<bool> &cancel)
 		{
 			auto &twitter = system::Get().twitter;
 			twitter.Tweet(msg);
 		};
+	auto task_func_disc = [msg]
+		(TaskServer &server, const std::atomic<bool> &cancel)
+		{
+			auto &discord = system::Get().discord;
+			// TODO
+		};
 	auto &task_queue = system::Get().task_queue;
-	task_queue.Enqueue(task_func);
+	task_queue.Enqueue(task_func_tw);
+	task_queue.Enqueue(task_func_disc);
 
 	return HttpResponse(200,
 		{{"Content-Type", "text/html; charset=utf-8"}},
