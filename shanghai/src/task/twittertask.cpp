@@ -61,6 +61,7 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			continue;
 		}
 
+		bool discord_ntf = true;
 		std::string white_rep = IsWhite(status);
 		std::string black_rep = IsBlack(status);
 		if (white_rep != ""s) {
@@ -94,6 +95,19 @@ void TwitterTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 			twitter.Tweet(msg, status["id_str"].string_value());
 
 			m_since_id = std::max(id, m_since_id);
+		}
+		else {
+			discord_ntf = false;
+		}
+
+		if (discord_ntf) {
+			auto &discord = system::Get().discord;
+			discord.Send(util::Format(
+				"https://twitter.com/{0}/status/{1}",
+				{
+					status["user"]["screen_name"].string_value(),
+					status["id_str"].string_value()
+				}));
 		}
 	}
 }
