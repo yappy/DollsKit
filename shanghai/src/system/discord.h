@@ -14,6 +14,8 @@ public:
 	Discord();
 	~Discord();
 
+	void Send(const std::string &text) noexcept;
+
 private:
 	std::thread m_thread;
 	std::unique_ptr<MyDiscordClient> m_client;

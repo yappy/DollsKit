@@ -34,6 +34,7 @@ R"(/help
 
 struct DiscordConfig {
 	std::string DefaultReply = "";
+	std::string NotifChannel = "";
 	std::vector<std::string> PrivilegedUsers;
 	std::string DenyMessage = "";
 
@@ -51,10 +52,10 @@ inline void CallNoExcept(F f) noexcept
 		f();
 	}
 	catch (std::exception &e) {
-		logger.Log(LogLevel::Error, "[Discord] Error in handler: %s", e.what());
+		logger.Log(LogLevel::Error, "[Discord] Error: %s", e.what());
 	}
 	catch (...) {
-		logger.Log(LogLevel::Error, "[Discord] Unknown error in handler");
+		logger.Log(LogLevel::Error, "[Discord] Unknown error");
 	}
 }
 
@@ -62,7 +63,6 @@ inline void CallNoExcept(F f) noexcept
 
 class MyDiscordClient : public SleepyDiscord::DiscordClient {
 public:
-	// コンストラクタ
 	MyDiscordClient(const DiscordConfig &conf,
 		const std::string &token, char numOfThreads)
 		: SleepyDiscord::DiscordClient(token, numOfThreads),
@@ -71,6 +71,8 @@ public:
 		RegisterCommands();
 	}
 	virtual ~MyDiscordClient() = default;
+
+	void SendMessage(const std::string &text) noexcept;
 
 private:
 	DiscordConfig m_conf;
@@ -122,6 +124,21 @@ protected:
 			this, errorCode, errorMessage));
 	}
 };
+
+void MyDiscordClient::SendMessage(const std::string &text) noexcept
+{
+	auto f = [this, &text]() {
+		if (m_conf.NotifChannel != "") {
+			logger.Log(LogLevel::Info, "Discord Notif: %s", text.c_str());
+			sendMessage(m_conf.NotifChannel, text);
+		}
+		else {
+			logger.Log(LogLevel::Info, "Discord Notif (disabled): %s",
+				text.c_str());
+		}
+	};
+	CallNoExcept(f);
+}
 
 void MyDiscordClient::DoOnReady(SleepyDiscord::Ready &ready)
 {
@@ -400,6 +417,7 @@ Discord::Discord()
 	if (enabled) {
 		DiscordConfig dconf;
 		dconf.DefaultReply = config.GetStr({"Discord", "DefaultReply"});
+		dconf.NotifChannel = config.GetStr({"Discord", "NotifChannel"});
 		dconf.PrivilegedUsers = config.GetStrArray(
 			{"Discord", "PrivilegedUsers"});
 		dconf.DenyMessage = config.GetStr({"Discord", "DenyMessage"});
@@ -447,6 +465,11 @@ Discord::~Discord()
 		m_thread.join();
 	}
 	logger.Log(LogLevel::Info, "Finalize Discord OK");
+}
+
+void Discord::Send(const std::string &text) noexcept
+{
+	m_client->SendMessage(text);
 }
 
 }	// namespace system

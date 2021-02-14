@@ -15,6 +15,7 @@
 	{
 		"Enabled"			: false,
 		"Token"				: "",
+		"NotifChannel"		: "",
 		"DefaultReply"		: "はい",
 		"PrivilegedUsers"	: [],
 		"DenyMessage"		: "バカジャネーノ"

@@ -169,6 +169,7 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	auto &sys_info = system::Get().sys_info;
 	auto &twitter = system::Get().twitter;
+	auto &discord = system::Get().discord;
 
 	sys_info.GetAndSet(
 		[](system::SysInfoData &data) {
@@ -190,6 +191,9 @@ void BootMsg(TaskServer &server, const std::atomic<bool> &cancel)
 	msg += '\n';
 	msg += buildinfo::GitHash();
 
+	// noexcept の discord を先にする
+	// TODO: twitter もそうした方がよい
+	discord.Send(msg);
 	twitter.Tweet(msg);
 }
 
