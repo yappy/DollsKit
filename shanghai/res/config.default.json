@@ -13,9 +13,11 @@
 	},
 	"Discord":
 	{
-		"Enabled"		: false,
-		"Token"			: "",
-		"DefaultReply"	: "はい"
+		"Enabled"			: false,
+		"Token"				: "",
+		"DefaultReply"		: "はい",
+		"PrivilegedUsers"	: [],
+		"DenyMessage"		: "バカジャネーノ"
 	},
 	"Ddns":
 	{

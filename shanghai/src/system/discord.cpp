@@ -24,6 +24,8 @@ R"(/help
 /user <server_id>
     Show member list (<=1000 only)
     To enable this, Bot settings > "Privileged Gateway Intents" > "Server Members Intent"
+/play <message>
+    Change playing game
 /dice [<max>] [<times>]
     Nondeterministic dice roll
 /haipai
@@ -32,6 +34,14 @@ R"(/help
 
 struct DiscordConfig {
 	std::string DefaultReply = "";
+	std::vector<std::string> PrivilegedUsers;
+	std::string DenyMessage = "";
+
+	bool HasPrivilege(std::string user)
+	{
+		return std::find(PrivilegedUsers.begin(), PrivilegedUsers.end(), user)
+			!= PrivilegedUsers.end();
+	}
 };
 
 template <class F>
@@ -67,8 +77,8 @@ private:
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
 
-	using Ch = SleepyDiscord::Snowflake<SleepyDiscord::Channel>;
-	using CmdFunc = void(Ch ch, const std::vector<std::string> &args);
+	using Msg = SleepyDiscord::Message;
+	using CmdFunc = void(Msg msg, const std::vector<std::string> &args);
 	std::unordered_map<std::string, std::function<CmdFunc>> m_cmdmap;
 
 	// イベントハンドラ本処理 (例外送出あり)
@@ -81,16 +91,17 @@ private:
 	void RegisterCommands();
 	// メンション時の OnMessage 処理
 	// コマンドとして処理出来たら true
-	bool ExecuteCommand(Ch ch, const std::vector<std::string> &args);
+	bool ExecuteCommand(Msg msg, const std::vector<std::string> &args);
 
 	// コマンドとして登録する関数
-	void CmdHelp(Ch ch, const std::vector<std::string> &args);
-	void CmdInfo(Ch ch, const std::vector<std::string> &args);
-	void CmdServer(Ch ch, const std::vector<std::string> &args);
-	void CmdCh(Ch ch, const std::vector<std::string> &args);
-	void CmdUser(Ch ch, const std::vector<std::string> &args);
-	void CmdDice(Ch ch, const std::vector<std::string> &args);
-	void CmdHaipai(Ch ch, const std::vector<std::string> &args);
+	void CmdHelp(Msg msg, const std::vector<std::string> &args);
+	void CmdInfo(Msg msg, const std::vector<std::string> &args);
+	void CmdServer(Msg msg, const std::vector<std::string> &args);
+	void CmdCh(Msg msg, const std::vector<std::string> &args);
+	void CmdUser(Msg msg, const std::vector<std::string> &args);
+	void CmdPlay(Msg msg, const std::vector<std::string> &args);
+	void CmdDice(Msg msg, const std::vector<std::string> &args);
+	void CmdHaipai(Msg msg, const std::vector<std::string> &args);
 
 protected:
 	// イベントハンドラ override
@@ -147,7 +158,7 @@ void MyDiscordClient::DoOnMessage(SleepyDiscord::Message &message)
 
 		// コマンドとして実行
 		// できなかったらデフォルト返信
-		if (!ExecuteCommand(message.channelID, tokens)) {
+		if (!ExecuteCommand(message, tokens)) {
 			std::string msg = m_conf.DefaultReply;
 			msg += "\n(Help command: /help)";
 			sendMessage(message.channelID, msg);
@@ -174,6 +185,8 @@ void MyDiscordClient::RegisterCommands()
 		std::bind(&MyDiscordClient::CmdCh, this, _1, _2));
 	m_cmdmap.emplace("/user",
 		std::bind(&MyDiscordClient::CmdUser, this, _1, _2));
+	m_cmdmap.emplace("/play",
+		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
 	m_cmdmap.emplace("/dice",
 		std::bind(&MyDiscordClient::CmdDice, this, _1, _2));
 	m_cmdmap.emplace("/haipai",
@@ -181,15 +194,14 @@ void MyDiscordClient::RegisterCommands()
 }
 
 bool MyDiscordClient::ExecuteCommand(
-	SleepyDiscord::Snowflake<SleepyDiscord::Channel> ch,
-	const std::vector<std::string> &args)
+	Msg msg, const std::vector<std::string> &args)
 {
 	if (args.size() == 0) {
 		return false;
 	}
 	auto it = m_cmdmap.find(args.at(0));
 	if (it != m_cmdmap.end()) {
-		it->second(ch, args);
+		it->second(msg, args);
 		return true;
 	}
 	else {
@@ -197,16 +209,16 @@ bool MyDiscordClient::ExecuteCommand(
 	}
 }
 
-void MyDiscordClient::CmdHelp(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdHelp(Msg msg, const std::vector<std::string> &args)
 {
-	sendMessage(ch, HELP_TEXT);
+	sendMessage(msg.channelID, HELP_TEXT);
 }
 
-void MyDiscordClient::CmdInfo(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdInfo(Msg msg, const std::vector<std::string> &args)
 {
 	auto &sys_info = system::Get().sys_info;
 	system::SysInfoData data = sys_info.Get();
-	std::string msg = util::Format(
+	std::string text = util::Format(
 		"Build Type: {0}\n"
 		"Branch: {1}\n"
 		"Commit: {2}\n"
@@ -217,69 +229,85 @@ void MyDiscordClient::CmdInfo(Ch ch, const std::vector<std::string> &args)
 			data.build_type, data.git_branch, data.git_hash, data.git_date,
 			std::to_string(data.white), std::to_string(data.black)
 		});
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdServer(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdServer(Msg msg, const std::vector<std::string> &args)
 {
 	std::vector<SleepyDiscord::Server> resp = getServers();
-	std::string msg = util::Format("{0} Server(s)",
+	std::string text = util::Format("{0} Server(s)",
 		{std::to_string(resp.size())});
 	for (const auto &server : resp) {
-		msg += '\n';
-		msg += server.ID;
-		msg += ' ';
-		msg += server.name;
+		text += '\n';
+		text += server.ID;
+		text += ' ';
+		text += server.name;
 	}
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdCh(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdCh(Msg msg, const std::vector<std::string> &args)
 {
 	if (args.size() < 2) {
-		sendMessage(ch, "Argument error.");
+		sendMessage(msg.channelID, "Argument error.");
 		return;
 	}
 	std::vector<SleepyDiscord::Channel> resp =
 		getServerChannels(args.at(1));
-	std::string msg = util::Format("{0} Channel(s)",
+	std::string text = util::Format("{0} Channel(s)",
 		{std::to_string(resp.size())});
 	for (const auto &ch : resp) {
 		if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
 			continue;
 		}
-		msg += '\n';
-		msg += ch.ID;
-		msg += ' ';
-		msg += ch.name;
+		text += '\n';
+		text += ch.ID;
+		text += ' ';
+		text += ch.name;
 	}
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdUser(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdUser(Msg msg, const std::vector<std::string> &args)
 {
 	if (args.size() < 2) {
-		sendMessage(ch, "Argument error.");
+		sendMessage(msg.channelID, "Argument error.");
 		return;
 	}
 	// 最大 1000 件まで
 	// それ以上は複数回に分ける必要がある(未対応)
 	std::vector<SleepyDiscord::ServerMember> resp =
 		listMembers(args.at(1), 1000);
-	std::string msg = util::Format("{0} User(s)",
+	std::string text = util::Format("{0} User(s)",
 		{std::to_string(resp.size())});
 	for (const auto &member : resp) {
 		const SleepyDiscord::User &user = member.user;
-		msg += '\n';
-		msg += user.ID;
-		msg += ' ';
-		msg += user.username;
-		msg += user.bot ? " [BOT]" : "";
+		text += '\n';
+		text += user.ID;
+		text += ' ';
+		text += user.username;
+		text += user.bot ? " [BOT]" : "";
 	}
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdDice(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
+{
+	if (!m_conf.HasPrivilege(msg.author.ID)) {
+		sendMessage(msg.channelID, m_conf.DenyMessage);
+		return;
+	}
+	if (args.size() < 2) {
+		sendMessage(msg.channelID, "Argument error.");
+		return;
+	}
+
+	std::string game = args.at(1);
+	updateStatus(game);
+	sendMessage(msg.channelID, util::Format("Now playing: {0}", {game}));
+}
+
+void MyDiscordClient::CmdDice(Msg msg, const std::vector<std::string> &args)
 {
 	const uint64_t DICE_MAX = 1ULL << 56;
 	const uint64_t COUNT_MAX = 100;
@@ -309,11 +337,11 @@ void MyDiscordClient::CmdDice(Ch ch, const std::vector<std::string> &args)
 		}
 	}
 	if (error) {
-		std::string msg = util::Format(
+		std::string text = util::Format(
 			"1 <= DICE <= {0}\n"
 			"1 <= COUNT <= {1}",
 			{std::to_string(DICE_MAX), std::to_string(COUNT_MAX)});
-		sendMessage(ch, msg);
+		sendMessage(msg.channelID, text);
 		return;
 	}
 
@@ -328,16 +356,16 @@ void MyDiscordClient::CmdDice(Ch ch, const std::vector<std::string> &args)
 		}
 		seq += std::to_string(r);
 	}
-	std::string msg;
+	std::string text;
 	if (count == 1) {
-		msg = std::to_string(sum);
+		text = std::to_string(sum);
 	} else {
-		msg = util::Format("{0}\n({1})", {std::to_string(sum), seq});
+		text = util::Format("{0}\n({1})", {std::to_string(sum), seq});
 	}
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdHaipai(Ch ch, const std::vector<std::string> &args)
+void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 {
 	// 文字コード順だと
 	// 🀀🀁🀂🀃🀄🀅🀆🀇🀈🀉🀊🀋🀌🀍🀏🀏🀐🀑🀒🀓🀕🀕🀖🀗🀘🀙🀚🀛🀜🀝🀞🀟🀠🀡
@@ -354,12 +382,12 @@ void MyDiscordClient::CmdHaipai(Ch ch, const std::vector<std::string> &args)
 	std::mt19937 engine(m_rng());
 	std::shuffle(deck.begin(), deck.end(), engine);
 	std::sort(deck.begin(), deck.begin() + 14);
-	std::string msg;
+	std::string text;
 	for (int i = 0; i < 14; i++) {
 		int x = deck.at(i);
-		msg += std::string(RES, x * 4, 4);
+		text += std::string(RES, x * 4, 4);
 	}
-	sendMessage(ch, msg);
+	sendMessage(msg.channelID, text);
 }
 
 Discord::Discord()
@@ -372,6 +400,9 @@ Discord::Discord()
 	if (enabled) {
 		DiscordConfig dconf;
 		dconf.DefaultReply = config.GetStr({"Discord", "DefaultReply"});
+		dconf.PrivilegedUsers = config.GetStrArray(
+			{"Discord", "PrivilegedUsers"});
+		dconf.DenyMessage = config.GetStr({"Discord", "DenyMessage"});
 
 		m_client = std::make_unique<MyDiscordClient>(
 			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);
