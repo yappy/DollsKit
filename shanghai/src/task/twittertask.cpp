@@ -187,8 +187,12 @@ std::string TwitterTask::Match(const json11::Json &status,
 		match_list.begin(), match_list.end(), match_word);
 	if (result != match_list.end()) {
 		const auto &list = result->second;
-		uint32_t random_ind = m_mt() % list.size();
-		return list.at(0);
+		if (list.empty()) {
+			return ""s;
+		}
+		std::uniform_int_distribution<size_t> dist(0, list.size() - 1);
+		size_t random_ind = dist(m_mt);
+		return list.at(random_ind);
 	}
 	else {
 		return ""s;
@@ -217,10 +221,11 @@ RandomTweetTask::RandomTweetTask(ReleaseFunc rel_func) :
 void RandomTweetTask::Entry(TaskServer &server, const std::atomic<bool> &cancel)
 {
 	auto &twitter = system::Get().twitter;
-	if (m_random_list.size() == 0) {
+	if (m_random_list.empty()) {
 		return;
 	}
-	uint32_t random_ind = m_mt() % m_random_list.size();
+	std::uniform_int_distribution<size_t> dist(0, m_random_list.size() - 1);
+	size_t random_ind = dist(m_mt);
 	twitter.Tweet(m_random_list.at(random_ind));
 }
 
