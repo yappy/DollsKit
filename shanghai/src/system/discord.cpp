@@ -105,6 +105,9 @@ private:
 	void CmdDice(Msg msg, const std::vector<std::string> &args);
 	void CmdHaipai(Msg msg, const std::vector<std::string> &args);
 
+	void SendLargeMessage(const std::string &chid,
+		const std::vector<std::string> &lines);
+
 protected:
 	// イベントハンドラ override
 	// 例外送出するとスレッドによってクラッシュする場合があるので
@@ -291,21 +294,26 @@ void MyDiscordClient::CmdUser(Msg msg, const std::vector<std::string> &args)
 		sendMessage(msg.channelID, "Argument error.");
 		return;
 	}
+
 	// 最大 1000 件まで
 	// それ以上は複数回に分ける必要がある(未対応)
 	std::vector<SleepyDiscord::ServerMember> resp =
 		listMembers(args.at(1), 1000);
-	std::string text = util::Format("{0} User(s)",
-		{std::to_string(resp.size())});
+
+	std::vector<std::string> lines;
+	lines.emplace_back(util::Format("{0} User(s)",
+		{std::to_string(resp.size())}));
 	for (const auto &member : resp) {
 		const SleepyDiscord::User &user = member.user;
-		text += '\n';
-		text += user.ID;
-		text += ' ';
-		text += user.username;
-		text += user.bot ? " [BOT]" : "";
+		std::string line;
+		line += user.ID;
+		line += ' ';
+		line += user.username;
+		line += user.bot ? " [BOT]" : "";
+		lines.emplace_back(std::move(line));
 	}
-	sendMessage(msg.channelID, text);
+
+	SendLargeMessage(msg.channelID, lines);
 }
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
@@ -405,6 +413,46 @@ void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 		text += std::string(RES, x * 4, 4);
 	}
 	sendMessage(msg.channelID, text);
+}
+
+void MyDiscordClient::SendLargeMessage(
+	const std::string &chid, const std::vector<std::string> &lines)
+{
+	const size_t MsgLenMax = 2000;
+
+	std::string buf;
+	buf.reserve(MsgLenMax);
+	for (const auto &src : lines) {
+		std::string line = src;
+		// (バッファ + 改行 + 次の1行) が最大文字数を超えるなら
+		// 送信してバッファを空にする
+		if (buf.size() + 1 + line.size() > MsgLenMax) {
+			if (!buf.empty()) {
+				sendMessage(chid, buf);
+				buf = "";
+			}
+		}
+		if (buf == "") {
+			// 1行で制限を超えるなら超えなくなるまで先に送る
+			while (line.size() > MsgLenMax) {
+				sendMessage(chid, line.substr(0, MsgLenMax));
+				line = line.substr(MsgLenMax);
+			}
+			// 1行目を追加する
+			buf = line;
+		}
+		else {
+			// 2行目以降を追加する
+			buf += '\n';
+			buf += line;
+		}
+		if (buf.size() > MsgLenMax) {
+			throw std::logic_error("Discord message split logic error");
+		}
+	}
+	if (!buf.empty()) {
+		sendMessage(chid, buf);
+	}
 }
 
 Discord::Discord()
