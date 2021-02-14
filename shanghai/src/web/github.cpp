@@ -78,7 +78,7 @@ R"(<!DOCTYPE html>
 		(TaskServer &server, const std::atomic<bool> &cancel)
 		{
 			auto &discord = system::Get().discord;
-			// TODO
+			discord.Send(msg);
 		};
 	auto &task_queue = system::Get().task_queue;
 	task_queue.Enqueue(task_func_tw);
