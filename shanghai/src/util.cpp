@@ -153,6 +153,26 @@ std::string HtmlEscape(const std::string &src)
 	return dst;
 }
 
+std::string UrlEncode(const std::string &src)
+{
+	std::string dst;
+	const std::string special = "-._~";
+	const char * const table = "0123456789ABCDEF";
+
+	for (char c : src) {
+		if (isalnum(c) || special.find_first_of(c) != std::string::npos) {
+			dst += c;
+		}
+		else {
+			uint32_t n = c;
+			dst += '%';
+			dst += table[(n >> 4) & 0xF];
+			dst += table[n & 0xF];
+		}
+	}
+	return dst;
+}
+
 namespace {
 
 struct FileDeleter {

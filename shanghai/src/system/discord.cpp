@@ -216,9 +216,10 @@ void MyDiscordClient::DoOnReaction(
 		emoji.ID.string().c_str(),
 		emoji.name.c_str());
 	if (m_conf.FollowReaction && m_conf.HasPrivilege(userID.string())) {
+		logger.Log(LogLevel::Info, "Follow reaction");
 		if (emoji.ID.string().empty()) {
-			// TODO: unicode emoji
-			addReaction(channelID, messageID, emoji.name);
+			// unicode emoji
+			addReaction(channelID, messageID, util::UrlEncode(emoji.name));
 		}
 		else {
 			// custom emoji: "name:id"
