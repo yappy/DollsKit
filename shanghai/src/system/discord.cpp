@@ -24,12 +24,14 @@ R"(/help
 /user <server_id>
     Show member list (<=1000 only)
     To enable this, Bot settings > "Privileged Gateway Intents" > "Server Members Intent"
-/play <message>
-    Change playing game
 /dice [<max>] [<times>]
     Nondeterministic dice roll
 /haipai
     Deal piles (MT19937)
+----
+/play <message>
+    Change playing game
+/attack <user_id>
 )";
 
 struct DiscordConfig {
@@ -37,6 +39,7 @@ struct DiscordConfig {
 	std::string NotifChannel = "";
 	std::vector<std::string> PrivilegedUsers;
 	std::string DenyMessage = "";
+	bool FollowReaction = false;
 
 	bool HasPrivilege(std::string user)
 	{
@@ -86,6 +89,10 @@ private:
 	// イベントハンドラ本処理 (例外送出あり)
 	void DoOnReady(SleepyDiscord::Ready &ready);
 	void DoOnMessage(SleepyDiscord::Message &message);
+	void DoOnReaction(SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Channel> &channelID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Message> &messageID,
+		SleepyDiscord::Emoji &emoji);
 	void DoOnError(SleepyDiscord::ErrorCode errorCode,
 		const std::string &errorMessage);
 
@@ -119,6 +126,14 @@ protected:
 	void onMessage(SleepyDiscord::Message message) noexcept override
 	{
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnMessage, this, message));
+	}
+	void onReaction(SleepyDiscord::Snowflake<SleepyDiscord::User> userID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Channel> channelID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Message> messageID,
+		SleepyDiscord::Emoji emoji) noexcept override
+	{
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnReaction, this,
+			userID, channelID, messageID, emoji));
 	}
 	void onError(SleepyDiscord::ErrorCode errorCode,
 		const std::string errorMessage) noexcept override
@@ -182,6 +197,32 @@ void MyDiscordClient::DoOnMessage(SleepyDiscord::Message &message)
 			std::string msg = m_conf.DefaultReply;
 			msg += "\n(Help command: /help)";
 			sendMessage(message.channelID, msg);
+		}
+	}
+}
+
+void MyDiscordClient::DoOnReaction(
+	SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
+	SleepyDiscord::Snowflake<SleepyDiscord::Channel> &channelID,
+	SleepyDiscord::Snowflake<SleepyDiscord::Message> &messageID,
+	SleepyDiscord::Emoji &emoji)
+{
+	logger.Log(LogLevel::Info,
+		"[Discord] Reaction user:%s ch:%s msg:%s "
+		"emoji_id:%s emoji_name:%s",
+		userID.string().c_str(),
+		channelID.string().c_str(),
+		messageID.string().c_str(),
+		emoji.ID.string().c_str(),
+		emoji.name.c_str());
+	if (m_conf.FollowReaction && m_conf.HasPrivilege(userID.string())) {
+		if (emoji.ID.string().empty()) {
+			// TODO: unicode emoji
+			addReaction(channelID, messageID, emoji.name);
+		}
+		else {
+			// custom emoji: "name:id"
+			addReaction(channelID, messageID, emoji.name + ":" + emoji.ID.string());
 		}
 	}
 }
@@ -469,6 +510,7 @@ Discord::Discord()
 		dconf.PrivilegedUsers = config.GetStrArray(
 			{"Discord", "PrivilegedUsers"});
 		dconf.DenyMessage = config.GetStr({"Discord", "DenyMessage"});
+		dconf.FollowReaction = config.GetBool({"Discord", "FollowReaction"});
 
 		m_client = std::make_unique<MyDiscordClient>(
 			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);

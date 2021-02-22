@@ -18,7 +18,8 @@
 		"NotifChannel"		: "",
 		"DefaultReply"		: "はい",
 		"PrivilegedUsers"	: [],
-		"DenyMessage"		: "バカジャネーノ"
+		"DenyMessage"		: "バカジャネーノ",
+		"FollowReaction"	: true
 	},
 	"Ddns":
 	{
