@@ -88,7 +88,13 @@ private:
 	// イベントハンドラ本処理 (例外送出あり)
 	void DoOnReady(SleepyDiscord::Ready &ready);
 	void DoOnMessage(SleepyDiscord::Message &message);
-	void DoOnReaction(SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
+	void DoOnReaction(
+		SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Channel> &channelID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Message> &messageID,
+		SleepyDiscord::Emoji &emoji);
+	void DoOnDeleteReaction(
+		SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
 		SleepyDiscord::Snowflake<SleepyDiscord::Channel> &channelID,
 		SleepyDiscord::Snowflake<SleepyDiscord::Message> &messageID,
 		SleepyDiscord::Emoji &emoji);
@@ -126,12 +132,22 @@ protected:
 	{
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnMessage, this, message));
 	}
-	void onReaction(SleepyDiscord::Snowflake<SleepyDiscord::User> userID,
+	void onReaction(
+		SleepyDiscord::Snowflake<SleepyDiscord::User> userID,
 		SleepyDiscord::Snowflake<SleepyDiscord::Channel> channelID,
 		SleepyDiscord::Snowflake<SleepyDiscord::Message> messageID,
 		SleepyDiscord::Emoji emoji) noexcept override
 	{
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnReaction, this,
+			userID, channelID, messageID, emoji));
+	}
+	void onDeleteReaction(
+		SleepyDiscord::Snowflake<SleepyDiscord::User> userID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Channel> channelID,
+		SleepyDiscord::Snowflake<SleepyDiscord::Message> messageID,
+		SleepyDiscord::Emoji emoji) noexcept override
+	{
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnDeleteReaction, this,
 			userID, channelID, messageID, emoji));
 	}
 	void onError(SleepyDiscord::ErrorCode errorCode,
@@ -223,6 +239,33 @@ void MyDiscordClient::DoOnReaction(
 		else {
 			// custom emoji: "name:id"
 			addReaction(channelID, messageID, emoji.name + ":" + emoji.ID.string());
+		}
+	}
+}
+
+void MyDiscordClient::DoOnDeleteReaction(
+	SleepyDiscord::Snowflake<SleepyDiscord::User> &userID,
+	SleepyDiscord::Snowflake<SleepyDiscord::Channel> &channelID,
+	SleepyDiscord::Snowflake<SleepyDiscord::Message> &messageID,
+	SleepyDiscord::Emoji &emoji)
+{
+	logger.Log(LogLevel::Info,
+		"[Discord] DeleteReaction user:%s ch:%s msg:%s "
+		"emoji_id:%s emoji_name:%s",
+		userID.string().c_str(),
+		channelID.string().c_str(),
+		messageID.string().c_str(),
+		emoji.ID.string().c_str(),
+		emoji.name.c_str());
+	if (m_conf.FollowReaction && m_conf.HasPrivilege(userID.string())) {
+		logger.Log(LogLevel::Info, "Follow delete reaction");
+		if (emoji.ID.string().empty()) {
+			// unicode emoji
+			removeReaction(channelID, messageID, util::UrlEncode(emoji.name));
+		}
+		else {
+			// custom emoji: "name:id"
+			removeReaction(channelID, messageID, emoji.name + ":" + emoji.ID.string());
 		}
 	}
 }
