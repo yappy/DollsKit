@@ -31,7 +31,6 @@ R"(/help
 ----
 /play <message>
     Change playing game
-/attack <user_id>
 )";
 
 struct DiscordConfig {
