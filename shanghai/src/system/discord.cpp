@@ -31,7 +31,7 @@ R"(/help
 ----
 /play <message>
     Change playing game
-/attack <user_id>[,id2,id3,...] <msg> [<channel_id>]
+/attack <user>[,user2,user3,...] <msg> [<channel>]
     Send a message to the target user
 )";
 
@@ -624,7 +624,12 @@ void MyDiscordClient::CmdAttack(Msg msg, const std::vector<std::string> &args)
 	}
 
 	std::vector<std::string> target_users;
-	for (const auto &user : util::Split(args.at(1), ',', true)) {
+	for (const auto &token : util::Split(args.at(1), ',', true)) {
+		std::string user = ResolveUser(token);
+		if (user == "") {
+			sendMessage(msg.channelID, "Invalid user.");
+			return;
+		}
 		std::string mention = "<@";
 		mention += user;
 		mention += '>';
@@ -633,7 +638,11 @@ void MyDiscordClient::CmdAttack(Msg msg, const std::vector<std::string> &args)
 	std::string text = args.at(2);
 	std::string ch = msg.channelID;
 	if (args.size() >= 4) {
-		ch = args.at(3);
+		ch = ResolveChannel(args.at(3));
+		if (ch == "") {
+			sendMessage(msg.channelID, "Invalid channel.");
+			return;
+		}
 	}
 	sendMessage(ch, util::Format("{0} {1}",
 		{util::Join(target_users, " "), text}));
