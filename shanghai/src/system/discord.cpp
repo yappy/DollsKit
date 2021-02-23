@@ -82,10 +82,27 @@ private:
 	DiscordConfig m_conf;
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
+	// ID cache
+	using mtx_guard = std::lock_guard<std::recursive_mutex>;
+	std::recursive_mutex m_cache_mtx;
+	bool m_cache_valid = false;
+	std::unordered_map<std::string, std::string> m_ch_cache;
+	std::unordered_map<std::string, std::string> m_user_cache;
 
 	using Msg = SleepyDiscord::Message;
 	using CmdFunc = void(Msg msg, const std::vector<std::string> &args);
 	std::unordered_map<std::string, std::function<CmdFunc>> m_cmdmap;
+
+	// 整数ならば ID としてそのまま使う
+	bool IsID(const std::string &str);
+	// キャッシュが無効ならばロードする
+	void ValidateCache();
+	// キャッシュを無効化する
+	void InvalidateCache();
+	// ID ならそのまま、そうでないなら ID キャッシュから引く
+	// (必要ならばキャッシュにロードする)
+	std::string ResolveChannel(const std::string &str);
+	std::string ResolveUser(const std::string &str);
 
 	// イベントハンドラ本処理 (例外送出あり)
 	void DoOnReady(SleepyDiscord::Ready &ready);
@@ -121,6 +138,7 @@ private:
 	void CmdPlay(Msg msg, const std::vector<std::string> &args);
 	void CmdAttack(Msg msg, const std::vector<std::string> &args);
 
+	// 2000 文字以上を分割送信
 	void SendLargeMessage(const std::string &chid,
 		const std::vector<std::string> &lines);
 
@@ -175,6 +193,91 @@ void MyDiscordClient::SendMessage(const std::string &text) noexcept
 		}
 	};
 	CallNoExcept(f);
+}
+
+bool MyDiscordClient::IsID(const std::string &str)
+{
+	if (str.empty()) {
+		return false;
+	}
+	return std::all_of(str.begin(), str.end(), [](char c) -> bool {
+		return isdigit(c);
+	});
+}
+
+void MyDiscordClient::ValidateCache()
+{
+	mtx_guard lock(m_cache_mtx);
+
+	if (m_cache_valid) {
+		return;
+	}
+
+	logger.Log(LogLevel::Info, "[Discord] Load cache");
+	std::vector<SleepyDiscord::Server> servers = getServers();
+	for (const auto &server : servers) {
+		// channel
+		std::vector<SleepyDiscord::Channel> chs = getServerChannels(server.ID);
+		for (const auto &ch : chs) {
+			m_ch_cache.emplace(ch.name, ch.ID);
+		}
+		// user
+		std::vector<SleepyDiscord::ServerMember> members;
+		const int limit = 1000;
+		std::string after = "";
+		do {
+			members = listMembers(server.ID, limit, after);
+			for (const auto &member : members) {
+				const SleepyDiscord::User &user = member.user;
+				m_user_cache.emplace(user.username, user.ID);
+				after = user.ID;
+			}
+		} while (!members.empty());
+	}
+	logger.Log(LogLevel::Info, "[Discord] Loaded: channels %zu, users %zu",
+		m_ch_cache.size(), m_user_cache.size());
+}
+
+void MyDiscordClient::InvalidateCache()
+{
+	mtx_guard lock(m_cache_mtx);
+	m_cache_valid = false;
+}
+
+std::string MyDiscordClient::ResolveChannel(const std::string &str)
+{
+	if (IsID(str)) {
+		return str;
+	}
+	{
+		mtx_guard lock(m_cache_mtx);
+		ValidateCache();
+		auto it = m_ch_cache.find(str);
+		if (it != m_ch_cache.end()) {
+			return it->second;
+		}
+		else {
+			return "";
+		}
+	}
+}
+
+std::string MyDiscordClient::ResolveUser(const std::string &str)
+{
+	if (IsID(str)) {
+		return str;
+	}
+	{
+		mtx_guard lock(m_cache_mtx);
+		ValidateCache();
+		auto it = m_user_cache.find(str);
+		if (it != m_user_cache.end()) {
+			return it->second;
+		}
+		else {
+			return "";
+		}
+	}
 }
 
 void MyDiscordClient::DoOnReady(SleepyDiscord::Ready &ready)
