@@ -31,6 +31,8 @@ R"(/help
 ----
 /play <message>
     Change playing game
+/attack <user_id> <msg> [<channel_id>]
+    Send a message to the target user
 )";
 
 struct DiscordConfig {
@@ -113,9 +115,11 @@ private:
 	void CmdServer(Msg msg, const std::vector<std::string> &args);
 	void CmdCh(Msg msg, const std::vector<std::string> &args);
 	void CmdUser(Msg msg, const std::vector<std::string> &args);
-	void CmdPlay(Msg msg, const std::vector<std::string> &args);
 	void CmdDice(Msg msg, const std::vector<std::string> &args);
 	void CmdHaipai(Msg msg, const std::vector<std::string> &args);
+
+	void CmdPlay(Msg msg, const std::vector<std::string> &args);
+	void CmdAttack(Msg msg, const std::vector<std::string> &args);
 
 	void SendLargeMessage(const std::string &chid,
 		const std::vector<std::string> &lines);
@@ -289,12 +293,15 @@ void MyDiscordClient::RegisterCommands()
 		std::bind(&MyDiscordClient::CmdCh, this, _1, _2));
 	m_cmdmap.emplace("/user",
 		std::bind(&MyDiscordClient::CmdUser, this, _1, _2));
-	m_cmdmap.emplace("/play",
-		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
 	m_cmdmap.emplace("/dice",
 		std::bind(&MyDiscordClient::CmdDice, this, _1, _2));
 	m_cmdmap.emplace("/haipai",
 		std::bind(&MyDiscordClient::CmdHaipai, this, _1, _2));
+
+	m_cmdmap.emplace("/play",
+		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
+	m_cmdmap.emplace("/attack",
+		std::bind(&MyDiscordClient::CmdAttack, this, _1, _2));
 }
 
 bool MyDiscordClient::ExecuteCommand(
@@ -400,22 +407,6 @@ void MyDiscordClient::CmdUser(Msg msg, const std::vector<std::string> &args)
 	SendLargeMessage(msg.channelID, lines);
 }
 
-void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
-{
-	if (!m_conf.HasPrivilege(msg.author.ID)) {
-		sendMessage(msg.channelID, m_conf.DenyMessage);
-		return;
-	}
-	if (args.size() < 2) {
-		sendMessage(msg.channelID, "Argument error.");
-		return;
-	}
-
-	std::string game = args.at(1);
-	updateStatus(game);
-	sendMessage(msg.channelID, util::Format("Now playing: {0}", {game}));
-}
-
 void MyDiscordClient::CmdDice(Msg msg, const std::vector<std::string> &args)
 {
 	const uint64_t DICE_MAX = 1ULL << 56;
@@ -497,6 +488,42 @@ void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 		text += std::string(RES, x * 4, 4);
 	}
 	sendMessage(msg.channelID, text);
+}
+
+void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
+{
+	if (!m_conf.HasPrivilege(msg.author.ID)) {
+		sendMessage(msg.channelID, m_conf.DenyMessage);
+		return;
+	}
+	if (args.size() < 2) {
+		sendMessage(msg.channelID, "Argument error.");
+		return;
+	}
+
+	std::string game = args.at(1);
+	updateStatus(game);
+	sendMessage(msg.channelID, util::Format("Now playing: {0}", {game}));
+}
+
+void MyDiscordClient::CmdAttack(Msg msg, const std::vector<std::string> &args)
+{
+	if (!m_conf.HasPrivilege(msg.author.ID)) {
+		sendMessage(msg.channelID, m_conf.DenyMessage);
+		return;
+	}
+	if (args.size() < 3) {
+		sendMessage(msg.channelID, "Argument error.");
+		return;
+	}
+
+	std::string target_user = args.at(1);
+	std::string text = args.at(2);
+	std::string ch = msg.channelID;
+	if (args.size() >= 4) {
+		ch = args.at(3);
+	}
+	sendMessage(ch, util::Format("<@{0}> {1}", {target_user, text}));
 }
 
 void MyDiscordClient::SendLargeMessage(
