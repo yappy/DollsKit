@@ -31,7 +31,7 @@ R"(/help
 ----
 /play <message>
     Change playing game
-/attack <user_id> <msg> [<channel_id>]
+/attack <user_id>[,id2,id3,...] <msg> [<channel_id>]
     Send a message to the target user
 )";
 
@@ -517,13 +517,20 @@ void MyDiscordClient::CmdAttack(Msg msg, const std::vector<std::string> &args)
 		return;
 	}
 
-	std::string target_user = args.at(1);
+	std::vector<std::string> target_users;
+	for (const auto &user : util::Split(args.at(1), ',', true)) {
+		std::string mention = "<@";
+		mention += user;
+		mention += '>';
+		target_users.emplace_back(std::move(mention));
+	}
 	std::string text = args.at(2);
 	std::string ch = msg.channelID;
 	if (args.size() >= 4) {
 		ch = args.at(3);
 	}
-	sendMessage(ch, util::Format("<@{0}> {1}", {target_user, text}));
+	sendMessage(ch, util::Format("{0} {1}",
+		{util::Join(target_users, " "), text}));
 }
 
 void MyDiscordClient::SendLargeMessage(

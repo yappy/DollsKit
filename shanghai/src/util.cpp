@@ -63,6 +63,22 @@ std::vector<std::string> Split(const std::string& input,
 	return result;
 }
 
+std::string Join(const std::vector<std::string> &array,
+	const std::string &delim)
+{
+	std::string result;
+	bool first = true;
+
+	for (const auto &str : array) {
+		if (first) {
+			result += delim;
+			first = false;
+		}
+		result += str;
+	}
+	return result;
+}
+
 std::string ReplaceAll(const std::string &str,
 	const std::string &from, const std::string &to)
 {
