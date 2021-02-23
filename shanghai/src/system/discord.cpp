@@ -214,6 +214,7 @@ void MyDiscordClient::ValidateCache()
 	}
 
 	logger.Log(LogLevel::Info, "[Discord] Load cache");
+
 	std::vector<SleepyDiscord::Server> servers = getServers();
 	for (const auto &server : servers) {
 		// channel
@@ -234,6 +235,8 @@ void MyDiscordClient::ValidateCache()
 			}
 		} while (!members.empty());
 	}
+	m_cache_valid = true;
+
 	logger.Log(LogLevel::Info, "[Discord] Loaded: channels %zu, users %zu",
 		m_ch_cache.size(), m_user_cache.size());
 }
