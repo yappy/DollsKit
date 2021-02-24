@@ -63,6 +63,22 @@ std::vector<std::string> Split(const std::string& input,
 	return result;
 }
 
+std::string Join(const std::vector<std::string> &array,
+	const std::string &delim)
+{
+	std::string result;
+	bool first = true;
+
+	for (const auto &str : array) {
+		if (first) {
+			result += delim;
+			first = false;
+		}
+		result += str;
+	}
+	return result;
+}
+
 std::string ReplaceAll(const std::string &str,
 	const std::string &from, const std::string &to)
 {
@@ -148,6 +164,26 @@ std::string HtmlEscape(const std::string &src)
 		default:
 			dst += c;
 			break;
+		}
+	}
+	return dst;
+}
+
+std::string UrlEncode(const std::string &src)
+{
+	std::string dst;
+	const std::string special = "-._~";
+	const char * const table = "0123456789ABCDEF";
+
+	for (char c : src) {
+		if (isalnum(c) || special.find_first_of(c) != std::string::npos) {
+			dst += c;
+		}
+		else {
+			uint32_t n = c;
+			dst += '%';
+			dst += table[(n >> 4) & 0xF];
+			dst += table[n & 0xF];
 		}
 	}
 	return dst;

@@ -8,6 +8,7 @@ namespace shanghai::buildinfo {
 const char *BuildType();
 const char *GitBranch();
 const char *GitHash();
+const char *GitDate();
 
 }	// shanghai::buildinfo
 

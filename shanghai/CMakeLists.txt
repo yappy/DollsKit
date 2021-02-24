@@ -2,6 +2,22 @@ cmake_minimum_required(VERSION 3.7)
 
 project(shanghai)
 
+# -std=c++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# warning options
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+	add_compile_options(-Wall -Wextra
+		-Wno-c++98-compat -Wno-c++98-compat-pedantic
+		-Wno-unused-parameter -Wno-unused-variable)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+	add_compile_options(-Werror -Wall -Wextra -Wnoexcept -Wno-unused -Wno-ignored-qualifiers)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+	add_compile_options(/W4)
+endif()
+
 # Main executable
 file(GLOB_RECURSE SRCS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRCS})
@@ -14,7 +30,7 @@ configure_file(
 
 # Test executable
 file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
-add_executable(${PROJECT_NAME}-test ${SRCS} ${TEST_SRCS})
+add_executable(${PROJECT_NAME}-test EXCLUDE_FROM_ALL ${SRCS} ${TEST_SRCS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
 # Build info
@@ -39,6 +55,10 @@ add_custom_command(OUTPUT "__always_generate"
 	COMMAND ${CMAKE_COMMAND} "-E" "echo"
 		"\\#define" "BUILD_INFO_GIT_HASH"
 		"\\\"`" "${GIT_EXECUTABLE}" "rev-parse" "HEAD" "`\\\""
+		">>" "${BUILD_INFO_TMP}"
+	COMMAND ${CMAKE_COMMAND} "-E" "echo"
+		"\\#define" "BUILD_INFO_GIT_DATE"
+		"\\\"`" "${GIT_EXECUTABLE}" "show" "-s" "--date=iso-local" "--format=format:%ad" "HEAD" "`\\\""
 		">>" "${BUILD_INFO_TMP}"
 
 	COMMAND ${CMAKE_COMMAND} "-E" "compare_files" ${BUILD_INFO_FILE} ${BUILD_INFO_TMP} ";"
@@ -69,8 +89,10 @@ target_link_libraries(${PROJECT_NAME} ${LIBS})
 target_link_libraries(${PROJECT_NAME}-test ${LIBS})
 
 # submodules
-target_link_libraries(${PROJECT_NAME} "json11")
+target_link_libraries(${PROJECT_NAME}      "json11")
+target_link_libraries(${PROJECT_NAME}      "sleepy-discord")
 target_link_libraries(${PROJECT_NAME}-test "json11")
+target_link_libraries(${PROJECT_NAME}-test "sleepy-discord")
 target_link_libraries(${PROJECT_NAME}-test "gtest_main")
 
 # install

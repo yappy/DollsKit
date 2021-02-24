@@ -4,6 +4,7 @@
 #include "sysinfo.h"
 #include "taskqueue.h"
 #include "twitter.h"
+#include "discord.h"
 #include "httpserver.h"
 
 namespace shanghai {
@@ -15,6 +16,7 @@ struct System {
 	SysInfo sys_info;
 	TaskQueue task_queue;
 	Twitter twitter;
+	Discord discord;
 	http::HttpServer http_server;
 };
 

@@ -11,6 +11,16 @@
 		"AccessToken"		: "",
 		"AccessSecret"		: ""
 	},
+	"Discord":
+	{
+		"Enabled"			: false,
+		"Token"				: "",
+		"NotifChannel"		: "",
+		"DefaultReply"		: "はい",
+		"PrivilegedUsers"	: [],
+		"DenyMessage"		: "バカジャネーノ",
+		"FollowReaction"	: true
+	},
 	"Ddns":
 	{
 		"Enabled"	: false,
