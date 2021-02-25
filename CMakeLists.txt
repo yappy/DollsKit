@@ -4,6 +4,14 @@ project(DollsKit
 	DESCRIPTION "House management system"
 	HOMEPAGE_URL "https://github.com/yappy/DollsKit")
 
+# Opus library requires NEON fpu option
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
+	set(DOLL_ARM_COMPILE_OPTIONS -mcpu=native -mfpu=auto
+		CACHE STRING
+		"ARM specific compile options (Edit manually if cross compile)")
+	add_compile_options(${DOLL_ARM_COMPILE_OPTIONS})
+endif()
+
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")
 
