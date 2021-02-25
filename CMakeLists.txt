@@ -4,12 +4,16 @@ project(DollsKit
 	DESCRIPTION "House management system"
 	HOMEPAGE_URL "https://github.com/yappy/DollsKit")
 
-# Opus library requires NEON fpu option
+# ARM (Raspberry pi) specific
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
+	# Opus library requires NEON fpu option
 	set(DOLL_ARM_COMPILE_OPTIONS -mcpu=native -mfpu=auto
 		CACHE STRING
 		"ARM specific compile options (Edit manually if cross compile)")
 	add_compile_options(${DOLL_ARM_COMPILE_OPTIONS})
+	# Supress Opus library warnings (pass variables to sleepy-discord cmake)
+	set(HAVE_LRINT ON)
+	set(HAVE_LRINTF ON)
 endif()
 
 # Supress "changed in GCC 7.1" warnings
