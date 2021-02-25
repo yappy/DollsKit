@@ -195,7 +195,7 @@ public:
 			this, std::ref(vc)));
 	}
 	void onEndSpeaking(SleepyDiscord::VoiceConnection &vc) noexcept override {
-		CallNoExcept(std::bind(&MyDiscordClient::onEndSpeaking,
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnVoiceEndSpeaking,
 			this, std::ref(vc)));
 	}
 };
@@ -417,6 +417,7 @@ void MyDiscordClient::DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc)
 
 void MyDiscordClient::DoOnVoiceEndSpeaking(SleepyDiscord::VoiceConnection& vc)
 {
+	logger.Log(LogLevel::Info, "[Discord] Voice end speaking");
 	vc.disconnect();
 }
 
