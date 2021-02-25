@@ -126,6 +126,7 @@ private:
 		const std::string &errorMessage);
 
 	void DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc);
+	void DoOnVoiceEndSpeaking(SleepyDiscord::VoiceConnection &vc);
 
 	// 全コマンドを string->func ハッシュテーブルに登録する
 	void RegisterCommands();
@@ -191,6 +192,10 @@ protected:
 public:
 	void onReady(SleepyDiscord::VoiceConnection &vc) noexcept override {
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnVoiceReady,
+			this, std::ref(vc)));
+	}
+	void onEndSpeaking(SleepyDiscord::VoiceConnection &vc) noexcept override {
+		CallNoExcept(std::bind(&MyDiscordClient::onEndSpeaking,
 			this, std::ref(vc)));
 	}
 };
@@ -407,6 +412,12 @@ void MyDiscordClient::DoOnError(SleepyDiscord::ErrorCode errorCode,
 void MyDiscordClient::DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc)
 {
 	logger.Log(LogLevel::Info, "[Discord] Voice channel ready");
+	//vc.startSpeaking<SquareWave>();
+}
+
+void MyDiscordClient::DoOnVoiceEndSpeaking(SleepyDiscord::VoiceConnection& vc)
+{
+	vc.disconnect();
 }
 
 void MyDiscordClient::RegisterCommands()
