@@ -29,6 +29,9 @@ R"(/help
 /haipai
     Deal piles (MT19937)
 ----
+/summon <voice_ch>
+    Connect to the voice channel
+----
 /play <message>
     Change playing game
 /attack <user>[,user2,user3,...] <msg> [<channel>]
@@ -135,6 +138,8 @@ private:
 	void CmdDice(Msg msg, const std::vector<std::string> &args);
 	void CmdHaipai(Msg msg, const std::vector<std::string> &args);
 
+	void CmdSummon(Msg msg, const std::vector<std::string> &args);
+
 	void CmdPlay(Msg msg, const std::vector<std::string> &args);
 	void CmdAttack(Msg msg, const std::vector<std::string> &args);
 
@@ -220,7 +225,10 @@ void MyDiscordClient::ValidateCache()
 		// channel
 		std::vector<SleepyDiscord::Channel> chs = getServerChannels(server.ID);
 		for (const auto &ch : chs) {
-			m_ch_cache.emplace(ch.name, ch.ID);
+			if (ch.type == SleepyDiscord::Channel::ChannelType::SERVER_TEXT ||
+				ch.type == SleepyDiscord::Channel::ChannelType::SERVER_VOICE) {
+				m_ch_cache.emplace(ch.name, ch.ID);
+			}
 		}
 		// user
 		std::vector<SleepyDiscord::ServerMember> members;
@@ -404,6 +412,9 @@ void MyDiscordClient::RegisterCommands()
 	m_cmdmap.emplace("/haipai",
 		std::bind(&MyDiscordClient::CmdHaipai, this, _1, _2));
 
+	m_cmdmap.emplace("/summon",
+		std::bind(&MyDiscordClient::CmdSummon, this, _1, _2));
+
 	m_cmdmap.emplace("/play",
 		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
 	m_cmdmap.emplace("/attack",
@@ -469,20 +480,24 @@ void MyDiscordClient::CmdCh(Msg msg, const std::vector<std::string> &args)
 		sendMessage(msg.channelID, "Argument error.");
 		return;
 	}
-	std::vector<SleepyDiscord::Channel> resp =
-		getServerChannels(args.at(1));
-	std::string text = util::Format("{0} Channel(s)",
-		{std::to_string(resp.size())});
-	for (const auto &ch : resp) {
-		if (ch.type != SleepyDiscord::Channel::ChannelType::SERVER_TEXT) {
-			continue;
+	std::vector<SleepyDiscord::Channel> resp = getServerChannels(args.at(1));
+	auto print = [this, &msg, &resp](SleepyDiscord::Channel::ChannelType type) {
+		std::vector<std::string> lines;
+		for (const auto &ch : resp) {
+			if (ch.type != type) {
+				continue;
+			}
+			std::string line = ch.ID;
+			line += ' ';
+			line += ch.name;
+			lines.emplace_back(std::move(line));
 		}
-		text += '\n';
-		text += ch.ID;
-		text += ' ';
-		text += ch.name;
-	}
-	sendMessage(msg.channelID, text);
+		SendLargeMessage(msg.channelID, lines);
+	};
+	sendMessage(msg.channelID, "Text Channels");
+	print(SleepyDiscord::Channel::ChannelType::SERVER_TEXT);
+	sendMessage(msg.channelID, "Voice Channels");
+	print(SleepyDiscord::Channel::ChannelType::SERVER_VOICE);
 }
 
 void MyDiscordClient::CmdUser(Msg msg, const std::vector<std::string> &args)
@@ -594,6 +609,22 @@ void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 		text += std::string(RES, x * 4, 4);
 	}
 	sendMessage(msg.channelID, text);
+}
+
+void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
+{
+	if (args.size() < 2) {
+		sendMessage(msg.channelID, "Argument error.");
+		return;
+	}
+
+	std::string ch = ResolveChannel(args.at(1));
+	if (ch == "") {
+		sendMessage(msg.channelID, "Invalid voice channel.");
+		return;
+	}
+	logger.Log(LogLevel::Info, "Connecting to voice channel: %s", ch.c_str());
+	connectToVoiceChannel(createVoiceContext(ch, nullptr));
 }
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
