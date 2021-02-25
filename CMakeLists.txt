@@ -32,6 +32,8 @@ pkg_check_modules(MHD libmicrohttpd REQUIRED)
 add_subdirectory("external/googletest")
 add_subdirectory("external/json11")
 add_subdirectory("external/sleepy-discord")
+# override sleepy-discord build option
+set(ENABLE_VOICE ON CACHE BOOL "Enable voice support (override)" FORCE)
 
 #
 # projects
