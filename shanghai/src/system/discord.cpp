@@ -68,7 +68,9 @@ inline void CallNoExcept(F f) noexcept
 
 }	// namespace
 
-class MyDiscordClient : public SleepyDiscord::DiscordClient {
+class MyDiscordClient : public
+	SleepyDiscord::DiscordClient,
+	SleepyDiscord::BaseVoiceEventHandler {
 public:
 	MyDiscordClient(const DiscordConfig &conf,
 		const std::string &token, char numOfThreads)
@@ -122,6 +124,8 @@ private:
 		SleepyDiscord::Emoji &emoji);
 	void DoOnError(SleepyDiscord::ErrorCode errorCode,
 		const std::string &errorMessage);
+
+	void DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc);
 
 	// 全コマンドを string->func ハッシュテーブルに登録する
 	void RegisterCommands();
@@ -182,6 +186,12 @@ protected:
 	{
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnError,
 			this, errorCode, errorMessage));
+	}
+
+public:
+	void onReady(SleepyDiscord::VoiceConnection &vc) noexcept override {
+		CallNoExcept(std::bind(&MyDiscordClient::DoOnVoiceReady,
+			this, std::ref(vc)));
 	}
 };
 
@@ -392,6 +402,11 @@ void MyDiscordClient::DoOnError(SleepyDiscord::ErrorCode errorCode,
 	const std::string &errorMessage)
 {
 	logger.Log(LogLevel::Error, "[Discord] %s", errorMessage.c_str());
+}
+
+void MyDiscordClient::DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc)
+{
+	logger.Log(LogLevel::Info, "[Discord] Voice channel ready");
 }
 
 void MyDiscordClient::RegisterCommands()
@@ -624,7 +639,7 @@ void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
 		return;
 	}
 	logger.Log(LogLevel::Info, "Connecting to voice channel: %s", ch.c_str());
-	connectToVoiceChannel(createVoiceContext(ch, nullptr));
+	connectToVoiceChannel(createVoiceContext(ch, this));
 }
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
