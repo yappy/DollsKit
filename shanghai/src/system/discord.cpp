@@ -713,12 +713,15 @@ void MyDiscordClient::CmdVolume(Msg msg, const std::vector<std::string> &args)
 		return;
 	}
 
+	int old = m_volume;
 	m_volume = volume;
 	if (m_svc != nullptr) {
 		m_svc->CallWithSource([volume](WavSource *psrc) {
 			psrc->SetVolume(volume);
 		});
 	}
+	sendMessage(msg.channelID, util::Format("Set volume: {0} -> {1}",
+		{std::to_string(old), std::to_string(volume)}));
 }
 
 void MyDiscordClient::CmdChGame(Msg msg, const std::vector<std::string> &args)
