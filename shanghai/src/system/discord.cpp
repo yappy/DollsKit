@@ -7,6 +7,7 @@
 #include <sleepy_discord/sleepy_discord.h>
 #include <random>
 #include <map>
+#include <filesystem>
 
 namespace shanghai {
 namespace system {
@@ -634,8 +635,18 @@ void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 
 void MyDiscordClient::CmdMusicList(Msg msg, const std::vector<std::string> &args)
 {
-	// TODO
-	sendMessage(msg.channelID, "Not implemented");
+	namespace fs = std::filesystem;
+	try {
+		std::vector<std::string> lines;
+		for (const auto &ent :
+			fs::recursive_directory_iterator(m_conf.MusicDir)) {
+			lines.emplace_back(ent.path());
+		}
+		SendLargeMessage(msg.channelID, lines);
+	} catch (fs::filesystem_error &e) {
+		sendMessage(msg.channelID,
+			"File system error. (Check the config file)");
+	}
 }
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)

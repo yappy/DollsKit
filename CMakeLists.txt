@@ -17,7 +17,9 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
 endif()
 
 # Supress "changed in GCC 7.1" warnings
-add_compile_options("-Wno-psabi")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+	add_compile_options("-Wno-psabi")
+endif()
 
 # Set install dir
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dist")

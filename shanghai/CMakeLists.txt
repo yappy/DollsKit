@@ -92,6 +92,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${INCS})
 target_include_directories(${PROJECT_NAME}-test PRIVATE ${INCS})
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 target_link_libraries(${PROJECT_NAME}-test ${LIBS})
+# std::filesystem
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 9)
+		target_link_libraries(${PROJECT_NAME} "stdc++fs")
+		target_link_libraries(${PROJECT_NAME}-test "stdc++fs")
+	endif()
+endif()
 
 # submodules
 target_link_libraries(${PROJECT_NAME}      "json11")
