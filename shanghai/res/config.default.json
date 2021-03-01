@@ -19,7 +19,9 @@
 		"DefaultReply"		: "はい",
 		"PrivilegedUsers"	: [],
 		"DenyMessage"		: "バカジャネーノ",
-		"FollowReaction"	: true
+		"FollowReaction"	: true,
+		"MusicDir"			: "/path/to/Music",
+		"DefaultVolume"		: 100
 	},
 	"Ddns":
 	{

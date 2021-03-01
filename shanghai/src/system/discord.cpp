@@ -30,10 +30,14 @@ R"(/help
 /haipai
     Deal piles (MT19937)
 ----
-/summon <voice_ch>
-    Connect to the voice channel
+/musiclist
+    Show music list
+/play <voice_ch> <music>
+    Connect to the voice channel and play music once
+/volume <0..100>
+    Set volume
 ----
-/play <message>
+/chgame <message>
     Change playing game
 /attack <user>[,user2,user3,...] <msg> [<channel>]
     Send a message to the target user
@@ -45,6 +49,8 @@ struct DiscordConfig {
 	std::vector<std::string> PrivilegedUsers;
 	std::string DenyMessage = "";
 	bool FollowReaction = false;
+	std::string MusicDir = "";
+	int DefaultVolume = 0;
 
 	bool HasPrivilege(std::string user)
 	{
@@ -144,9 +150,11 @@ private:
 	void CmdDice(Msg msg, const std::vector<std::string> &args);
 	void CmdHaipai(Msg msg, const std::vector<std::string> &args);
 
-	void CmdSummon(Msg msg, const std::vector<std::string> &args);
-
+	void CmdMusicList(Msg msg, const std::vector<std::string> &args);
 	void CmdPlay(Msg msg, const std::vector<std::string> &args);
+	void CmdVolume(Msg msg, const std::vector<std::string> &args);
+
+	void CmdChGame(Msg msg, const std::vector<std::string> &args);
 	void CmdAttack(Msg msg, const std::vector<std::string> &args);
 
 	// 2000 文字以上を分割送信
@@ -418,11 +426,15 @@ void MyDiscordClient::RegisterCommands()
 	m_cmdmap.emplace("/haipai",
 		std::bind(&MyDiscordClient::CmdHaipai, this, _1, _2));
 
-	m_cmdmap.emplace("/summon",
-		std::bind(&MyDiscordClient::CmdSummon, this, _1, _2));
-
+	m_cmdmap.emplace("/musiclist",
+		std::bind(&MyDiscordClient::CmdMusicList, this, _1, _2));
 	m_cmdmap.emplace("/play",
 		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
+	m_cmdmap.emplace("/volume",
+		std::bind(&MyDiscordClient::CmdVolume, this, _1, _2));
+
+	m_cmdmap.emplace("/chgame",
+		std::bind(&MyDiscordClient::CmdChGame, this, _1, _2));
 	m_cmdmap.emplace("/attack",
 		std::bind(&MyDiscordClient::CmdAttack, this, _1, _2));
 }
@@ -617,7 +629,13 @@ void MyDiscordClient::CmdHaipai(Msg msg, const std::vector<std::string> &args)
 	sendMessage(msg.channelID, text);
 }
 
-void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
+void MyDiscordClient::CmdMusicList(Msg msg, const std::vector<std::string> &args)
+{
+	// TODO
+	sendMessage(msg.channelID, "Not implemented");
+}
+
+void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 {
 	if (args.size() < 2) {
 		sendMessage(msg.channelID, "Argument error.");
@@ -627,6 +645,11 @@ void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
 	std::string ch = ResolveChannel(args.at(1));
 	if (ch == "") {
 		sendMessage(msg.channelID, "Invalid voice channel.");
+		return;
+	}
+	// TODO
+	{
+		sendMessage(msg.channelID, "Not implemented");
 		return;
 	}
 	logger.Log(LogLevel::Info, "Connecting to voice channel: %s", ch.c_str());
@@ -641,7 +664,7 @@ void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
 	eh->OnReady = [](
 		const SafeVoiceContextPtr &svc,
 		SleepyDiscord::VoiceConnection &vc) {
-		auto src = std::make_unique<WavSource>(svc, "/home/yappy/empty.wav");
+		auto src = std::make_unique<WavSource>(svc, "/path/to/music.wav");
 		svc->Set(src.get());
 		vc.startSpeaking(src.release());
 	};
@@ -658,7 +681,13 @@ void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
 	m_svc = svc;
 }
 
-void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
+void MyDiscordClient::CmdVolume(Msg msg, const std::vector<std::string> &args)
+{
+	// TODO
+	sendMessage(msg.channelID, "Not implemented");
+}
+
+void MyDiscordClient::CmdChGame(Msg msg, const std::vector<std::string> &args)
 {
 	if (!m_conf.HasPrivilege(msg.author.ID)) {
 		sendMessage(msg.channelID, m_conf.DenyMessage);
@@ -765,6 +794,11 @@ Discord::Discord()
 			{"Discord", "PrivilegedUsers"});
 		dconf.DenyMessage = config.GetStr({"Discord", "DenyMessage"});
 		dconf.FollowReaction = config.GetBool({"Discord", "FollowReaction"});
+		dconf.MusicDir = config.GetStr({"Discord", "MusicDir"});
+		dconf.DefaultVolume = config.GetInt({"Discord", "MusicDir"});
+		if (dconf.DefaultVolume < 0 || dconf.DefaultVolume > 100) {
+			throw ConfigError("Invalid Discord.DefaultVolume");
+		}
 
 		m_client = std::make_unique<MyDiscordClient>(
 			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);
