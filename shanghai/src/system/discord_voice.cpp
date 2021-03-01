@@ -59,8 +59,9 @@ void VoiceEventHandler::onEndSpeaking(SleepyDiscord::VoiceConnection &vc)
 	if (OnEndSpeaking) OnEndSpeaking(m_ctx, vc);
 }
 
-WavSource::WavSource(const SafeVoiceContextPtr &ctx, const std::string &path) :
-	m_ctx(ctx)
+WavSource::WavSource(const SafeVoiceContextPtr &ctx,
+	const std::string &path, int volume) :
+	m_ctx(ctx), m_volume(volume)
 {
 	m_fp.reset(std::fopen(path.c_str(), "rb"));
 	if (m_fp == nullptr) {
@@ -90,6 +91,11 @@ void WavSource::read(
 	}
 	buffer = m_buf.data();
 	length = (rsize > 0) ? BufSize : 0;
+}
+
+void WavSource::SetVolume(int volume)
+{
+	m_volume.store(volume);
 }
 
 void WavSource::Cancel()

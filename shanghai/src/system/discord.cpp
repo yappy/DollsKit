@@ -82,6 +82,7 @@ public:
 		: SleepyDiscord::DiscordClient(token, numOfThreads),
 		m_conf(conf)
 	{
+		m_volume = conf.DefaultVolume;
 		RegisterCommands();
 	}
 	virtual ~MyDiscordClient()
@@ -93,8 +94,6 @@ public:
 
 private:
 	DiscordConfig m_conf;
-	// ボイスチャット用スレッドセーフデータ
-	SafeVoiceContextPtr m_svc;
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
 	// ID cache
@@ -103,7 +102,11 @@ private:
 	bool m_cache_valid = false;
 	std::unordered_map<std::string, std::string> m_ch_cache;
 	std::unordered_map<std::string, std::string> m_user_cache;
+	// ボイスチャット用スレッドセーフデータ
+	SafeVoiceContextPtr m_svc;
+	int m_volume;
 
+	// コマンドリスト
 	using Msg = SleepyDiscord::Message;
 	using CmdFunc = void(Msg msg, const std::vector<std::string> &args);
 	std::unordered_map<std::string, std::function<CmdFunc>> m_cmdmap;
@@ -661,10 +664,12 @@ void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 
 	auto svc = std::make_shared<SafeVoiceContext>();
 	auto eh = std::make_unique<VoiceEventHandler>(svc);
-	eh->OnReady = [](
+	int volume = m_volume;
+	eh->OnReady = [volume](
 		const SafeVoiceContextPtr &svc,
 		SleepyDiscord::VoiceConnection &vc) {
-		auto src = std::make_unique<WavSource>(svc, "/path/to/music.wav");
+		auto src = std::make_unique<WavSource>(
+			svc,"/path/to/music.wav", volume);
 		svc->Set(src.get());
 		vc.startSpeaking(src.release());
 	};
@@ -683,8 +688,26 @@ void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 
 void MyDiscordClient::CmdVolume(Msg msg, const std::vector<std::string> &args)
 {
-	// TODO
-	sendMessage(msg.channelID, "Not implemented");
+	if (args.size() < 2) {
+		sendMessage(msg.channelID, "Argument error.");
+		return;
+	}
+
+	int volume = 0;
+	try {
+		volume = util::to_int(args.at(1), VolumeMin, VolumeMax);
+	}
+	catch (...) {
+		sendMessage(msg.channelID, "Invalid volume value.");
+		return;
+	}
+
+	m_volume = volume;
+	if (m_svc != nullptr) {
+		m_svc->CallWithSource([volume](WavSource *psrc) {
+			psrc->SetVolume(volume);
+		});
+	}
 }
 
 void MyDiscordClient::CmdChGame(Msg msg, const std::vector<std::string> &args)
@@ -795,8 +818,9 @@ Discord::Discord()
 		dconf.DenyMessage = config.GetStr({"Discord", "DenyMessage"});
 		dconf.FollowReaction = config.GetBool({"Discord", "FollowReaction"});
 		dconf.MusicDir = config.GetStr({"Discord", "MusicDir"});
-		dconf.DefaultVolume = config.GetInt({"Discord", "MusicDir"});
-		if (dconf.DefaultVolume < 0 || dconf.DefaultVolume > 100) {
+		dconf.DefaultVolume = config.GetInt({"Discord", "DefaultVolume"});
+		if (dconf.DefaultVolume < VolumeMin ||
+			dconf.DefaultVolume > VolumeMax) {
 			throw ConfigError("Invalid Discord.DefaultVolume");
 		}
 

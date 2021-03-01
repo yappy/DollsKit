@@ -9,6 +9,9 @@
 namespace shanghai {
 namespace system {
 
+const int VolumeMin = 0;
+const int VolumeMax = 100;
+
 class MyDiscordClient;
 class VoiceEventHandler;
 class WavSource;
@@ -88,7 +91,8 @@ private:
 class WavSource : public SleepyDiscord::AudioPointerSource
 {
 public:
-	WavSource(const SafeVoiceContextPtr &ctx, const std::string &path);
+	WavSource(const SafeVoiceContextPtr &ctx,
+		const std::string &path, int volume);
 	WavSource(const WavSource &) = delete;
 	WavSource & operator=(const WavSource &) = delete;
 
@@ -98,11 +102,13 @@ public:
 		SleepyDiscord::AudioTransmissionDetails &details,
 		SleepyDiscord::AudioSample *&buffer,
 		std::size_t &length) noexcept override;
+	void SetVolume(int volume);
 	void Cancel();
 
 private:
 	SafeVoiceContextPtr m_ctx;
 	util::File m_fp;
+	std::atomic_int m_volume = VolumeMax;
 	std::atomic_bool m_cancel = false;
 	std::vector<SleepyDiscord::AudioSample> m_buf;
 	static constexpr std::size_t BufSize =
