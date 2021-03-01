@@ -5,6 +5,7 @@
 #include <system_error>
 #include <initializer_list>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -34,6 +35,14 @@ inline R SysCall(R ret)
 	}
 	return ret;
 }
+
+// Auto fclose FILE *
+struct FileDeleter {
+	void operator()(FILE *fp) {
+		std::fclose(fp);
+	}
+};
+using File = std::unique_ptr<FILE, FileDeleter>;
 
 inline int to_int(const std::string &str,
 	int min = std::numeric_limits<int>::min(),

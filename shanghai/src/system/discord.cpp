@@ -1,4 +1,5 @@
 #include "discord.h"
+#include "discord_voice.h"
 #include "system.h"
 #include "../logger.h"
 #include "../util.h"
@@ -68,9 +69,7 @@ inline void CallNoExcept(F f) noexcept
 
 }	// namespace
 
-class MyDiscordClient : public
-	SleepyDiscord::DiscordClient,
-	SleepyDiscord::BaseVoiceEventHandler {
+class MyDiscordClient : public SleepyDiscord::DiscordClient {
 public:
 	MyDiscordClient(const DiscordConfig &conf,
 		const std::string &token, char numOfThreads)
@@ -79,12 +78,17 @@ public:
 	{
 		RegisterCommands();
 	}
-	virtual ~MyDiscordClient() = default;
+	virtual ~MyDiscordClient()
+	{
+		m_svc->ClearEventHandler();
+	}
 
 	void SendMessage(const std::string &text) noexcept;
 
 private:
 	DiscordConfig m_conf;
+	// ボイスチャット用スレッドセーフデータ
+	SafeVoiceContextPtr m_svc;
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
 	// ID cache
@@ -124,9 +128,6 @@ private:
 		SleepyDiscord::Emoji &emoji);
 	void DoOnError(SleepyDiscord::ErrorCode errorCode,
 		const std::string &errorMessage);
-
-	void DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc);
-	void DoOnVoiceEndSpeaking(SleepyDiscord::VoiceConnection &vc);
 
 	// 全コマンドを string->func ハッシュテーブルに登録する
 	void RegisterCommands();
@@ -187,16 +188,6 @@ protected:
 	{
 		CallNoExcept(std::bind(&MyDiscordClient::DoOnError,
 			this, errorCode, errorMessage));
-	}
-
-public:
-	void onReady(SleepyDiscord::VoiceConnection &vc) noexcept override {
-		CallNoExcept(std::bind(&MyDiscordClient::DoOnVoiceReady,
-			this, std::ref(vc)));
-	}
-	void onEndSpeaking(SleepyDiscord::VoiceConnection &vc) noexcept override {
-		CallNoExcept(std::bind(&MyDiscordClient::DoOnVoiceEndSpeaking,
-			this, std::ref(vc)));
 	}
 };
 
@@ -407,18 +398,6 @@ void MyDiscordClient::DoOnError(SleepyDiscord::ErrorCode errorCode,
 	const std::string &errorMessage)
 {
 	logger.Log(LogLevel::Error, "[Discord] %s", errorMessage.c_str());
-}
-
-void MyDiscordClient::DoOnVoiceReady(SleepyDiscord::VoiceConnection &vc)
-{
-	logger.Log(LogLevel::Info, "[Discord] Voice channel ready");
-	//vc.startSpeaking<SquareWave>();
-}
-
-void MyDiscordClient::DoOnVoiceEndSpeaking(SleepyDiscord::VoiceConnection& vc)
-{
-	logger.Log(LogLevel::Info, "[Discord] Voice end speaking");
-	vc.disconnect();
 }
 
 void MyDiscordClient::RegisterCommands()
@@ -651,7 +630,32 @@ void MyDiscordClient::CmdSummon(Msg msg, const std::vector<std::string> &args)
 		return;
 	}
 	logger.Log(LogLevel::Info, "Connecting to voice channel: %s", ch.c_str());
-	connectToVoiceChannel(createVoiceContext(ch, this));
+
+	if (m_svc != nullptr) {
+		m_svc->ClearClient();
+		m_svc.reset();
+	}
+
+	auto svc = std::make_shared<SafeVoiceContext>();
+	auto eh = std::make_unique<VoiceEventHandler>(svc);
+	eh->OnReady = [](
+		const SafeVoiceContextPtr &svc,
+		SleepyDiscord::VoiceConnection &vc) {
+		auto src = std::make_unique<WavSource>(svc, "/home/yappy/empty.wav");
+		svc->Set(src.get());
+		vc.startSpeaking(src.release());
+	};
+	eh->OnEndSpeaking = [](
+		const SafeVoiceContextPtr &svc,
+		SleepyDiscord::VoiceConnection &vc) {
+		vc.disconnect();
+	};
+	svc->Set(this);
+	svc->Set(eh.get());
+
+	auto &vctx = createVoiceContext(ch, eh.release());
+	connectToVoiceChannel(vctx);
+	m_svc = svc;
 }
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)

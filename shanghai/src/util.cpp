@@ -1,5 +1,4 @@
 #include "util.h"
-#include <memory>
 #include <cstring>
 #include <sstream>
 #include <algorithm>
@@ -188,17 +187,6 @@ std::string UrlEncode(const std::string &src)
 	}
 	return dst;
 }
-
-namespace {
-
-struct FileDeleter {
-	void operator()(FILE *fp) {
-		std::fclose(fp);
-	}
-};
-using File = std::unique_ptr<FILE, FileDeleter>;
-
-}	// namespace
 
 std::vector<uint8_t> ReadFile(const std::string &file_name)
 {
