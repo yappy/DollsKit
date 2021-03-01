@@ -88,7 +88,9 @@ public:
 	}
 	virtual ~MyDiscordClient()
 	{
-		m_svc->ClearEventHandler();
+		if (m_svc != nullptr) {
+			m_svc->ClearEventHandler();
+		}
 	}
 
 	void SendMessage(const std::string &text) noexcept;
