@@ -83,8 +83,10 @@ public:
 		: SleepyDiscord::DiscordClient(token, numOfThreads),
 		m_conf(conf)
 	{
-		m_volume = conf.DefaultVolume;
 		RegisterCommands();
+
+		m_volume = conf.DefaultVolume;
+		UpdateMusicList();
 	}
 	virtual ~MyDiscordClient()
 	{
@@ -96,11 +98,13 @@ public:
 	void SendMessage(const std::string &text) noexcept;
 
 private:
+	using rmtx_guard = std::lock_guard<std::recursive_mutex>;
+	using mtx_guard = std::lock_guard<std::mutex>;
+
 	DiscordConfig m_conf;
 	// 非決定論的乱数生成器 (連打禁止)
 	std::random_device m_rng;
 	// ID cache
-	using mtx_guard = std::lock_guard<std::recursive_mutex>;
 	std::recursive_mutex m_cache_mtx;
 	bool m_cache_valid = false;
 	std::unordered_map<std::string, std::string> m_ch_cache;
@@ -108,6 +112,9 @@ private:
 	// ボイスチャット用スレッドセーフデータ
 	SafeVoiceContextPtr m_svc;
 	int m_volume;
+	static const int FindMusicDepth = 3;
+	std::mutex m_music_list_mtx;
+	std::vector<std::string> m_music_list;
 
 	// コマンドリスト
 	using Msg = SleepyDiscord::Message;
@@ -124,6 +131,8 @@ private:
 	// (必要ならばキャッシュにロードする)
 	std::string ResolveChannel(const std::string &str);
 	std::string ResolveUser(const std::string &str);
+
+	void UpdateMusicList();
 
 	// イベントハンドラ本処理 (例外送出あり)
 	void DoOnReady(SleepyDiscord::Ready &ready);
@@ -232,7 +241,7 @@ bool MyDiscordClient::IsID(const std::string &str)
 
 void MyDiscordClient::ValidateCache()
 {
-	mtx_guard lock(m_cache_mtx);
+	rmtx_guard lock(m_cache_mtx);
 
 	if (m_cache_valid) {
 		return;
@@ -271,7 +280,7 @@ void MyDiscordClient::ValidateCache()
 
 void MyDiscordClient::InvalidateCache()
 {
-	mtx_guard lock(m_cache_mtx);
+	rmtx_guard lock(m_cache_mtx);
 	m_cache_valid = false;
 }
 
@@ -281,7 +290,7 @@ std::string MyDiscordClient::ResolveChannel(const std::string &str)
 		return str;
 	}
 	{
-		mtx_guard lock(m_cache_mtx);
+		rmtx_guard lock(m_cache_mtx);
 		ValidateCache();
 		auto it = m_ch_cache.find(str);
 		if (it != m_ch_cache.end()) {
@@ -299,7 +308,7 @@ std::string MyDiscordClient::ResolveUser(const std::string &str)
 		return str;
 	}
 	{
-		mtx_guard lock(m_cache_mtx);
+		rmtx_guard lock(m_cache_mtx);
 		ValidateCache();
 		auto it = m_user_cache.find(str);
 		if (it != m_user_cache.end()) {
@@ -308,6 +317,50 @@ std::string MyDiscordClient::ResolveUser(const std::string &str)
 		else {
 			return "";
 		}
+	}
+}
+
+void MyDiscordClient::UpdateMusicList()
+{
+	namespace fs = std::filesystem;
+
+	logger.Log(LogLevel::Info, "[Discord] Update music list: %s",
+			m_conf.MusicDir.c_str());
+
+	std::vector<std::string> result;
+	std::vector<fs::path> dirs = {{m_conf.MusicDir}};
+
+	for (int i = 0; i < FindMusicDepth; i++) {
+		std::vector<fs::path> next_dirs;
+		for (const auto &dir : dirs) {
+			for (const auto &ent :
+				fs::directory_iterator(
+					dir,
+					fs::directory_options::follow_directory_symlink |
+					fs::directory_options::skip_permission_denied)) {
+				if (fs::is_directory(ent)) {
+					next_dirs.emplace_back(ent);
+				}
+				else if (fs::is_regular_file(ent)) {
+					fs::path r = fs::relative(ent, m_conf.MusicDir);
+					result.emplace_back(r.u8string());
+				}
+			}
+		}
+		dirs = std::move(next_dirs);
+	}
+	std::sort(result.begin(), result.end());
+
+	for (const auto &fname : result) {
+		logger.Log(LogLevel::Info, "* %s", fname.c_str());
+	}
+	if (!dirs.empty()) {
+		logger.Log(LogLevel::Warn, "%zu dirs remains", dirs.size());
+	}
+
+	{
+		mtx_guard lock(m_music_list_mtx);
+		m_music_list = std::move(result);
 	}
 }
 
@@ -639,13 +692,20 @@ void MyDiscordClient::CmdMusicList(Msg msg, const std::vector<std::string> &args
 {
 	namespace fs = std::filesystem;
 	try {
+		UpdateMusicList();
 		std::vector<std::string> lines;
-		for (const auto &ent :
-			fs::recursive_directory_iterator(m_conf.MusicDir)) {
-			lines.emplace_back(ent.path());
+		{
+			mtx_guard lock(m_music_list_mtx);
+			int id = 0;
+			for (const auto &path : m_music_list) {
+				lines.emplace_back(util::Format("[{0}] {1}", {
+					std::to_string(id), path}));
+				id++;
+			}
 		}
 		SendLargeMessage(msg.channelID, lines);
 	} catch (fs::filesystem_error &e) {
+		logger.Log(LogLevel::Error, "[Discord] Error: %s", e.what());
 		sendMessage(msg.channelID,
 			"File system error. (Check the config file)");
 	}
@@ -839,6 +899,9 @@ Discord::Discord()
 			dconf.DefaultVolume > VolumeMax) {
 			throw ConfigError("Invalid Discord.DefaultVolume");
 		}
+
+		logger.Log(LogLevel::Info,
+			"[Discord] MusicDir: %s", dconf.MusicDir.c_str());
 
 		m_client = std::make_unique<MyDiscordClient>(
 			dconf, token, SleepyDiscord::USER_CONTROLED_THREADS);
