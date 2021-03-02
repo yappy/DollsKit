@@ -86,9 +86,19 @@ void WavSource::read(
 	}
 	std::size_t rsize = fread(m_buf.data(), sizeof(SleepyDiscord::AudioSample),
 		BufSize, m_fp.get());
+	// 半端なサイズを返すとライブラリがクラッシュするので足りない場合は無音で埋める
 	for (auto i = rsize; i < m_buf.size(); i++) {
 		m_buf[i] = 0;
 	}
+	int32_t volume = m_volume.load();
+	if (volume != VolumeMax) {
+		for (auto &sample : m_buf) {
+			int32_t org = sample;
+			org = org * volume / VolumeMax;
+			sample = org;
+		}
+	}
+
 	buffer = m_buf.data();
 	length = (rsize > 0) ? BufSize : 0;
 }
