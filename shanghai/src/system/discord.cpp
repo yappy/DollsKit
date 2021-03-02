@@ -35,6 +35,8 @@ R"(/help
     Show music list
 /play <voice_ch> <id/filename>
     Connect to the voice channel and play music once
+/stop
+    Stop music
 /volume <0..100>
     Set volume
 ----
@@ -169,6 +171,7 @@ private:
 
 	void CmdMusicList(Msg msg, const std::vector<std::string> &args);
 	void CmdPlay(Msg msg, const std::vector<std::string> &args);
+	void CmdStop(Msg msg, const std::vector<std::string> &args);
 	void CmdVolume(Msg msg, const std::vector<std::string> &args);
 
 	void CmdChGame(Msg msg, const std::vector<std::string> &args);
@@ -512,6 +515,8 @@ void MyDiscordClient::RegisterCommands()
 		std::bind(&MyDiscordClient::CmdMusicList, this, _1, _2));
 	m_cmdmap.emplace("/play",
 		std::bind(&MyDiscordClient::CmdPlay, this, _1, _2));
+	m_cmdmap.emplace("/stop",
+		std::bind(&MyDiscordClient::CmdStop, this, _1, _2));
 	m_cmdmap.emplace("/volume",
 		std::bind(&MyDiscordClient::CmdVolume, this, _1, _2));
 
@@ -790,6 +795,15 @@ void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 	auto &vctx = createVoiceContext(ch, eh.release());
 	connectToVoiceChannel(vctx);
 	m_svc = svc;
+}
+
+void MyDiscordClient::CmdStop(Msg msg, const std::vector<std::string> &args)
+{
+	if (m_svc != nullptr) {
+		m_svc->CallWithSource([](WavSource *psrc) {
+			psrc->Cancel();
+		});
+	}
 }
 
 void MyDiscordClient::CmdVolume(Msg msg, const std::vector<std::string> &args)
