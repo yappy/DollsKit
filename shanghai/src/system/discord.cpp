@@ -33,7 +33,7 @@ R"(/help
 ----
 /musiclist
     Show music list
-/play <voice_ch> <music>
+/play <voice_ch> <id/filename>
     Connect to the voice channel and play music once
 /volume <0..100>
     Set volume
@@ -133,6 +133,8 @@ private:
 	std::string ResolveUser(const std::string &str);
 
 	void UpdateMusicList();
+	// ID ならそのまま、そうでないなら ID キャッシュから引く
+	std::string ResolveMusic(const std::string &str);
 
 	// イベントハンドラ本処理 (例外送出あり)
 	void DoOnReady(SleepyDiscord::Ready &ready);
@@ -362,6 +364,27 @@ void MyDiscordClient::UpdateMusicList()
 		mtx_guard lock(m_music_list_mtx);
 		m_music_list = std::move(result);
 	}
+}
+
+std::string MyDiscordClient::ResolveMusic(const std::string &str)
+{
+	{
+		mtx_guard lock(m_music_list_mtx);
+		bool find = std::binary_search(
+			m_music_list.begin(), m_music_list.end(), str);
+		if (find) {
+			return str;
+		}
+
+		try {
+			uint64_t ind = util::to_uint64(str);
+			if (ind < m_music_list.size()) {
+				return m_music_list.at(ind);
+			}
+		}
+		catch (...) {}
+	}
+	return "";
 }
 
 void MyDiscordClient::DoOnReady(SleepyDiscord::Ready &ready)
@@ -713,7 +736,9 @@ void MyDiscordClient::CmdMusicList(Msg msg, const std::vector<std::string> &args
 
 void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 {
-	if (args.size() < 2) {
+	namespace fs = std::filesystem;
+
+	if (args.size() < 3) {
 		sendMessage(msg.channelID, "Argument error.");
 		return;
 	}
@@ -723,11 +748,14 @@ void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 		sendMessage(msg.channelID, "Invalid voice channel.");
 		return;
 	}
-	// TODO
-	{
-		sendMessage(msg.channelID, "Not implemented");
+	std::string r = ResolveMusic(args.at(2));
+	if (r == "") {
+		sendMessage(msg.channelID, "Invalid music file. (id or file name)");
 		return;
 	}
+	fs::path path = m_conf.MusicDir;
+	path /= r;
+
 	logger.Log(LogLevel::Info, "Connecting to voice channel: %s", ch.c_str());
 
 	if (m_svc != nullptr) {
@@ -738,18 +766,23 @@ void MyDiscordClient::CmdPlay(Msg msg, const std::vector<std::string> &args)
 	auto svc = std::make_shared<SafeVoiceContext>();
 	auto eh = std::make_unique<VoiceEventHandler>(svc);
 	int volume = m_volume;
-	eh->OnReady = [volume](
+	std::string pathstr = path.u8string();
+	eh->OnReady = [pathstr, volume](
 		const SafeVoiceContextPtr &svc,
 		SleepyDiscord::VoiceConnection &vc) {
-		auto src = std::make_unique<WavSource>(
-			svc,"/path/to/music.wav", volume);
-		svc->Set(src.get());
-		vc.startSpeaking(src.release());
+		CallNoExcept([&]() {
+			auto src = std::make_unique<WavSource>(
+				svc, pathstr, volume);
+			svc->Set(src.get());
+			vc.startSpeaking(src.release());
+		});
 	};
 	eh->OnEndSpeaking = [](
 		const SafeVoiceContextPtr &svc,
 		SleepyDiscord::VoiceConnection &vc) {
-		vc.disconnect();
+		CallNoExcept([&]() {
+			vc.disconnect();
+		});
 	};
 	svc->Set(this);
 	svc->Set(eh.get());
