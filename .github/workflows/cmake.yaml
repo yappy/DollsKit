@@ -17,6 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Apt Search
+      run: sudo apt search libcurl
+
     - name: Install Dependencies
       run: sudo apt -V install \
         libcurl4-openssl-dev
