@@ -13,12 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
+        compiler:
+          - {cc: gcc, cxx: g++}
+          - {cc: clang, cxx: clang++}
 
     env:
       BUILD_TYPE: Release
-      CC: ${{matrix.compiler}}
-      CXX: ${{matrix.compiler}}
+      CC: ${{matrix.compiler.cc}}
+      CXX: ${{matrix.compiler.cxx}}
 
     steps:
     - uses: actions/checkout@v2
