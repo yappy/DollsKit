@@ -1,6 +1,7 @@
 #ifndef SHANGHAI_EXEC_H
 #define SHANGHAI_EXEC_H
 
+#include <stdexcept>
 #include <memory>
 #include <initializer_list>
 #include <string>
