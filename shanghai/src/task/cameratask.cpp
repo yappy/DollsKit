@@ -1,5 +1,7 @@
-#include "task.h"
+#include "cameratask.h"
 #include "../system/system.h"
+#include "../config.h"
+#include "../logger.h"
 
 namespace shanghai {
 namespace task {
