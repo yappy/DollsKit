@@ -15,7 +15,8 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 		-Wno-unused-parameter -Wno-unused-variable)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 	set(CFLAGS
-		-Werror -Wall -Wextra -Wnoexcept -Wno-unused -Wno-ignored-qualifiers)
+		-Werror -Wall -Wextra -Wnoexcept -Wno-unused
+		-Wno-ignored-qualifiers -Wno-deprecated-copy)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	set(CFLAFS /W4)
 endif()
