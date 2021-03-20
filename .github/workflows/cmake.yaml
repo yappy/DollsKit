@@ -17,11 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Apt Search
-      run: sudo apt search libcurl
-
     - name: Install Dependencies
-      run: sudo apt -V install libcurl4-openssl-dev
+      run: sudo apt -V install libcurl4-openssl-dev libmicrohttpd-dev
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
