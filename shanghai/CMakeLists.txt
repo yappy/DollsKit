@@ -9,18 +9,21 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # warning options
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-	add_compile_options(-Wall -Wextra
+	set(CFLAGS
+		-Wall -Wextra
 		-Wno-c++98-compat -Wno-c++98-compat-pedantic
 		-Wno-unused-parameter -Wno-unused-variable)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-	add_compile_options(-Werror -Wall -Wextra -Wnoexcept -Wno-unused -Wno-ignored-qualifiers)
+	set(CFLAGS
+		-Werror -Wall -Wextra -Wnoexcept -Wno-unused -Wno-ignored-qualifiers)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-	add_compile_options(/W4)
+	set(CFLAFS /W4)
 endif()
 
 # Main executable
 file(GLOB_RECURSE SRCS "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SRCS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${CFLAGS})
 
 # Scripts
 configure_file(
@@ -31,6 +34,7 @@ configure_file(
 # Test executable
 file(GLOB_RECURSE TEST_SRCS "test/*.cpp")
 add_executable(${PROJECT_NAME}-test EXCLUDE_FROM_ALL ${SRCS} ${TEST_SRCS})
+target_compile_options(${PROJECT_NAME}-test PRIVATE ${CFLAGS})
 target_compile_definitions(${PROJECT_NAME}-test PRIVATE "DISABLE_MAIN")
 
 # Build info
