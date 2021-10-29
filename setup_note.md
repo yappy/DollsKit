@@ -47,6 +47,7 @@ SD card に焼くイメージのセレクタ/ダウンローダとイメージ�
 ## 最新確認環境
 Raspberry Pi OS Lite (32-bit)
 2021-05-07
+(Buster)
 
 
 # 準備

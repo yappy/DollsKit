@@ -63,5 +63,7 @@ $nano /etc/sudoers.d/010_pi-nopasswd
   * passwd
   * shadow
   * group
+  * gshadow
+  * sudoers
   * sudoers.d/
     * 010_pi-nopasswd
