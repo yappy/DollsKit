@@ -187,18 +187,17 @@ set bell-style none
 
 
 # ssh をまともにする
-* root password
-  * `sudo passwd root`
-  * 最終的には /etc/shadow で * にしておく方がよいかも
-  * raspberry だと怖すぎるので最初から空(無効化)されている？
-* ssh 設定
-  * `sudo vi /etc/ssh/sshd_config`
+* `sudo vi /etc/ssh/sshd_config`
+  * 放っていると接続が切れる
+    * 以下をコメントアウト解除して設定する
+      * `ClientAliveInterval 60`
+      * `ClientAliveCountMax 3`
   * Change ssh port
-    * Port 22 <-変える
+    * `Port 22` <-変える
   * disable root login
-    * PermitRootLogin no
+    * `PermitRootLogin no`
   * パスワード認証の無効化
-    * `#PasswordAuthentication yes` をコメントアウト解除して `no` に
+    * `PasswordAuthentication no`
   * pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
     * `DenyUsers pi`
   * 設定確認
