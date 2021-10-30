@@ -115,3 +115,9 @@ setup_note.md の通りに lighttpd をインストールし、`/etc/lighttpd` �
 setup_note.md の通りに php-cgi をインストールする。
 `/etc/php` 以下をリストアする。
 デフォルトではアップロードサイズがかなり小さいため注意。
+
+
+### TLS (SSL) 設定の復旧
+setup_note.md の通りに certbot をインストールする。
+証明書の取得を最初からやり直すのがいいと思う。
+lighttpd 用ファイル生成用 Makefile の設置や cron の設定も行う。
