@@ -1,6 +1,7 @@
 # cd /etc/letsencrypt/live/<domain>
 # ln -s /path/to/this/Makefile
 # cron: make -C /etc/letsencrypt/live/<domain>
+#       service lighttpd force-reload
 
 # let's encrypt
 # ssl.pemfile = "/etc/letsencrypt/live/<domain>/server.pem"

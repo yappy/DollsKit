@@ -145,7 +145,7 @@ deb http://ftp.jp.debian.org/debian buster-backports main contrib non-free
 その後 `sudo apt update`。
 おそらく鍵エラーが出るので、NO_PUBKEY と言われた鍵(16進)を控えて、
 ```
-sudo apt-key adv --keyserver keyserver.ubuntu.com 110 --recv-keys <PUBKEY>
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys <PUBKEY>
 ...
 ```
 
@@ -282,8 +282,6 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 # SSL (Let's Encrypt)
 * `sudo apt install certbot`
-  * backports でなくても入っているみたい。
-  * ただしバージョンはかなり古い模様。(certbot 0.10.2)
 
 `sudo certbot`
 ```
@@ -319,7 +317,7 @@ Select the webroot for (ドメイン名):
 -------------------------------------------------------------------------------
 Press 1 [enter] to confirm the selection (press 'c' to cancel): 1
 Input the webroot for yappy.mydns.jp: (Enter 'c' to cancel):/var/www/html/
-(lighttpd のデフォルトドキュメントルートの場合; tab 補完が効く)
+(lighttpd のデフォルトドキュメントルートの場合)
 Waiting for verification...
 Cleaning up challenges
 Generating key (2048 bits): /etc/letsencrypt/keys/0000_key-certbot.pem
@@ -338,6 +336,9 @@ IMPORTANT NOTES:
    Donating to EFF:                    https://eff.org/donate-le
 ```
 
+`/etc/cron.d/cetbot` に cronjob が登録されている。
+12 時間ごとに自動で renew してくれるらしい？
+
 * 秘密鍵と証明書を結合する。
   * `sudo -sE`
   * `cd /etc/letsencrypt/live/(ドメイン)`
@@ -345,12 +346,24 @@ IMPORTANT NOTES:
 * lighttpd に設定する。
   * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
   * セキュアな設定は https://cipherli.st/ がよい。
-  * `sudo lighttpd-enable-mod (xx* と .conf を除いた名前)`
+  * `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   * `sudo service lighttpd force-reload`
 ```
 ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/server.pem"
 ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ```
+
+server.pem の結合更新を行う Makefile を `DollsKit/root/Makefile` に用意してある。
+自動更新されるファイルの置いてある場所に Makefile の名前でシンボリックリンクを
+作成し、そのディレクトリで make すれば結合を行う。
+```
+# cd /etc/letsencrypt/live/<domain>
+# ln -s /path/to/this/Makefile
+```
+
+make を行いサーバにリロードさせるスクリプトを `DollsKit/root/Makefile` に
+用意してある。
+`/etc/cron.weekly` あたりのところにコピーし、ドメイン部分を書き換える。
 
 
 # MySQL (not used now)
