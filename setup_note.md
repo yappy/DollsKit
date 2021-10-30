@@ -181,30 +181,30 @@ set bell-style none
 ```
 
 # screen
-- nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
-- `sudo apt-get install screen`
-  - デタッチ: C-a d
+* nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
+* `sudo apt-get install screen`
+  * デタッチ: C-a d
 
 
 # ssh をまともにする
-- root password
-  - `sudo passwd root`
-  - 最終的には /etc/shadow で * にしておく方がよいかも
-  - raspberry だと怖すぎるので最初から空(無効化)されている？
-- ssh 設定
-  - `sudo vi /etc/ssh/sshd_config`
-  - Change ssh port
-    - Port 22 <-変える
-  - disable root login
-    - PermitRootLogin no
-  - パスワード認証の無効化
-    - `#PasswordAuthentication yes` をコメントアウト解除して `no` に
-  - pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
-    - `DenyUsers pi`
-  - 設定確認
-    - `sshd -t`
-  - sshd 再起動
-    - `service ssh restart`
+* root password
+  * `sudo passwd root`
+  * 最終的には /etc/shadow で * にしておく方がよいかも
+  * raspberry だと怖すぎるので最初から空(無効化)されている？
+* ssh 設定
+  * `sudo vi /etc/ssh/sshd_config`
+  * Change ssh port
+    * Port 22 <-変える
+  * disable root login
+    * PermitRootLogin no
+  * パスワード認証の無効化
+    * `#PasswordAuthentication yes` をコメントアウト解除して `no` に
+  * pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
+    * `DenyUsers pi`
+  * 設定確認
+    * `sshd -t`
+  * sshd 再起動
+    * `service ssh restart`
 
 
 # VNC (remote desktop)
@@ -212,71 +212,78 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 
 # カメラモジュール
-- カメラモジュールの有効化
-  - sudo raspi-config
-  - Interfacing options
-  - Enable Camera
+* カメラモジュールの有効化
+  * sudo raspi-config
+  * Interfacing options
+  * Enable Camera
 
-- 静止画撮影(要 video グループ)
-  - `raspistill -t 1 -o pic.jpg`
-  - -t 指定すると真っ黒になってしまうことがあるらしい？
+* 静止画撮影(要 video グループ)
+  * `raspistill -t 1 -o pic.jpg`
+  * -t 指定すると真っ黒になってしまうことがあるらしい？
     https://mizukama.sakura.ne.jp/blog/archives/4022
 
-- サイズ
-  - 3280x2464
-- exif のサムネイル
-  - 64x48
+* サイズ
+  * 3280x2464
+* exif のサムネイル
+  * 64x48
 
-- C# からサムネイルの取り出し
-  - GetThumbnailImage()
+* C# からサムネイルの取り出し
+  * GetThumbnailImage()
 
 
 # I2C
-- I2C の有効化
-  - `sudo raspi-config`
-  - Interfacing Options
-  - Enable I2C
+* I2C の有効化
+  * `sudo raspi-config`
+  * Interfacing Options
+  * Enable I2C
 
-- Device files
-  - `ls /sys/bus/i2c/devices`
+* Device files
+  * `ls /sys/bus/i2c/devices`
 
-- i2c-tools
-  - `sudo apt install i2c-tools`
+* i2c-tools
+  * `sudo apt install i2c-tools`
 
-- i2c-detect
-  - `i2cdetect -l`
-    - バスの列挙
-    - i2c-X の X が識別子
-  - `i2cdetect -F <X>`
-    - 利用可能な機能
-  - `i2cdetect [-y] <X>`
-    - 応答のある I2C アドレスを表示
-    - 警告が出る通り、変な状態になる可能性は否定できないのでその場合はリセット
+* i2c-detect
+  * `i2cdetect -l`
+    * バスの列挙
+    * i2c-X の X が識別子
+  * `i2cdetect -F <X>`
+    * 利用可能な機能
+  * `i2cdetect [-y] <X>`
+    * 応答のある I2C アドレスを表示
+    * 警告が出る通り、変な状態になる可能性は否定できないのでその場合はリセット
 
 
 # HTTP Server
-- lighttpd
-  - `sudo apt-get install lighttp`
-- php
-  - `sudo apt-get install php-cgi`
+* lighttpd
+  * `sudo apt install lighttpd`
+* php
+  * `sudo apt install php-cgi`
 
-- lighttpd
-  - `/etc/lighttpd`
-  - `lighttpd-enable-mod`, `lighttpd-disable-mod`
-  - `service lighttpd force-reload`
-  - 以下などを必要に応じて変更しながら enable する
-    - accesslog
-	- userdir
-	- fastcgi
-	- fastcgi-php
-  - CGI の stderr
-    - `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
+* lighttpd
+  * `/etc/lighttpd`
+  * `lighttpd-enable-mod`, `lighttpd-disable-mod`
+  * `service lighttpd force-reload`
+  * 以下などを必要に応じて変更しながら enable する
+    * accesslog
+	* userdir
+	* fastcgi
+	* fastcgi-php
+  * CGI の stderr
+    * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
+
+* php
+  * `/etc/php/.../php.ini`
+  * デフォルトのアップロードサイズ制限は厳しいので適切に設定し直す。
+    * memory_limit
+    * post_max_size
+    * upload_max_filesize
 
 
 # SSL (Let's Encrypt)
-- `sudo apt install certbot`
-  - backports でなくても入っているみたい。
-  - ただしバージョンはかなり古い模様。(certbot 0.10.2)
+* `sudo apt install certbot`
+  * backports でなくても入っているみたい。
+  * ただしバージョンはかなり古い模様。(certbot 0.10.2)
 
 `sudo certbot`
 ```
@@ -331,15 +338,15 @@ IMPORTANT NOTES:
    Donating to EFF:                    https://eff.org/donate-le
 ```
 
-- 秘密鍵と証明書を結合する。
-  - `sudo -sE`
-  - `cd /etc/letsencrypt/live/(ドメイン)`
-  - `cat privkey.pem cert.pem > server.pem`
-- lighttpd に設定する。
-  - /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
-  - セキュアな設定は https://cipherli.st/ がよい。
-  - `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
-  - `sudo service lighttpd force-reload`
+* 秘密鍵と証明書を結合する。
+  * `sudo -sE`
+  * `cd /etc/letsencrypt/live/(ドメイン)`
+  * `cat privkey.pem cert.pem > server.pem`
+* lighttpd に設定する。
+  * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
+  * セキュアな設定は https://cipherli.st/ がよい。
+  * `sudo lighttpd-enable-mod (xx* と .conf を除いた名前)`
+  * `sudo service lighttpd force-reload`
 ```
 ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/server.pem"
 ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
@@ -347,5 +354,5 @@ ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 
 
 # MySQL (not used now)
-- `apt-get install mysql-server`
-- Debian 9 では中身は MariaDB になっている。
+* `apt-get install mysql-server`
+* Debian 9 では中身は MariaDB になっている。

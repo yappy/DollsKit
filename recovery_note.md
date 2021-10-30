@@ -39,10 +39,27 @@ Host key verification failed.
 USB メモリなら `root/usbmem.md` を参考にマウントしてバックアップデータを得る。
 
 
+## とりあえず
+`sudo -sE` で root に。
+
+git をインストールして DollsKit を /root に clone。
+
+復旧対象のバージョンのバックアップを /root に 展開。
+
+
+## 作業に役立つコマンド
+### diff
+`-d` でディレクトリ差分を取れる。
+
+`diff <SRC> <DST>`
+
+`diff -d <SRCDIR> <DSTDIR>`
+
+
 ### rsync
 丸ごと転送便利コマンド。
-`rsync -a <SRC> <DST>`
 
+`rsync -a <SRC> <DST>`
 * `-a` オーナーやパーミッション
 * `-v` 詳細情報を表示する。`-vvv` のように複数回指定するほど詳しくなる。
   2個くらいつけておくのがおすすめ。
@@ -80,6 +97,21 @@ USB メモリなら `root/usbmem.md` を参考にマウントしてバックア�
 入れなくなってしまうと詰むので、バックアップから上書きするのではなく
 diff を参考にしながら改めて少しずつ編集し直した方がよいかもしれない。
 
+編集後のリロード: `service ssh restart`
 
 ## crontab の復旧
 crontab で設定したデータは `/var/spool/cron/` 以下にある。
+
+
+## web server (lighttpd) の復旧
+setup_note.md の通りに lighttpd をインストールし、`/etc/lighttpd` をリストアする。
+ただし証明書の準備ができていない場合は SSL 設定のせいでサーバが起動できなくなって
+しまうので、`lighttpd-disable-mod ssl` で一旦無効にする。
+
+サーバの再起動: `service lighttpd restart`
+
+
+### PHP 設定の復旧
+setup_note.md の通りに php-cgi をインストールする。
+`/etc/php` 以下をリストアする。
+デフォルトではアップロードサイズがかなり小さいため注意。
