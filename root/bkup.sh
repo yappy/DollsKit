@@ -6,11 +6,12 @@ set -ue -o pipefail
 workdir="/media/usbbkup"
 # backup source dir
 rsyncsrc="/"
-# backup destination dir
+# backup destination dir (archive source dir)
 rsyncdst="${workdir}/backup"
-# backup archive file path
+arsrc="${rsyncdst}"
+# archive file path
 ardst="${workdir}/bkup"`date +%Y%m%d_%H%M%S`".tar.bz2"
-# backup archive limit (days)
+# archive lifetime limit (days)
 arlimit="+30"
 
 # exclude
@@ -47,7 +48,7 @@ echo "Complete!"
 date
 
 echo "Archive to ${ardst} ..."
-tar -C $workdir -apcf $ardst $rsyncdst
+tar -C $arsrc -apcf $ardst .
 echo "Complete!"
 
 date
