@@ -6,10 +6,10 @@ use daemonize::Daemonize;
 const STDERR_FILE: &str = "./stderr.txt";
 const PID_FILE: &str = "./rshanghai.pid";
 
-/// Create an stderr redirect file, and do daemonize.
-/// If succeeded, the main process will exit successfully and
-/// the forked child process continues to run as a daemon process.
-/// If failed, the main process will exit(1).
+/// stderr をリダイレクトし、デーモン化する。
+/// stderr 用のファイルオープンに失敗したら exit(1) する。
+/// デーモン化に失敗したら exit(1) する。
+/// 成功した場合は元の親プロセスは正常終了し、子プロセスが以降の処理を続行する。
 fn daemon() {
     let stderr = File::create(STDERR_FILE);
     if let Err(e) = stderr {
