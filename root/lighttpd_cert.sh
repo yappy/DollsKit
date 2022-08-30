@@ -3,5 +3,5 @@
 # Replace <domain> and copy to:
 # /etc/cron.weekly/
 
-make -C /etc/letsencrypt/live/<domain>
-service lighttpd force-reload
+/usr/bin/make -C /etc/letsencrypt/live/<domain>
+/usr/sbin/service lighttpd force-reload
