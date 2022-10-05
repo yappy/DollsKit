@@ -1,14 +1,20 @@
-extern crate daemonize;
 extern crate getopts;
+#[macro_use]
+extern crate log;
+extern crate simplelog;
+extern crate daemonize;
 
-use getopts::Options;
 use std::env;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use getopts::Options;
+use simplelog::*;
 use daemonize::Daemonize;
 
 const STDOUT_FILE: &str = "./stdout.txt";
 const STDERR_FILE: &str = "./stderr.txt";
 const PID_FILE: &str = "./rshanghai.pid";
+const LOG_FILE: &str = "./rshanghai.log";
+
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
 /// ファイルオープンに失敗したら exit(1) する。
@@ -22,7 +28,6 @@ fn daemon() {
             std::process::exit(1);
         }
     };
-
     let stderr = match File::create(STDERR_FILE) {
         Ok(f) => f,
         Err(e) => {
@@ -44,6 +49,38 @@ fn daemon() {
         eprintln!("Daemonize error: {}", e);
         std::process::exit(1);
     }
+}
+
+/// ロギングシステムを有効化する。
+fn init_log(is_daemon: bool) {
+    let config = ConfigBuilder::new()
+        .set_time_format_custom(format_description!("[year]-[month]-[day] [hour]:[minute]:[second]"))
+        .build();
+    let file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(LOG_FILE)
+        .unwrap();
+
+    // Off, Error, Warn, Info, Debug, Trace
+    let loggers: Vec<Box<dyn SharedLogger>> = if is_daemon {
+        vec![
+            WriteLogger::new(LevelFilter::Info, config.clone(), file),
+        ]
+    }
+    else {
+        vec![
+            TermLogger::new(LevelFilter::Trace, config.clone(), TerminalMode::Stdout, ColorChoice::Never),
+            WriteLogger::new(LevelFilter::Info, config.clone(), file),
+        ]
+    };
+    CombinedLogger::init(loggers).unwrap();
+
+    error!("Error test");
+    warn!("Warn test");
+    info!("Info test");
+    debug!("Debug test");
+    trace!("Trace test");
 }
 
 fn print_help(program: &str, opts: Options) {
@@ -75,9 +112,9 @@ fn main() {
 
     if matches.opt_present("d") {
         daemon();
-        println!("Daemon mode");
+        init_log(true);
     }
     else {
-        println!("Not daemon mode");
+        init_log(false);
     }
 }
