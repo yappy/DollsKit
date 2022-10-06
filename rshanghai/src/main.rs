@@ -1,3 +1,5 @@
+mod sys;
+
 extern crate getopts;
 #[macro_use]
 extern crate log;
@@ -117,4 +119,6 @@ fn main() {
     else {
         init_log(false);
     }
+
+    sys::config::init();
 }
