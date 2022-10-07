@@ -66,13 +66,13 @@ fn init_log(is_daemon: bool) {
     // filter = Off, Error, Warn, Info, Debug, Trace
     let loggers: Vec<Box<dyn SharedLogger>> = if is_daemon {
         vec![
-            WriteLogger::new(LevelFilter::Info, config.clone(), file),
+            WriteLogger::new(LevelFilter::Info, config, file),
         ]
     }
     else {
         vec![
             TermLogger::new(LevelFilter::Trace, config.clone(), TerminalMode::Stdout, ColorChoice::Never),
-            WriteLogger::new(LevelFilter::Info, config.clone(), file),
+            WriteLogger::new(LevelFilter::Info, config, file),
         ]
     };
     CombinedLogger::init(loggers).unwrap();
@@ -88,7 +88,8 @@ fn init_log(is_daemon: bool) {
 /// コマンドラインとデーモン化の後に入る。
 fn system_main() {
     // TODO
-    sys::config::init_and_load("{}", "{}");
+    sys::config::init_and_load("{}", "{}")
+        .expect("Json parse error");
 }
 
 fn print_help(program: &str, opts: Options) {
@@ -114,7 +115,7 @@ fn main() {
 
     // --help がある場合は出力して終了
     if matches.opt_present("h") {
-        print_help(&program, opts);
+        print_help(program, opts);
         std::process::exit(0);
     }
 
