@@ -1,8 +1,7 @@
 mod sys;
 
 extern crate getopts;
-#[macro_use]
-extern crate log;
+#[macro_use] extern crate log;
 extern crate simplelog;
 extern crate daemonize;
 
@@ -64,7 +63,7 @@ fn init_log(is_daemon: bool) {
         .open(LOG_FILE)
         .unwrap();
 
-    // Off, Error, Warn, Info, Debug, Trace
+    // filter = Off, Error, Warn, Info, Debug, Trace
     let loggers: Vec<Box<dyn SharedLogger>> = if is_daemon {
         vec![
             WriteLogger::new(LevelFilter::Info, config.clone(), file),
@@ -83,6 +82,13 @@ fn init_log(is_daemon: bool) {
     info!("Info test");
     debug!("Debug test");
     trace!("Trace test");
+}
+
+/// システムメイン処理。
+/// コマンドラインとデーモン化の後に入る。
+fn system_main() {
+    // TODO
+    sys::config::init_and_load("{}", "{}");
 }
 
 fn print_help(program: &str, opts: Options) {
@@ -120,5 +126,5 @@ fn main() {
         init_log(false);
     }
 
-    sys::config::init();
+    system_main();
 }
