@@ -89,7 +89,7 @@ fn search_all(keys: &[&str]) -> serde_json::Value {
 
 /// 真偽値設定データを取得する。
 /// 見つからない場合や真偽値でない場合は None を返す。
-pub fn get_boolean(keys: &[&str]) -> Option<bool> {
+pub fn get_bool(keys: &[&str]) -> Option<bool> {
     search_all(keys).as_bool()
 }
 
@@ -127,7 +127,6 @@ mod tests {
     fn search() {
         let main = r#"{"a": {"b": {"c": "main"}}}"#;
         let def = r#"{"a": {"b": {"d": "default"}}}"#;
-
         init_and_load(def, main).unwrap();
 
         let v = get_string(&["a", "b", "c"]);
@@ -142,10 +141,24 @@ mod tests {
 
     #[test]
     #[serial(config)]
+    fn bool_string() {
+        let main = r#"{"root": {"bool1": false, "bool2": true, "str": "Hello"}}"#;
+        let def = "{}";
+        init_and_load(def, main).unwrap();
+
+        let v = get_bool(&["root", "bool1"]);
+        assert!(v.unwrap() == false);
+        let v = get_bool(&["root", "bool2"]);
+        assert!(v.unwrap() == true);
+        let v = get_string(&["root", "str"]);
+        assert!(v.unwrap() == "Hello");
+    }
+
+    #[test]
+    #[serial(config)]
     fn i64() {
         let main = r#"{"i64": {"min": -9223372036854775808, "max": 9223372036854775807}}"#;
         let def = "{}";
-
         init_and_load(def, main).unwrap();
 
         let v = get_i64(&["i64", "min"], ..);
@@ -164,7 +177,6 @@ mod tests {
     fn u64() {
         let main = r#"{"u64": {"min": 0, "max": 18446744073709551615}}"#;
         let def = "{}";
-
         init_and_load(def, main).unwrap();
 
         let v = get_u64(&["u64", "min"], ..);
