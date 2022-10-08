@@ -26,20 +26,24 @@ static CONFIG: OnceCell<RwLock<ConfigData>> = OnceCell::new();
 /// 設定データを json 文字列からロードして設定データシステムを初期化する。
 pub fn init_and_load(def_json: &str, main_json: &str) -> Result<(), String>
 {
+    // parse
+    let vdef = match serde_json::from_str(def_json) {
+        Ok(json) => json,
+        Err(e) => return Err(format!("{}", e)),
+    };
+    let vmain = match serde_json::from_str(main_json) {
+        Ok(json) => json,
+        Err(e) => return Err(format!("{}", e)),
+    };
+
     // lazy inialize + wlock
     let mut config = CONFIG
         .get_or_init(|| RwLock::new(Default::default()))
         .write()
         .unwrap();
 
-    config.def = match serde_json::from_str(def_json) {
-        Ok(json) => json,
-        Err(e) => return Err(format!("{}", e)),
-    };
-    config.main = match serde_json::from_str(main_json) {
-        Ok(json) => json,
-        Err(e) => return Err(format!("{}", e)),
-    };
+    config.def = vdef;
+    config.main = vmain;
 
     Ok(())
 }
@@ -124,8 +128,7 @@ mod tests {
         let main = r#"{"a": {"b": {"c": "main"}}}"#;
         let def = r#"{"a": {"b": {"d": "default"}}}"#;
 
-        let result = init_and_load(def, main);
-        assert!(result.is_ok());
+        init_and_load(def, main).unwrap();
 
         let v = get_string(&["a", "b", "c"]);
         assert!(v.unwrap() == "main");
@@ -143,8 +146,7 @@ mod tests {
         let main = r#"{"i64": {"min": -9223372036854775808, "max": 9223372036854775807}}"#;
         let def = "{}";
 
-        let result = init_and_load(def, main);
-        assert!(result.is_ok());
+        init_and_load(def, main).unwrap();
 
         let v = get_i64(&["i64", "min"], ..);
         assert_eq!(v.unwrap(), i64::MIN);
@@ -163,8 +165,7 @@ mod tests {
         let main = r#"{"u64": {"min": 0, "max": 18446744073709551615}}"#;
         let def = "{}";
 
-        let result = init_and_load(def, main);
-        assert!(result.is_ok());
+        init_and_load(def, main).unwrap();
 
         let v = get_u64(&["u64", "min"], ..);
         assert_eq!(v.unwrap(), u64::MIN);
@@ -175,5 +176,12 @@ mod tests {
         assert!(v.is_none());
         let v = get_u64(&["u64", "max"], ..=u64::MAX-1);
         assert!(v.is_none());
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_error() {
+        let jsonstr = "{1: 2";
+        init_and_load(jsonstr, jsonstr).unwrap();
     }
 }
