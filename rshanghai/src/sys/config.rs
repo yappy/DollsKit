@@ -156,4 +156,24 @@ mod tests {
         let v = get_i64(&["i64", "max"], ..=i64::MAX-1);
         assert!(v.is_none());
     }
+
+    #[test]
+    #[serial(config)]
+    fn u64() {
+        let main = r#"{"u64": {"min": 0, "max": 18446744073709551615}}"#;
+        let def = "{}";
+
+        let result = init_and_load(def, main);
+        assert!(result.is_ok());
+
+        let v = get_u64(&["u64", "min"], ..);
+        assert_eq!(v.unwrap(), u64::MIN);
+        let v = get_u64(&["u64", "max"], ..);
+        assert_eq!(v.unwrap(), u64::MAX);
+
+        let v = get_u64(&["u64", "min"], u64::MIN+1..);
+        assert!(v.is_none());
+        let v = get_u64(&["u64", "max"], ..=u64::MAX-1);
+        assert!(v.is_none());
+    }
 }
