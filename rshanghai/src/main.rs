@@ -87,9 +87,15 @@ fn init_log(is_daemon: bool) {
 /// システムメイン処理。
 /// コマンドラインとデーモン化の後に入る。
 fn system_main() {
-    // TODO
     sys::config::init_and_load("{}", "{}")
         .expect("Json parse error");
+
+    {
+        let ts = sys::taskserver::TaskServer::new();
+        ts.register_oneshot_task("testtask", async { tokio::time::sleep(std::time::Duration::from_secs(3)).await; });
+        ts.run();
+    }
+    info!("task server dropped")
 }
 
 fn print_help(program: &str, opts: Options) {
