@@ -1,8 +1,40 @@
-use std::future::Future;
+use std::{future::Future};
+use std::sync::Arc;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 
+type ShutdownTx = UnboundedSender<()>;
+type ShutdownRx = UnboundedReceiver<()>;
+
+struct InternalControl {
+    rt: tokio::runtime::Runtime,
+    shutdown_tx: ShutdownTx,
+    shutdown_rx: ShutdownRx,
+}
+
+#[derive(Clone)]
+pub struct Control {
+    internal: Arc<InternalControl>,
+}
 
 pub struct TaskServer {
-    rt: tokio::runtime::Runtime,
+    ctrl: Control,
+}
+
+impl Control {
+    pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
+    where
+        F: FnOnce(Control) -> T,
+        T: Future + Send + 'static
+    {
+        let name = name.to_string();
+        let ctrl = self.clone();
+        let future = f(ctrl);
+        self.internal.rt.spawn(async move {
+            info!("[{}] start", name);
+            future.await;
+            info!("[{}] finish", name);
+        });
+    }
 }
 
 impl TaskServer {
@@ -11,33 +43,27 @@ impl TaskServer {
             .enable_all()
             .build()
             .unwrap();
+        let (shutdown_tx, shutdown_rx) = unbounded_channel();
 
-        TaskServer { rt }
+        let internal = InternalControl { rt, shutdown_tx, shutdown_rx };
+        TaskServer { ctrl: Control { internal: Arc::new(internal) } }
     }
 
-    pub fn register_oneshot_task<F>(&self, name: &str, /*TODO: delay,*/f: F)
-        where F: Future + Send + 'static
+    pub fn spawn_oneshot_task<F, Fut>(&self, name: &str, f: F)
+    where
+        F: FnOnce(Control) -> Fut,
+        Fut: Future + Send + 'static
     {
-        let name = name.to_string();
-        self.rt.spawn(async move {
-            info!("[{}] start", name);
-            f.await;
-            info!("[{}] finish", name);
+        self.ctrl.spawn_oneshot_task(name, f);
+    }
+
+    pub fn wait_for_shutdown(&self)
+    {
+        self.ctrl.internal.rt.block_on(async {
+            loop {
+                // TODO: wait for shutdown
+            }
         });
     }
 
-    pub fn register_periodic_task<F>(&self, name: &str, f: F)
-        where F: FnOnce() + Send + 'static
-    {
-
-    }
-
-    pub fn run(&self) {
-        self.rt.block_on(self.main());
-    }
-
-    /// tokio 管理下のメインスレッド。
-    async fn main(&self) {
-        info!("TaskServer started");
-    }
 }

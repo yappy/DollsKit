@@ -1,15 +1,19 @@
 mod sys;
+mod sysmod;
 
 extern crate getopts;
 #[macro_use] extern crate log;
 extern crate simplelog;
 extern crate daemonize;
+extern crate chrono;
 
 use std::env;
 use std::fs::{File, OpenOptions};
 use getopts::Options;
 use simplelog::*;
 use daemonize::Daemonize;
+use sys::taskserver::{TaskServer, Control};
+
 
 const STDOUT_FILE: &str = "./stdout.txt";
 const STDERR_FILE: &str = "./stderr.txt";
@@ -84,6 +88,15 @@ fn init_log(is_daemon: bool) {
     trace!("Trace test");
 }
 
+async fn test_task(ctrl: Control) {
+    info!("task1");
+    ctrl.spawn_oneshot_task("task1-1", test_task_sub);
+}
+
+async fn test_task_sub(_ctrl: Control) {
+    info!("task1-1");
+}
+
 /// システムメイン処理。
 /// コマンドラインとデーモン化の後に入る。
 fn system_main() {
@@ -91,9 +104,9 @@ fn system_main() {
         .expect("Json parse error");
 
     {
-        let ts = sys::taskserver::TaskServer::new();
-        ts.register_oneshot_task("testtask", async { tokio::time::sleep(std::time::Duration::from_secs(3)).await; });
-        ts.run();
+        let ts = TaskServer::new();
+        ts.spawn_oneshot_task("task1", test_task);
+        ts.wait_for_shutdown();
     }
     info!("task server dropped")
 }
