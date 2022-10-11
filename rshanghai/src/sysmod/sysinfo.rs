@@ -1,5 +1,4 @@
 use std::sync::RwLock;
-
 use chrono::prelude::*;
 
 pub struct Info {

@@ -1,3 +1,5 @@
+//! 非同期タスクを管理する。
+
 use std::{future::Future};
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
@@ -5,17 +7,22 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 type ShutdownTx = UnboundedSender<()>;
 type ShutdownRx = UnboundedReceiver<()>;
 
+/// [Control] の [Arc] 内データ。
 struct InternalControl {
     rt: tokio::runtime::Runtime,
     shutdown_tx: ShutdownTx,
     shutdown_rx: ShutdownRx,
 }
 
+/// [Arc] により [TaskServer] と全タスク間で共有されるコントロールハンドル。
+///
+/// [Clone] 可能で、複製すると [Arc] がインクリメントされる。
 #[derive(Clone)]
 pub struct Control {
     internal: Arc<InternalControl>,
 }
 
+/// タスクサーバ本体。
 pub struct TaskServer {
     ctrl: Control,
 }
@@ -38,6 +45,7 @@ impl Control {
 }
 
 impl TaskServer {
+    /// タスクサーバを初期化して開始する。
     pub fn new() -> Self {
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()

@@ -1,3 +1,5 @@
+//! Rust 版管理人形
+
 mod sys;
 mod sysmod;
 
@@ -15,13 +17,18 @@ use daemonize::Daemonize;
 use sys::taskserver::{TaskServer, Control};
 
 
+/// デーモン化の際に指定する stdout のリダイレクト先。
 const STDOUT_FILE: &str = "./stdout.txt";
+/// デーモン化の際に指定する stderr のリダイレクト先。
 const STDERR_FILE: &str = "./stderr.txt";
+/// デーモン化の際に指定する pid ファイルパス。
 const PID_FILE: &str = "./rshanghai.pid";
+/// ログのファイル出力先。
 const LOG_FILE: &str = "./rshanghai.log";
 
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
+///
 /// ファイルオープンに失敗したら exit(1) する。
 /// デーモン化に失敗したら exit(1) する。
 /// 成功した場合は元の親プロセスは正常終了し、子プロセスが以降の処理を続行する。
@@ -57,6 +64,14 @@ fn daemon() {
 }
 
 /// ロギングシステムを有効化する。
+///
+/// デーモンならファイルへの書き出しのみ、
+/// そうでないならファイルと stdout へ書き出す。
+///
+/// ログレベルは Error, Warn, Info, Debug, Trace の5段階である。
+/// ファイルへは Info 以上、stdout へは Trace 以上のログが出力される。
+///
+/// * `is_daemon` - デーモンかどうか。
 fn init_log(is_daemon: bool) {
     let config = ConfigBuilder::new()
         .set_time_format_custom(format_description!("[year]-[month]-[day] [hour]:[minute]:[second]"))
@@ -98,7 +113,9 @@ async fn test_task_sub(_ctrl: Control) {
 }
 
 /// システムメイン処理。
-/// コマンドラインとデーモン化の後に入る。
+/// コマンドラインとデーモン化、ログの初期化の後に入る。
+///
+/// システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 fn system_main() {
     sys::config::init_and_load("{}", "{}")
         .expect("Json parse error");
@@ -111,11 +128,18 @@ fn system_main() {
     info!("task server dropped")
 }
 
+/// コマンドラインのヘルプを表示する。
+///
+/// * `program` - プログラム名 (argv\[0\])。
+/// * `opts` - パーサオブジェクト。
 fn print_help(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
+/// エントリポイント。
+///
+/// コマンドラインとデーモン化、ログの初期化処理をしたのち、[system_main] を呼ぶ。
 fn main() {
     // コマンドライン引数のパース
     let args: Vec<String> = env::args().collect();

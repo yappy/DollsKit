@@ -1,3 +1,5 @@
+//! 設定データの管理。
+
 use once_cell::sync::OnceCell;
 use std::ops::RangeBounds;
 use std::sync::RwLock;
@@ -7,11 +9,13 @@ use serde_json::json;
 /// ユーザによる設定と、見つからなかった場合に使うデフォルト値からなる。
 /// それぞれは Json object によるツリー構造。
 struct ConfigData {
+    /// デフォルト値。[ConfigData::main] から見つからなかった場合、こちらから検索される。
     def:  serde_json::Value,
+    /// メインの設定データ。
     main: serde_json::Value,
 }
 
-// default = empty Object (map)
+/// default value = empty json Object (map)
 impl Default for ConfigData {
     fn default() -> Self {
         Self { def: json!({}), main: json!({}) }
@@ -19,11 +23,18 @@ impl Default for ConfigData {
 }
 
 /// 設定データ(グローバル変数)。
+///
 /// 一応スレッドセーフとするが、初期化時に一度だけ書き換え、
 /// その後は read only アクセスしかしないので RwLock とする。
 static CONFIG: OnceCell<RwLock<ConfigData>> = OnceCell::new();
 
 /// 設定データを json 文字列からロードして設定データシステムを初期化する。
+///
+/// 成功した場合、何も返さない。
+/// json のパースに失敗した場合、その詳細を示す文字列を返す。
+///
+/// * `def_json` - デフォルト値の json ソース。
+/// * `main_json` - メイン値の json ソース。
 pub fn init_and_load(def_json: &str, main_json: &str) -> Result<(), String>
 {
     // parse
@@ -48,10 +59,14 @@ pub fn init_and_load(def_json: &str, main_json: &str) -> Result<(), String>
     Ok(())
 }
 
-/// Object tree を keys: 文字列の配列 (スライス) で検索する。
+/// json Object tree を文字列キーの配列で検索する。
+///
+/// 検索に成功した場合、その値をコピーして返す。
 /// 見つからなかった場合、および
 /// 数値, 真偽値, 文字列, 配列 以外が見つかった場合は json - null を返す。
-/// グローバル構造内のデータを返す場合、コピーを返す。
+///
+/// * `root` - 検索開始する json オブジェクト。
+/// * `keys` - 文字列キーの配列(スライス)。
 fn search(root: &serde_json::Value, keys: &[&str]) -> serde_json::Value {
     let null_value = serde_json::Value::Null;
 
@@ -71,7 +86,7 @@ fn search(root: &serde_json::Value, keys: &[&str]) -> serde_json::Value {
     }
 }
 
-/// main -> def の順番で検索する。
+/// [ConfigData::main] -> [ConfigData::def] の順番で [search] により検索する。
 fn search_all(keys: &[&str]) -> serde_json::Value {
     // rlock
     let config = CONFIG
