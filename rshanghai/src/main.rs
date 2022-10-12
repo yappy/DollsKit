@@ -11,6 +11,7 @@ extern crate chrono;
 
 use std::env;
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use getopts::Options;
 use simplelog::*;
 use daemonize::Daemonize;
@@ -18,14 +19,19 @@ use sys::taskserver::{TaskServer, Control};
 
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
-const STDOUT_FILE: &str = "./stdout.txt";
+const STDOUT_FILE: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
-const STDERR_FILE: &str = "./stderr.txt";
+const STDERR_FILE: &str = "stderr.txt";
 /// デーモン化の際に指定する pid ファイルパス。
-const PID_FILE: &str = "./rshanghai.pid";
+const PID_FILE: &str = "rshanghai.pid";
 /// ログのファイル出力先。
-const LOG_FILE: &str = "./rshanghai.log";
+const LOG_FILE: &str = "rshanghai.log";
 
+/// デフォルトの設定データ(json source)。
+/// [include_str!] でバイナリに含める。
+const DEF_CONFIG_JSON: &str = include_str!("res/config_default.json");
+const CONFIG_FILE: &str = "config.json";
+const CONFIG_DEF_FILE: &str = "config_default.json";
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
 ///
@@ -95,12 +101,6 @@ fn init_log(is_daemon: bool) {
         ]
     };
     CombinedLogger::init(loggers).unwrap();
-
-    error!("Error test");
-    warn!("Warn test");
-    info!("Info test");
-    debug!("Debug test");
-    trace!("Trace test");
 }
 
 async fn test_task(ctrl: Control) {
@@ -112,14 +112,46 @@ async fn test_task_sub(_ctrl: Control) {
     info!("task1-1");
 }
 
+/// 設定データをロードする。
+fn load_config() -> Result<(), String> {
+    {
+        info!("Writing default config to {}", CONFIG_DEF_FILE);
+        let mut f = match File::create(CONFIG_DEF_FILE) {
+            Ok(f) => f,
+            Err(e) => {
+                error!("Writing {} failed: {}", CONFIG_DEF_FILE, e);
+                return Err(e.to_string())
+            },
+        };
+        f.write_all(DEF_CONFIG_JSON.as_bytes()).unwrap();
+        info!("OK: written to {}", CONFIG_DEF_FILE);
+        // close
+    }
+    let json_str;
+    {
+        info!("Loading config: {}", CONFIG_FILE);
+        json_str = match std::fs::read_to_string(CONFIG_FILE) {
+            Ok(str) => str,
+            Err(e) => {
+                error!("Loading {} failed: {}", CONFIG_FILE, e);
+                info!("HINT: Create {} and try again", CONFIG_FILE);
+                return Err(e.to_string())
+            }
+        };
+        info!("OK: {} loaded", CONFIG_FILE);
+    }
+    sys::config::init_and_load(DEF_CONFIG_JSON, &json_str)?;
+
+    Ok(())
+}
+
 /// システムメイン処理。
 /// コマンドラインとデーモン化、ログの初期化の後に入る。
 ///
-/// システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
+/// 設定データをロードする。
+/// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 fn system_main() {
-    sys::config::init_and_load("{}", "{}")
-        .expect("Json parse error");
-
+    load_config().expect("Load config failed");
     {
         let ts = TaskServer::new();
         ts.spawn_oneshot_task("task1", test_task);
