@@ -16,6 +16,7 @@ use getopts::Options;
 use simplelog::*;
 use daemonize::Daemonize;
 use sys::taskserver::{TaskServer, Control};
+use sysmod::SystemModules;
 
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
@@ -153,9 +154,12 @@ fn load_config() -> Result<(), String> {
 fn system_main() {
     load_config().expect("Load config failed");
     {
-        let ts = TaskServer::new();
+        let sysmods = SystemModules::new();
+        let ts = TaskServer::new(sysmods);
+
+        ts.sysmod_start();
         ts.spawn_oneshot_task("task1", test_task);
-        ts.wait_for_shutdown();
+        ts.run();
     }
     info!("task server dropped")
 }
