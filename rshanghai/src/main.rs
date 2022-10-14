@@ -13,8 +13,9 @@ extern crate simplelog;
 extern crate daemonize;
 extern crate chrono;
 
-use std::env;
+use std::{env, fs};
 use std::fs::{File, OpenOptions};
+use std::os::unix::fs::OpenOptionsExt;
 use std::io::Write;
 use getopts::Options;
 use simplelog::*;
@@ -120,8 +121,19 @@ async fn test_task_sub(_ctrl: Control) {
 /// 設定データをロードする。
 fn load_config() -> Result<(), String> {
     {
+        info!("Remove {}", CONFIG_DEF_FILE);
+        if let Err(e) = fs::remove_file(CONFIG_DEF_FILE) {
+            warn!("Removing {} failed (the first time execution?): {}",
+                CONFIG_DEF_FILE, e);
+        }
+
         info!("Writing default config to {}", CONFIG_DEF_FILE);
-        let mut f = match File::create(CONFIG_DEF_FILE) {
+        let f = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(CONFIG_DEF_FILE);
+        let mut f = match f {
             Ok(f) => f,
             Err(e) => {
                 error!("Writing {} failed: {}", CONFIG_DEF_FILE, e);
