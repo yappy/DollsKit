@@ -1,5 +1,10 @@
 {
 	"twitter": {
-		"enabled": false
+		"enabled"			: false,
+		"fake_tweet"		: true,
+		"consumer_key"		: "",
+		"consumer_secret"	: "",
+		"access_token"		: "",
+		"access_secret"		: ""
 	}
 }

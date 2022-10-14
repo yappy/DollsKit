@@ -4,7 +4,7 @@ use super::SystemModule;
 
 pub struct Twitter {
     enabled: bool,
-    fake: Option<bool>,
+    fake_tweet: Option<bool>,
     consumer_key   : Option<String>,
     consumer_secret: Option<String>,
     access_token   : Option<String>,
@@ -24,9 +24,8 @@ impl Twitter {
         else {
             info!("[twitter] disabled");
         }
-        let fake = Some(true);
 
-        let (fake,
+        let (fake_tweet,
             consumer_key, consumer_secret,
             access_token, access_secret)
         = if enabled {
@@ -48,19 +47,24 @@ impl Twitter {
         };
 
         Twitter {
-            enabled, fake,
+            enabled, fake_tweet,
             consumer_key, consumer_secret, access_token, access_secret
         }
     }
+
+    async fn twitter_task(&self, ctrl: &Control) {
+        info!("[twitter] normal task");
+    }
+
+    async fn twitter_task_entry(ctrl: Control) {
+        ctrl.sysmods().twitter.twitter_task(&ctrl).await;
+    }
+
 }
 
 impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
-        ctrl.spawn_oneshot_task("twitter", twitter_task);
+        ctrl.spawn_oneshot_task("twitter", Twitter::twitter_task_entry);
     }
-}
-
-async fn twitter_task(_ctrl: Control) {
-    info!("[twitter] normal task");
 }
