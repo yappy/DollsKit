@@ -165,8 +165,9 @@ fn load_config() -> Result<(), ()> {
         };
         let metadata = f.metadata().expect("Cannot get metadata");
         let permissions = metadata.permissions();
-        if permissions.mode() != 600 {
-            error!("Config file permission is not 600");
+        let masked = permissions.mode() & 0o777;
+        if masked != 0o600 {
+            error!("Config file permission is not 600: {:03o}", permissions.mode());
             return Err(());
         }
         if let Err(e) = f.read_to_string(&mut json_str) {
