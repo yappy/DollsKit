@@ -13,10 +13,10 @@ extern crate simplelog;
 extern crate daemonize;
 extern crate chrono;
 
-use std::{env, fs};
-use std::fs::{File, OpenOptions};
-use std::os::unix::fs::OpenOptionsExt;
-use std::io::Write;
+use std::env;
+use std::fs::{remove_file, File, OpenOptions};
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::io::{Write, Read};
 use getopts::Options;
 use simplelog::*;
 use daemonize::Daemonize;
@@ -119,16 +119,18 @@ async fn test_task_sub(_ctrl: Control) {
 }
 
 /// 設定データをロードする。
-fn load_config() -> Result<(), String> {
+fn load_config() -> Result<(), ()> {
     {
+        // デフォルト設定ファイルを削除する
         info!("Remove {}", CONFIG_DEF_FILE);
-        if let Err(e) = fs::remove_file(CONFIG_DEF_FILE) {
+        if let Err(e) = remove_file(CONFIG_DEF_FILE) {
             warn!("Removing {} failed (the first time execution?): {}",
                 CONFIG_DEF_FILE, e);
         }
-
+        // デフォルト設定を書き出す
+        // 600 でアトミックに必ず新規作成する、失敗したらエラー
         info!("Writing default config to {}", CONFIG_DEF_FILE);
-        let f = fs::OpenOptions::new()
+        let f = OpenOptions::new()
             .write(true)
             .create_new(true)
             .mode(0o600)
@@ -137,27 +139,50 @@ fn load_config() -> Result<(), String> {
             Ok(f) => f,
             Err(e) => {
                 error!("Writing {} failed: {}", CONFIG_DEF_FILE, e);
-                return Err(e.to_string())
+                return Err(())
             },
         };
         f.write_all(DEF_CONFIG_JSON.as_bytes()).unwrap();
         info!("OK: written to {}", CONFIG_DEF_FILE);
         // close
     }
-    let json_str;
+
+    let mut json_str = String::new();
     {
+        // 設定ファイルを読む
+        // open 後パーミッションを確認し、危険ならエラーとする
         info!("Loading config: {}", CONFIG_FILE);
-        json_str = match std::fs::read_to_string(CONFIG_FILE) {
-            Ok(str) => str,
+        let f = OpenOptions::new()
+            .read(true)
+            .open(CONFIG_FILE);
+        let mut f = match f {
+            Ok(f) => f,
             Err(e) => {
-                error!("Loading {} failed: {}", CONFIG_FILE, e);
+                error!("Opening {} failed: {}", CONFIG_FILE, e);
                 info!("HINT: Create {} and try again", CONFIG_FILE);
-                return Err(e.to_string())
-            }
+                return Err(())
+            },
         };
+        let metadata = f.metadata().expect("Cannot get metadata");
+        let permissions = metadata.permissions();
+        if permissions.mode() != 600 {
+            error!("Config file permission is not 600");
+            return Err(());
+        }
+        if let Err(e) = f.read_to_string(&mut json_str) {
+            error!("Read error: {}", e.to_string());
+            return Err(());
+        }
         info!("OK: {} loaded", CONFIG_FILE);
+        // close
     }
-    sys::config::init_and_load(DEF_CONFIG_JSON, &json_str)?;
+    // json パースして設定システムを初期化
+    if let Err(msg) = sys::config::init_and_load(
+        DEF_CONFIG_JSON, &json_str)
+    {
+        error!("Config load failed: {}", msg);
+        return Err(());
+    }
 
     Ok(())
 }
