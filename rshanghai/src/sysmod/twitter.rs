@@ -68,3 +68,15 @@ impl SystemModule for Twitter {
         ctrl.spawn_oneshot_task("twitter", Twitter::twitter_task_entry);
     }
 }
+
+/*
+// Twitter API 1.1
+const  URL_ACCOUNT_VERIFY_CREDENTIALS: &str =
+    "https://api.twitter.com/1.1/account/verify_credentials.json";
+const URL_STATUSES_UPDATE: &str =
+    "https://api.twitter.com/1.1/statuses/update.json";
+const URL_STATUSES_HOME_TIMELINE: &str =
+    "https://api.twitter.com/1.1/statuses/home_timeline.json";
+const URL_STATUSES_USER_TIMELINE: &str =
+    "https://api.twitter.com/1.1/statuses/user_timeline.json";
+*/
