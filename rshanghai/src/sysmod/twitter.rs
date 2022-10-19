@@ -80,3 +80,7 @@ const URL_STATUSES_HOME_TIMELINE: &str =
 const URL_STATUSES_USER_TIMELINE: &str =
     "https://api.twitter.com/1.1/statuses/user_timeline.json";
 */
+
+// Twitter API v2
+const URL_USERS_BY_USERNAME: &str =
+    "https://api.twitter.com/2/users/by/username/";
