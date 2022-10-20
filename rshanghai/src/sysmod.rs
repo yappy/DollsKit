@@ -8,7 +8,7 @@ use self::{sysinfo::SystemInfo, twitter::Twitter};
 use std::sync::Arc;
 
 trait SystemModule : Sync + Send {
-    /// [SystemModule] の初期化時には [TaskServer] がまだ存在しないので
+    /// [SystemModule] の初期化時には [crate::sys::taskserver::TaskServer] がまだ存在しないので
     /// タスクの登録はこのタイミングまで遅延させる。
     fn on_start(&self, _ctrl: &Control) {}
 }
