@@ -34,8 +34,10 @@ rts (Rust Language Server) は廃止されたので非推奨。
 いわゆる静的解析ツール。
 ```
 $ rustup component add clippy
-$ cargo clippy
+$ cargo clippy --no-deps
 ```
+
+`--no-deps` をつけないと、全ての依存先に対してチェックが働き遅い。
 
 ## doc
 ```
