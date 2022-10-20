@@ -1,7 +1,21 @@
+use percent_encoding::{utf8_percent_encode, AsciiSet};
 use sha1::Sha1;
 use hmac::{SimpleHmac, Mac, digest::CtOutput};
 
-type HmacSha1 = SimpleHmac<Sha1>;
+/// [percent_encode] で変換する文字セット。
+///
+///  curl_easy_escape() と同じ。
+const FRAGMENT: &AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'.')
+    .remove(b'_')
+    .remove(b'~');
+
+pub fn percent_encode(input: &str) -> String {
+    utf8_percent_encode(input, FRAGMENT).to_string()
+}
+
+pub type HmacSha1 = SimpleHmac<Sha1>;
 
 /// HMAC SHA1 を計算する。
 ///
@@ -20,6 +34,14 @@ pub fn hmac_sha1(key: &[u8], data: &[u8]) -> CtOutput<HmacSha1> {
 mod tests {
     use super::*;
     use hex_literal::hex;
+
+    #[test]
+    fn percent_encode_twitter_sample() {
+        let str = "Hello Ladies + Gentlemen, a signed OAuth request!";
+        let result = percent_encode(&str);
+        let expected = "Hello%20Ladies%20%2b%20Gentlemen%2c%20a%20signed%20OAuth%20request%21";
+        assert_eq!(result.to_ascii_lowercase(), expected.to_ascii_lowercase());
+    }
 
     #[test]
     fn hmac_sha1_rfc2202_1() {

@@ -870,6 +870,7 @@ dependencies = [
  "hmac",
  "log",
  "once_cell",
+ "percent-encoding",
  "reqwest",
  "serde_json",
  "serial_test",
