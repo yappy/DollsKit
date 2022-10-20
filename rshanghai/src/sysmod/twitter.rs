@@ -229,3 +229,39 @@ fn create_signature(
     // base64 encode したものを署名として "oauth_signature" に設定する
     base64::encode(result.into_bytes())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+    #[test]
+    fn tweitter_sample_signature() {
+        let method = "POST";
+        let url = "https://api.twitter.com/1.1/statuses/update.json";
+
+        let mut oauth_param = KeyValue::new();
+        oauth_param.insert("oauth_consumer_key".into(), "xvz1evFS4wEEPTGEFPHBog".into());
+        oauth_param.insert("oauth_nonce".into(), "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg".into());
+        oauth_param.insert("oauth_signature_method".into(), "HMAC-SHA1".into());
+        oauth_param.insert("oauth_timestamp".into(), "1318622958".into());
+        oauth_param.insert("oauth_token".into(), "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb".into());
+        oauth_param.insert("oauth_version".into(), "1.0".into());
+
+        let mut query_param = KeyValue::new();
+        query_param.insert("include_entities".into(), "true".into());
+
+        let mut body_param = KeyValue::new();
+        body_param.insert("status".into(), "Hello Ladies + Gentlemen, a signed OAuth request!".into());
+
+        // This is example in the Twitter API document
+        let consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw";
+        let token_secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE";
+
+        let result = create_signature(
+            method, url,
+            &oauth_param, &query_param, &body_param, consumer_secret, token_secret);
+
+        assert_eq!(result, "hCtSmYh+iHYCEqBWrE7C7hYmtUk=");
+    }
+}
