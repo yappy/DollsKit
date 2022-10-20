@@ -92,7 +92,7 @@ const URL_USERS_BY_USERNAME: &str =
 /// HTTP header や query を表すデータ構造。
 ///
 /// 署名時にソートを求められるのと、ハッシュテーブルだと最終的なリクエスト内での順番が
-/// 一意にならないのが微妙な気がするので二分探索木を使うことにする。
+/// 一意にならないのが微妙な気がするので B-Tree を使うことにする
 type KeyValue = BTreeMap<String, String>;
 
 /// https://developer.twitter.com/en/docs/authentication/oauth-1-0a/authorizing-a-request
