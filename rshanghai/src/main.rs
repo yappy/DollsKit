@@ -12,6 +12,8 @@ extern crate getopts;
 extern crate simplelog;
 extern crate daemonize;
 extern crate chrono;
+extern crate hmac;
+extern crate sha1;
 
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
