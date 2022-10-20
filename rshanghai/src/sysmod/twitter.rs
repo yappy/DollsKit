@@ -189,11 +189,11 @@ fn create_signature(
             is_first = false;
         }
         else {
-            parameter_string.push_str(&k);
-            parameter_string.push('=');
-            parameter_string.push_str(&v);
             parameter_string.push('&');
         }
+        parameter_string.push_str(&k);
+        parameter_string.push('=');
+        parameter_string.push_str(&v);
     }
 
     // "Creating the signature base string"
@@ -240,6 +240,8 @@ mod tests {
         let method = "POST";
         let url = "https://api.twitter.com/1.1/statuses/update.json";
 
+        // This is just an example in the Twitter API document
+        // Not a real secret key
         let mut oauth_param = KeyValue::new();
         oauth_param.insert("oauth_consumer_key".into(), "xvz1evFS4wEEPTGEFPHBog".into());
         oauth_param.insert("oauth_nonce".into(), "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg".into());
@@ -254,7 +256,8 @@ mod tests {
         let mut body_param = KeyValue::new();
         body_param.insert("status".into(), "Hello Ladies + Gentlemen, a signed OAuth request!".into());
 
-        // This is example in the Twitter API document
+        // This is just an example in the Twitter API document
+        // Not a real secret key
         let consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw";
         let token_secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE";
 
