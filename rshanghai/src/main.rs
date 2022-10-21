@@ -7,20 +7,15 @@
 mod sys;
 mod sysmod;
 
-extern crate getopts;
-#[macro_use] extern crate log;
-extern crate simplelog;
-extern crate daemonize;
-extern crate chrono;
-extern crate hmac;
-extern crate sha1;
-
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::io::{Write, Read};
 use getopts::Options;
-use simplelog::*;
+use simplelog::{ConfigBuilder, CombinedLogger, SharedLogger, WriteLogger, TermLogger};
+use simplelog::{TerminalMode, ColorChoice};
+use simplelog::format_description;
+use log::{error, warn, info, LevelFilter};
 use daemonize::Daemonize;
 use sys::taskserver::{TaskServer, Control};
 use sysmod::SystemModules;

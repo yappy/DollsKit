@@ -1,8 +1,9 @@
 //! 非同期タスクを管理する。
+use crate::sysmod::SystemModules;
 use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
-use crate::sysmod::SystemModules;
+use log::{error, info};
 
 type ShutdownTx = UnboundedSender<()>;
 type ShutdownRx = UnboundedReceiver<()>;
