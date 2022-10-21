@@ -105,10 +105,18 @@ const URL_USERS_BY_USERNAME: &str =
 /// HTTP header や query を表すデータ構造。
 ///
 /// 署名時にソートを求められるのと、ハッシュテーブルだと最終的なリクエスト内での順番が
-/// 一意にならないのが微妙な気がするので B-Tree を使うことにする
+/// 一意にならないため、Sorted Map として B-Tree を使うことにする
 type KeyValue = BTreeMap<String, String>;
 
-/// https://developer.twitter.com/en/docs/authentication/oauth-1-0a/authorizing-a-request
+
+/// OAuth 1.0a 認証のための KeyValue セットを生成する。
+///
+/// oauth_signature フィールドはこれらを含むデータを元に計算する必要があるので
+/// まだ設定しない。
+/// 乱数による nonce やタイムスタンプが含まれるため、呼び出すたびに結果は変わる。
+///
+/// 詳細:
+/// <https://developer.twitter.com/en/docs/authentication/oauth-1-0a/authorizing-a-request>
 fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     let mut param = KeyValue::new();
 
@@ -147,7 +155,15 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     param
 }
 
-/// https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
+/// HMAC-SHA1 署名を計算する。
+/// この結果を oauth_signature フィールドに設定する必要がある。
+///
+/// * oauth_param: HTTP header 内の Authorization: OAuth 関連フィールド。
+/// * query_param: URL 末尾の query。
+/// * body_param: HTTP request body にあるパラメータ (POST data)。
+///
+/// 詳細:
+/// <https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature>
 ///
 /// oauth_param, query_param, body_param 内でキーの重複があると panic する。
 fn create_signature(
