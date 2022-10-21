@@ -2,6 +2,7 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
+use chrono::NaiveTime;
 use log::info;
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -83,7 +84,14 @@ impl Twitter {
 impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
-        ctrl.spawn_oneshot_task("twitter", Twitter::twitter_task_entry);
+        let time_list = &[
+            NaiveTime::from_hms(3, 43, 0),
+            NaiveTime::from_hms(3, 44, 0),
+            NaiveTime::from_hms(3, 45, 0),
+            NaiveTime::from_hms(3, 46, 0),
+            NaiveTime::from_hms(3, 47, 0),
+        ];
+        ctrl.spawn_periodic_task("twitter", time_list, Twitter::twitter_task_entry);
     }
 }
 
