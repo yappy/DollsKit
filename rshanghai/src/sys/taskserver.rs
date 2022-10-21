@@ -1,9 +1,7 @@
 //! 非同期タスクを管理する。
-
-use std::{future::Future};
+use std::future::Future;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
-
 use crate::sysmod::SystemModules;
 
 type ShutdownTx = UnboundedSender<()>;
@@ -17,35 +15,54 @@ struct InternalControl {
     shutdown_rx: ShutdownRx,
 }
 
-/// [Arc] により [TaskServer] と全タスク間で共有されるコントロールハンドル。
+/// [Arc] により [TaskServer] と全非同期タスク間で共有されるコントロールハンドル。
 ///
 /// [Clone] 可能で、複製すると [Arc] がインクリメントされる。
 #[derive(Clone)]
 pub struct Control {
+    /// private で [InternalControl] への [Arc] を持つ。
     internal: Arc<InternalControl>,
 }
 
 /// タスクサーバ本体。
 pub struct TaskServer {
+    /// [TaskServer] も [Control] への参照を1つ持つ。
     ctrl: Control,
 }
 
 impl Control {
-    pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
+    /// 1回限りのタスクを生成して実行開始する。
+    ///
+    /// F: [Control] を引数に、T を返す関数。
+    /// T: Future<Output = Result<(), R> かつスレッド間移動可能。
+    /// R: [ToString::to_string()] 可能。
+    ///
+    /// つまり、F は [Control] を引数に、Result<(), R> を返す async function。
+    /// R は to_string() 可能な型。
+    pub fn spawn_oneshot_task<F, T, R>(&self, name: &str, f: F)
     where
         F: FnOnce(Control) -> T,
-        T: Future + Send + 'static
+        T: Future<Output = Result<(), R>> + Send + 'static,
+        R: ToString,
     {
+        // move するデータを準備する
         let name = name.to_string();
         let ctrl = self.clone();
         let future = f(ctrl);
+
         self.internal.rt.spawn(async move {
             info!("[{}] start", name);
-            future.await;
-            info!("[{}] finish", name);
+            let result = future.await;
+            if let Err(r) = result {
+                error!("[{}] finish (error): {}", name, r.to_string());
+            }
+            else {
+                info!("[{}] finish (success)", name);
+            }
         });
     }
 
+    /// [crate::sysmod::SystemModule] リストを取得する。
     pub fn sysmods(&self) -> &SystemModules {
         &self.internal.sysmods
     }
@@ -65,10 +82,11 @@ impl TaskServer {
         TaskServer { ctrl }
     }
 
-    pub fn spawn_oneshot_task<F, Fut>(&self, name: &str, f: F)
+    pub fn spawn_oneshot_task<F, T, R>(&self, name: &str, f: F)
     where
-        F: FnOnce(Control) -> Fut,
-        Fut: Future + Send + 'static
+        F: FnOnce(Control) -> T,
+        T: Future<Output = Result<(), R>> + Send + 'static,
+        R: ToString,
     {
         self.ctrl.spawn_oneshot_task(name, f);
     }

@@ -111,13 +111,15 @@ fn init_log(is_daemon: bool) {
     CombinedLogger::init(loggers).unwrap();
 }
 
-async fn test_task(ctrl: Control) {
+async fn test_task(ctrl: Control) -> Result<(), String> {
     info!("task1");
     ctrl.spawn_oneshot_task("task1-1", test_task_sub);
+    Ok(())
 }
 
-async fn test_task_sub(_ctrl: Control) {
+async fn test_task_sub(_ctrl: Control) -> Result<(), String> {
     info!("task1-1");
+    Ok(())
 }
 
 /// 設定データをロードする。

@@ -68,12 +68,13 @@ impl Twitter {
         }
     }
 
-    async fn twitter_task(&self, ctrl: &Control) {
+    async fn twitter_task(&self, ctrl: &Control) -> Result<(), String> {
         info!("[twitter] normal task");
+        Ok(())
     }
 
-    async fn twitter_task_entry(ctrl: Control) {
-        ctrl.sysmods().twitter.twitter_task(&ctrl).await;
+    async fn twitter_task_entry(ctrl: Control) -> Result<(), String> {
+        ctrl.sysmods().twitter.twitter_task(&ctrl).await
     }
 
 }
