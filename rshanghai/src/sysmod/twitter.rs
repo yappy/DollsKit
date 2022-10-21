@@ -9,6 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use rand::Rng;
 
 pub struct Twitter {
+    wakeup_list: Vec<NaiveTime>,
     enabled: bool,
     fake_tweet: bool,
     consumer_key   : String,
@@ -20,7 +21,7 @@ pub struct Twitter {
 impl Default for Twitter {
     fn default() -> Self {
         Self {
-            enabled: false, fake_tweet: true,
+            wakeup_list: Default::default(), enabled: false, fake_tweet: true,
             consumer_key: "".into(), consumer_secret: "".into(),
             access_token: "".into(), access_secret: "".into()
         }
@@ -28,7 +29,7 @@ impl Default for Twitter {
 }
 
 impl Twitter {
-    pub fn new() -> Self {
+    pub fn new(wakeup_list: Vec<NaiveTime>) -> Self {
         info!("[twitter] initialize");
 
         let enabled =
@@ -59,7 +60,7 @@ impl Twitter {
             );
 
             Twitter {
-                enabled, fake_tweet,
+                wakeup_list, enabled, fake_tweet,
                 consumer_key, consumer_secret, access_token, access_secret
             }
         }
@@ -71,7 +72,7 @@ impl Twitter {
     }
 
     async fn twitter_task(&self, ctrl: &Control) -> Result<(), String> {
-        info!("[twitter] normal task");
+        info!("[twitter] periodic task");
         Ok(())
     }
 
@@ -84,14 +85,12 @@ impl Twitter {
 impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
-        let time_list = &[
-            NaiveTime::from_hms(3, 43, 0),
-            NaiveTime::from_hms(3, 44, 0),
-            NaiveTime::from_hms(3, 45, 0),
-            NaiveTime::from_hms(3, 46, 0),
-            NaiveTime::from_hms(3, 47, 0),
-        ];
-        ctrl.spawn_periodic_task("twitter", time_list, Twitter::twitter_task_entry);
+        if self.enabled {
+            ctrl.spawn_periodic_task(
+                "twitter_periodic",
+                &self.wakeup_list,
+                Twitter::twitter_task_entry);
+        }
     }
 }
 

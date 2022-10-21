@@ -67,7 +67,7 @@ impl Control {
 
     /// time_list
     pub fn spawn_periodic_task<F, T, R>(
-        &self, name: &str, time_list: &[NaiveTime], f: F)
+        &self, name: &str, wakeup_list: &[NaiveTime], f: F)
     where
         F: Fn(Control) -> T + Send + 'static,
         T: Future<Output = Result<(), R>> + Send + 'static,
@@ -79,20 +79,38 @@ impl Control {
 
         // 空でなくソート済み、秒以下がゼロなのを確認後
         // 今日のその時刻からなる Local DateTime に変換する
-        assert!(!time_list.is_empty(), "time list is empty");
-        let sorted = time_list.windows(2).all(|t| t[0] <= t[1]);
+        // TODO: is_sorted() がまだ unstable
+        assert!(!wakeup_list.is_empty(), "time list is empty");
+        let sorted = wakeup_list.windows(2).all(|t| t[0] <= t[1]);
         assert!(sorted, "time list is not sorted");
         let today = Local::today();
-        let mut dt_list: Vec<_> = time_list.iter().map(|time| {
+        let mut dt_list: Vec<_> = wakeup_list.iter().map(|time| {
             assert!(time.second() == 0);
             assert!(time.nanosecond() == 0);
             today.and_time(*time).unwrap()
         }).collect();
 
+        // wakeup time list を最初の LOG_LIMIT 個までログに出力する
+        const LOG_LIMIT: usize = 5;
+        let log_iter = wakeup_list.iter().take(LOG_LIMIT);
+        let mut str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
+            let str = if i == 0 {
+                format!("{}", v)
+            }
+            else {
+                format!(", {}", v)
+            };
+            sum + &str
+        });
+        if wakeup_list.len() > LOG_LIMIT {
+            str += &format!(", ... ({} items)", wakeup_list.len());
+        }
+        info!("[{}] registered as a periodic task", name);
+        info!("[{}] wakeup time: {}", name, str);
+
         self.internal.rt.spawn(async move {
             type CDuration = chrono::Duration;
             type TDuration = tokio::time::Duration;
-            info!("[{}] registered as periodic task", name);
 
             loop {
                 // 現在時刻を取得して分までに切り捨てる
