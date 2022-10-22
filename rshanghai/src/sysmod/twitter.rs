@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::Rng;
 
-pub struct Twitter {
-    wakeup_list: Vec<NaiveTime>,
+#[derive(Clone, Serialize, Deserialize)]
+struct TwitterConfig {
     enabled: bool,
     debug_exec_once: bool,
     fake_tweet: bool,
@@ -18,68 +18,26 @@ pub struct Twitter {
     consumer_secret: String,
     access_token   : String,
     access_secret  : String,
-
+}
+pub struct Twitter {
+    config: TwitterConfig,
+    wakeup_list: Vec<NaiveTime>,
     my_user_cache: Option<User>,
     user_id_cache: HashMap<String, String>,
-}
-
-impl Default for Twitter {
-    fn default() -> Self {
-        Self {
-            wakeup_list: Default::default(),
-            enabled: false, debug_exec_once: false, fake_tweet: true,
-            consumer_key: "".into(), consumer_secret: "".into(),
-            access_token: "".into(), access_secret: "".into(),
-
-            my_user_cache: None,
-            user_id_cache: Default::default(),
-        }
-    }
 }
 
 impl Twitter {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Self {
         info!("[twitter] initialize");
 
-        let enabled =
-            config::get_bool(&["twitter", "enabled"])
-            .expect("config error: twitter.enabled");
-        if enabled {
-            info!("[twitter] enabled");
-        }
-        else {
-            info!("[twitter] disabled");
-        }
+        let jsobj = config::get_object(&["twitter"]).expect("config error: twitter");
+        let config: TwitterConfig = serde_json::from_value(jsobj).unwrap();
 
-        if enabled {
-            let (debug_exec_once, fake_tweet,
-                consumer_key, consumer_secret,
-                access_token, access_secret) =
-            (
-                config::get_bool(&["twitter", "debug_exec_once"])
-                    .expect("config error: twitter.debug_exec_once"),
-                config::get_bool(&["twitter", "fake_tweet"])
-                    .expect("config error: twitter.fake_tweet"),
-                config::get_string(&["twitter", "consumer_key"])
-                    .expect("config error: twitter.consumer_key"),
-                config::get_string(&["twitter", "consumer_secret"])
-                    .expect("config error: twitter.consumer_secret"),
-                config::get_string(&["twitter", "access_token"])
-                    .expect("config error: twitter.access_token"),
-                config::get_string(&["twitter", "access_secret"])
-                    .expect("config error: twitter.access_secret"),
-            );
-
-            Twitter {
-                wakeup_list, enabled, debug_exec_once, fake_tweet,
-                consumer_key, consumer_secret, access_token, access_secret,
-                ..Default::default()
-            }
-        }
-        else {
-            Twitter {
-                enabled, ..Default::default()
-            }
+        Twitter {
+            config,
+            wakeup_list,
+            my_user_cache: None,
+            user_id_cache: Default::default(),
         }
     }
 
@@ -122,12 +80,13 @@ impl Twitter {
     async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
         -> Result<reqwest::Response, reqwest::Error>
     {
+        let cf = &self.config;
         let mut oauth_param = create_oauth_field(
-            &self.consumer_key, &self.access_token);
+            &cf.consumer_key, &cf.access_token);
         let signature = create_signature(
             "GET", base_url,
             &oauth_param, query_param, &KeyValue::new(),
-            &self.consumer_secret, &self.access_secret);
+            &cf.consumer_secret, &cf.access_secret);
         oauth_param.insert("oauth_signature".into(), signature);
 
         let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
@@ -147,8 +106,8 @@ impl Twitter {
 impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
-        if self.enabled {
-            if self.debug_exec_once {
+        if self.config.enabled {
+            if self.config.debug_exec_once {
                 ctrl.spawn_oneshot_task(
                     "tw_check",
                     Twitter::twitter_task_entry);

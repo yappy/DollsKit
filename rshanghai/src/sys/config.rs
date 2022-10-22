@@ -1,6 +1,7 @@
 //! 設定データの管理。
 
 use once_cell::sync::OnceCell;
+use serde_json::Value;
 use std::ops::RangeBounds;
 use std::sync::RwLock;
 
@@ -53,8 +54,7 @@ pub fn add_config(json_src: &str) -> Result<(), String>
 /// json Object tree を文字列キーの配列で検索する。
 ///
 /// 検索に成功した場合、その値をコピーして返す。
-/// 見つからなかった場合、および
-/// 数値, 真偽値, 文字列, 配列 以外が見つかった場合は json - null を返す。
+/// 見つからなかった場合、json - null を返す。
 ///
 /// * `root` - 検索開始する json オブジェクト。
 /// * `keys` - 文字列キーの配列(スライス)。
@@ -69,12 +69,7 @@ fn search(root: &serde_json::Value, keys: &[&str]) -> serde_json::Value {
         };
     }
 
-    if value.is_number() || value.is_boolean() || value.is_string() || value.is_array() {
-        value.clone()
-    }
-    else {
-        serde_json::Value::Null
-    }
+    value.clone()
 }
 
 /// [ConfigData::root_list] を順番に、[search] によって検索する。
@@ -92,6 +87,16 @@ fn search_all(keys: &[&str]) -> serde_json::Value {
     }
 
     serde_json::Value::Null
+}
+
+pub fn get_object(keys: &[&str]) -> Option<Value> {
+    let value = search_all(keys);
+    if value.is_object() {
+        Some(value)
+    }
+    else {
+        None
+    }
 }
 
 /// 真偽値設定データを取得する。
