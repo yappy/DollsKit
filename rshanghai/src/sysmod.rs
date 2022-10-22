@@ -15,11 +15,12 @@ pub trait SystemModule : Sync + Send {
     fn on_start(&self, _ctrl: &Control) {}
 }
 
+type SysModArc<T> = Arc<tokio::sync::RwLock<T>>;
 pub struct SystemModules {
-    pub sysinfo: Arc<sysinfo::SystemInfo>,
-    pub twitter: Arc<twitter::Twitter>,
+    pub sysinfo: SysModArc<sysinfo::SystemInfo>,
+    pub twitter: SysModArc<twitter::Twitter>,
 
-    event_target_list: Vec<Arc<dyn SystemModule>>,
+    event_target_list: Vec<SysModArc<dyn SystemModule>>,
 }
 
 impl SystemModules {
@@ -33,21 +34,23 @@ impl SystemModules {
                     .map(move |min| NaiveTime::from_hms(hour, min, 0))
             }).collect();
 
-        let mut event_target_list: Vec<Arc<dyn SystemModule>>= vec![];
+        let mut event_target_list: Vec<SysModArc<dyn SystemModule>>= vec![];
 
-        let sysinfo = Arc::new(SystemInfo::new());
+        let sysinfo = Arc::new(
+            tokio::sync::RwLock::new(SystemInfo::new()));
+        let twitter = Arc::new(
+            tokio::sync::RwLock::new(Twitter::new(wakeup_twiter)));
         event_target_list.push(sysinfo.clone());
-        let twitter = Arc::new(Twitter::new(wakeup_twiter));
         event_target_list.push(twitter.clone());
 
         info!("OK: initialize system modules");
         Self { sysinfo, twitter , event_target_list }
     }
 
-    pub fn on_start(&self, ctrl: &Control) {
+    pub async fn on_start(&self, ctrl: &Control) {
         info!("invoke on_start for system modules...");
         for sysmod in self.event_target_list.iter() {
-            sysmod.on_start(ctrl);
+            sysmod.write().await.on_start(ctrl);
         }
         info!("OK: invoke on_start for system modules");
     }

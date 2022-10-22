@@ -21,6 +21,7 @@ time = "0.3.15"
 # DateTime
 chrono = "0.4.22"
 # Json
+serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.86"
 # Async
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "test-util"] }

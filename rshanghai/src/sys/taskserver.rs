@@ -208,7 +208,9 @@ impl TaskServer {
     }
 
     pub fn sysmod_start(&self) {
-        self.ctrl.internal.sysmods.on_start(&self.ctrl);
+        self.ctrl.internal.rt.block_on(async {
+            self.ctrl.internal.sysmods.on_start(&self.ctrl).await;
+        });
     }
 
     pub fn run(&self) {

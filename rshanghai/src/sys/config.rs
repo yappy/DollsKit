@@ -36,7 +36,7 @@ pub fn add_config(json_src: &str) -> Result<(), String>
     // parse
     let jsobj = match serde_json::from_str(json_src) {
         Ok(json) => json,
-        Err(e) => return Err(format!("{}", e)),
+        Err(e) => return Err(e.to_string()),
     };
 
     // lazy inialize + wlock

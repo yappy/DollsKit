@@ -4,6 +4,7 @@ use crate::sys::net;
 use super::SystemModule;
 use chrono::NaiveTime;
 use log::{info};
+use serde::{Serialize, Deserialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::Rng;
@@ -18,6 +19,7 @@ pub struct Twitter {
     access_token   : String,
     access_secret  : String,
 
+    my_id_cache: Option<String>,
     user_id_cache: HashMap<String, String>,
 }
 
@@ -28,6 +30,8 @@ impl Default for Twitter {
             enabled: false, debug_exec_once: false, fake_tweet: true,
             consumer_key: "".into(), consumer_secret: "".into(),
             access_token: "".into(), access_secret: "".into(),
+
+            my_id_cache: None,
             user_id_cache: Default::default(),
         }
     }
@@ -79,17 +83,31 @@ impl Twitter {
         }
     }
 
-    async fn twitter_task(&self, ctrl: &Control) -> Result<(), String> {
+    async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
         info!("[twitter_periodic] periodic task");
 
-        let me = self.users_me().await?;
+        let me = self.get_my_id().await?;
         info!("{}", me);
 
         Ok(())
     }
 
     async fn twitter_task_entry(ctrl: Control) -> Result<(), String> {
-        ctrl.sysmods().twitter.twitter_task(&ctrl).await
+        let mut twitter = ctrl.sysmods().twitter.write().await;
+        twitter.twitter_task(&ctrl).await
+    }
+
+    /// 自身の Twitter ID を返す。 (キャッシュ付き)
+    async fn get_my_id(&mut self) -> Result<String, String> {
+        if let Some(id) = &self.my_id_cache {
+            Ok(id.clone())
+        }
+        else {
+            let json_str = self.users_me().await?;
+            let obj: UsersMe = serde_json::from_str(&json_str).unwrap();
+            self.my_id_cache = Some(obj.data.id.clone());
+            Ok(obj.data.id)
+        }
     }
 
     async fn users_me(&self) -> Result<String, String> {
@@ -148,6 +166,18 @@ const URL_USERS_ME: &str =
 "https://api.twitter.com/2/users/me";
 const URL_USERS_BY_USERNAME: &str =
 "https://api.twitter.com/2/users/by/username/";
+
+#[derive(Serialize, Deserialize)]
+struct UsersMe {
+    data: User,
+}
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    id: String,
+    name: String,
+    username: String,
+}
 
 async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
 -> Result<String, String>
