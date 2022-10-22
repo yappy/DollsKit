@@ -3,27 +3,32 @@ use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
 use chrono::NaiveTime;
-use log::info;
-use std::collections::BTreeMap;
+use log::{info};
+use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::Rng;
 
 pub struct Twitter {
     wakeup_list: Vec<NaiveTime>,
     enabled: bool,
+    debug_exec_once: bool,
     fake_tweet: bool,
     consumer_key   : String,
     consumer_secret: String,
     access_token   : String,
     access_secret  : String,
+
+    user_id_cache: HashMap<String, String>,
 }
 
 impl Default for Twitter {
     fn default() -> Self {
         Self {
-            wakeup_list: Default::default(), enabled: false, fake_tweet: true,
+            wakeup_list: Default::default(),
+            enabled: false, debug_exec_once: false, fake_tweet: true,
             consumer_key: "".into(), consumer_secret: "".into(),
-            access_token: "".into(), access_secret: "".into()
+            access_token: "".into(), access_secret: "".into(),
+            user_id_cache: Default::default(),
         }
     }
 }
@@ -43,10 +48,12 @@ impl Twitter {
         }
 
         if enabled {
-            let (fake_tweet,
+            let (debug_exec_once, fake_tweet,
                 consumer_key, consumer_secret,
                 access_token, access_secret) =
             (
+                config::get_bool(&["twitter", "debug_exec_once"])
+                    .expect("config error: twitter.debug_exec_once"),
                 config::get_bool(&["twitter", "fake_tweet"])
                     .expect("config error: twitter.fake_tweet"),
                 config::get_string(&["twitter", "consumer_key"])
@@ -60,8 +67,9 @@ impl Twitter {
             );
 
             Twitter {
-                wakeup_list, enabled, fake_tweet,
-                consumer_key, consumer_secret, access_token, access_secret
+                wakeup_list, enabled, debug_exec_once, fake_tweet,
+                consumer_key, consumer_secret, access_token, access_secret,
+                ..Default::default()
             }
         }
         else {
@@ -72,12 +80,46 @@ impl Twitter {
     }
 
     async fn twitter_task(&self, ctrl: &Control) -> Result<(), String> {
-        info!("[twitter] periodic task");
+        info!("[twitter_periodic] periodic task");
+
+        let me = self.users_me().await?;
+        info!("{}", me);
+
         Ok(())
     }
 
     async fn twitter_task_entry(ctrl: Control) -> Result<(), String> {
         ctrl.sysmods().twitter.twitter_task(&ctrl).await
+    }
+
+    async fn users_me(&self) -> Result<String, String> {
+        let resp = self.http_oauth_get(
+            URL_USERS_ME,
+            &KeyValue::new()).await;
+        process_response(resp).await
+    }
+
+    async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
+        -> Result<reqwest::Response, reqwest::Error>
+    {
+        let mut oauth_param = create_oauth_field(
+            &self.consumer_key, &self.access_token);
+        let signature = create_signature(
+            "GET", base_url,
+            &oauth_param, query_param, &KeyValue::new(),
+            &self.consumer_secret, &self.access_secret);
+        oauth_param.insert("oauth_signature".into(), signature);
+
+        let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
+
+        let client = reqwest::Client::new();
+        let req = client
+            .get(base_url)
+            .query(query_param)
+            .header(oauth_k, oauth_v);
+        let res = req.send().await?;
+
+        Ok(res)
     }
 
 }
@@ -86,36 +128,54 @@ impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
         if self.enabled {
-            ctrl.spawn_periodic_task(
-                "twitter_periodic",
-                &self.wakeup_list,
-                Twitter::twitter_task_entry);
+            if self.debug_exec_once {
+                ctrl.spawn_oneshot_task(
+                    "twitter_periodic",
+                    Twitter::twitter_task_entry);
+            }
+            else {
+                ctrl.spawn_periodic_task(
+                    "twitter_periodic",
+                    &self.wakeup_list,
+                    Twitter::twitter_task_entry);
+            }
         }
     }
 }
 
-/*
-// Twitter API 1.1
-const  URL_ACCOUNT_VERIFY_CREDENTIALS: &str =
-    "https://api.twitter.com/1.1/account/verify_credentials.json";
-const URL_STATUSES_UPDATE: &str =
-    "https://api.twitter.com/1.1/statuses/update.json";
-const URL_STATUSES_HOME_TIMELINE: &str =
-    "https://api.twitter.com/1.1/statuses/home_timeline.json";
-const URL_STATUSES_USER_TIMELINE: &str =
-    "https://api.twitter.com/1.1/statuses/user_timeline.json";
-*/
-
 // Twitter API v2
+const URL_USERS_ME: &str =
+"https://api.twitter.com/2/users/me";
 const URL_USERS_BY_USERNAME: &str =
-    "https://api.twitter.com/2/users/by/username/";
+"https://api.twitter.com/2/users/by/username/";
+
+async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
+-> Result<String, String>
+{
+    match result {
+        Ok(resp) => {
+            let status = resp.status();
+            let text = resp.text().await;
+            let text = match text {
+                Ok(text) => text,
+                Err(e) => return Err(e.to_string())
+            };
+            if status.is_success() {
+                Ok(text)
+            }
+            else {
+                Err(format!("HTTP error {} {}", status, text))
+            }
+        },
+        Err(e) => Err(e.to_string()),
+    }
+}
 
 /// HTTP header や query を表すデータ構造。
 ///
 /// 署名時にソートを求められるのと、ハッシュテーブルだと最終的なリクエスト内での順番が
 /// 一意にならないため、Sorted Map として B-Tree を使うことにする
 type KeyValue = BTreeMap<String, String>;
-
 
 /// OAuth 1.0a 認証のための KeyValue セットを生成する。
 ///
@@ -136,7 +196,7 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     // Twitter によるとランダムな英数字なら何でもいいらしいが、例に挙げられている
     // 32byte の乱数を BASE64 にして英数字のみを残したものとする
     let mut rng = rand::thread_rng();
-    let rnd32: [u8; 4] = rng.gen();
+    let rnd32: [u8; 32] = rng.gen();
     let rnd32_str = base64::encode(rnd32);
     let mut nonce_str = "".to_string();
     for c in rnd32_str.chars() {
@@ -265,6 +325,22 @@ fn create_signature(
 
     // base64 encode したものを署名として "oauth_signature" に設定する
     base64::encode(result.into_bytes())
+}
+
+/// HTTP header に設定する (key, value) を文字列として生成して返す。
+///
+/// Authorization: OAuth key1="value1", key2="value2", ..., keyN="valueN"
+fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
+    let mut oauth_value = "OAuth ".to_string();
+    {
+        let v: Vec<_> = oauth_param.iter()
+            .map(|(k, v)|
+                format!(r#"{}="{}""#, net::percent_encode(k), net::percent_encode(v)))
+            .collect();
+        oauth_value.push_str(&v.join(", "));
+    }
+
+    ("Authorization".into(), oauth_value)
 }
 
 #[cfg(test)]
