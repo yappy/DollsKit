@@ -33,6 +33,7 @@ const LOG_FILE: &str = "rshanghai.log";
 /// デフォルトの設定データ(json source)。
 /// [include_str!] でバイナリに含める。
 const DEF_CONFIG_JSON: &str = include_str!("res/config_default.json");
+const TW_CONTENTS_JSON: &str = include_str!("res/tw_contents.json");
 const CONFIG_FILE: &str = "config.json";
 const CONFIG_DEF_FILE: &str = "config_default.json";
 
@@ -178,7 +179,7 @@ fn load_config() -> Result<(), ()> {
     }
 
     // json パースして設定システムを初期化
-    let json_list = [DEF_CONFIG_JSON, &json_str];
+    let json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, &json_str];
     sys::config::init();
     for json_str in json_list {
         if let Err(msg) = sys::config::add_config(json_str)
