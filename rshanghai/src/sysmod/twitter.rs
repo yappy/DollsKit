@@ -19,7 +19,7 @@ pub struct Twitter {
     access_token   : String,
     access_secret  : String,
 
-    my_id_cache: Option<String>,
+    my_user_cache: Option<User>,
     user_id_cache: HashMap<String, String>,
 }
 
@@ -31,7 +31,7 @@ impl Default for Twitter {
             consumer_key: "".into(), consumer_secret: "".into(),
             access_token: "".into(), access_secret: "".into(),
 
-            my_id_cache: None,
+            my_user_cache: None,
             user_id_cache: Default::default(),
         }
     }
@@ -84,10 +84,11 @@ impl Twitter {
     }
 
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
-        info!("[twitter_periodic] periodic task");
+        info!("[tw_check] periodic check task");
 
+        info!("[tw_check] get my user info if not cached");
         let me = self.get_my_id().await?;
-        info!("{}", me);
+        info!("User: {:?}", me);
 
         Ok(())
     }
@@ -97,16 +98,17 @@ impl Twitter {
         twitter.twitter_task(&ctrl).await
     }
 
-    /// 自身の Twitter ID を返す。 (キャッシュ付き)
-    async fn get_my_id(&mut self) -> Result<String, String> {
-        if let Some(id) = &self.my_id_cache {
-            Ok(id.clone())
+    /// 自身の Twitter ID を返す。
+    /// [Self::users_me] の キャッシュ付きバージョン。
+    async fn get_my_id(&mut self) -> Result<User, String> {
+        if let Some(user) = &self.my_user_cache {
+            Ok(user.clone())
         }
         else {
             let json_str = self.users_me().await?;
             let obj: UsersMe = serde_json::from_str(&json_str).unwrap();
-            self.my_id_cache = Some(obj.data.id.clone());
-            Ok(obj.data.id)
+            self.my_user_cache = Some(obj.data.clone());
+            Ok(obj.data)
         }
     }
 
@@ -148,12 +150,12 @@ impl SystemModule for Twitter {
         if self.enabled {
             if self.debug_exec_once {
                 ctrl.spawn_oneshot_task(
-                    "twitter_periodic",
+                    "tw_check",
                     Twitter::twitter_task_entry);
             }
             else {
                 ctrl.spawn_periodic_task(
-                    "twitter_periodic",
+                    "tw_check",
                     &self.wakeup_list,
                     Twitter::twitter_task_entry);
             }
@@ -167,12 +169,12 @@ const URL_USERS_ME: &str =
 const URL_USERS_BY_USERNAME: &str =
 "https://api.twitter.com/2/users/by/username/";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct UsersMe {
     data: User,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
     id: String,
     name: String,
