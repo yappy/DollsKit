@@ -3,23 +3,12 @@
 use once_cell::sync::OnceCell;
 use std::ops::RangeBounds;
 use std::sync::RwLock;
-use serde_json::json;
 
 /// グローバルに保持するデータ。
-/// ユーザによる設定と、見つからなかった場合に使うデフォルト値からなる。
 /// それぞれは Json object によるツリー構造。
+#[derive(Default)]
 struct ConfigData {
-    /// デフォルト値。[ConfigData::main] から見つからなかった場合、こちらから検索される。
-    def:  serde_json::Value,
-    /// メインの設定データ。
-    main: serde_json::Value,
-}
-
-/// default value = empty json Object (map)
-impl Default for ConfigData {
-    fn default() -> Self {
-        Self { def: json!({}), main: json!({}) }
-    }
+    root_list:  Vec<serde_json::Value>,
 }
 
 /// 設定データ(グローバル変数)。
@@ -28,21 +17,24 @@ impl Default for ConfigData {
 /// その後は read only アクセスしかしないので RwLock とする。
 static CONFIG: OnceCell<RwLock<ConfigData>> = OnceCell::new();
 
-/// 設定データを json 文字列からロードして設定データシステムを初期化する。
+// 設定データシステムを初期化する。
+pub fn init() {
+    // lazy inialize + wlock
+    let mut config = CONFIG
+        .get_or_init(|| RwLock::new(Default::default()))
+        .write()
+        .unwrap();
+    config.root_list.clear();
+}
+
+/// 設定データを json 文字列からロードして検索リストに追加する。
 ///
-/// 成功した場合、何も返さない。
+/// 同じキーを持つ場合は後で追加したものが優先される。
 /// json のパースに失敗した場合、その詳細を示す文字列を返す。
-///
-/// * `def_json` - デフォルト値の json ソース。
-/// * `main_json` - メイン値の json ソース。
-pub fn init_and_load(def_json: &str, main_json: &str) -> Result<(), String>
+pub fn add_config(json_src: &str) -> Result<(), String>
 {
     // parse
-    let vdef = match serde_json::from_str(def_json) {
-        Ok(json) => json,
-        Err(e) => return Err(format!("{}", e)),
-    };
-    let vmain = match serde_json::from_str(main_json) {
+    let jsobj = match serde_json::from_str(json_src) {
         Ok(json) => json,
         Err(e) => return Err(format!("{}", e)),
     };
@@ -53,8 +45,7 @@ pub fn init_and_load(def_json: &str, main_json: &str) -> Result<(), String>
         .write()
         .unwrap();
 
-    config.def = vdef;
-    config.main = vmain;
+    config.root_list.push(jsobj);
 
     Ok(())
 }
@@ -86,20 +77,21 @@ fn search(root: &serde_json::Value, keys: &[&str]) -> serde_json::Value {
     }
 }
 
-/// [ConfigData::main] -> [ConfigData::def] の順番で [search] により検索する。
+/// [ConfigData::root_list] を順番に、[search] によって検索する。
 fn search_all(keys: &[&str]) -> serde_json::Value {
     // rlock
     let config = CONFIG
         .get().unwrap()
         .read().unwrap();
 
-    let value = search(&config.main, keys);
-    if !value.is_null() {
-        value
+    for root in config.root_list.iter().rev() {
+        let value = search(root, keys);
+        if !value.is_null() {
+            return value;
+        }
     }
-    else {
-        search(&config.def, keys)
-    }
+
+    serde_json::Value::Null
 }
 
 /// 真偽値設定データを取得する。
@@ -142,7 +134,9 @@ mod tests {
     fn search() {
         let main = r#"{"a": {"b": {"c": "main"}}}"#;
         let def = r#"{"a": {"b": {"d": "default"}}}"#;
-        init_and_load(def, main).unwrap();
+        init();
+        add_config(def).unwrap();
+        add_config(main).unwrap();
 
         let v = get_string(&["a", "b", "c"]);
         assert!(v.unwrap() == "main");
@@ -159,7 +153,9 @@ mod tests {
     fn bool_string() {
         let main = r#"{"root": {"bool1": false, "bool2": true, "str": "Hello"}}"#;
         let def = "{}";
-        init_and_load(def, main).unwrap();
+        init();
+        add_config(def).unwrap();
+        add_config(main).unwrap();
 
         let v = get_bool(&["root", "bool1"]);
         assert!(v.unwrap() == false);
@@ -174,7 +170,9 @@ mod tests {
     fn i64() {
         let main = r#"{"i64": {"min": -9223372036854775808, "max": 9223372036854775807}}"#;
         let def = "{}";
-        init_and_load(def, main).unwrap();
+        init();
+        add_config(def).unwrap();
+        add_config(main).unwrap();
 
         let v = get_i64(&["i64", "min"], ..);
         assert_eq!(v.unwrap(), i64::MIN);
@@ -192,7 +190,9 @@ mod tests {
     fn u64() {
         let main = r#"{"u64": {"min": 0, "max": 18446744073709551615}}"#;
         let def = "{}";
-        init_and_load(def, main).unwrap();
+        init();
+        add_config(def).unwrap();
+        add_config(main).unwrap();
 
         let v = get_u64(&["u64", "min"], ..);
         assert_eq!(v.unwrap(), u64::MIN);
@@ -209,6 +209,7 @@ mod tests {
     #[should_panic]
     fn parse_error() {
         let jsonstr = "{1: 2";
-        init_and_load(jsonstr, jsonstr).unwrap();
+        init();
+        add_config(jsonstr).unwrap();
     }
 }

@@ -176,12 +176,16 @@ fn load_config() -> Result<(), ()> {
         info!("OK: {} loaded", CONFIG_FILE);
         // close
     }
+
     // json パースして設定システムを初期化
-    if let Err(msg) = sys::config::init_and_load(
-        DEF_CONFIG_JSON, &json_str)
-    {
-        error!("Config load failed: {}", msg);
-        return Err(());
+    let json_list = [DEF_CONFIG_JSON, &json_str];
+    sys::config::init();
+    for json_str in json_list {
+        if let Err(msg) = sys::config::add_config(json_str)
+        {
+            error!("Config load failed: {}", msg);
+            return Err(());
+        }
     }
 
     Ok(())
