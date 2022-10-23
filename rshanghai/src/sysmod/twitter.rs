@@ -3,7 +3,7 @@ use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
 use chrono::NaiveTime;
-use log::{info};
+use log::{info, trace};
 use serde::{Serialize, Deserialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -19,11 +19,23 @@ struct TwitterConfig {
     access_token   : String,
     access_secret  : String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TimelineCheck {
+    users: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TwitterContents {
+    timeline_check: Vec<TimelineCheck>,
+}
+
 pub struct Twitter {
     config: TwitterConfig,
+    contents: TwitterContents,
     wakeup_list: Vec<NaiveTime>,
     my_user_cache: Option<User>,
-    user_id_cache: HashMap<String, String>,
+    user_id_cache: HashMap<String, User>,
 }
 
 impl Twitter {
@@ -32,21 +44,33 @@ impl Twitter {
 
         let jsobj = config::get_object(&["twitter"]).expect("config error: twitter");
         let config: TwitterConfig = serde_json::from_value(jsobj).unwrap();
+        let jsobj = config::get_object(&["tw_contents"]).expect("config error: tw_contents");
+        let contents: TwitterContents = serde_json::from_value(jsobj).unwrap();
 
         Twitter {
             config,
+            contents,
             wakeup_list,
             my_user_cache: None,
             user_id_cache: Default::default(),
         }
     }
 
+    /// Twitter 巡回タスク。
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
         info!("[tw_check] periodic check task");
 
         info!("[tw_check] get my user info if not cached");
         let me = self.get_my_id().await?;
-        info!("User: {:?}", me);
+        info!("[tw_check] user: {:?}", me);
+
+        info!("[tw_check] get all user info from screen name");
+        // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
+        let tlc_list = self.contents.timeline_check.clone();
+        for tlcheck in tlc_list {
+            self.resolve_ids(&tlcheck.users).await?;
+        }
+        info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
 
         Ok(())
     }
@@ -63,18 +87,60 @@ impl Twitter {
             Ok(user.clone())
         }
         else {
-            let json_str = self.users_me().await?;
-            let obj: UsersMe = serde_json::from_str(&json_str).unwrap();
-            self.my_user_cache = Some(obj.data.clone());
-            Ok(obj.data)
+            Ok(self.users_me().await?.data)
         }
     }
 
-    async fn users_me(&self) -> Result<String, String> {
+    ///
+    async fn resolve_ids(&mut self, users: &Vec<String>) -> Result<(), String> {
+        // user_id_cache にないユーザ名を集める
+        let unknown_users: Vec<_> = users.iter()
+            .filter_map(|user| {
+                if !self.user_id_cache.contains_key(user) {
+                    Some(user.clone())
+                }
+                else {
+                    None
+                }
+            })
+            .collect();
+
+        let mut start = 0_usize;
+        while start < unknown_users.len() {
+            let end = std::cmp::min(unknown_users.len(), start + LIMIT_USERS_BY);
+            let result = self.users_by(&unknown_users[start..end]).await?;
+            for user in result.data.iter() {
+                self.user_id_cache.insert(user.username.clone(), user.clone());
+            }
+
+            start += LIMIT_USERS_BY;
+        }
+
+        Ok(())
+    }
+
+    async fn users_me(&self) -> Result<UsersMe, String> {
         let resp = self.http_oauth_get(
             URL_USERS_ME,
             &KeyValue::new()).await;
-        process_response(resp).await
+        let json_str = process_response(resp).await?;
+        let obj: UsersMe = serde_json::from_str(&json_str).unwrap();
+
+        Ok(obj)
+    }
+
+    async fn users_by(&self, users: &[String]) -> Result<UsersBy, String> {
+        if !(1..LIMIT_USERS_BY).contains(&users.len()) {
+            panic!("{} limit over: {}", URL_USERS_BY, users.len());
+        }
+        let users_str = users.join(",");
+        let resp = self.http_oauth_get(
+            URL_USERS_BY,
+            &BTreeMap::from([("usernames".into(), users_str)])).await;
+        let json_str = process_response(resp).await?;
+        let obj: UsersBy = serde_json::from_str(&json_str).unwrap();
+
+        Ok(obj)
     }
 
     async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
@@ -124,9 +190,17 @@ impl SystemModule for Twitter {
 
 // Twitter API v2
 const URL_USERS_ME: &str =
-"https://api.twitter.com/2/users/me";
-const URL_USERS_BY_USERNAME: &str =
-"https://api.twitter.com/2/users/by/username/";
+    "https://api.twitter.com/2/users/me";
+const URL_USERS_BY: &str =
+    "https://api.twitter.com/2/users/by";
+const LIMIT_USERS_BY: usize = 100;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct User {
+    id: String,
+    name: String,
+    username: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct UsersMe {
@@ -134,10 +208,8 @@ struct UsersMe {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct User {
-    id: String,
-    name: String,
-    username: String,
+struct UsersBy {
+    data: Vec<User>,
 }
 
 async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
