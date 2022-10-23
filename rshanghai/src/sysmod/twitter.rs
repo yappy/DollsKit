@@ -67,10 +67,13 @@ impl Twitter {
         info!("[tw_check] get all user info from screen name");
         // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
         let tlc_list = self.contents.timeline_check.clone();
-        for tlcheck in tlc_list {
+        for tlcheck in tlc_list.iter() {
             self.resolve_ids(&tlcheck.users).await?;
         }
         info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
+
+        let test = self.users_timelines_home(&me.id).await?;
+        trace!("{}", test);
 
         Ok(())
     }
@@ -105,6 +108,7 @@ impl Twitter {
             })
             .collect();
 
+        // LIMIT_USERS_BY 個ずつ GET リクエストしてハッシュテーブルにキャッシュする
         let mut start = 0_usize;
         while start < unknown_users.len() {
             let end = std::cmp::min(unknown_users.len(), start + LIMIT_USERS_BY);
@@ -141,6 +145,19 @@ impl Twitter {
         let obj: UsersBy = serde_json::from_str(&json_str).unwrap();
 
         Ok(obj)
+    }
+
+    async fn users_timelines_home(&self, id: &str) -> Result<String, String> {
+        let url = format!("{}{}{}",
+            URL_USERS_TIMELINES_HOME1,
+            id,
+            URL_USERS_TIMELINES_HOME2);
+        let resp = self.http_oauth_get(
+            &url,
+            &BTreeMap::from([("since_id".into(), "1".into())])).await;
+        let json_str = process_response(resp).await?;
+
+        Ok(json_str)
     }
 
     async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
@@ -194,6 +211,11 @@ const URL_USERS_ME: &str =
 const URL_USERS_BY: &str =
     "https://api.twitter.com/2/users/by";
 const LIMIT_USERS_BY: usize = 100;
+
+const URL_USERS_TIMELINES_HOME1: &str =
+    "https://api.twitter.com/2/users/";
+const URL_USERS_TIMELINES_HOME2: &str =
+    "/timelines/reverse_chronological";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
