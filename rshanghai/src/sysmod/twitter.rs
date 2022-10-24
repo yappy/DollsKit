@@ -34,6 +34,7 @@ pub struct Twitter {
     config: TwitterConfig,
     contents: TwitterContents,
     wakeup_list: Vec<NaiveTime>,
+    newest_tweet_id: Option<String>,
     my_user_cache: Option<User>,
     user_id_cache: HashMap<String, User>,
 }
@@ -51,6 +52,7 @@ impl Twitter {
             config,
             contents,
             wakeup_list,
+            newest_tweet_id: None,
             my_user_cache: None,
             user_id_cache: Default::default(),
         }
@@ -60,10 +62,12 @@ impl Twitter {
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
         info!("[tw_check] periodic check task");
 
+        // 自分の ID を得る
         info!("[tw_check] get my user info if not cached");
         let me = self.get_my_id().await?;
         info!("[tw_check] user: {:?}", me);
 
+        // 設定ファイル中の全 user name (screen name) から ID を得る
         info!("[tw_check] get all user info from screen name");
         // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
         let tlc_list = self.contents.timeline_check.clone();
@@ -72,8 +76,18 @@ impl Twitter {
         }
         info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
 
-        let test = self.users_timelines_home(&me.id).await?;
-        trace!("{}", test);
+        // 自分のツイートリストを得て最終ツイート ID を得る (初回のみ)
+        if self.newest_tweet_id == None {
+            let usertw = self.users_tweets(&me.id).await?;
+            self.newest_tweet_id = Some(usertw.meta.newest_id);
+        }
+        let newest_tweet_id = self.newest_tweet_id.as_ref().unwrap();
+        info!("[tw_check] my last tweet id: {}", newest_tweet_id);
+
+        // 自分の最終ツイート以降のタイムラインを得る
+        let tlsrc = self.users_timelines_home(
+            &me.id, &newest_tweet_id).await?;
+        trace!("my timeline: {:?}", tlsrc);
 
         Ok(())
     }
@@ -94,7 +108,9 @@ impl Twitter {
         }
     }
 
+    /// user name (screen name) から id を取得する。
     ///
+    /// 結果は [Self::user_id_cache] に入れる。
     async fn resolve_ids(&mut self, users: &Vec<String>) -> Result<(), String> {
         // user_id_cache にないユーザ名を集める
         let unknown_users: Vec<_> = users.iter()
@@ -147,17 +163,44 @@ impl Twitter {
         Ok(obj)
     }
 
-    async fn users_timelines_home(&self, id: &str) -> Result<String, String> {
+    async fn users_timelines_home(&self, id: &str, since_id: &str)
+        -> Result<Timeline, String>
+    {
         let url = format!("{}{}{}",
             URL_USERS_TIMELINES_HOME1,
             id,
             URL_USERS_TIMELINES_HOME2);
+        let param = KeyValue::from([
+            ("since_id".into(), since_id.into()),
+        ]);
         let resp = self.http_oauth_get(
             &url,
-            &BTreeMap::from([("since_id".into(), "1".into())])).await;
+            &param).await;
         let json_str = process_response(resp).await?;
+        let obj: Timeline = serde_json::from_str(&json_str).unwrap();
 
-        Ok(json_str)
+        Ok(obj)
+    }
+
+    async fn users_tweets(&self, id: &str) -> Result<Timeline, String> {
+        let url = format!("{}{}{}",
+            URL_USERS_TWEETS1,
+            id,
+            URL_USERS_TWEETS2);
+        let param = KeyValue::from([
+            // retweets and/or replies
+            ("exclude".into(), "retweets".into()),
+            // default=10, min=5, max=100
+            ("max_results".into(), "100".into()),
+        ]);
+        let resp = self.http_oauth_get(
+            &url,
+            &param).await;
+        let json_str = process_response(resp).await?;
+        trace!("{}", json_str);
+        let obj: Timeline = serde_json::from_str(&json_str).unwrap();
+
+        Ok(obj)
     }
 
     async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
@@ -216,6 +259,10 @@ const URL_USERS_TIMELINES_HOME1: &str =
     "https://api.twitter.com/2/users/";
 const URL_USERS_TIMELINES_HOME2: &str =
     "/timelines/reverse_chronological";
+const URL_USERS_TWEETS1: &str =
+    "https://api.twitter.com/2/users/";
+const URL_USERS_TWEETS2: &str =
+    "/tweets";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
@@ -232,6 +279,27 @@ struct UsersMe {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct UsersBy {
     data: Vec<User>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Tweet {
+    id: String,
+    text: String,
+    edit_history_tweet_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Meta {
+    /// ドキュメントには count とあるが、レスポンスの例は result_count になっている。
+    result_count: u64,
+    newest_id: String,
+    oldest_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Timeline {
+    data: Vec<Tweet>,
+    meta: Meta,
 }
 
 async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
