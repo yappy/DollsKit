@@ -23,6 +23,7 @@ struct TwitterConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TimelineCheck {
     users: Vec<String>,
+    pattern: Vec<(Vec<String>, Vec<String>)>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
