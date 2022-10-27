@@ -2,7 +2,7 @@
 	"tw_contents": {
 		"timeline_check": [
 			{
-				"users": [
+				"user_names": [
 					"Mewdra", "nippy2284", "metto0226", "CucumberDragon",
 					"superpokan", "joinjoinginYa", "Kuraot", "taiga8899",
 					"kaen_uni", "ksk_aleaf", "warehana", "an_kaz",
@@ -26,7 +26,7 @@
 				]
 			},
 			{
-				"users": [
+				"user_names": [
 					"yappy_t"
 				],
 				"pattern": [

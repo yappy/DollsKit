@@ -22,7 +22,7 @@ struct TwitterConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TimelineCheck {
-    users: Vec<String>,
+    user_names: Vec<String>,
     pattern: Vec<(Vec<String>, Vec<String>)>,
 }
 
@@ -73,7 +73,7 @@ impl Twitter {
         // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
         let tlc_list = self.contents.timeline_check.clone();
         for tlcheck in tlc_list.iter() {
-            self.resolve_ids(&tlcheck.users).await?;
+            self.resolve_ids(&tlcheck.user_names).await?;
         }
         info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
 
@@ -85,10 +85,36 @@ impl Twitter {
         let newest_tweet_id = self.newest_tweet_id.as_ref().unwrap();
         info!("[tw_check] my last tweet id: {}", newest_tweet_id);
 
+        // 以降メイン処理
         // 自分の最終ツイート以降のタイムラインを得る
-        let tlsrc = self.users_timelines_home(
-            &me.id, &newest_tweet_id).await?;
-        trace!("my timeline: {:?}", tlsrc);
+        let tl = self.users_timelines_home(
+            &me.id, newest_tweet_id).await?;
+
+        // 反応設定のブロックごとに全ツイートを走査する
+        for ch in self.contents.timeline_check.iter() {
+            // 自分のツイートには反応しない
+            let tliter = tl.data.iter()
+            .filter(|tw| {
+                tw.id != me.id
+            });
+            for tw in tliter {
+                // author_id が user_names リストに含まれているものでフィルタ
+                let user_match = ch.user_names.iter().any(|user_name| {
+                    let user = self.resolve_id_from_cache(user_name);
+                    match user {
+                        Some(user) => *tw.author_id.as_ref().unwrap() == user.id,
+                        // id 取得に失敗しているので無視
+                        None => false,
+                    }
+                });
+                if !user_match {
+                    continue;
+                }
+                // pattern 判定
+                // TODO
+                trace!("FIND: {:?}", tw);
+            }
+        }
 
         Ok(())
     }
@@ -109,12 +135,17 @@ impl Twitter {
         }
     }
 
+    fn resolve_id_from_cache(&self, user: &String) -> Option<&User> {
+        self.user_id_cache.get(user)
+    }
+
     /// user name (screen name) から id を取得する。
     ///
     /// 結果は [Self::user_id_cache] に入れる。
-    async fn resolve_ids(&mut self, users: &Vec<String>) -> Result<(), String> {
+    /// 凍結等で取得できない可能性があり、その場合は無視される。
+    async fn resolve_ids(&mut self, user_names: &[String]) -> Result<(), String> {
         // user_id_cache にないユーザ名を集める
-        let unknown_users: Vec<_> = users.iter()
+        let unknown_users: Vec<_> = user_names.iter()
             .filter_map(|user| {
                 if !self.user_id_cache.contains_key(user) {
                     Some(user.clone())
@@ -131,6 +162,7 @@ impl Twitter {
             let end = std::cmp::min(unknown_users.len(), start + LIMIT_USERS_BY);
             let result = self.users_by(&unknown_users[start..end]).await?;
             for user in result.data.iter() {
+                info!("[twitter] resolve username: {} => {}", user.username, user.id);
                 self.user_id_cache.insert(user.username.clone(), user.clone());
             }
 
@@ -173,6 +205,7 @@ impl Twitter {
             URL_USERS_TIMELINES_HOME2);
         let param = KeyValue::from([
             ("since_id".into(), since_id.into()),
+            ("expansions".into(), "author_id".into()),
         ]);
         let resp = self.http_oauth_get(
             &url,
@@ -198,7 +231,6 @@ impl Twitter {
             &url,
             &param).await;
         let json_str = process_response(resp).await?;
-        trace!("{}", json_str);
         let obj: Timeline = serde_json::from_str(&json_str).unwrap();
 
         Ok(obj)
@@ -286,6 +318,7 @@ struct UsersBy {
 struct Tweet {
     id: String,
     text: String,
+    author_id: Option<String>,
     edit_history_tweet_ids: Vec<String>,
 }
 
