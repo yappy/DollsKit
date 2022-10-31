@@ -9,6 +9,24 @@ use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::Rng;
 
+
+// Twitter API v2
+const URL_USERS_ME: &str =
+    "https://api.twitter.com/2/users/me";
+const URL_USERS_BY: &str =
+    "https://api.twitter.com/2/users/by";
+const LIMIT_USERS_BY: usize = 100;
+
+macro_rules! URL_USERS_TIMELINES_HOME {
+    () => { "https://api.twitter.com/2/users/{}/timelines/reverse_chronological" };
+}
+macro_rules! URL_USERS_TWEET {
+    () => { "https://api.twitter.com/2/users/{}/tweets" };
+}
+
+const URL_TWEETS: &str =
+    "https://api.twitter.com/2/tweets";
+
 #[derive(Clone, Serialize, Deserialize)]
 struct TwitterConfig {
     enabled: bool,
@@ -262,10 +280,7 @@ impl Twitter {
     async fn users_timelines_home(&self, id: &str, since_id: &str)
         -> Result<Timeline, String>
     {
-        let url = format!("{}{}{}",
-            URL_USERS_TIMELINES_HOME1,
-            id,
-            URL_USERS_TIMELINES_HOME2);
+        let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
             ("since_id".into(), since_id.into()),
             ("expansions".into(), "author_id".into()),
@@ -280,10 +295,7 @@ impl Twitter {
     }
 
     async fn users_tweets(&self, id: &str) -> Result<Timeline, String> {
-        let url = format!("{}{}{}",
-            URL_USERS_TWEETS1,
-            id,
-            URL_USERS_TWEETS2);
+        let url = format!(URL_USERS_TWEET!(), id);
         let param = KeyValue::from([
             // retweets and/or replies
             ("exclude".into(), "retweets".into()),
@@ -343,22 +355,6 @@ impl SystemModule for Twitter {
         }
     }
 }
-
-// Twitter API v2
-const URL_USERS_ME: &str =
-    "https://api.twitter.com/2/users/me";
-const URL_USERS_BY: &str =
-    "https://api.twitter.com/2/users/by";
-const LIMIT_USERS_BY: usize = 100;
-
-const URL_USERS_TIMELINES_HOME1: &str =
-    "https://api.twitter.com/2/users/";
-const URL_USERS_TIMELINES_HOME2: &str =
-    "/timelines/reverse_chronological";
-const URL_USERS_TWEETS1: &str =
-    "https://api.twitter.com/2/users/";
-const URL_USERS_TWEETS2: &str =
-    "/tweets";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
