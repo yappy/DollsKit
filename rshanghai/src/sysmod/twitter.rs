@@ -3,7 +3,7 @@ use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
 use chrono::NaiveTime;
-use log::{info, trace};
+use log::{info};
 use serde::{Serialize, Deserialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -86,9 +86,11 @@ impl Twitter {
         info!("[tw_check] my last tweet id: {}", newest_tweet_id);
 
         // 以降メイン処理
+
         // 自分の最終ツイート以降のタイムラインを得る
         let tl = self.users_timelines_home(
             &me.id, newest_tweet_id).await?;
+        info!("{} tweets fetched", tl.data.len());
 
         // 反応設定のブロックごとに全ツイートを走査する
         for ch in self.contents.timeline_check.iter() {
@@ -111,12 +113,73 @@ impl Twitter {
                     continue;
                 }
                 // pattern 判定
-                // TODO
-                trace!("FIND: {:?}", tw);
+                for (pats, msgs) in ch.pattern.iter() {
+                    // 配列内のすべてのパターンを満たす
+                    let match_hit = pats.iter().all(|pat| {
+                        Self::pattern_match(pat, &tw.text)
+                    });
+                    if match_hit {
+                        info!("FIND: {:?}", tw);
+                        // 配列からリプライをランダムに1つ選ぶ
+                        let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
+                        self.tweet(&msgs[rnd_idx]).await?;
+                        // 複数種類では反応しない
+                        // 反応は1回のみ
+                        break;
+                    }
+                }
             }
         }
 
         Ok(())
+    }
+
+    /// text から pat を検索する。
+    /// 先頭が '^' だとそれで始まる場合のみ。
+    /// 末尾が '$' だとそれで終わる場合のみ。
+    fn pattern_match(pat: &str, text: &str) -> bool {
+        let count = pat.chars().count();
+        if count == 0 {
+            return false;
+        }
+        let match_start = pat.chars().next().unwrap() == '^';
+        let match_end = pat.chars().last().unwrap() == '$';
+        let begin = pat.char_indices()
+            .nth(if match_start {1} else {0})
+            .unwrap_or((0, '\0'))
+            .0;
+        let end = pat.char_indices()
+            .nth(if match_end {count - 1} else {count})
+            .unwrap_or((pat.len(), '\0'))
+            .0;
+        let pat = &pat[begin..end];
+        if pat.len() == 0 {
+            return false;
+        }
+
+        if match_start && match_end {
+            text == pat
+        }
+        else if match_start {
+            text.starts_with(pat)
+        }
+        else if match_end {
+            text.ends_with(pat)
+        }
+        else {
+            text.find(pat).is_some()
+        }
+    }
+
+    async fn tweet(&self, text: &str) -> Result<(), String> {
+        if !self.config.fake_tweet {
+            // real tweet!
+            unimplemented!();
+        }
+        else {
+            info!("Fake tweet: {}", text);
+            Ok(())
+        }
     }
 
     async fn twitter_task_entry(ctrl: Control) -> Result<(), String> {
@@ -533,6 +596,34 @@ fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tweet_pattern_match() {
+        assert!(Twitter::pattern_match("あいうえお", "あいうえお"));
+        assert!(Twitter::pattern_match("^あいうえお", "あいうえお"));
+        assert!(Twitter::pattern_match("あいうえお$", "あいうえお"));
+        assert!(Twitter::pattern_match("^あいうえお$", "あいうえお"));
+
+        assert!(Twitter::pattern_match("あいう", "あいうえお"));
+        assert!(Twitter::pattern_match("^あいう", "あいうえお"));
+        assert!(!Twitter::pattern_match("あいう$", "あいうえお"));
+        assert!(!Twitter::pattern_match("^あいう$", "あいうえお"));
+
+        assert!(Twitter::pattern_match("うえお", "あいうえお"));
+        assert!(!Twitter::pattern_match("^うえお", "あいうえお"));
+        assert!(Twitter::pattern_match("うえお$", "あいうえお"));
+        assert!(!Twitter::pattern_match("^うえお$", "あいうえお"));
+
+        assert!(Twitter::pattern_match("いうえ", "あいうえお"));
+        assert!(!Twitter::pattern_match("^いうえ", "あいうえお"));
+        assert!(!Twitter::pattern_match("いうえ$", "あいうえお"));
+        assert!(!Twitter::pattern_match("^いうえ$", "あいうえお"));
+
+        assert!(!Twitter::pattern_match("", "あいうえお"));
+        assert!(!Twitter::pattern_match("^", "あいうえお"));
+        assert!(!Twitter::pattern_match("$", "あいうえお"));
+        assert!(!Twitter::pattern_match("^$", "あいうえお"));
+    }
 
     // https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
     #[test]
