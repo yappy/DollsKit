@@ -160,8 +160,8 @@ impl Twitter {
         if count == 0 {
             return false;
         }
-        let match_start = pat.chars().next().unwrap() == '^';
-        let match_end = pat.chars().last().unwrap() == '$';
+        let match_start = pat.starts_with('^');
+        let match_end = pat.ends_with('$');
         let begin = pat.char_indices()
             .nth(if match_start {1} else {0})
             .unwrap_or((0, '\0'))
@@ -171,7 +171,7 @@ impl Twitter {
             .unwrap_or((pat.len(), '\0'))
             .0;
         let pat = &pat[begin..end];
-        if pat.len() == 0 {
+        if pat.is_empty() {
             return false;
         }
 
@@ -185,7 +185,7 @@ impl Twitter {
             text.ends_with(pat)
         }
         else {
-            text.find(pat).is_some()
+            text.contains(pat)
         }
     }
 
