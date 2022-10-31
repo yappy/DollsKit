@@ -536,7 +536,7 @@ mod tests {
 
     // https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
     #[test]
-    fn tweitter_sample_signature() {
+    fn twitter_sample_signature() {
         let method = "POST";
         let url = "https://api.twitter.com/1.1/statuses/update.json";
 
