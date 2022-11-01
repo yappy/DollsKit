@@ -98,16 +98,17 @@ impl Twitter {
         // 自分のツイートリストを得て最終ツイート ID を得る (初回のみ)
         if self.newest_tweet_id == None {
             let usertw = self.users_tweets(&me.id).await?;
-            self.newest_tweet_id = Some(usertw.meta.newest_id);
+            // maybe None
+            self.newest_tweet_id = usertw.meta.newest_id;
         }
-        let newest_tweet_id = self.newest_tweet_id.as_ref().unwrap();
-        info!("[tw_check] my last tweet id: {}", newest_tweet_id);
+        let newest_tweet_id = self.newest_tweet_id.clone().unwrap_or("1".into());
+        info!("[tw_check] my last tweet id: {:?}", newest_tweet_id);
 
         // 以降メイン処理
 
         // 自分の最終ツイート以降のタイムラインを得る
         let tl = self.users_timelines_home(
-            &me.id, newest_tweet_id).await?;
+            &me.id, &newest_tweet_id).await?;
         info!("{} tweets fetched", tl.data.len());
 
         // 反応設定のブロックごとに全ツイートを走査する
@@ -148,6 +149,11 @@ impl Twitter {
                 }
             }
         }
+
+        //test
+        let text = rand::random::<u64>().to_string();
+        let resp = self.tweets_post(&text).await?;
+        info!("tweet result: {:?}", resp);
 
         Ok(())
     }
@@ -258,7 +264,7 @@ impl Twitter {
             URL_USERS_ME,
             &KeyValue::new()).await;
         let json_str = process_response(resp).await?;
-        let obj: UsersMe = serde_json::from_str(&json_str).unwrap();
+        let obj: UsersMe = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -272,7 +278,7 @@ impl Twitter {
             URL_USERS_BY,
             &BTreeMap::from([("usernames".into(), users_str)])).await;
         let json_str = process_response(resp).await?;
-        let obj: UsersBy = serde_json::from_str(&json_str).unwrap();
+        let obj: UsersBy = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -289,7 +295,7 @@ impl Twitter {
             &url,
             &param).await;
         let json_str = process_response(resp).await?;
-        let obj: Timeline = serde_json::from_str(&json_str).unwrap();
+        let obj: Timeline = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -306,7 +312,19 @@ impl Twitter {
             &url,
             &param).await;
         let json_str = process_response(resp).await?;
-        let obj: Timeline = serde_json::from_str(&json_str).unwrap();
+        let obj: Timeline = convert_from_json(&json_str)?;
+
+        Ok(obj)
+    }
+
+    async fn tweets_post(&self, text: &str) -> Result<TweetResponse, String> {
+        let param = KeyValue::from([("text".into(), text.into())]);
+        let resp = self.http_oauth_post(
+            URL_TWEETS,
+            &KeyValue::new(),
+            &param).await;
+        let json_str = process_response(resp).await?;
+        let obj: TweetResponse = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -330,6 +348,39 @@ impl Twitter {
             .get(base_url)
             .query(query_param)
             .header(oauth_k, oauth_v);
+        let res = req.send().await?;
+
+        Ok(res)
+    }
+
+    async fn http_oauth_post(
+        &self, base_url: &str,
+        query_param: &KeyValue, body_param: &KeyValue)
+        -> Result<reqwest::Response, reqwest::Error>
+    {
+        let mut body = serde_json::json!({});
+        for (k, v) in body_param {
+            body.as_object_mut().unwrap().insert(k.clone(), serde_json::Value::String(v.clone()));
+        }
+
+        let cf = &self.config;
+        let mut oauth_param = create_oauth_field(
+            &cf.consumer_key, &cf.access_token);
+        let signature = create_signature(
+            "POST", base_url,
+            &oauth_param, query_param, &KeyValue::new(),
+            &cf.consumer_secret, &cf.access_secret);
+        oauth_param.insert("oauth_signature".into(), signature);
+
+        let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
+
+        let client = reqwest::Client::new();
+        let req = client
+            .post(base_url)
+            .query(query_param)
+            .header(oauth_k, oauth_v)
+            .header("Content-type", "application/json")
+            .body(body.to_string());
         let res = req.send().await?;
 
         Ok(res)
@@ -385,14 +436,38 @@ struct Tweet {
 struct Meta {
     /// ドキュメントには count とあるが、レスポンスの例は result_count になっている。
     result_count: u64,
-    newest_id: String,
-    oldest_id: String,
+    /// [result_count] = 0 だと存在しない
+    newest_id: Option<String>,
+    /// [result_count] = 0 だと存在しない
+    oldest_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Timeline {
     data: Vec<Tweet>,
     meta: Meta,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct TweetResponse {
+    data: TweetResponseData,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct TweetResponseData {
+    id: String,
+    text: String,
+}
+
+fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T, String>
+    where T: Deserialize<'a>
+{
+    match serde_json::from_str::<T>(json_str) {
+        Ok(result) => Ok(result),
+        Err(e) => {
+            Err(format!("{}: {}", e.to_string(), json_str))
+        },
+    }
 }
 
 async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
