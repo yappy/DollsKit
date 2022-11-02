@@ -151,9 +151,9 @@ impl Twitter {
         }
 
         //test
-        let text = rand::random::<u64>().to_string();
-        let resp = self.tweets_post(&text).await?;
-        info!("tweet result: {:?}", resp);
+        //let text = rand::random::<u64>().to_string();
+        //let resp = self.tweets_post(&text).await?;
+        //info!("tweet result: {:?}", resp);
 
         Ok(())
     }

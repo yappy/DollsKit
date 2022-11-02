@@ -41,3 +41,7 @@ sha1 = "0.10.5"
 # Concurrent test control
 serial_test = "0.9.0"
 hex-literal = "0.3.4"
+
+[build-dependencies]
+# Version
+vergen = "7.4.2"

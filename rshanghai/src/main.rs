@@ -198,6 +198,8 @@ fn load_config() -> Result<(), ()> {
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 fn system_main() {
+    info!("{} {}", sys::version::GIT_BRANCH, sys::version::GIT_HASH);
+
     load_config().expect("Load config failed");
     {
         let sysmods = SystemModules::new();
