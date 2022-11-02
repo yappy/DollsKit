@@ -57,9 +57,9 @@ struct Tweet {
 struct Meta {
     /// ドキュメントには count とあるが、レスポンスの例は result_count になっている。
     result_count: u64,
-    /// [result_count] = 0 だと存在しない
+    /// [Self::result_count] = 0 だと存在しない
     newest_id: Option<String>,
-    /// [result_count] = 0 だと存在しない
+    /// [Self::result_count] = 0 だと存在しない
     oldest_id: Option<String>,
 }
 
