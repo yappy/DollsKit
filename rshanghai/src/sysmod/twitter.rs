@@ -27,6 +27,72 @@ macro_rules! URL_USERS_TWEET {
 const URL_TWEETS: &str =
     "https://api.twitter.com/2/tweets";
 
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct User {
+    id: String,
+    name: String,
+    username: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct UsersMe {
+    data: User,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct UsersBy {
+    data: Vec<User>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Tweet {
+    id: String,
+    text: String,
+    author_id: Option<String>,
+    edit_history_tweet_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Meta {
+    /// ドキュメントには count とあるが、レスポンスの例は result_count になっている。
+    result_count: u64,
+    /// [result_count] = 0 だと存在しない
+    newest_id: Option<String>,
+    /// [result_count] = 0 だと存在しない
+    oldest_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Timeline {
+    data: Vec<Tweet>,
+    meta: Meta,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct TweetParamReply {
+    in_reply_to_tweet_id: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct TweetParam {
+    reply: Option<TweetParamReply>,
+    /// 本文。media.media_ids が無いなら必須。
+    text: Option<String>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct TweetResponse {
+    data: TweetResponseData,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct TweetResponseData {
+    id: String,
+    text: String,
+}
+
+
 #[derive(Clone, Serialize, Deserialize)]
 struct TwitterConfig {
     enabled: bool,
@@ -53,8 +119,18 @@ pub struct Twitter {
     config: TwitterConfig,
     contents: TwitterContents,
     wakeup_list: Vec<NaiveTime>,
-    newest_tweet_id: Option<String>,
+    /// タイムラインチェックの際の走査開始 tweet id。
+    ///
+    /// 初期状態は None で、未取得状態を表す。
+    /// 最初の設定は、自身の最新ツイートを取得して設定する。
+    /// ツイートを行うと最新ツイートが変わってしまうため、
+    /// ツイート時、この値が None ならばツイート前に設定を行う。
+    ///
+    /// ツイート成功後、その ID で更新する。
+    tl_check_since_id: Option<String>,
+    /// 自身の User オブジェクト。最初の1回だけ取得を行う。
     my_user_cache: Option<User>,
+    /// screen name -> User オブジェクトのマップ。
     user_id_cache: HashMap<String, User>,
 }
 
@@ -71,7 +147,7 @@ impl Twitter {
             config,
             contents,
             wakeup_list,
-            newest_tweet_id: None,
+            tl_check_since_id: None,
             my_user_cache: None,
             user_id_cache: Default::default(),
         }
@@ -81,10 +157,13 @@ impl Twitter {
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
         info!("[tw_check] periodic check task");
 
-        // 自分の ID を得る
-        info!("[tw_check] get my user info if not cached");
+        // 自分の ID
         let me = self.get_my_id().await?;
-        info!("[tw_check] user: {:?}", me);
+        info!("[tw_check] user_me: {:?}", me);
+
+        // チェック開始 ID
+        let since_id = self.get_since_id().await?;
+        info!("[tw_check] since_id: {}", since_id);
 
         // 設定ファイル中の全 user name (screen name) から ID を得る
         info!("[tw_check] get all user info from screen name");
@@ -95,23 +174,14 @@ impl Twitter {
         }
         info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
 
-        // 自分のツイートリストを得て最終ツイート ID を得る (初回のみ)
-        if self.newest_tweet_id == None {
-            let usertw = self.users_tweets(&me.id).await?;
-            // maybe None
-            self.newest_tweet_id = usertw.meta.newest_id;
-        }
-        let newest_tweet_id = self.newest_tweet_id.clone().unwrap_or("1".into());
-        info!("[tw_check] my last tweet id: {:?}", newest_tweet_id);
-
         // 以降メイン処理
 
         // 自分の最終ツイート以降のタイムラインを得る
-        let tl = self.users_timelines_home(
-            &me.id, &newest_tweet_id).await?;
+        let tl = self.users_timelines_home(&me.id, &since_id).await?;
         info!("{} tweets fetched", tl.data.len());
 
         // 反応設定のブロックごとに全ツイートを走査する
+        let mut reply_buf = vec![];
         for ch in self.contents.timeline_check.iter() {
             // 自分のツイートには反応しない
             let tliter = tl.data.iter()
@@ -141,13 +211,26 @@ impl Twitter {
                         info!("FIND: {:?}", tw);
                         // 配列からリプライをランダムに1つ選ぶ
                         let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
-                        self.tweet(&msgs[rnd_idx]).await?;
+                        // リプライツイート (id, text) を一旦バッファする
+                        // E0502 回避
+                        reply_buf.push((
+                            tw.author_id.clone(),
+                            msgs[rnd_idx].clone(),
+                        ));
                         // 複数種類では反応しない
                         // 反応は1回のみ
                         break;
                     }
                 }
             }
+        }
+
+        for (reply_to, text) in reply_buf {
+            let param = TweetParam {
+                text: Some(text.clone()),
+                ..Default::default()
+            };
+            self.tweet(param).await?;
         }
 
         //test
@@ -195,13 +278,31 @@ impl Twitter {
         }
     }
 
-    async fn tweet(&self, text: &str) -> Result<(), String> {
+    /// 自分のツイートリストを得て最終ツイート ID を得る(キャッシュ付き)。
+    async fn get_since_id(&mut self) -> Result<String, String> {
+        let me = self.get_my_id().await?;
+        if self.tl_check_since_id == None {
+            let usertw = self.users_tweets(&me.id).await?;
+            // API は成功したが最新 ID が得られなかった場合は "1" を設定する
+            self.tl_check_since_id = Some(
+                usertw.meta.newest_id.unwrap_or_else(|| "1".into()));
+        }
+
+        Ok(self.tl_check_since_id.clone().unwrap())
+    }
+
+    /// [TwitterConfig::fake_tweet] 設定に対応したツイート。
+    async fn tweet(&mut self, param: TweetParam) -> Result<(), String> {
+        // tl_check_since_id が None なら自分の最新ツイート ID を取得して設定する
+        self.get_since_id().await?;
+
         if !self.config.fake_tweet {
             // real tweet!
-            unimplemented!();
+            self.tweets_post(param).await?;
+            Ok(())
         }
         else {
-            info!("Fake tweet: {}", text);
+            info!("Fake tweet: {:?}", param);
             Ok(())
         }
     }
@@ -317,12 +418,11 @@ impl Twitter {
         Ok(obj)
     }
 
-    async fn tweets_post(&self, text: &str) -> Result<TweetResponse, String> {
-        let param = KeyValue::from([("text".into(), text.into())]);
+    async fn tweets_post(&self, param: TweetParam) -> Result<TweetResponse, String> {
         let resp = self.http_oauth_post(
             URL_TWEETS,
             &KeyValue::new(),
-            &param).await;
+            param).await;
         let json_str = process_response(resp).await?;
         let obj: TweetResponse = convert_from_json(&json_str)?;
 
@@ -346,22 +446,22 @@ impl Twitter {
         let client = reqwest::Client::new();
         let req = client
             .get(base_url)
-            .query(query_param)
+            .query(&query_param)
             .header(oauth_k, oauth_v);
         let res = req.send().await?;
 
         Ok(res)
     }
 
-    async fn http_oauth_post(
-        &self, base_url: &str,
-        query_param: &KeyValue, body_param: &KeyValue)
+    async fn http_oauth_post<T>(
+        &self,
+        base_url: &str,
+        query_param: &KeyValue,
+        body_param: T)
         -> Result<reqwest::Response, reqwest::Error>
+        where T: Serialize
     {
-        let mut body = serde_json::json!({});
-        for (k, v) in body_param {
-            body.as_object_mut().unwrap().insert(k.clone(), serde_json::Value::String(v.clone()));
-        }
+        let json_str = serde_json::to_string(&body_param).unwrap();
 
         let cf = &self.config;
         let mut oauth_param = create_oauth_field(
@@ -380,7 +480,7 @@ impl Twitter {
             .query(query_param)
             .header(oauth_k, oauth_v)
             .header("Content-type", "application/json")
-            .body(body.to_string());
+            .body(json_str);
         let res = req.send().await?;
 
         Ok(res)
@@ -407,65 +507,13 @@ impl SystemModule for Twitter {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct User {
-    id: String,
-    name: String,
-    username: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct UsersMe {
-    data: User,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct UsersBy {
-    data: Vec<User>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Tweet {
-    id: String,
-    text: String,
-    author_id: Option<String>,
-    edit_history_tweet_ids: Vec<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Meta {
-    /// ドキュメントには count とあるが、レスポンスの例は result_count になっている。
-    result_count: u64,
-    /// [result_count] = 0 だと存在しない
-    newest_id: Option<String>,
-    /// [result_count] = 0 だと存在しない
-    oldest_id: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Timeline {
-    data: Vec<Tweet>,
-    meta: Meta,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct TweetResponse {
-    data: TweetResponseData,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct TweetResponseData {
-    id: String,
-    text: String,
-}
-
 fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T, String>
     where T: Deserialize<'a>
 {
     match serde_json::from_str::<T>(json_str) {
         Ok(result) => Ok(result),
         Err(e) => {
-            Err(format!("{}: {}", e.to_string(), json_str))
+            Err(format!("{}: {}", e, json_str))
         },
     }
 }
