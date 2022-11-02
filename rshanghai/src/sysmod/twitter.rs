@@ -3,7 +3,7 @@ use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
 use chrono::NaiveTime;
-use log::{info};
+use log::{info, debug};
 use serde::{Serialize, Deserialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -75,9 +75,19 @@ struct TweetParamReply {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct TweetParamPoll {
+    duration_minutes: u32,
+    options: Vec<String>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct TweetParam {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    poll: Option<TweetParamPoll>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reply: Option<TweetParamReply>,
     /// 本文。media.media_ids が無いなら必須。
+    #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<String>
 }
 
@@ -234,9 +244,18 @@ impl Twitter {
         }
 
         //test
-        //let text = rand::random::<u64>().to_string();
-        //let resp = self.tweets_post(&text).await?;
-        //info!("tweet result: {:?}", resp);
+        /*
+        let param = TweetParam {
+            poll: Some(TweetParamPoll {
+                duration_minutes: 60 * 24,
+                options: vec!["ホワイト".into(), "ブラック".into()],
+            }),
+            text: Some("?".into()),
+            ..Default::default()
+        };
+        let resp = self.tweets_post(param).await?;
+        info!("tweet result: {:?}", resp);
+        */
 
         Ok(())
     }
@@ -474,6 +493,7 @@ impl Twitter {
 
         let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
 
+        debug!("POST: {}", json_str);
         let client = reqwest::Client::new();
         let req = client
             .post(base_url)
