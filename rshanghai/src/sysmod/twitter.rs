@@ -224,7 +224,7 @@ impl Twitter {
                         // リプライツイート (id, text) を一旦バッファする
                         // E0502 回避
                         reply_buf.push((
-                            tw.author_id.clone(),
+                            tw.id.clone(),
                             msgs[rnd_idx].clone(),
                         ));
                         // 複数種類では反応しない
@@ -235,12 +235,25 @@ impl Twitter {
             }
         }
 
+        // バッファしたリプライを実行
         for (reply_to, text) in reply_buf {
+            // since_id 更新用データ
+            // tweet id を数値比較のため文字列から変換する
+            // (リプライ先 ID + 1) の max をとる
+            let cur: u64 = self.tl_check_since_id.as_ref().unwrap()
+                .parse().unwrap();
+            let next: u64 = reply_to.parse().unwrap();
+            let max = cur.max(next);
+
             let param = TweetParam {
-                text: Some(text.clone()),
+                reply: Some(TweetParamReply { in_reply_to_tweet_id: reply_to }),
+                text: Some(text),
                 ..Default::default()
             };
             self.tweet(param).await?;
+
+            // 成功したら since_id を更新する
+            self.tl_check_since_id = Some(max.to_string());
         }
 
         //test
