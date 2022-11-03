@@ -1,6 +1,6 @@
 {
 	"twitter": {
-		"enabled"			: false,
+		"tlcheck_enabled"	: false,
 		"debug_exec_once"	: false,
 		"fake_tweet"		: true,
 		"consumer_key"		: "",

@@ -105,7 +105,7 @@ struct TweetResponseData {
 
 #[derive(Clone, Serialize, Deserialize)]
 struct TwitterConfig {
-    enabled: bool,
+    tlcheck_enabled: bool,
     debug_exec_once: bool,
     fake_tweet: bool,
     consumer_key   : String,
@@ -535,7 +535,7 @@ impl Twitter {
 impl SystemModule for Twitter {
     fn on_start(&self, ctrl: &Control) {
         info!("[twitter] on_start");
-        if self.config.enabled {
+        if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {
                 ctrl.spawn_oneshot_task(
                     "tw_check",
