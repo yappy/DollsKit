@@ -141,8 +141,10 @@ fn load_config() -> Result<()> {
             .read(true)
             .open(CONFIG_FILE)
             .with_context(|| {
-                info!("HINT: Copy {} to {} and try again", CONFIG_DEF_FILE, CONFIG_FILE);
                 format!("Failed to open {} (the first execution?)", CONFIG_FILE)
+            })
+            .with_context(|| {
+                format!("HINT: Copy {} to {} and try again", CONFIG_DEF_FILE, CONFIG_FILE)
             })?;
 
         let metadata = f.metadata()?;
@@ -191,7 +193,7 @@ fn system_main() -> Result<()> {
     info!("system main");
     info!("{}", *sys::version::VERSION_INFO);
 
-    load_config().context("Config load failed")?;
+    load_config()?;
     {
         let sysmods = SystemModules::new();
         let ts = TaskServer::new(sysmods);
