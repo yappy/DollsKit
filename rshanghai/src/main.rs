@@ -182,9 +182,11 @@ fn load_config() -> Result<(), ()> {
 }
 
 async fn boot_tweet_task(ctrl: Control) -> Result<(), String> {
-    // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let build_info: &str = &*sys::version::VERSION_INFO;
-    let msg = format!("[TODO: DATE] Boot...\n{}", build_info);
+    // 同一テキストをツイートしようとするとエラーになるので日時を含める
+    let now = chrono::Local::now();
+    let now = now.format("%F %T %:z");
+    let msg = format!("[{}] Boot...\n{}", now, build_info);
 
     {
         let mut twitter = ctrl.sysmods().twitter.write().await;
