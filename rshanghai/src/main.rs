@@ -7,6 +7,7 @@
 mod sys;
 mod sysmod;
 
+use anyhow::{Result, Context, ensure};
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
@@ -108,7 +109,7 @@ fn init_log(is_daemon: bool) {
 }
 
 /// 設定データをロードする。
-fn load_config() -> Result<(), ()> {
+fn load_config() -> Result<()> {
     {
         // デフォルト設定ファイルを削除する
         info!("Remove {}", CONFIG_DEF_FILE);
@@ -119,19 +120,14 @@ fn load_config() -> Result<(), ()> {
         // デフォルト設定を書き出す
         // 600 でアトミックに必ず新規作成する、失敗したらエラー
         info!("Writing default config to {}", CONFIG_DEF_FILE);
-        let f = OpenOptions::new()
+        let mut f = OpenOptions::new()
             .write(true)
             .create_new(true)
             .mode(0o600)
-            .open(CONFIG_DEF_FILE);
-        let mut f = match f {
-            Ok(f) => f,
-            Err(e) => {
-                error!("Writing {} failed: {}", CONFIG_DEF_FILE, e);
-                return Err(())
-            },
-        };
-        f.write_all(DEF_CONFIG_JSON.as_bytes()).unwrap();
+            .open(CONFIG_DEF_FILE)
+            .with_context(|| format!("Failed to open {}", CONFIG_DEF_FILE))?;
+        f.write_all(DEF_CONFIG_JSON.as_bytes())
+            .with_context(|| format!("Failed to write {}", CONFIG_DEF_FILE))?;
         info!("OK: written to {}", CONFIG_DEF_FILE);
         // close
     }
@@ -141,28 +137,21 @@ fn load_config() -> Result<(), ()> {
         // 設定ファイルを読む
         // open 後パーミッションを確認し、危険ならエラーとする
         info!("Loading config: {}", CONFIG_FILE);
-        let f = OpenOptions::new()
+        let mut f = OpenOptions::new()
             .read(true)
-            .open(CONFIG_FILE);
-        let mut f = match f {
-            Ok(f) => f,
-            Err(e) => {
-                error!("Opening {} failed: {}", CONFIG_FILE, e);
-                info!("HINT: Create {} and try again", CONFIG_FILE);
-                return Err(())
-            },
-        };
-        let metadata = f.metadata().expect("Cannot get metadata");
+            .open(CONFIG_FILE)
+            .with_context(|| {
+                info!("HINT: Copy {} to {} and try again", CONFIG_DEF_FILE, CONFIG_FILE);
+                format!("Failed to open {} (the first execution?)", CONFIG_FILE)
+            })?;
+
+        let metadata = f.metadata()?;
         let permissions = metadata.permissions();
         let masked = permissions.mode() & 0o777;
-        if masked != 0o600 {
-            error!("Config file permission is not 600: {:03o}", permissions.mode());
-            return Err(());
-        }
-        if let Err(e) = f.read_to_string(&mut json_str) {
-            error!("Read error: {}", e.to_string());
-            return Err(());
-        }
+        ensure!(masked == 0o600, "Config file permission is not 600: {:03o}", permissions.mode());
+
+        f.read_to_string(&mut json_str)
+            .with_context(|| format!("Failed to read {}", CONFIG_FILE))?;
         info!("OK: {} loaded", CONFIG_FILE);
         // close
     }
@@ -170,18 +159,15 @@ fn load_config() -> Result<(), ()> {
     // json パースして設定システムを初期化
     let json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, &json_str];
     sys::config::init();
-    for json_str in json_list {
-        if let Err(msg) = sys::config::add_config(json_str)
-        {
-            error!("Config load failed: {}", msg);
-            return Err(());
-        }
+    for (i, json_str) in json_list.iter().enumerate() {
+        sys::config::add_config(json_str)
+            .with_context(|| format!("Config load failed: {}", i))?;
     }
 
     Ok(())
 }
 
-async fn boot_tweet_task(ctrl: Control) -> Result<(), String> {
+async fn boot_tweet_task(ctrl: Control) -> Result<()> {
     let build_info: &str = &*sys::version::VERSION_INFO;
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
@@ -201,10 +187,11 @@ async fn boot_tweet_task(ctrl: Control) -> Result<(), String> {
 ///
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
-fn system_main() {
+fn system_main() -> Result<()> {
+    info!("system main");
     info!("{}", *sys::version::VERSION_INFO);
 
-    load_config().expect("Load config failed");
+    load_config().context("Config load failed")?;
     {
         let sysmods = SystemModules::new();
         let ts = TaskServer::new(sysmods);
@@ -213,7 +200,9 @@ fn system_main() {
         ts.spawn_oneshot_task("task1", boot_tweet_task);
         ts.run();
     }
-    info!("task server dropped")
+    info!("task server dropped");
+
+    Ok(())
 }
 
 /// コマンドラインのヘルプを表示する。
@@ -228,7 +217,7 @@ fn print_help(program: &str, opts: Options) {
 /// エントリポイント。
 ///
 /// コマンドラインとデーモン化、ログの初期化処理をしたのち、[system_main] を呼ぶ。
-fn main() {
+fn main() -> Result<()>{
     // コマンドライン引数のパース
     let args: Vec<String> = env::args().collect();
     let program = &args[0];
@@ -258,5 +247,9 @@ fn main() {
         init_log(false);
     }
 
-    system_main();
+    system_main().map_err(|e| {
+        error!("Error in system_main");
+        e
+    })?;
+    Ok(())
 }
