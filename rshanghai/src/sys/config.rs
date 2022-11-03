@@ -1,5 +1,6 @@
 //! 設定データの管理。
 
+use anyhow::Result;
 use once_cell::sync::OnceCell;
 use serde_json::Value;
 use std::ops::RangeBounds;
@@ -31,14 +32,10 @@ pub fn init() {
 /// 設定データを json 文字列からロードして検索リストに追加する。
 ///
 /// 同じキーを持つ場合は後で追加したものが優先される。
-/// json のパースに失敗した場合、その詳細を示す文字列を返す。
-pub fn add_config(json_src: &str) -> Result<(), String>
+pub fn add_config(json_src: &str) -> Result<()>
 {
     // parse
-    let jsobj = match serde_json::from_str(json_src) {
-        Ok(json) => json,
-        Err(e) => return Err(e.to_string()),
-    };
+    let jsobj = serde_json::from_str(json_src)?;
 
     // lazy inialize + wlock
     let mut config = CONFIG

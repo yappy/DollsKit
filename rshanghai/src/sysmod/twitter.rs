@@ -2,6 +2,8 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
+
+use anyhow::{Result, Context, bail};
 use chrono::NaiveTime;
 use log::{info, debug};
 use serde::{Serialize, Deserialize};
@@ -164,7 +166,7 @@ impl Twitter {
     }
 
     /// Twitter 巡回タスク。
-    async fn twitter_task(&mut self, ctrl: &Control) -> Result<(), String> {
+    async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
         info!("[tw_check] periodic check task");
 
         // 自分の ID
@@ -311,7 +313,7 @@ impl Twitter {
     }
 
     /// 自分のツイートリストを得て最終ツイート ID を得る(キャッシュ付き)。
-    async fn get_since_id(&mut self) -> Result<String, String> {
+    async fn get_since_id(&mut self) -> Result<String> {
         let me = self.get_my_id().await?;
         if self.tl_check_since_id == None {
             let usertw = self.users_tweets(&me.id).await?;
@@ -324,8 +326,8 @@ impl Twitter {
     }
 
     /// シンプルなツイート。
-    /// 中身は [TwitterConfig::tweet_raw]。
-    pub async fn tweet(&mut self, text: &str) -> Result<(), String> {
+    /// 中身は [Self::tweet_raw]。
+    pub async fn tweet(&mut self, text: &str) -> Result<()> {
         let param = TweetParam {
             text: Some(text.into()),
             ..Default::default()
@@ -335,7 +337,7 @@ impl Twitter {
     }
 
     /// [TwitterConfig::fake_tweet] 設定に対応したツイート。
-    async fn tweet_raw(&mut self, param: TweetParam) -> Result<(), String> {
+    async fn tweet_raw(&mut self, param: TweetParam) -> Result<()> {
         // tl_check_since_id が None なら自分の最新ツイート ID を取得して設定する
         self.get_since_id().await?;
 
@@ -350,14 +352,18 @@ impl Twitter {
         }
     }
 
-    async fn twitter_task_entry(ctrl: Control) -> Result<(), String> {
+    /// エントリ関数。[Self::twitter_task] を呼ぶ。
+    ///
+    /// [Control] 内の [Twitter] オブジェクトを wlock するので
+    /// [Self::twitter_task] は排他実行となる。
+    async fn twitter_task_entry(ctrl: Control) -> Result<()> {
         let mut twitter = ctrl.sysmods().twitter.write().await;
         twitter.twitter_task(&ctrl).await
     }
 
     /// 自身の Twitter ID を返す。
     /// [Self::users_me] の キャッシュ付きバージョン。
-    async fn get_my_id(&mut self) -> Result<User, String> {
+    async fn get_my_id(&mut self) -> Result<User> {
         if let Some(user) = &self.my_user_cache {
             Ok(user.clone())
         }
@@ -374,7 +380,7 @@ impl Twitter {
     ///
     /// 結果は [Self::user_id_cache] に入れる。
     /// 凍結等で取得できない可能性があり、その場合は無視される。
-    async fn resolve_ids(&mut self, user_names: &[String]) -> Result<(), String> {
+    async fn resolve_ids(&mut self, user_names: &[String]) -> Result<()> {
         // user_id_cache にないユーザ名を集める
         let unknown_users: Vec<_> = user_names.iter()
             .filter_map(|user| {
@@ -403,24 +409,24 @@ impl Twitter {
         Ok(())
     }
 
-    async fn users_me(&self) -> Result<UsersMe, String> {
+    async fn users_me(&self) -> Result<UsersMe> {
         let resp = self.http_oauth_get(
             URL_USERS_ME,
-            &KeyValue::new()).await;
+            &KeyValue::new()).await?;
         let json_str = process_response(resp).await?;
         let obj: UsersMe = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
 
-    async fn users_by(&self, users: &[String]) -> Result<UsersBy, String> {
+    async fn users_by(&self, users: &[String]) -> Result<UsersBy> {
         if !(1..LIMIT_USERS_BY).contains(&users.len()) {
             panic!("{} limit over: {}", URL_USERS_BY, users.len());
         }
         let users_str = users.join(",");
         let resp = self.http_oauth_get(
             URL_USERS_BY,
-            &BTreeMap::from([("usernames".into(), users_str)])).await;
+            &BTreeMap::from([("usernames".into(), users_str)])).await?;
         let json_str = process_response(resp).await?;
         let obj: UsersBy = convert_from_json(&json_str)?;
 
@@ -428,7 +434,7 @@ impl Twitter {
     }
 
     async fn users_timelines_home(&self, id: &str, since_id: &str)
-        -> Result<Timeline, String>
+        -> Result<Timeline>
     {
         let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
@@ -437,14 +443,14 @@ impl Twitter {
         ]);
         let resp = self.http_oauth_get(
             &url,
-            &param).await;
+            &param).await?;
         let json_str = process_response(resp).await?;
         let obj: Timeline = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
 
-    async fn users_tweets(&self, id: &str) -> Result<Timeline, String> {
+    async fn users_tweets(&self, id: &str) -> Result<Timeline> {
         let url = format!(URL_USERS_TWEET!(), id);
         let param = KeyValue::from([
             // retweets and/or replies
@@ -454,18 +460,18 @@ impl Twitter {
         ]);
         let resp = self.http_oauth_get(
             &url,
-            &param).await;
+            &param).await?;
         let json_str = process_response(resp).await?;
         let obj: Timeline = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
 
-    async fn tweets_post(&self, param: TweetParam) -> Result<TweetResponse, String> {
+    async fn tweets_post(&self, param: TweetParam) -> Result<TweetResponse> {
         let resp = self.http_oauth_post(
             URL_TWEETS,
             &KeyValue::new(),
-            param).await;
+            param).await?;
         let json_str = process_response(resp).await?;
         let obj: TweetResponse = convert_from_json(&json_str)?;
 
@@ -473,7 +479,7 @@ impl Twitter {
     }
 
     async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
-        -> Result<reqwest::Response, reqwest::Error>
+        -> Result<reqwest::Response>
     {
         let cf = &self.config;
         let mut oauth_param = create_oauth_field(
@@ -501,7 +507,7 @@ impl Twitter {
         base_url: &str,
         query_param: &KeyValue,
         body_param: T)
-        -> Result<reqwest::Response, reqwest::Error>
+        -> Result<reqwest::Response>
         where T: Serialize
     {
         let json_str = serde_json::to_string(&body_param).unwrap();
@@ -551,36 +557,24 @@ impl SystemModule for Twitter {
     }
 }
 
-fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T, String>
+fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
     where T: Deserialize<'a>
 {
-    match serde_json::from_str::<T>(json_str) {
-        Ok(result) => Ok(result),
-        Err(e) => {
-            Err(format!("{}: {}", e, json_str))
-        },
-    }
+    let obj = serde_json::from_str::<T>(json_str)
+        .with_context(|| json_str.to_string())?;
+
+    Ok(obj)
 }
 
-async fn process_response(result: Result<reqwest::Response, reqwest::Error>)
--> Result<String, String>
+async fn process_response(resp: reqwest::Response) -> Result<String>
 {
-    match result {
-        Ok(resp) => {
-            let status = resp.status();
-            let text = resp.text().await;
-            let text = match text {
-                Ok(text) => text,
-                Err(e) => return Err(e.to_string())
-            };
-            if status.is_success() {
-                Ok(text)
-            }
-            else {
-                Err(format!("HTTP error {} {}", status, text))
-            }
-        },
-        Err(e) => Err(e.to_string()),
+    let status = resp.status();
+    let text = resp.text().await?;
+    if status.is_success() {
+        Ok(text)
+    }
+    else {
+        bail!("HTTP error {} {}", status, text);
     }
 }
 

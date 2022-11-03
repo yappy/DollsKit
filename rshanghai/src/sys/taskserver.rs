@@ -2,6 +2,7 @@
 use crate::sysmod::SystemModules;
 use std::future::Future;
 use std::sync::Arc;
+use anyhow::Result;
 use chrono::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 use log::{error, info, trace};
@@ -37,16 +38,13 @@ impl Control {
     /// 1回限りのタスクを生成して実行開始する。
     ///
     /// F: [Control] を引数に、T を返す関数。
-    /// T: Future<Output = Result<(), R> かつスレッド間移動可能。
-    /// R: [ToString::to_string()] 可能。
+    /// T: Future<Output = anyhow::Result<()> かつスレッド間移動可能。
     ///
-    /// つまり、F は [Control] を引数に、Result<(), R> を返す async function。
-    /// R は to_string() 可能な型。
-    pub fn spawn_oneshot_task<F, T, R>(&self, name: &str, f: F)
+    /// つまり、F は [Control] を引数に、anyhow::Result<()> を返す async function。
+    pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
         F: FnOnce(Control) -> T,
-        T: Future<Output = Result<(), R>> + Send + 'static,
-        R: ToString,
+        T: Future<Output = Result<()>> + Send + 'static,
     {
         // move するデータを準備する
         let name = name.to_string();
@@ -55,9 +53,11 @@ impl Control {
 
         self.internal.rt.spawn(async move {
             info!("[{}] start (one-shot)", name);
+
             let result = future.await;
-            if let Err(r) = result {
-                error!("[{}] finish (error): {}", name, r.to_string());
+
+            if let Err(e) = result {
+                error!("[{}] finish (error): {:?}", name, e);
             }
             else {
                 info!("[{}] finish (success)", name);
@@ -66,12 +66,11 @@ impl Control {
     }
 
     /// time_list
-    pub fn spawn_periodic_task<F, T, R>(
+    pub fn spawn_periodic_task<F, T>(
         &self, name: &str, wakeup_list: &[NaiveTime], f: F)
     where
         F: Fn(Control) -> T + Send + 'static,
-        T: Future<Output = Result<(), R>> + Send + 'static,
-        R: ToString + Send,
+        T: Future<Output = Result<()>> + Send + 'static,
     {
         // move するデータを準備する
         let name = name.to_string();
@@ -156,8 +155,8 @@ impl Control {
                 let future = f(ctrl.clone());
                 info!("[{}] start (periodic)", name);
                 let result = future.await;
-                if let Err(r) = result {
-                    error!("[{}] finish (error): {}", name, r.to_string());
+                if let Err(e) = result {
+                    error!("[{}] finish (error): {:?}", name, e);
                 }
                 else {
                     info!("[{}] finish (success)", name);
@@ -198,11 +197,10 @@ impl TaskServer {
         TaskServer { ctrl }
     }
 
-    pub fn spawn_oneshot_task<F, T, R>(&self, name: &str, f: F)
+    pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
         F: FnOnce(Control) -> T,
-        T: Future<Output = Result<(), R>> + Send + 'static,
-        R: ToString,
+        T: Future<Output = Result<()>> + Send + 'static,
     {
         self.ctrl.spawn_oneshot_task(name, f);
     }
