@@ -326,7 +326,7 @@ impl Twitter {
     }
 
     /// シンプルなツイート。
-    /// 中身は [TwitterConfig::tweet_raw]。
+    /// 中身は [Self::tweet_raw]。
     pub async fn tweet(&mut self, text: &str) -> Result<()> {
         let param = TweetParam {
             text: Some(text.into()),
@@ -352,6 +352,10 @@ impl Twitter {
         }
     }
 
+    /// エントリ関数。[Self::twitter_task] を呼ぶ。
+    ///
+    /// [Control] 内の [Twitter] オブジェクトを wlock するので
+    /// [Self::twitter_task] は排他実行となる。
     async fn twitter_task_entry(ctrl: Control) -> Result<()> {
         let mut twitter = ctrl.sysmods().twitter.write().await;
         twitter.twitter_task(&ctrl).await
