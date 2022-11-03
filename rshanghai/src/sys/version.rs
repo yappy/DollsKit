@@ -1,3 +1,8 @@
+//! バージョン情報。
+//!
+//! vergen クレートによる。
+//! [build.rs] を参照。
+
 /*
 https://docs.rs/vergen/latest/vergen/
 
@@ -39,9 +44,26 @@ VERGEN_SYSINFO_CPU_BRAND	AMD Ryzen Threadripper 1900X 8-Core Processor
 VERGEN_SYSINFO_CPU_FREQUENCY	3792
 */
 
+use once_cell::sync::Lazy;
+
 pub const GIT_BRANCH:       &str = env!("VERGEN_GIT_BRANCH");
 pub const GIT_HASH:         &str = env!("VERGEN_GIT_SHA");
 pub const GIT_SEMVER:       &str = env!("VERGEN_GIT_SEMVER");
+pub const GIT_DATE:         &str = env!("VERGEN_GIT_COMMIT_DATE");
 pub const GIT_TIMESTAMP:    &str = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
 pub const BUILD_PROFILE:    &str = env!("VERGEN_CARGO_PROFILE");
 pub const BUILD_TARGET:     &str = env!("VERGEN_CARGO_TARGET_TRIPLE");
+
+pub static VERSION_INFO: Lazy<String> = Lazy::new(|| {
+    format!(
+"Build: {} {}
+Branch: {}
+{}
+{}",
+        BUILD_TARGET,
+        BUILD_PROFILE,
+        GIT_BRANCH,
+        GIT_HASH,
+        GIT_DATE,
+    )
+});

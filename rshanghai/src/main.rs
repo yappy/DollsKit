@@ -107,17 +107,6 @@ fn init_log(is_daemon: bool) {
     CombinedLogger::init(loggers).unwrap();
 }
 
-async fn test_task(ctrl: Control) -> Result<(), String> {
-    info!("task1");
-    ctrl.spawn_oneshot_task("task1-1", test_task_sub);
-    Ok(())
-}
-
-async fn test_task_sub(_ctrl: Control) -> Result<(), String> {
-    info!("task1-1");
-    Ok(())
-}
-
 /// 設定データをロードする。
 fn load_config() -> Result<(), ()> {
     {
@@ -192,13 +181,26 @@ fn load_config() -> Result<(), ()> {
     Ok(())
 }
 
+async fn boot_tweet_task(ctrl: Control) -> Result<(), String> {
+    // 同一テキストをツイートしようとするとエラーになるので日時を含める
+    let build_info: &str = &*sys::version::VERSION_INFO;
+    let msg = format!("[TODO: DATE] Boot...\n{}", build_info);
+
+    {
+        let mut twitter = ctrl.sysmods().twitter.write().await;
+        twitter.tweet(&msg).await?;
+    }
+
+    Ok(())
+}
+
 /// システムメイン処理。
 /// コマンドラインとデーモン化、ログの初期化の後に入る。
 ///
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 fn system_main() {
-    info!("{} {}", sys::version::GIT_BRANCH, sys::version::GIT_HASH);
+    info!("{}", *sys::version::VERSION_INFO);
 
     load_config().expect("Load config failed");
     {
@@ -206,7 +208,7 @@ fn system_main() {
         let ts = TaskServer::new(sysmods);
 
         ts.sysmod_start();
-        ts.spawn_oneshot_task("task1", test_task);
+        ts.spawn_oneshot_task("task1", boot_tweet_task);
         ts.run();
     }
     info!("task server dropped")

@@ -250,7 +250,7 @@ impl Twitter {
                 text: Some(text),
                 ..Default::default()
             };
-            self.tweet(param).await?;
+            self.tweet_raw(param).await?;
 
             // 成功したら since_id を更新する
             self.tl_check_since_id = Some(max.to_string());
@@ -323,8 +323,19 @@ impl Twitter {
         Ok(self.tl_check_since_id.clone().unwrap())
     }
 
+    /// シンプルなツイート。
+    /// 中身は [TwitterConfig::tweet_raw]。
+    pub async fn tweet(&mut self, text: &str) -> Result<(), String> {
+        let param = TweetParam {
+            text: Some(text.into()),
+            ..Default::default()
+        };
+
+        self.tweet_raw(param).await
+    }
+
     /// [TwitterConfig::fake_tweet] 設定に対応したツイート。
-    async fn tweet(&mut self, param: TweetParam) -> Result<(), String> {
+    async fn tweet_raw(&mut self, param: TweetParam) -> Result<(), String> {
         // tl_check_since_id が None なら自分の最新ツイート ID を取得して設定する
         self.get_since_id().await?;
 
