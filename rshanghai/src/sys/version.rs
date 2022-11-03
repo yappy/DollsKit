@@ -63,7 +63,7 @@ Branch: {}
         BUILD_TARGET,
         BUILD_PROFILE,
         GIT_BRANCH,
-        GIT_HASH,
+        GIT_SEMVER,
         GIT_DATE,
     )
 });
