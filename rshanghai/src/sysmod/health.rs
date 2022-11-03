@@ -1,7 +1,7 @@
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 use super::SystemModule;
-use anyhow::{Result, ensure};
+use anyhow::{Result, anyhow};
 use chrono::NaiveTime;
 use log::info;
 use serde::{Serialize, Deserialize};
@@ -21,9 +21,8 @@ impl Health {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[health] initialize");
 
-        let jsobj = config::get_object(&["health"]);
-        ensure!(jsobj != None, "Config not found: health");
-        let jsobj = jsobj.unwrap();
+        let jsobj = config::get_object(&["health"])
+            .map_or(Err(anyhow!("Config not found: health")), Ok)?;
         let config: HealthConfig = serde_json::from_value(jsobj)?;
 
         Ok(Health {

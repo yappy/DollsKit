@@ -58,7 +58,7 @@ impl SystemModules {
         let health = Arc::new(
             TokioRwLock::new(Health::new(wakeup_health)?));
         let twitter = Arc::new(
-            TokioRwLock::new(Twitter::new(wakeup_twiter)));
+            TokioRwLock::new(Twitter::new(wakeup_twiter)?));
             event_target_list.push(sysinfo.clone());
             event_target_list.push(health.clone());
         event_target_list.push(twitter.clone());

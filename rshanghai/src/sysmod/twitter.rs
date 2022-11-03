@@ -3,7 +3,7 @@ use crate::sys::taskserver::Control;
 use crate::sys::net;
 use super::SystemModule;
 
-use anyhow::{Result, Context, bail};
+use anyhow::{Result, Context, bail, anyhow};
 use chrono::NaiveTime;
 use log::{info, debug};
 use serde::{Serialize, Deserialize};
@@ -147,22 +147,25 @@ pub struct Twitter {
 }
 
 impl Twitter {
-    pub fn new(wakeup_list: Vec<NaiveTime>) -> Self {
+    pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[twitter] initialize");
 
-        let jsobj = config::get_object(&["twitter"]).expect("config error: twitter");
-        let config: TwitterConfig = serde_json::from_value(jsobj).unwrap();
-        let jsobj = config::get_object(&["tw_contents"]).expect("config error: tw_contents");
-        let contents: TwitterContents = serde_json::from_value(jsobj).unwrap();
+        let jsobj = config::get_object(&["twitter"])
+            .map_or(Err(anyhow!("Config not found: twitter")), Ok)?;
+        let config: TwitterConfig = serde_json::from_value(jsobj)?;
 
-        Twitter {
+        let jsobj = config::get_object(&["tw_contents"])
+            .map_or(Err(anyhow!("Config not found: tw_contents")), Ok)?;
+        let contents: TwitterContents = serde_json::from_value(jsobj)?;
+
+        Ok(Twitter {
             config,
             contents,
             wakeup_list,
             tl_check_since_id: None,
             my_user_cache: None,
             user_id_cache: Default::default(),
-        }
+        })
     }
 
     /// Twitter 巡回タスク。
