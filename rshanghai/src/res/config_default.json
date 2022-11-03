@@ -1,4 +1,8 @@
 {
+	"health": {
+		"enabled"			: false,
+		"debug_exec_once"	: false
+	},
 	"twitter": {
 		"tlcheck_enabled"	: false,
 		"debug_exec_once"	: false,

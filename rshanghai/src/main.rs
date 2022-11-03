@@ -195,7 +195,7 @@ fn system_main() -> Result<()> {
 
     load_config()?;
     {
-        let sysmods = SystemModules::new();
+        let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
 
         ts.sysmod_start();
