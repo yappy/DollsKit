@@ -72,8 +72,8 @@ impl SystemModule for Health {
 
 #[derive(Debug, Clone)]
 struct CpuInfo {
-    usage_percent_total: f64,
-    usage_percent_list: Vec<f64>,
+    cpu_percent_total: f64,
+    cpu_percent_list: Vec<f64>,
 }
 
 async fn get_cpu_info() -> Result<CpuInfo> {
@@ -98,8 +98,8 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     // guest_nice (since Linux 2.6.33)
     //        (10)  Time spent running a niced guest (virtual CPU for guest operating systems under the
     //        control of the Linux kernel).
-    let mut usage_percent_total = None;
-    let mut usage_percent_list = vec![];
+    let mut cpu_percent_total = None;
+    let mut cpu_percent_list = vec![];
     for line in text.lines() {
         let mut name = None;
         let mut user = None;
@@ -128,18 +128,19 @@ async fn get_cpu_info() -> Result<CpuInfo> {
         let total = user + nice + system + idle;
         let value = (total - idle) as f64 / total as f64;
         if name == Some("cpu") {
-            usage_percent_total = Some(value);
+            cpu_percent_total = Some(value);
         }
         else {
-            usage_percent_list.push(value);
+            cpu_percent_list.push(value);
         }
     }
 
-    ensure!(usage_percent_total.is_some());
-    ensure!(!usage_percent_list.is_empty());
+    ensure!(cpu_percent_total.is_some());
+    ensure!(!cpu_percent_list.is_empty());
+    let cpu_percent_total = cpu_percent_total.unwrap();
     Ok(CpuInfo {
-        usage_percent_total: usage_percent_total.unwrap(),
-        usage_percent_list,
+        cpu_percent_total,
+        cpu_percent_list,
     })
 }
 
@@ -147,7 +148,6 @@ async fn get_cpu_info() -> Result<CpuInfo> {
 struct MemInfo {
     total_mib: f64,
     avail_mib: f64,
-    percent: f64,
 }
 
 async fn get_mem_info() -> Result<MemInfo> {
@@ -179,16 +179,14 @@ async fn get_mem_info() -> Result<MemInfo> {
     let avail = avail.ok_or(anyhow!("parse error"))?;
     let total_mib = total.parse::<u64>()? as f64 / 1024.0;
     let avail_mib = avail.parse::<u64>()? as f64 / 1024.0;
-    let percent = 100.0 * avail_mib / total_mib;
 
-    Ok(MemInfo { total_mib, avail_mib, percent })
+    Ok(MemInfo { total_mib, avail_mib })
 }
 
 #[derive(Debug, Clone, Copy)]
 struct DiskInfo {
     total_gib: f64,
     avail_gib: f64,
-    percent: f64,
 }
 
 async fn get_disk_info() -> Result<DiskInfo> {
@@ -232,9 +230,8 @@ async fn get_disk_info() -> Result<DiskInfo> {
     let avail = avail.ok_or(anyhow!("parse error"))?;
     let total_gib = total.parse::<u64>()? as f64 / 1024.0 / 1024.0;
     let avail_gib = avail.parse::<u64>()? as f64 / 1024.0 / 1024.0;
-    let percent = 100.0 * avail_gib / total_gib;
 
-    Ok(DiskInfo { total_gib, avail_gib, percent })
+    Ok(DiskInfo { total_gib, avail_gib })
 }
 
 #[derive(Debug, Clone, Copy)]
