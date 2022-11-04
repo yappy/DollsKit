@@ -251,7 +251,7 @@ async fn get_cpu_temp() -> Result<CpuTemp> {
     let text = String::from_utf8_lossy(&buf);
 
     // 'C を 1000 倍した整数が得られるので変換する
-    let temp: u64 = text.trim().parse()?;
+    let temp: f64 = text.trim().parse()?;
     let temp = temp as f64 / 1000.0;
 
     Ok(CpuTemp { temp })
