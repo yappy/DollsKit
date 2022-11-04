@@ -7,20 +7,19 @@
 mod sys;
 mod sysmod;
 
-use anyhow::{Result, Context, ensure};
+use anyhow::{ensure, Context, Result};
+use daemonize::Daemonize;
+use getopts::Options;
+use log::{error, info, warn, LevelFilter};
+use simplelog::format_description;
+use simplelog::{ColorChoice, TerminalMode};
+use simplelog::{CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, WriteLogger};
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
+use std::io::{Read, Write};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use std::io::{Write, Read};
-use getopts::Options;
-use simplelog::{ConfigBuilder, CombinedLogger, SharedLogger, WriteLogger, TermLogger};
-use simplelog::{TerminalMode, ColorChoice};
-use simplelog::format_description;
-use log::{error, warn, info, LevelFilter};
-use daemonize::Daemonize;
-use sys::taskserver::{TaskServer, Control};
+use sys::taskserver::{Control, TaskServer};
 use sysmod::SystemModules;
-
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
 const STDOUT_FILE: &str = "stdout.txt";
@@ -85,7 +84,9 @@ fn daemon() {
 /// * `is_daemon` - デーモンかどうか。
 fn init_log(is_daemon: bool) {
     let config = ConfigBuilder::new()
-        .set_time_format_custom(format_description!("[year]-[month]-[day] [hour]:[minute]:[second]"))
+        .set_time_format_custom(format_description!(
+            "[year]-[month]-[day] [hour]:[minute]:[second]"
+        ))
         .build();
     let file = OpenOptions::new()
         .append(true)
@@ -95,13 +96,15 @@ fn init_log(is_daemon: bool) {
 
     // filter = Off, Error, Warn, Info, Debug, Trace
     let loggers: Vec<Box<dyn SharedLogger>> = if is_daemon {
+        vec![WriteLogger::new(LevelFilter::Info, config, file)]
+    } else {
         vec![
-            WriteLogger::new(LevelFilter::Info, config, file),
-        ]
-    }
-    else {
-        vec![
-            TermLogger::new(LevelFilter::Trace, config.clone(), TerminalMode::Stdout, ColorChoice::Never),
+            TermLogger::new(
+                LevelFilter::Trace,
+                config.clone(),
+                TerminalMode::Stdout,
+                ColorChoice::Never,
+            ),
             WriteLogger::new(LevelFilter::Info, config, file),
         ]
     };
@@ -114,8 +117,10 @@ fn load_config() -> Result<()> {
         // デフォルト設定ファイルを削除する
         info!("Remove {}", CONFIG_DEF_FILE);
         if let Err(e) = remove_file(CONFIG_DEF_FILE) {
-            warn!("Removing {} failed (the first time execution?): {}",
-                CONFIG_DEF_FILE, e);
+            warn!(
+                "Removing {} failed (the first time execution?): {}",
+                CONFIG_DEF_FILE, e
+            );
         }
         // デフォルト設定を書き出す
         // 600 でアトミックに必ず新規作成する、失敗したらエラー
@@ -140,17 +145,22 @@ fn load_config() -> Result<()> {
         let mut f = OpenOptions::new()
             .read(true)
             .open(CONFIG_FILE)
+            .with_context(|| format!("Failed to open {} (the first execution?)", CONFIG_FILE))
             .with_context(|| {
-                format!("Failed to open {} (the first execution?)", CONFIG_FILE)
-            })
-            .with_context(|| {
-                format!("HINT: Copy {} to {} and try again", CONFIG_DEF_FILE, CONFIG_FILE)
+                format!(
+                    "HINT: Copy {} to {} and try again",
+                    CONFIG_DEF_FILE, CONFIG_FILE
+                )
             })?;
 
         let metadata = f.metadata()?;
         let permissions = metadata.permissions();
         let masked = permissions.mode() & 0o777;
-        ensure!(masked == 0o600, "Config file permission is not 600: {:03o}", permissions.mode());
+        ensure!(
+            masked == 0o600,
+            "Config file permission is not 600: {:03o}",
+            permissions.mode()
+        );
 
         f.read_to_string(&mut json_str)
             .with_context(|| format!("Failed to read {}", CONFIG_FILE))?;
@@ -162,8 +172,7 @@ fn load_config() -> Result<()> {
     let json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, &json_str];
     sys::config::init();
     for (i, json_str) in json_list.iter().enumerate() {
-        sys::config::add_config(json_str)
-            .with_context(|| format!("Config load failed: {}", i))?;
+        sys::config::add_config(json_str).with_context(|| format!("Config load failed: {}", i))?;
     }
 
     Ok(())
@@ -219,7 +228,7 @@ fn print_help(program: &str, opts: Options) {
 /// エントリポイント。
 ///
 /// コマンドラインとデーモン化、ログの初期化処理をしたのち、[system_main] を呼ぶ。
-fn main() -> Result<()>{
+fn main() -> Result<()> {
     // コマンドライン引数のパース
     let args: Vec<String> = env::args().collect();
     let program = &args[0];
@@ -228,7 +237,7 @@ fn main() -> Result<()>{
     opts.optflag("h", "help", "Print this help");
     opts.optflag("d", "daemon", "Run as daemon");
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
+        Ok(m) => m,
         Err(fail) => {
             eprintln!("{}", fail);
             std::process::exit(1);
@@ -244,8 +253,7 @@ fn main() -> Result<()>{
     if matches.opt_present("d") {
         daemon();
         init_log(true);
-    }
-    else {
+    } else {
         init_log(false);
     }
 

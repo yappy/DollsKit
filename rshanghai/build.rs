@@ -1,4 +1,4 @@
-use vergen::{Config, vergen, TimestampKind};
+use vergen::{vergen, Config, TimestampKind};
 
 fn main() {
     let mut config = Config::default();

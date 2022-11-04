@@ -1,7 +1,6 @@
 use super::SystemModule;
 use chrono::prelude::*;
 
-
 pub struct SystemInfo {
     pub started: chrono::DateTime<Local>,
 }
@@ -9,12 +8,9 @@ pub struct SystemInfo {
 impl SystemModule for SystemInfo {}
 
 impl SystemInfo {
-
     pub fn new() -> Self {
-
         SystemInfo {
-            started: Local::now()
+            started: Local::now(),
         }
     }
-
 }

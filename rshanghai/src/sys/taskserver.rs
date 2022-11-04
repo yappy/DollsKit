@@ -1,12 +1,11 @@
 //! 非同期タスクを管理する。
 use crate::sysmod::SystemModules;
-use std::future::Future;
-use std::sync::Arc;
 use anyhow::Result;
 use chrono::prelude::*;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 use log::{error, info, trace};
-
+use std::future::Future;
+use std::sync::Arc;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 type ShutdownTx = UnboundedSender<()>;
 type ShutdownRx = UnboundedReceiver<()>;
@@ -58,16 +57,14 @@ impl Control {
 
             if let Err(e) = result {
                 error!("[{}] finish (error): {:?}", name, e);
-            }
-            else {
+            } else {
                 info!("[{}] finish (success)", name);
             }
         });
     }
 
     /// time_list
-    pub fn spawn_periodic_task<F, T>(
-        &self, name: &str, wakeup_list: &[NaiveTime], f: F)
+    pub fn spawn_periodic_task<F, T>(&self, name: &str, wakeup_list: &[NaiveTime], f: F)
     where
         F: Fn(Control) -> T + Send + 'static,
         T: Future<Output = Result<()>> + Send + 'static,
@@ -83,11 +80,14 @@ impl Control {
         let sorted = wakeup_list.windows(2).all(|t| t[0] <= t[1]);
         assert!(sorted, "time list is not sorted");
         let today = Local::today();
-        let mut dt_list: Vec<_> = wakeup_list.iter().map(|time| {
-            assert_eq!(time.second(), 0);
-            assert_eq!(time.nanosecond(), 0);
-            today.and_time(*time).unwrap()
-        }).collect();
+        let mut dt_list: Vec<_> = wakeup_list
+            .iter()
+            .map(|time| {
+                assert_eq!(time.second(), 0);
+                assert_eq!(time.nanosecond(), 0);
+                today.and_time(*time).unwrap()
+            })
+            .collect();
 
         // wakeup time list を最初の LOG_LIMIT 個までログに出力する
         const LOG_LIMIT: usize = 5;
@@ -95,8 +95,7 @@ impl Control {
         let mut str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
             let str = if i == 0 {
                 format!("{}", v)
-            }
-            else {
+            } else {
                 format!(", {}", v)
             };
             sum + &str
@@ -114,9 +113,7 @@ impl Control {
             loop {
                 // 現在時刻を取得して分までに切り捨てる
                 let now = Local::now();
-                let now_hmd = now
-                    .date()
-                    .and_hms(now.hour(), now.minute(), 0);
+                let now_hmd = now.date().and_hms(now.hour(), now.minute(), 0);
                 let next_min = now_hmd + CDuration::minutes(1);
                 trace!("[{}] periodic task check: {}", name, now_hmd);
 
@@ -125,7 +122,7 @@ impl Control {
                     Ok(ind) => {
                         // 一致するものを発見したので続行
                         trace!("[{}] hit in time list: {}", name, now_hmd);
-                    },
+                    }
                     Err(ind) => {
                         // ind = insertion point
                         trace!("[{}] not found in time list: {}", name, now_hmd);
@@ -137,8 +134,7 @@ impl Control {
                             trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
                             tokio::time::sleep(TDuration::from_secs(sleep_sec)).await;
                             trace!("[{}] wake up", name);
-                        }
-                        else {
+                        } else {
                             // 一番後ろよりも現在時刻が後
                             // 起動時刻リストをすべて1日ずつ後ろにずらす
                             for dt in dt_list.iter_mut() {
@@ -149,7 +145,7 @@ impl Control {
                             }
                         }
                         continue;
-                    },
+                    }
                 }
 
                 let future = f(ctrl.clone());
@@ -157,8 +153,7 @@ impl Control {
                 let result = future.await;
                 if let Err(e) = result {
                     error!("[{}] finish (error): {:?}", name, e);
-                }
-                else {
+                } else {
                     info!("[{}] finish (success)", name);
                 }
 
@@ -192,8 +187,15 @@ impl TaskServer {
             .unwrap();
         let (shutdown_tx, shutdown_rx) = unbounded_channel();
 
-        let internal = InternalControl { rt, sysmods, shutdown_tx, shutdown_rx };
-        let ctrl = Control { internal: Arc::new(internal) };
+        let internal = InternalControl {
+            rt,
+            sysmods,
+            shutdown_tx,
+            shutdown_rx,
+        };
+        let ctrl = Control {
+            internal: Arc::new(internal),
+        };
         TaskServer { ctrl }
     }
 
@@ -218,11 +220,9 @@ impl TaskServer {
             }
         });
     }
-
 }
 
-fn check_time(now: DateTime<Local>) {
-}
+fn check_time(now: DateTime<Local>) {}
 
 #[cfg(test)]
 mod tests {

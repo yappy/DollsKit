@@ -1,6 +1,6 @@
+use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
 use sha1::Sha1;
-use hmac::{SimpleHmac, Mac, digest::CtOutput};
 
 /// [percent_encode] で変換する文字セット。
 ///
@@ -29,12 +29,10 @@ pub fn hmac_sha1(key: &[u8], data: &[u8]) -> CtOutput<HmacSha1> {
     mac.finalize()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use hex_literal::hex;
-
 
     // https://developer.twitter.com/en/docs/authentication/oauth-1-0a/percent-encoding-parameters
     #[test]
@@ -132,5 +130,4 @@ mod tests {
         let expected = &hex!("e8e99d0f45237d786d6bbaa7965c7808bbff1a91");
         assert_eq!(result[..], expected[..]);
     }
-
 }

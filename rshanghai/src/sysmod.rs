@@ -1,19 +1,19 @@
 //! システムモジュール関連。
 
-pub mod sysinfo;
 pub mod health;
+pub mod sysinfo;
 pub mod twitter;
 
-use crate::{sys::taskserver::Control, sysmod::health::Health};
 use self::{sysinfo::SystemInfo, twitter::Twitter};
+use crate::{sys::taskserver::Control, sysmod::health::Health};
 use anyhow::Result;
 use chrono::NaiveTime;
-use log::{info};
+use log::info;
 use std::sync::Arc;
 use tokio::sync::RwLock as TokioRwLock;
 
 /// システムモジュールが実装するトレイト。
-pub trait SystemModule : Sync + Send {
+pub trait SystemModule: Sync + Send {
     /// [SystemModule] の初期化時には [crate::sys::taskserver::TaskServer] がまだ存在しないので
     /// タスクの登録はこのタイミングまで遅延させる。
     fn on_start(&self, _ctrl: &Control) {}
@@ -49,22 +49,25 @@ impl SystemModules {
                 (0..60)
                     .step_by(5)
                     .map(move |min| NaiveTime::from_hms(hour, min, 0))
-            }).collect();
+            })
+            .collect();
 
-        let mut event_target_list: Vec<SysModArc<dyn SystemModule>>= vec![];
+        let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 
-        let sysinfo = Arc::new(
-            TokioRwLock::new(SystemInfo::new()));
-        let health = Arc::new(
-            TokioRwLock::new(Health::new(wakeup_health)?));
-        let twitter = Arc::new(
-            TokioRwLock::new(Twitter::new(wakeup_twiter)?));
-            event_target_list.push(sysinfo.clone());
-            event_target_list.push(health.clone());
+        let sysinfo = Arc::new(TokioRwLock::new(SystemInfo::new()));
+        let health = Arc::new(TokioRwLock::new(Health::new(wakeup_health)?));
+        let twitter = Arc::new(TokioRwLock::new(Twitter::new(wakeup_twiter)?));
+        event_target_list.push(sysinfo.clone());
+        event_target_list.push(health.clone());
         event_target_list.push(twitter.clone());
 
         info!("OK: initialize system modules");
-        Ok(Self { sysinfo, health, twitter,  event_target_list })
+        Ok(Self {
+            sysinfo,
+            health,
+            twitter,
+            event_target_list,
+        })
     }
 
     pub async fn on_start(&self, ctrl: &Control) {

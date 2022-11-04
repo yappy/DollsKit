@@ -1,34 +1,33 @@
-use crate::sys::config;
-use crate::sys::taskserver::Control;
-use crate::sys::net;
 use super::SystemModule;
+use crate::sys::config;
+use crate::sys::net;
+use crate::sys::taskserver::Control;
 
-use anyhow::{Result, Context, bail, anyhow};
+use anyhow::{anyhow, bail, Context, Result};
 use chrono::NaiveTime;
-use log::{info, debug};
-use serde::{Serialize, Deserialize};
+use log::{debug, info};
+use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
-use rand::Rng;
-
 
 // Twitter API v2
-const URL_USERS_ME: &str =
-    "https://api.twitter.com/2/users/me";
-const URL_USERS_BY: &str =
-    "https://api.twitter.com/2/users/by";
+const URL_USERS_ME: &str = "https://api.twitter.com/2/users/me";
+const URL_USERS_BY: &str = "https://api.twitter.com/2/users/by";
 const LIMIT_USERS_BY: usize = 100;
 
 macro_rules! URL_USERS_TIMELINES_HOME {
-    () => { "https://api.twitter.com/2/users/{}/timelines/reverse_chronological" };
+    () => {
+        "https://api.twitter.com/2/users/{}/timelines/reverse_chronological"
+    };
 }
 macro_rules! URL_USERS_TWEET {
-    () => { "https://api.twitter.com/2/users/{}/tweets" };
+    () => {
+        "https://api.twitter.com/2/users/{}/tweets"
+    };
 }
 
-const URL_TWEETS: &str =
-    "https://api.twitter.com/2/tweets";
-
+const URL_TWEETS: &str = "https://api.twitter.com/2/tweets";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
@@ -90,7 +89,7 @@ struct TweetParam {
     reply: Option<TweetParamReply>,
     /// 本文。media.media_ids が無いなら必須。
     #[serde(skip_serializing_if = "Option::is_none")]
-    text: Option<String>
+    text: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -104,16 +103,15 @@ struct TweetResponseData {
     text: String,
 }
 
-
 #[derive(Clone, Serialize, Deserialize)]
 struct TwitterConfig {
     tlcheck_enabled: bool,
     debug_exec_once: bool,
     fake_tweet: bool,
-    consumer_key   : String,
+    consumer_key: String,
     consumer_secret: String,
-    access_token   : String,
-    access_secret  : String,
+    access_token: String,
+    access_secret: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -187,7 +185,10 @@ impl Twitter {
         for tlcheck in tlc_list.iter() {
             self.resolve_ids(&tlcheck.user_names).await?;
         }
-        info!("[tw_check] user id cache size: {}", self.user_id_cache.len());
+        info!(
+            "[tw_check] user id cache size: {}",
+            self.user_id_cache.len()
+        );
 
         // 以降メイン処理
 
@@ -199,10 +200,7 @@ impl Twitter {
         let mut reply_buf = vec![];
         for ch in self.contents.timeline_check.iter() {
             // 自分のツイートには反応しない
-            let tliter = tl.data.iter()
-            .filter(|tw| {
-                tw.id != me.id
-            });
+            let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
                 let user_match = ch.user_names.iter().any(|user_name| {
@@ -219,19 +217,14 @@ impl Twitter {
                 // pattern 判定
                 for (pats, msgs) in ch.pattern.iter() {
                     // 配列内のすべてのパターンを満たす
-                    let match_hit = pats.iter().all(|pat| {
-                        Self::pattern_match(pat, &tw.text)
-                    });
+                    let match_hit = pats.iter().all(|pat| Self::pattern_match(pat, &tw.text));
                     if match_hit {
                         info!("FIND: {:?}", tw);
                         // 配列からリプライをランダムに1つ選ぶ
                         let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
                         // リプライツイート (id, text) を一旦バッファする
                         // E0502 回避
-                        reply_buf.push((
-                            tw.id.clone(),
-                            msgs[rnd_idx].clone(),
-                        ));
+                        reply_buf.push((tw.id.clone(), msgs[rnd_idx].clone()));
                         // 複数種類では反応しない
                         // 反応は1回のみ
                         break;
@@ -245,13 +238,14 @@ impl Twitter {
             // since_id 更新用データ
             // tweet id を数値比較のため文字列から変換する
             // (リプライ先 ID + 1) の max をとる
-            let cur: u64 = self.tl_check_since_id.as_ref().unwrap()
-                .parse().unwrap();
+            let cur: u64 = self.tl_check_since_id.as_ref().unwrap().parse().unwrap();
             let next: u64 = reply_to.parse().unwrap();
             let max = cur.max(next);
 
             let param = TweetParam {
-                reply: Some(TweetParamReply { in_reply_to_tweet_id: reply_to }),
+                reply: Some(TweetParamReply {
+                    in_reply_to_tweet_id: reply_to,
+                }),
                 text: Some(text),
                 ..Default::default()
             };
@@ -288,12 +282,14 @@ impl Twitter {
         }
         let match_start = pat.starts_with('^');
         let match_end = pat.ends_with('$');
-        let begin = pat.char_indices()
-            .nth(if match_start {1} else {0})
+        let begin = pat
+            .char_indices()
+            .nth(if match_start { 1 } else { 0 })
             .unwrap_or((0, '\0'))
             .0;
-        let end = pat.char_indices()
-            .nth(if match_end {count - 1} else {count})
+        let end = pat
+            .char_indices()
+            .nth(if match_end { count - 1 } else { count })
             .unwrap_or((pat.len(), '\0'))
             .0;
         let pat = &pat[begin..end];
@@ -303,14 +299,11 @@ impl Twitter {
 
         if match_start && match_end {
             text == pat
-        }
-        else if match_start {
+        } else if match_start {
             text.starts_with(pat)
-        }
-        else if match_end {
+        } else if match_end {
             text.ends_with(pat)
-        }
-        else {
+        } else {
             text.contains(pat)
         }
     }
@@ -321,8 +314,7 @@ impl Twitter {
         if self.tl_check_since_id == None {
             let usertw = self.users_tweets(&me.id).await?;
             // API は成功したが最新 ID が得られなかった場合は "1" を設定する
-            self.tl_check_since_id = Some(
-                usertw.meta.newest_id.unwrap_or_else(|| "1".into()));
+            self.tl_check_since_id = Some(usertw.meta.newest_id.unwrap_or_else(|| "1".into()));
         }
 
         Ok(self.tl_check_since_id.clone().unwrap())
@@ -348,8 +340,7 @@ impl Twitter {
             // real tweet!
             self.tweets_post(param).await?;
             Ok(())
-        }
-        else {
+        } else {
             info!("Fake tweet: {:?}", param);
             Ok(())
         }
@@ -369,8 +360,7 @@ impl Twitter {
     async fn get_my_id(&mut self) -> Result<User> {
         if let Some(user) = &self.my_user_cache {
             Ok(user.clone())
-        }
-        else {
+        } else {
             Ok(self.users_me().await?.data)
         }
     }
@@ -385,12 +375,12 @@ impl Twitter {
     /// 凍結等で取得できない可能性があり、その場合は無視される。
     async fn resolve_ids(&mut self, user_names: &[String]) -> Result<()> {
         // user_id_cache にないユーザ名を集める
-        let unknown_users: Vec<_> = user_names.iter()
+        let unknown_users: Vec<_> = user_names
+            .iter()
             .filter_map(|user| {
                 if !self.user_id_cache.contains_key(user) {
                     Some(user.clone())
-                }
-                else {
+                } else {
                     None
                 }
             })
@@ -402,8 +392,12 @@ impl Twitter {
             let end = std::cmp::min(unknown_users.len(), start + LIMIT_USERS_BY);
             let result = self.users_by(&unknown_users[start..end]).await?;
             for user in result.data.iter() {
-                info!("[twitter] resolve username: {} => {}", user.username, user.id);
-                self.user_id_cache.insert(user.username.clone(), user.clone());
+                info!(
+                    "[twitter] resolve username: {} => {}",
+                    user.username, user.id
+                );
+                self.user_id_cache
+                    .insert(user.username.clone(), user.clone());
             }
 
             start += LIMIT_USERS_BY;
@@ -413,9 +407,7 @@ impl Twitter {
     }
 
     async fn users_me(&self) -> Result<UsersMe> {
-        let resp = self.http_oauth_get(
-            URL_USERS_ME,
-            &KeyValue::new()).await?;
+        let resp = self.http_oauth_get(URL_USERS_ME, &KeyValue::new()).await?;
         let json_str = process_response(resp).await?;
         let obj: UsersMe = convert_from_json(&json_str)?;
 
@@ -427,26 +419,25 @@ impl Twitter {
             panic!("{} limit over: {}", URL_USERS_BY, users.len());
         }
         let users_str = users.join(",");
-        let resp = self.http_oauth_get(
-            URL_USERS_BY,
-            &BTreeMap::from([("usernames".into(), users_str)])).await?;
+        let resp = self
+            .http_oauth_get(
+                URL_USERS_BY,
+                &BTreeMap::from([("usernames".into(), users_str)]),
+            )
+            .await?;
         let json_str = process_response(resp).await?;
         let obj: UsersBy = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
 
-    async fn users_timelines_home(&self, id: &str, since_id: &str)
-        -> Result<Timeline>
-    {
+    async fn users_timelines_home(&self, id: &str, since_id: &str) -> Result<Timeline> {
         let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
             ("since_id".into(), since_id.into()),
             ("expansions".into(), "author_id".into()),
         ]);
-        let resp = self.http_oauth_get(
-            &url,
-            &param).await?;
+        let resp = self.http_oauth_get(&url, &param).await?;
         let json_str = process_response(resp).await?;
         let obj: Timeline = convert_from_json(&json_str)?;
 
@@ -461,9 +452,7 @@ impl Twitter {
             // default=10, min=5, max=100
             ("max_results".into(), "100".into()),
         ]);
-        let resp = self.http_oauth_get(
-            &url,
-            &param).await?;
+        let resp = self.http_oauth_get(&url, &param).await?;
         let json_str = process_response(resp).await?;
         let obj: Timeline = convert_from_json(&json_str)?;
 
@@ -471,29 +460,34 @@ impl Twitter {
     }
 
     async fn tweets_post(&self, param: TweetParam) -> Result<TweetResponse> {
-        let resp = self.http_oauth_post(
-            URL_TWEETS,
-            &KeyValue::new(),
-            param).await?;
+        let resp = self
+            .http_oauth_post(URL_TWEETS, &KeyValue::new(), param)
+            .await?;
         let json_str = process_response(resp).await?;
         let obj: TweetResponse = convert_from_json(&json_str)?;
 
         Ok(obj)
     }
 
-    async fn http_oauth_get(&self, base_url: &str, query_param: &KeyValue)
-        -> Result<reqwest::Response>
-    {
+    async fn http_oauth_get(
+        &self,
+        base_url: &str,
+        query_param: &KeyValue,
+    ) -> Result<reqwest::Response> {
         let cf = &self.config;
-        let mut oauth_param = create_oauth_field(
-            &cf.consumer_key, &cf.access_token);
+        let mut oauth_param = create_oauth_field(&cf.consumer_key, &cf.access_token);
         let signature = create_signature(
-            "GET", base_url,
-            &oauth_param, query_param, &KeyValue::new(),
-            &cf.consumer_secret, &cf.access_secret);
+            "GET",
+            base_url,
+            &oauth_param,
+            query_param,
+            &KeyValue::new(),
+            &cf.consumer_secret,
+            &cf.access_secret,
+        );
         oauth_param.insert("oauth_signature".into(), signature);
 
-        let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
+        let (oauth_k, oauth_v) = create_http_oauth_header(&oauth_param);
 
         let client = reqwest::Client::new();
         let req = client
@@ -509,22 +503,27 @@ impl Twitter {
         &self,
         base_url: &str,
         query_param: &KeyValue,
-        body_param: T)
-        -> Result<reqwest::Response>
-        where T: Serialize
+        body_param: T,
+    ) -> Result<reqwest::Response>
+    where
+        T: Serialize,
     {
         let json_str = serde_json::to_string(&body_param).unwrap();
 
         let cf = &self.config;
-        let mut oauth_param = create_oauth_field(
-            &cf.consumer_key, &cf.access_token);
+        let mut oauth_param = create_oauth_field(&cf.consumer_key, &cf.access_token);
         let signature = create_signature(
-            "POST", base_url,
-            &oauth_param, query_param, &KeyValue::new(),
-            &cf.consumer_secret, &cf.access_secret);
+            "POST",
+            base_url,
+            &oauth_param,
+            query_param,
+            &KeyValue::new(),
+            &cf.consumer_secret,
+            &cf.access_secret,
+        );
         oauth_param.insert("oauth_signature".into(), signature);
 
-        let (oauth_k,oauth_v) = create_http_oauth_header(&oauth_param);
+        let (oauth_k, oauth_v) = create_http_oauth_header(&oauth_param);
 
         debug!("POST: {}", json_str);
         let client = reqwest::Client::new();
@@ -538,7 +537,6 @@ impl Twitter {
 
         Ok(res)
     }
-
 }
 
 impl SystemModule for Twitter {
@@ -546,37 +544,33 @@ impl SystemModule for Twitter {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(
-                    "tw_check",
-                    Twitter::twitter_task_entry);
-            }
-            else {
+                ctrl.spawn_oneshot_task("tw_check", Twitter::twitter_task_entry);
+            } else {
                 ctrl.spawn_periodic_task(
                     "tw_check",
                     &self.wakeup_list,
-                    Twitter::twitter_task_entry);
+                    Twitter::twitter_task_entry,
+                );
             }
         }
     }
 }
 
 fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
-    where T: Deserialize<'a>
+where
+    T: Deserialize<'a>,
 {
-    let obj = serde_json::from_str::<T>(json_str)
-        .with_context(|| json_str.to_string())?;
+    let obj = serde_json::from_str::<T>(json_str).with_context(|| json_str.to_string())?;
 
     Ok(obj)
 }
 
-async fn process_response(resp: reqwest::Response) -> Result<String>
-{
+async fn process_response(resp: reqwest::Response) -> Result<String> {
     let status = resp.status();
     let text = resp.text().await?;
     if status.is_success() {
         Ok(text)
-    }
-    else {
+    } else {
         bail!("HTTP error {} {}", status, text);
     }
 }
@@ -645,11 +639,14 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
 ///
 /// oauth_param, query_param, body_param 内でキーの重複があると panic する。
 fn create_signature(
-    http_method: &str, base_url: &str,
-    oauth_param: &KeyValue, query_param: &KeyValue, body_param: &KeyValue,
-    consumer_secret: &str, token_secret: &str)
-    -> String
-{
+    http_method: &str,
+    base_url: &str,
+    oauth_param: &KeyValue,
+    query_param: &KeyValue,
+    body_param: &KeyValue,
+    consumer_secret: &str,
+    token_secret: &str,
+) -> String {
     // "Collecting the request method and URL"
     // Example:
     // http_method = POST
@@ -673,12 +670,9 @@ fn create_signature(
 
     // 1-2
     let mut param = KeyValue::new();
-    let encode_add =
-    |param: &mut KeyValue, src: &KeyValue| {
+    let encode_add = |param: &mut KeyValue, src: &KeyValue| {
         for (k, v) in src.iter() {
-            let old = param.insert(
-                net::percent_encode(k),
-                net::percent_encode(v));
+            let old = param.insert(net::percent_encode(k), net::percent_encode(v));
             if old.is_some() {
                 panic!("duplicate key: {}", k);
             }
@@ -694,8 +688,7 @@ fn create_signature(
     for (k, v) in param {
         if is_first {
             is_first = false;
-        }
-        else {
+        } else {
             parameter_string.push('&');
         }
         parameter_string.push_str(&k);
@@ -729,9 +722,7 @@ fn create_signature(
 
     // "Calculating the signature"
     // HMAC SHA1
-    let result = net::hmac_sha1(
-        signing_key.as_bytes(),
-        signature_base_string.as_bytes());
+    let result = net::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
 
     // base64 encode したものを署名として "oauth_signature" に設定する
     base64::encode(result.into_bytes())
@@ -743,9 +734,9 @@ fn create_signature(
 fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
     let mut oauth_value = "OAuth ".to_string();
     {
-        let v: Vec<_> = oauth_param.iter()
-            .map(|(k, v)|
-                format!(r#"{}="{}""#, net::percent_encode(k), net::percent_encode(v)))
+        let v: Vec<_> = oauth_param
+            .iter()
+            .map(|(k, v)| format!(r#"{}="{}""#, net::percent_encode(k), net::percent_encode(v)))
             .collect();
         oauth_value.push_str(&v.join(", "));
     }
@@ -795,17 +786,26 @@ mod tests {
         // Not a real secret key
         let mut oauth_param = KeyValue::new();
         oauth_param.insert("oauth_consumer_key".into(), "xvz1evFS4wEEPTGEFPHBog".into());
-        oauth_param.insert("oauth_nonce".into(), "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg".into());
+        oauth_param.insert(
+            "oauth_nonce".into(),
+            "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg".into(),
+        );
         oauth_param.insert("oauth_signature_method".into(), "HMAC-SHA1".into());
         oauth_param.insert("oauth_timestamp".into(), "1318622958".into());
-        oauth_param.insert("oauth_token".into(), "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb".into());
+        oauth_param.insert(
+            "oauth_token".into(),
+            "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb".into(),
+        );
         oauth_param.insert("oauth_version".into(), "1.0".into());
 
         let mut query_param = KeyValue::new();
         query_param.insert("include_entities".into(), "true".into());
 
         let mut body_param = KeyValue::new();
-        body_param.insert("status".into(), "Hello Ladies + Gentlemen, a signed OAuth request!".into());
+        body_param.insert(
+            "status".into(),
+            "Hello Ladies + Gentlemen, a signed OAuth request!".into(),
+        );
 
         // This is just an example in the Twitter API document
         // Not a real secret key
@@ -813,8 +813,14 @@ mod tests {
         let token_secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE";
 
         let result = create_signature(
-            method, url,
-            &oauth_param, &query_param, &body_param, consumer_secret, token_secret);
+            method,
+            url,
+            &oauth_param,
+            &query_param,
+            &body_param,
+            consumer_secret,
+            token_secret,
+        );
 
         assert_eq!(result, "hCtSmYh+iHYCEqBWrE7C7hYmtUk=");
     }

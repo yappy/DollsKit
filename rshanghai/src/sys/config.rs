@@ -10,7 +10,7 @@ use std::sync::RwLock;
 /// それぞれは Json object によるツリー構造。
 #[derive(Default)]
 struct ConfigData {
-    root_list:  Vec<serde_json::Value>,
+    root_list: Vec<serde_json::Value>,
 }
 
 /// 設定データ(グローバル変数)。
@@ -32,8 +32,7 @@ pub fn init() {
 /// 設定データを json 文字列からロードして検索リストに追加する。
 ///
 /// 同じキーを持つ場合は後で追加したものが優先される。
-pub fn add_config(json_src: &str) -> Result<()>
-{
+pub fn add_config(json_src: &str) -> Result<()> {
     // parse
     let jsobj = serde_json::from_str(json_src)?;
 
@@ -72,9 +71,7 @@ fn search(root: &serde_json::Value, keys: &[&str]) -> serde_json::Value {
 /// [ConfigData::root_list] を順番に、[search] によって検索する。
 fn search_all(keys: &[&str]) -> serde_json::Value {
     // rlock
-    let config = CONFIG
-        .get().unwrap()
-        .read().unwrap();
+    let config = CONFIG.get().unwrap().read().unwrap();
 
     for root in config.root_list.iter().rev() {
         let value = search(root, keys);
@@ -90,8 +87,7 @@ pub fn get_object(keys: &[&str]) -> Option<Value> {
     let value = search_all(keys);
     if value.is_object() {
         Some(value)
-    }
-    else {
+    } else {
         None
     }
 }
@@ -106,8 +102,11 @@ pub fn get_bool(keys: &[&str]) -> Option<bool> {
 /// 見つからない場合、数値でない場合、範囲外の場合は None を返す。
 pub fn get_i64<R: RangeBounds<i64>>(keys: &[&str], range: R) -> Option<i64> {
     search_all(keys).as_i64().and_then(|num| {
-        if range.contains(&num) { Some(num) }
-        else { None }
+        if range.contains(&num) {
+            Some(num)
+        } else {
+            None
+        }
     })
 }
 
@@ -115,8 +114,11 @@ pub fn get_i64<R: RangeBounds<i64>>(keys: &[&str], range: R) -> Option<i64> {
 /// 見つからない場合、数値でない場合、範囲外の場合は None を返す。
 pub fn get_u64<R: RangeBounds<u64>>(keys: &[&str], range: R) -> Option<u64> {
     search_all(keys).as_u64().and_then(|num| {
-        if range.contains(&num) { Some(num) }
-        else { None }
+        if range.contains(&num) {
+            Some(num)
+        } else {
+            None
+        }
     })
 }
 
@@ -181,9 +183,9 @@ mod tests {
         let v = get_i64(&["i64", "max"], ..);
         assert_eq!(v.unwrap(), i64::MAX);
 
-        let v = get_i64(&["i64", "min"], i64::MIN+1..);
+        let v = get_i64(&["i64", "min"], i64::MIN + 1..);
         assert!(v.is_none());
-        let v = get_i64(&["i64", "max"], ..=i64::MAX-1);
+        let v = get_i64(&["i64", "max"], ..=i64::MAX - 1);
         assert!(v.is_none());
     }
 
@@ -201,9 +203,9 @@ mod tests {
         let v = get_u64(&["u64", "max"], ..);
         assert_eq!(v.unwrap(), u64::MAX);
 
-        let v = get_u64(&["u64", "min"], u64::MIN+1..);
+        let v = get_u64(&["u64", "min"], u64::MIN + 1..);
         assert!(v.is_none());
-        let v = get_u64(&["u64", "max"], ..=u64::MAX-1);
+        let v = get_u64(&["u64", "max"], ..=u64::MAX - 1);
         assert!(v.is_none());
     }
 

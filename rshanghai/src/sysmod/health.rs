@@ -1,10 +1,10 @@
+use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use super::SystemModule;
-use anyhow::{Result, anyhow, ensure};
+use anyhow::{anyhow, ensure, Result};
 use chrono::NaiveTime;
 use log::info;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -22,8 +22,8 @@ impl Health {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[health] initialize");
 
-        let jsobj = config::get_object(&["health"])
-            .map_or(Err(anyhow!("Config not found: health")), Ok)?;
+        let jsobj =
+            config::get_object(&["health"]).map_or(Err(anyhow!("Config not found: health")), Ok)?;
         let config: HealthConfig = serde_json::from_value(jsobj)?;
 
         Ok(Health {
@@ -56,15 +56,13 @@ impl SystemModule for Health {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(
-                    "health_check",
-                    Health::health_task_entry);
-            }
-            else {
+                ctrl.spawn_oneshot_task("health_check", Health::health_task_entry);
+            } else {
                 ctrl.spawn_periodic_task(
                     "health_check",
                     &self.wakeup_list,
-                    Health::health_task_entry);
+                    Health::health_task_entry,
+                );
             }
         }
     }
@@ -129,8 +127,7 @@ async fn get_cpu_info() -> Result<CpuInfo> {
         let value = (total - idle) as f64 / total as f64;
         if name == Some("cpu") {
             cpu_percent_total = Some(value);
-        }
-        else {
+        } else {
             cpu_percent_list.push(value);
         }
     }
@@ -152,7 +149,7 @@ struct MemInfo {
 
 async fn get_mem_info() -> Result<MemInfo> {
     let mut cmd = Command::new("free");
-	let output = cmd.output().await?;
+    let output = cmd.output().await?;
     ensure!(output.status.success(), "free command failed");
 
     // sample
@@ -180,7 +177,10 @@ async fn get_mem_info() -> Result<MemInfo> {
     let total_mib = total.parse::<u64>()? as f64 / 1024.0;
     let avail_mib = avail.parse::<u64>()? as f64 / 1024.0;
 
-    Ok(MemInfo { total_mib, avail_mib })
+    Ok(MemInfo {
+        total_mib,
+        avail_mib,
+    })
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -191,7 +191,7 @@ struct DiskInfo {
 
 async fn get_disk_info() -> Result<DiskInfo> {
     let mut cmd = Command::new("df");
-	let output = cmd.output().await?;
+    let output = cmd.output().await?;
     ensure!(output.status.success(), "df command failed");
 
     // sample
@@ -231,7 +231,10 @@ async fn get_disk_info() -> Result<DiskInfo> {
     let total_gib = total.parse::<u64>()? as f64 / 1024.0 / 1024.0;
     let avail_gib = avail.parse::<u64>()? as f64 / 1024.0 / 1024.0;
 
-    Ok(DiskInfo { total_gib, avail_gib })
+    Ok(DiskInfo {
+        total_gib,
+        avail_gib,
+    })
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -293,13 +296,16 @@ mod tests {
             Ok(info) => {
                 // 取得できた場合、無難な値か確かめる
                 // 変な環境でテストすると fail するので注意
-                assert!((30.0..=100.0).contains(&info.temp),
-                    "strange temperature: {}", info.temp);
-            },
+                assert!(
+                    (30.0..=100.0).contains(&info.temp),
+                    "strange temperature: {}",
+                    info.temp
+                );
+            }
             Err(e) => {
                 let e = e.downcast::<std::io::Error>().unwrap();
                 assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-            },
+            }
         }
     }
 }
