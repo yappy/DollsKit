@@ -26,9 +26,23 @@ $ rustup self uninstall
 
 ## vscode 拡張
 `rust-analyzer` が公式かつつよそう。
+入力補助が結構すごい。
 vscode で検索して入れればよいので rustup の必要はなし。
 
 rts (Rust Language Server) は廃止されたので非推奨。
+
+## rustfmt
+https://github.com/rust-lang/rustfmt
+
+フォーマッタ。
+rustfmt.toml で設定を変更できるが、`} else {` は unstable 扱いで
+nightly ツールでないとまだ変更できない。
+```
+$ rustup component add rustfmt
+$ cargo fmt
+```
+
+ソースコード上で `#[rustfmt::skip]` をつけると部分的に無効にできる。
 
 ## clippy (lint)
 いわゆる静的解析ツール。
@@ -241,3 +255,13 @@ https://developer.twitter.com/en/docs/authentication/oauth-1-0a
 
 昔からあるいつものやつ。
 そのアカウントでしか行えない操作を行える。
+
+Twitter の解説ページには書かれていないが、
+OAuth 1.0a 自体の仕様で、request body の Content-Type が
+application/x-www-form-urlencoded の場合のみ署名計算の対象になる。
+つまり、Twitter API v2 では POST body は application/json であるため、
+この部分は署名計算の対象にしない。
+
+それでいいのか？という気もするが、
+OAuth 1.0a `3.4.1. Signature Base String` にしっかり注意が書いてある。
+(AOuth の署名だけでは request body 部分の改竄検知はできない)
