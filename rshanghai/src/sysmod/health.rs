@@ -119,10 +119,10 @@ async fn get_cpu_info() -> Result<CpuInfo> {
             continue;
         }
 
-        let user: u64 = user.ok_or(anyhow!("parse error"))?.parse()?;
-        let nice: u64 = nice.ok_or(anyhow!("parse error"))?.parse()?;
-        let system: u64 = system.ok_or(anyhow!("parse error"))?.parse()?;
-        let idle: u64 = idle.ok_or(anyhow!("parse error"))?.parse()?;
+        let user: u64 = user.ok_or_else(|| anyhow!("parse error"))?.parse()?;
+        let nice: u64 = nice.ok_or_else(|| anyhow!("parse error"))?.parse()?;
+        let system: u64 = system.ok_or_else(|| anyhow!("parse error"))?.parse()?;
+        let idle: u64 = idle.ok_or_else(|| anyhow!("parse error"))?.parse()?;
         let total = user + nice + system + idle;
         let value = (total - idle) as f64 / total as f64;
         if name == Some("cpu") {
@@ -172,8 +172,8 @@ async fn get_mem_info() -> Result<MemInfo> {
         }
         break;
     }
-    let total = total.ok_or(anyhow!("parse error"))?;
-    let avail = avail.ok_or(anyhow!("parse error"))?;
+    let total = total.ok_or_else(|| anyhow!("parse error"))?;
+    let avail = avail.ok_or_else(|| anyhow!("parse error"))?;
     let total_mib = total.parse::<u64>()? as f64 / 1024.0;
     let avail_mib = avail.parse::<u64>()? as f64 / 1024.0;
 
@@ -226,8 +226,8 @@ async fn get_disk_info() -> Result<DiskInfo> {
             }
         }
     }
-    let total = total.ok_or(anyhow!("parse error"))?;
-    let avail = avail.ok_or(anyhow!("parse error"))?;
+    let total = total.ok_or_else(|| anyhow!("parse error"))?;
+    let avail = avail.ok_or_else(|| anyhow!("parse error"))?;
     let total_gib = total.parse::<u64>()? as f64 / 1024.0 / 1024.0;
     let avail_gib = avail.parse::<u64>()? as f64 / 1024.0 / 1024.0;
 
