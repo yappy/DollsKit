@@ -39,6 +39,8 @@ impl Health {
         info!("{:?}", mem_info?);
         let disk_info = get_disk_info().await;
         info!("{:?}", disk_info?);
+        let cpu_temp = get_cpu_temp().await;
+        info!("{:?}", cpu_temp?);
 
         Ok(())
     }
@@ -233,4 +235,27 @@ async fn get_disk_info() -> Result<DiskInfo> {
     let percent = 100.0 * avail_gib / total_gib;
 
     Ok(DiskInfo { total_gib, avail_gib, percent })
+}
+
+#[derive(Debug, Clone, Copy)]
+struct CpuTemp {
+    temp: f64,
+}
+
+/// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
+///
+/// "/sys/class/thermal/thermal_zone0/temp" による。
+/// デバイスファイルが存在しないと [std::io::Error] (NotFound) になる。
+/// Linux 汎用のようだが少なくとも WSL2 では存在しない。
+/// RasPi only で `vcgencmd measure_temp` という手もあるが、
+/// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
+async fn get_cpu_temp() -> Result<CpuTemp> {
+    let buf = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await?;
+    let text = String::from_utf8_lossy(&buf);
+
+    // 'C を 1000 倍した整数が得られるので変換する
+    let temp: u64 = text.trim().parse()?;
+    let temp = temp as f64 / 1000.0;
+
+    Ok(CpuTemp { temp })
 }
