@@ -33,6 +33,8 @@ impl Health {
     }
 
     async fn health_task(&mut self, ctrl: &Control) -> Result<()> {
+        let cpu_info = get_cpu_info().await;
+        info!("{:?}", cpu_info);
         let mem_info = get_mem_info().await;
         info!("{:?}", mem_info?);
         let disk_info = get_disk_info().await;
@@ -64,6 +66,79 @@ impl SystemModule for Health {
             }
         }
     }
+}
+
+#[derive(Debug, Clone)]
+struct CpuInfo {
+    usage_percent_total: f64,
+    usage_percent_list: Vec<f64>,
+}
+
+async fn get_cpu_info() -> Result<CpuInfo> {
+    let buf = tokio::fs::read("/proc/stat").await?;
+    let text = String::from_utf8_lossy(&buf);
+
+    // See `man proc`
+    // user   (1) Time spent in user mode.
+    // nice   (2) Time spent in user mode with low priority (nice).
+    // system (3) Time spent in system mode.
+    // idle   (4) Time spent in the idle task.  This value should be USER_HZ times the second entry in the /proc/uptime pseudo-file.
+    // iowait (since Linux 2.5.41)
+    //        (5) Time waiting for I/O to complete.  This value is not reliable, for the following reasons:
+    // irq (since Linux 2.6.0-test4)
+    //        (6) Time servicing interrupts.
+    // softirq (since Linux 2.6.0-test4)
+    //        (7) Time servicing softirqs.
+    // steal (since Linux 2.6.11)
+    //        (8)  Stolen  time,  which  is the time spent in other operating systems when running in a virtualized environment
+    // guest (since Linux 2.6.24)
+    //        (9) Time spent running a virtual CPU for guest operating systems under the control of the Linux kernel.
+    // guest_nice (since Linux 2.6.33)
+    //        (10)  Time spent running a niced guest (virtual CPU for guest operating systems under the
+    //        control of the Linux kernel).
+    let mut usage_percent_total = None;
+    let mut usage_percent_list = vec![];
+    for line in text.lines() {
+        let mut name = None;
+        let mut user = None;
+        let mut nice = None;
+        let mut system = None;
+        let mut idle = None;
+        for (col_no, elem) in line.split_ascii_whitespace().enumerate() {
+            match col_no {
+                0 => name = Some(elem),
+                1 => user = Some(elem),
+                2 => nice = Some(elem),
+                3 => system = Some(elem),
+                4 => idle = Some(elem),
+                _ => (),
+            }
+        }
+        // cpu or cpu%d の行を取り出す
+        if name.is_none() || !name.unwrap().starts_with("cpu") {
+            continue;
+        }
+
+        let user: u64 = user.ok_or(anyhow!("parse error"))?.parse()?;
+        let nice: u64 = nice.ok_or(anyhow!("parse error"))?.parse()?;
+        let system: u64 = system.ok_or(anyhow!("parse error"))?.parse()?;
+        let idle: u64 = idle.ok_or(anyhow!("parse error"))?.parse()?;
+        let total = user + nice + system + idle;
+        let value = (total - idle) as f64 / total as f64;
+        if name == Some("cpu") {
+            usage_percent_total = Some(value);
+        }
+        else {
+            usage_percent_list.push(value);
+        }
+    }
+
+    ensure!(usage_percent_total.is_some());
+    ensure!(!usage_percent_list.is_empty());
+    Ok(CpuInfo {
+        usage_percent_total: usage_percent_total.unwrap(),
+        usage_percent_list,
+    })
 }
 
 #[derive(Debug, Clone, Copy)]
