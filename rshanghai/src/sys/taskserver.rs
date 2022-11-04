@@ -84,8 +84,8 @@ impl Control {
         assert!(sorted, "time list is not sorted");
         let today = Local::today();
         let mut dt_list: Vec<_> = wakeup_list.iter().map(|time| {
-            assert!(time.second() == 0);
-            assert!(time.nanosecond() == 0);
+            assert_eq!(time.second(), 0);
+            assert_eq!(time.nanosecond(), 0);
             today.and_time(*time).unwrap()
         }).collect();
 

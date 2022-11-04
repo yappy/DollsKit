@@ -141,11 +141,11 @@ mod tests {
         add_config(main).unwrap();
 
         let v = get_string(&["a", "b", "c"]);
-        assert!(v.unwrap() == "main");
+        assert_eq!(v.unwrap(), "main");
         let v = get_string(&["a", "b", "C"]);
         assert!(v.is_none());
         let v = get_string(&["a", "b", "d"]);
-        assert!(v.unwrap() == "default");
+        assert_eq!(v.unwrap(), "default");
         let v = get_string(&["a", "b", "D"]);
         assert!(v.is_none());
     }
@@ -160,11 +160,11 @@ mod tests {
         add_config(main).unwrap();
 
         let v = get_bool(&["root", "bool1"]);
-        assert!(v.unwrap() == false);
+        assert_eq!(v.unwrap(), false);
         let v = get_bool(&["root", "bool2"]);
-        assert!(v.unwrap() == true);
+        assert_eq!(v.unwrap(), true);
         let v = get_string(&["root", "str"]);
-        assert!(v.unwrap() == "Hello");
+        assert_eq!(v.unwrap(), "Hello");
     }
 
     #[test]
