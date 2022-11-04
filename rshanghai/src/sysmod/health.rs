@@ -256,3 +256,50 @@ async fn get_cpu_temp() -> Result<CpuTemp> {
 
     Ok(CpuTemp { temp })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn cpu_info() {
+        let info = get_cpu_info().await.unwrap();
+
+        assert!((0.0..=100.0).contains(&info.cpu_percent_total));
+        for rate in info.cpu_percent_list {
+            assert!((0.0..=100.0).contains(&rate));
+        }
+    }
+
+    #[tokio::test]
+    async fn mem_info() {
+        let info = get_mem_info().await.unwrap();
+
+        assert!(info.avail_mib <= info.total_mib);
+    }
+
+    #[tokio::test]
+    async fn disk_info() {
+        let info = get_disk_info().await.unwrap();
+
+        assert!(info.avail_gib <= info.total_gib);
+    }
+
+    #[tokio::test]
+    async fn cpu_temp() {
+        let result = get_cpu_temp().await;
+
+        match result {
+            Ok(info) => {
+                // 取得できた場合、無難な値か確かめる
+                // 変な環境でテストすると fail するので注意
+                assert!((30.0..=100.0).contains(&info.temp),
+                    "strange temperature: {}", info.temp);
+            },
+            Err(e) => {
+                let e = e.downcast::<std::io::Error>().unwrap();
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+            },
+        }
+    }
+}
