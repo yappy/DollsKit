@@ -37,7 +37,10 @@ impl SystemModules {
     pub fn new() -> Result<SystemModules> {
         info!("initialize system modules...");
 
-        let wakeup_health = vec![
+        let wakeup_health_ck: Vec<_> = (0..24)
+            .flat_map(|hour| (0..60).map(move |min| NaiveTime::from_hms(hour, min, 0)))
+            .collect();
+        let wakeup_health_tw = vec![
             NaiveTime::from_hms(0, 0, 0),
             NaiveTime::from_hms(6, 0, 0),
             NaiveTime::from_hms(12, 0, 0),
@@ -55,7 +58,10 @@ impl SystemModules {
         let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 
         let sysinfo = Arc::new(TokioRwLock::new(SystemInfo::new()));
-        let health = Arc::new(TokioRwLock::new(Health::new(wakeup_health)?));
+        let health = Arc::new(TokioRwLock::new(Health::new(
+            wakeup_health_ck,
+            wakeup_health_tw,
+        )?));
         let twitter = Arc::new(TokioRwLock::new(Twitter::new(wakeup_twiter)?));
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());

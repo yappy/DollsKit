@@ -5,6 +5,7 @@ use crate::sys::taskserver::Control;
 
 use anyhow::{anyhow, bail, Context, Result};
 use chrono::NaiveTime;
+use log::warn;
 use log::{debug, info};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -339,9 +340,18 @@ impl Twitter {
         if !self.config.fake_tweet {
             // real tweet!
             self.tweets_post(param).await?;
+
             Ok(())
         } else {
-            info!("Fake tweet: {:?}", param);
+            let mut len = 0;
+            if let Some(ref text) = param.text {
+                len = text.chars().count();
+            }
+            if len > 140 {
+                warn!("tweet length over 140");
+            }
+            info!("fake tweet: {:?} (len={})", param, len);
+
             Ok(())
         }
     }

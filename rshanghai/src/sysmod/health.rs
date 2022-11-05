@@ -2,10 +2,14 @@ use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 use anyhow::{anyhow, ensure, Result};
-use chrono::NaiveTime;
+use chrono::{DateTime, Local, NaiveTime};
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use tokio::process::Command;
+
+/// 60 * 24 = 1440 /day
+const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct HealthConfig {
@@ -15,11 +19,16 @@ struct HealthConfig {
 
 pub struct Health {
     config: HealthConfig,
-    wakeup_list: Vec<NaiveTime>,
+    wakeup_list_check: Vec<NaiveTime>,
+    wakeup_list_tweet: Vec<NaiveTime>,
+    history: VecDeque<HistoryEntry>,
 }
 
 impl Health {
-    pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
+    pub fn new(
+        wakeup_list_check: Vec<NaiveTime>,
+        wakeup_list_tweet: Vec<NaiveTime>,
+    ) -> Result<Self> {
         info!("[health] initialize");
 
         let jsobj =
@@ -28,26 +37,105 @@ impl Health {
 
         Ok(Health {
             config,
-            wakeup_list,
+            wakeup_list_check,
+            wakeup_list_tweet,
+            history: VecDeque::with_capacity(HISTORY_QUEUE_SIZE),
         })
     }
 
-    async fn health_task(&mut self, ctrl: &Control) -> Result<()> {
-        let cpu_info = get_cpu_info().await;
-        info!("{:?}", cpu_info);
-        let mem_info = get_mem_info().await;
-        info!("{:?}", mem_info?);
-        let disk_info = get_disk_info().await;
-        info!("{:?}", disk_info?);
-        let cpu_temp = get_cpu_temp().await;
-        info!("{:?}", cpu_temp?);
+    async fn check_task(&mut self, ctrl: &Control) -> Result<()> {
+        let cpu_info = get_cpu_info().await?;
+        let mem_info = get_mem_info().await?;
+        let disk_info = get_disk_info().await?;
+        let cpu_temp = get_cpu_temp().await?;
+
+        let date_time = Local::now();
+        let enrty = HistoryEntry {
+            date_time,
+            cpu_info,
+            mem_info,
+            disk_info,
+            cpu_temp,
+        };
+
+        debug_assert!(self.history.len() <= HISTORY_QUEUE_SIZE);
+        // サイズがいっぱいなら一番古いものを消す
+        while self.history.len() >= HISTORY_QUEUE_SIZE {
+            self.history.pop_front();
+        }
+        // 一番新しいものから Vec を解放する
+        if let Some(top) = self.history.back_mut() {
+            top.cpu_info.cpu_percent_list = None;
+        }
+        // 今回の分を追加
+        self.history.push_back(enrty);
 
         Ok(())
     }
 
-    async fn health_task_entry(ctrl: Control) -> Result<()> {
+    /// [Self::history] の最新データが存在すればツイートする。
+    async fn tweet_task(&self, ctrl: &Control) -> Result<()> {
+        if let Some(entry) = self.history.back() {
+            let HistoryEntry {
+                cpu_info,
+                mem_info,
+                disk_info,
+                cpu_temp,
+                ..
+            } = entry;
+
+            let mut text = String::new();
+
+            text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
+            let per_cpu = cpu_info
+                .cpu_percent_list
+                .as_ref()
+                .unwrap()
+                .iter()
+                .map(|value| format!("{:.1}", value))
+                .collect::<Vec<_>>()
+                .join(", ");
+            text.push_str(&format!(" ({})", per_cpu));
+
+            if let Some(temp) = cpu_temp.temp {
+                text.push_str(&format!("\nCPU Temp: {:.1}'C", temp));
+            }
+
+            text.push_str(&format!(
+                "\nMemory: {:.1}/{:.1} MB Avail ({:.1}%)",
+                mem_info.avail_mib,
+                mem_info.total_mib,
+                100.0 * mem_info.avail_mib / mem_info.total_mib,
+            ));
+
+            text.push_str(&format!(
+                "\nDisk: {:.1}/{:.1} GB Avail ({:.1}%)",
+                disk_info.avail_gib,
+                disk_info.total_gib,
+                100.0 * disk_info.avail_gib / disk_info.total_gib,
+            ));
+
+            let mut twitter = ctrl.sysmods().twitter.write().await;
+            twitter.tweet(&text).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn check_task_entry(ctrl: Control) -> Result<()> {
+        // wlock
         let mut health = ctrl.sysmods().health.write().await;
-        health.health_task(&ctrl).await
+        health.check_task(&ctrl).await
+        // unlock
+    }
+
+    async fn tweet_task_entry(ctrl: Control) -> Result<()> {
+        // check_task を先に実行する (可能性を高める) ために遅延させる
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        // rlock
+        let health = ctrl.sysmods().health.read().await;
+        health.tweet_task(&ctrl).await
+        // unlock
     }
 }
 
@@ -56,12 +144,18 @@ impl SystemModule for Health {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("health_check", Health::health_task_entry);
+                ctrl.spawn_oneshot_task("health_check", Health::check_task_entry);
+                ctrl.spawn_oneshot_task("health_tweet", Health::tweet_task_entry);
             } else {
                 ctrl.spawn_periodic_task(
                     "health_check",
-                    &self.wakeup_list,
-                    Health::health_task_entry,
+                    &self.wakeup_list_check,
+                    Health::check_task_entry,
+                );
+                ctrl.spawn_periodic_task(
+                    "health_tweet",
+                    &self.wakeup_list_tweet,
+                    Health::tweet_task_entry,
                 );
             }
         }
@@ -70,6 +164,7 @@ impl SystemModule for Health {
 
 #[derive(Debug, Clone)]
 struct HistoryEntry {
+    date_time: DateTime<Local>,
     cpu_info: CpuInfo,
     mem_info: MemInfo,
     disk_info: DiskInfo,
