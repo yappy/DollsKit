@@ -63,10 +63,6 @@ impl Health {
         while self.history.len() >= HISTORY_QUEUE_SIZE {
             self.history.pop_front();
         }
-        // 一番新しいものから Vec を解放する
-        if let Some(top) = self.history.back_mut() {
-            top.cpu_info.cpu_percent_list = None;
-        }
         // 今回の分を追加
         self.history.push_back(enrty);
 
@@ -87,15 +83,6 @@ impl Health {
             let mut text = String::new();
 
             text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
-            let per_cpu = cpu_info
-                .cpu_percent_list
-                .as_ref()
-                .unwrap()
-                .iter()
-                .map(|value| format!("{:.1}", value))
-                .collect::<Vec<_>>()
-                .join(", ");
-            text.push_str(&format!(" ({})", per_cpu));
 
             if let Some(temp) = cpu_temp.temp {
                 text.push_str(&format!("\nCPU Temp: {:.1}'C", temp));
@@ -175,8 +162,6 @@ struct HistoryEntry {
 struct CpuInfo {
     /// 全コア合計の使用率
     cpu_percent_total: f64,
-    /// コアごとの使用率 (メモリ削減のためヒストリに入れる時に消す)
-    cpu_percent_list: Option<Vec<f64>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -257,10 +242,8 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     ensure!(cpu_percent_total.is_some());
     ensure!(!cpu_percent_list.is_empty());
     let cpu_percent_total = cpu_percent_total.unwrap();
-    let cpu_percent_list = Some(cpu_percent_list);
     Ok(CpuInfo {
         cpu_percent_total,
-        cpu_percent_list,
     })
 }
 
@@ -388,9 +371,6 @@ mod tests {
         let info = get_cpu_info().await.unwrap();
 
         assert!((0.0..=100.0).contains(&info.cpu_percent_total));
-        for rate in info.cpu_percent_list.unwrap() {
-            assert!((0.0..=100.0).contains(&rate));
-        }
     }
 
     #[tokio::test]
