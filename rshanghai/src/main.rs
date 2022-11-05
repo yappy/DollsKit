@@ -210,11 +210,9 @@ fn system_main() -> Result<()> {
         let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
 
-        ts.sysmod_start();
         ts.spawn_oneshot_task("boot_tweet", boot_tweet_task);
         let run_result = ts.run();
 
-        drop(ts);
         info!("task server dropped");
 
         match run_result {

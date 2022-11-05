@@ -5,15 +5,17 @@ use chrono::prelude::*;
 use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
-use tokio::{
-    signal::unix::{signal, SignalKind},
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-};
+use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::mpsc;
 
-type ShutdownTx = UnboundedSender<()>;
-type ShutdownRx = UnboundedReceiver<()>;
+type ShutdownTx = mpsc::UnboundedSender<()>;
+type ShutdownRx = mpsc::UnboundedReceiver<()>;
+/// タスク完了通知側 (複数)
+type CompleteSyncChild = mpsc::Sender<()>;
+/// タスク完了待ち側 (単数)
+type CompleteSyncParent = mpsc::Receiver<()>;
 
-/// [Control] の [Arc] 内データ。
+/// [Arc] により [TaskServer] と各非同期タスク間で共有されるデータ。
 struct InternalControl {
     rt: tokio::runtime::Runtime,
     sysmods: SystemModules,
@@ -21,13 +23,18 @@ struct InternalControl {
     shutdown_rx: ShutdownRx,
 }
 
-/// [Arc] により [TaskServer] と全非同期タスク間で共有されるコントロールハンドル。
+/// 各非同期タスクに clone され渡されるコントロールハンドル。
 ///
-/// [Clone] 可能で、複製すると [Arc] がインクリメントされる。
+/// 各フィールドは private で、メソッドで機能を提供する。
+///
+/// [Clone::clone] 可能で、複製すると [Arc] がインクリメントされる。
+/// また、全タスク完了待ちのための channel も clone される。
 #[derive(Clone)]
 pub struct Control {
     /// private で [InternalControl] への [Arc] を持つ。
     internal: Arc<InternalControl>,
+    /// サーバ側は clone されたこれがすべて drop されるまで待機する。
+    complete_sync: Option<CompleteSyncChild>,
 }
 
 pub enum RunResult {
@@ -37,8 +44,13 @@ pub enum RunResult {
 
 /// タスクサーバ本体。
 pub struct TaskServer {
-    /// [TaskServer] も [Control] への参照を1つ持つ。
+    /// 各タスクに clone して渡すオリジナルの [Control]。
     ctrl: Control,
+    /// [Control::complete_sync] の対向。
+    ///
+    /// clone されたすべての [Control::complete_sync] が drop するまで待機する。
+    /// <https://tokio.rs/tokio/topics/shutdown>
+    complete_sync_wait: CompleteSyncParent,
 }
 
 impl Control {
@@ -193,7 +205,9 @@ impl TaskServer {
             .enable_all()
             .build()
             .unwrap();
-        let (shutdown_tx, shutdown_rx) = unbounded_channel();
+
+        let (shutdown_tx, shutdown_rx) = mpsc::unbounded_channel();
+        let (complete_sync, complete_sync_wait) = mpsc::channel(1);
 
         let internal = InternalControl {
             rt,
@@ -203,8 +217,13 @@ impl TaskServer {
         };
         let ctrl = Control {
             internal: Arc::new(internal),
+            complete_sync: Some(complete_sync),
         };
-        TaskServer { ctrl }
+
+        TaskServer {
+            ctrl,
+            complete_sync_wait,
+        }
     }
 
     pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
@@ -215,14 +234,20 @@ impl TaskServer {
         self.ctrl.spawn_oneshot_task(name, f);
     }
 
-    pub fn sysmod_start(&self) {
-        self.ctrl.internal.rt.block_on(async {
-            self.ctrl.internal.sysmods.on_start(&self.ctrl).await;
-        });
-    }
+    /// 実行を開始し、完了するまでブロックする。
+    ///
+    /// self の所有権は consume する。一度しか実行できない。
+    pub fn run(mut self) -> RunResult {
+        // async block へ move するためのコピーを作る
+        let ctrl = self.ctrl.clone();
+        // オリジナルの complete_sync を self から奪って drop しておく
+        drop(self.ctrl.complete_sync.take().unwrap());
 
-    pub fn run(&self) -> RunResult {
-        self.ctrl.internal.rt.block_on(async {
+        self.ctrl.internal.rt.block_on(async move {
+            // SystemModule 全体に on_start イベントを配送
+            ctrl.internal.sysmods.on_start(&ctrl).await;
+
+            // この async block をシグナル処理に使う
             let mut sigint = signal(SignalKind::interrupt()).unwrap();
             let mut sigterm = signal(SignalKind::terminate()).unwrap();
             let mut sighup = signal(SignalKind::hangup()).unwrap();
@@ -242,6 +267,20 @@ impl TaskServer {
                     run_result = RunResult::Reboot;
                 },
             }
+
+            // 全タスク完了待ち
+            // この async block で持っている分の complete_sync を
+            // ctrl ごと drop する
+            // オリジナルの self.ctrl.complete_sync も drop 済みなので
+            // 残りは各 async task に clone された Control
+            drop(ctrl);
+            // 全 complete_sync (Sender) が drop されるまで待つ
+            // その時 None を返す
+            // それ以外の用法はしないので、データは送信されてこない
+            info!("waiting for all tasks to be completed....");
+            let sync_result = self.complete_sync_wait.recv().await;
+            assert!(sync_result.is_none());
+            info!("OK: all tasks are completed");
 
             run_result
         })
