@@ -115,16 +115,16 @@ fn init_log(is_daemon: bool) {
 fn load_config() -> Result<()> {
     {
         // デフォルト設定ファイルを削除する
-        info!("Remove {}", CONFIG_DEF_FILE);
+        info!("remove {}", CONFIG_DEF_FILE);
         if let Err(e) = remove_file(CONFIG_DEF_FILE) {
             warn!(
-                "Removing {} failed (the first time execution?): {}",
+                "removing {} failed (the first time execution?): {}",
                 CONFIG_DEF_FILE, e
             );
         }
         // デフォルト設定を書き出す
         // 600 でアトミックに必ず新規作成する、失敗したらエラー
-        info!("Writing default config to {}", CONFIG_DEF_FILE);
+        info!("writing default config to {}", CONFIG_DEF_FILE);
         let mut f = OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -141,7 +141,7 @@ fn load_config() -> Result<()> {
     {
         // 設定ファイルを読む
         // open 後パーミッションを確認し、危険ならエラーとする
-        info!("Loading config: {}", CONFIG_FILE);
+        info!("loading config: {}", CONFIG_FILE);
         let mut f = OpenOptions::new()
             .read(true)
             .open(CONFIG_FILE)

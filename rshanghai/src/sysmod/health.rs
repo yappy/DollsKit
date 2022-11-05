@@ -242,9 +242,7 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     ensure!(cpu_percent_total.is_some());
     ensure!(!cpu_percent_list.is_empty());
     let cpu_percent_total = cpu_percent_total.unwrap();
-    Ok(CpuInfo {
-        cpu_percent_total,
-    })
+    Ok(CpuInfo { cpu_percent_total })
 }
 
 async fn get_mem_info() -> Result<MemInfo> {

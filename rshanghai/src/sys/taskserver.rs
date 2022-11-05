@@ -221,15 +221,3 @@ impl TaskServer {
         });
     }
 }
-
-fn check_time(now: DateTime<Local>) {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn datetime() {
-        check_time(Local::now());
-    }
-}
