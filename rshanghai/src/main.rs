@@ -21,6 +21,8 @@ use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use sys::taskserver::{Control, TaskServer};
 use sysmod::SystemModules;
 
+use crate::sys::taskserver::RunResult;
+
 /// デーモン化の際に指定する stdout のリダイレクト先。
 const STDOUT_FILE: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
@@ -199,19 +201,33 @@ async fn boot_tweet_task(ctrl: Control) -> Result<()> {
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 fn system_main() -> Result<()> {
-    info!("system main");
-    info!("{}", *sys::version::VERSION_INFO);
+    loop {
+        info!("system main");
+        info!("{}", *sys::version::VERSION_INFO);
 
-    load_config()?;
-    {
-        let sysmods = SystemModules::new()?;
-        let ts = TaskServer::new(sysmods);
+        load_config()?;
 
-        ts.sysmod_start();
-        ts.spawn_oneshot_task("boot_tweet", boot_tweet_task);
-        ts.run();
+        let run_result;
+        {
+            let sysmods = SystemModules::new()?;
+            let ts = TaskServer::new(sysmods);
+
+            ts.sysmod_start();
+            ts.spawn_oneshot_task("boot_tweet", boot_tweet_task);
+            run_result = ts.run();
+        }
+        info!("task server dropped");
+
+        match run_result {
+            RunResult::Shutdown => {
+                info!("result: shutdown");
+                break;
+            }
+            RunResult::Reboot => {
+                info!("result: reboot");
+            }
+        }
     }
-    info!("task server dropped");
 
     Ok(())
 }

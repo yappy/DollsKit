@@ -26,7 +26,7 @@ chrono = "0.4.22"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.86"
 # Async
-tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "test-util", "fs", "process"] }
+tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 # Http
 reqwest = "0.11.12"
 # URL encode
@@ -43,7 +43,6 @@ sha1 = "0.10.5"
 # Concurrent test control
 serial_test = "0.9.0"
 hex-literal = "0.3.4"
-tokio = { version = "1.21.2", features = ["macros"] }
 
 [build-dependencies]
 # Version info

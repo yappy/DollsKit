@@ -5,7 +5,10 @@ use chrono::prelude::*;
 use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::{
+    signal::unix::{signal, SignalKind},
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+};
 
 type ShutdownTx = UnboundedSender<()>;
 type ShutdownRx = UnboundedReceiver<()>;
@@ -25,6 +28,11 @@ struct InternalControl {
 pub struct Control {
     /// private で [InternalControl] への [Arc] を持つ。
     internal: Arc<InternalControl>,
+}
+
+pub enum RunResult {
+    Shutdown,
+    Reboot,
 }
 
 /// タスクサーバ本体。
@@ -213,11 +221,29 @@ impl TaskServer {
         });
     }
 
-    pub fn run(&self) {
+    pub fn run(&self) -> RunResult {
         self.ctrl.internal.rt.block_on(async {
-            loop {
-                // TODO: wait for shutdown
+            let mut sigint = signal(SignalKind::interrupt()).unwrap();
+            let mut sigterm = signal(SignalKind::terminate()).unwrap();
+            let mut sighup = signal(SignalKind::hangup()).unwrap();
+
+            let run_result;
+            tokio::select! {
+                _ = sigint.recv() => {
+                    info!("[signal] SIGINT");
+                    run_result = RunResult::Shutdown;
+                },
+                _ = sigterm.recv() => {
+                    info!("[signal] SIGTERM");
+                    run_result = RunResult::Shutdown;
+                },
+                _ = sighup.recv() => {
+                    info!("[signal] SIGHUP");
+                    run_result = RunResult::Reboot;
+                },
             }
-        });
+
+            run_result
+        })
     }
 }
