@@ -69,9 +69,36 @@ impl SystemModule for Health {
 }
 
 #[derive(Debug, Clone)]
+struct HistoryEntry {
+    cpu_info: CpuInfo,
+    mem_info: MemInfo,
+    disk_info: DiskInfo,
+    cpu_temp: CpuTemp,
+}
+
+#[derive(Debug, Clone)]
 struct CpuInfo {
+    /// 全コア合計の使用率
     cpu_percent_total: f64,
-    cpu_percent_list: Vec<f64>,
+    /// コアごとの使用率 (メモリ削減のためヒストリに入れる時に消す)
+    cpu_percent_list: Option<Vec<f64>>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct MemInfo {
+    total_mib: f64,
+    avail_mib: f64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DiskInfo {
+    total_gib: f64,
+    avail_gib: f64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct CpuTemp {
+    temp: Option<f64>,
 }
 
 async fn get_cpu_info() -> Result<CpuInfo> {
@@ -135,16 +162,11 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     ensure!(cpu_percent_total.is_some());
     ensure!(!cpu_percent_list.is_empty());
     let cpu_percent_total = cpu_percent_total.unwrap();
+    let cpu_percent_list = Some(cpu_percent_list);
     Ok(CpuInfo {
         cpu_percent_total,
         cpu_percent_list,
     })
-}
-
-#[derive(Debug, Clone, Copy)]
-struct MemInfo {
-    total_mib: f64,
-    avail_mib: f64,
 }
 
 async fn get_mem_info() -> Result<MemInfo> {
@@ -181,12 +203,6 @@ async fn get_mem_info() -> Result<MemInfo> {
         total_mib,
         avail_mib,
     })
-}
-
-#[derive(Debug, Clone, Copy)]
-struct DiskInfo {
-    total_gib: f64,
-    avail_gib: f64,
 }
 
 async fn get_disk_info() -> Result<DiskInfo> {
@@ -237,27 +253,35 @@ async fn get_disk_info() -> Result<DiskInfo> {
     })
 }
 
-#[derive(Debug, Clone, Copy)]
-struct CpuTemp {
-    temp: f64,
-}
-
 /// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
 /// "/sys/class/thermal/thermal_zone0/temp" による。
-/// デバイスファイルが存在しないと [std::io::Error] (NotFound) になる。
+/// デバイスファイルが存在しない場合は None を返して成功扱いとする。
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
 async fn get_cpu_temp() -> Result<CpuTemp> {
-    let buf = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await?;
-    let text = String::from_utf8_lossy(&buf);
+    let result = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await;
+    match result {
+        Ok(buf) => {
+            let text = String::from_utf8_lossy(&buf);
 
-    // 'C を 1000 倍した整数が得られるので変換する
-    let temp: f64 = text.trim().parse()?;
-    let temp = temp as f64 / 1000.0;
+            // 'C を 1000 倍した整数が得られるので変換する
+            let temp = text.trim().parse::<f64>()? / 1000.0;
+            let temp = Some(temp);
 
-    Ok(CpuTemp { temp })
+            Ok(CpuTemp { temp })
+        }
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                Ok(CpuTemp { temp: None })
+            } else {
+                // その他のエラーはそのまま返す
+                Err(anyhow::Error::from(e))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -269,7 +293,7 @@ mod tests {
         let info = get_cpu_info().await.unwrap();
 
         assert!((0.0..=100.0).contains(&info.cpu_percent_total));
-        for rate in info.cpu_percent_list {
+        for rate in info.cpu_percent_list.unwrap() {
             assert!((0.0..=100.0).contains(&rate));
         }
     }
@@ -290,22 +314,13 @@ mod tests {
 
     #[tokio::test]
     async fn cpu_temp() {
-        let result = get_cpu_temp().await;
-
-        match result {
-            Ok(info) => {
-                // 取得できた場合、無難な値か確かめる
-                // 変な環境でテストすると fail するので注意
-                assert!(
-                    (30.0..=100.0).contains(&info.temp),
-                    "strange temperature: {}",
-                    info.temp
-                );
-            }
-            Err(e) => {
-                let e = e.downcast::<std::io::Error>().unwrap();
-                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-            }
+        let result = get_cpu_temp().await.unwrap();
+        if let Some(temp) = result.temp {
+            assert!(
+                (30.0..=100.0).contains(&temp),
+                "strange temperature: {}",
+                temp
+            );
         }
     }
 }
