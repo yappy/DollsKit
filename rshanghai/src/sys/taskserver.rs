@@ -56,6 +56,16 @@ pub struct TaskServer {
 }
 
 impl Control {
+    /// [crate::sysmod::SystemModule] リストへの参照を取得する。
+    pub fn sysmods(&self) -> &SystemModules {
+        &self.internal.sysmods
+    }
+
+    /// キャンセル通知の受信オブジェクトを取得する。
+    pub fn cancel_rx(&mut self) -> &mut CancelRx {
+        self.cancel_rx.as_mut().unwrap()
+    }
+
     /// 1回限りのタスクを生成して実行開始する。
     ///
     /// F: [Control] を引数に、T を返す関数。
@@ -64,24 +74,27 @@ impl Control {
     /// つまり、F は [Control] を引数に、anyhow::Result<()> を返す async function。
     pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
-        F: FnOnce(Control) -> T,
-        T: Future<Output = Result<()>> + Send + 'static,
+        F: Fn(Control) -> T + Send + Sync + 'static,
+        T: Future<Output = Result<()>> + Send,
     {
         // move するデータを準備する
         let name = name.to_string();
         let ctrl = self.clone();
-        let future = f(ctrl);
 
         self.internal.rt.spawn(async move {
             info!("[{}] start (one-shot)", name);
 
+            // ctrl を clone して move する
+            let future = f(ctrl.clone());
             let result = future.await;
+            // drop clone of ctrl
 
             if let Err(e) = result {
                 error!("[{}] finish (error): {:?}", name, e);
             } else {
                 info!("[{}] finish (success)", name);
             }
+            // drop ctrl
         });
     }
 
@@ -97,8 +110,8 @@ impl Control {
     /// つまり、F は [Control] を引数に、anyhow::Result<()> を返す async function。
     pub fn spawn_periodic_task<F, T>(&self, name: &str, wakeup_list: &[NaiveTime], f: F)
     where
-        F: Fn(Control) -> T + Send + 'static,
-        T: Future<Output = Result<()>> + Send + 'static,
+        F: Fn(Control) -> T + Send + Sync + 'static,
+        T: Future<Output = Result<()>> + Send + Sync + 'static,
     {
         // move するデータを準備する
         let name = name.to_string();
@@ -137,6 +150,7 @@ impl Control {
         info!("[{}] registered as a periodic task", name);
         info!("[{}] wakeup time: {}", name, str);
 
+        // spawn async task
         self.internal.rt.spawn(async move {
             type CDuration = chrono::Duration;
             type TDuration = tokio::time::Duration;
@@ -179,9 +193,11 @@ impl Control {
                     }
                 }
 
+                // ctrl を clone して future 内に move する
                 let future = f(ctrl.clone());
                 info!("[{}] start (periodic)", name);
                 let result = future.await;
+                // drop clone of ctrl
                 if let Err(e) = result {
                     error!("[{}] finish (error): {:?}", name, e);
                 } else {
@@ -200,12 +216,8 @@ impl Control {
                 tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)).await;
                 trace!("[{}] wake up", name);
             }
+            // drop ctrl
         });
-    }
-
-    /// [crate::sysmod::SystemModule] リストへの参照を取得する。
-    pub fn sysmods(&self) -> &SystemModules {
-        &self.internal.sysmods
     }
 }
 
@@ -231,8 +243,8 @@ impl TaskServer {
     /// [Control::spawn_oneshot_task] と同じ。
     pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
-        F: FnOnce(Control) -> T,
-        T: Future<Output = Result<()>> + Send + 'static,
+        F: Fn(Control) -> T + Send + Sync + 'static,
+        T: Future<Output = Result<()>> + Send,
     {
         self.ctrl.spawn_oneshot_task(name, f);
     }

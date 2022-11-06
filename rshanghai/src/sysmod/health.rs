@@ -6,7 +6,7 @@ use chrono::{DateTime, Local, NaiveTime};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use tokio::process::Command;
+use tokio::{process::Command, select};
 
 /// 60 * 24 = 1440 /day
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
@@ -116,9 +116,16 @@ impl Health {
         // unlock
     }
 
-    async fn tweet_task_entry(ctrl: Control) -> Result<()> {
+    async fn tweet_task_entry(mut ctrl: Control) -> Result<()> {
         // check_task を先に実行する (可能性を高める) ために遅延させる
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        select! {
+            _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {}
+            _ = ctrl.cancel_rx().changed() => {
+                info!("[health-tweet] task cancel");
+                return Ok(());
+            }
+        }
+
         // rlock
         let health = ctrl.sysmods().health.read().await;
         health.tweet_task(&ctrl).await
@@ -131,16 +138,16 @@ impl SystemModule for Health {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("health_check", Health::check_task_entry);
-                ctrl.spawn_oneshot_task("health_tweet", Health::tweet_task_entry);
+                ctrl.spawn_oneshot_task("health-check", Health::check_task_entry);
+                ctrl.spawn_oneshot_task("health-tweet", Health::tweet_task_entry);
             } else {
                 ctrl.spawn_periodic_task(
-                    "health_check",
+                    "health-check",
                     &self.wakeup_list_check,
                     Health::check_task_entry,
                 );
                 ctrl.spawn_periodic_task(
-                    "health_tweet",
+                    "health-tweet",
                     &self.wakeup_list_tweet,
                     Health::tweet_task_entry,
                 );

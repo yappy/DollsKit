@@ -169,25 +169,23 @@ impl Twitter {
 
     /// Twitter 巡回タスク。
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
-        info!("[tw_check] periodic check task");
-
         // 自分の ID
         let me = self.get_my_id().await?;
-        info!("[tw_check] user_me: {:?}", me);
+        info!("[tw-check] user_me: {:?}", me);
 
         // チェック開始 ID
         let since_id = self.get_since_id().await?;
-        info!("[tw_check] since_id: {}", since_id);
+        info!("[tw-check] since_id: {}", since_id);
 
         // 設定ファイル中の全 user name (screen name) から ID を得る
-        info!("[tw_check] get all user info from screen name");
+        info!("[tw-check] get all user info from screen name");
         // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
         let tlc_list = self.contents.timeline_check.clone();
         for tlcheck in tlc_list.iter() {
             self.resolve_ids(&tlcheck.user_names).await?;
         }
         info!(
-            "[tw_check] user id cache size: {}",
+            "[tw-check] user id cache size: {}",
             self.user_id_cache.len()
         );
 
@@ -554,10 +552,10 @@ impl SystemModule for Twitter {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("tw_check", Twitter::twitter_task_entry);
+                ctrl.spawn_oneshot_task("tw-check", Twitter::twitter_task_entry);
             } else {
                 ctrl.spawn_periodic_task(
-                    "tw_check",
+                    "tw-check",
                     &self.wakeup_list,
                     Twitter::twitter_task_entry,
                 );
