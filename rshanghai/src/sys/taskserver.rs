@@ -7,14 +7,12 @@ use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
-use tokio::sync::mpsc;
+use tokio::sync::watch;
 
-type ShutdownTx = mpsc::UnboundedSender<()>;
-type ShutdownRx = mpsc::UnboundedReceiver<()>;
-/// タスク完了通知側 (複数)
-type CompleteSyncChild = mpsc::Sender<()>;
-/// タスク完了待ち側 (単数)
-type CompleteSyncParent = mpsc::Receiver<()>;
+/// システムシャットダウン開始通知送信側 (単数)
+type CancelTx = watch::Sender<bool>;
+/// システムシャットダウン開始通知受信側 (複数)
+type CancelRx = watch::Receiver<bool>;
 
 /// [TaskServer] と各非同期タスク間で共有されるデータ。
 ///
@@ -24,8 +22,6 @@ struct InternalControl {
     rt: tokio::runtime::Runtime,
     /// 全システムモジュールのリスト。
     sysmods: SystemModules,
-    shutdown_tx: ShutdownTx,
-    shutdown_rx: ShutdownRx,
 }
 
 /// 各非同期タスクに clone され渡されるコントロールハンドル。
@@ -36,9 +32,11 @@ struct InternalControl {
 pub struct Control {
     /// private で [InternalControl] への [Arc] を持つ。
     internal: Arc<InternalControl>,
-    /// システムシャットダウン時、全タスクの完了待ちのため、
+    /// システムシャットダウン時、true が設定送信される。
+    ///
+    /// また、シャットダウンシーケンスにおいて、全タスクの完了待ちのためにも使う。
     /// サーバ側は clone されたこれがすべて drop されるまで待機する。
-    complete_sync: Option<CompleteSyncChild>,
+    cancel_rx: Option<CancelRx>,
 }
 
 /// [TaskServer::run] の返す実行終了種別。
@@ -51,11 +49,10 @@ pub enum RunResult {
 pub struct TaskServer {
     /// 各タスクに clone して渡すオリジナルの [Control]。
     ctrl: Control,
-    /// [Control::complete_sync] (Sender) の対向 (Receiver)。
-    ///
-    /// clone されたすべての [Control::complete_sync] が drop するまで待機する。
+    /// システムシャットダウン時の中断リクエストの送信側。
     /// <https://tokio.rs/tokio/topics/shutdown>
-    complete_sync_wait: CompleteSyncParent,
+    /// "Telling things to shut down" + "Waiting for things to finish shutting down"
+    cancel_tx: CancelTx,
 }
 
 impl Control {
@@ -220,24 +217,15 @@ impl TaskServer {
             .build()
             .unwrap();
 
-        let (shutdown_tx, shutdown_rx) = mpsc::unbounded_channel();
-        let (complete_sync, complete_sync_wait) = mpsc::channel(1);
+        let (cancel_tx, cancel_rx) = watch::channel(false);
 
-        let internal = InternalControl {
-            rt,
-            sysmods,
-            shutdown_tx,
-            shutdown_rx,
-        };
+        let internal = InternalControl { rt, sysmods };
         let ctrl = Control {
             internal: Arc::new(internal),
-            complete_sync: Some(complete_sync),
+            cancel_rx: Some(cancel_rx),
         };
 
-        TaskServer {
-            ctrl,
-            complete_sync_wait,
-        }
+        TaskServer { ctrl, cancel_tx }
     }
 
     /// [Control::spawn_oneshot_task] と同じ。
@@ -255,8 +243,8 @@ impl TaskServer {
     pub fn run(mut self) -> RunResult {
         // async block へ move するためのコピーを作る
         let ctrl = self.ctrl.clone();
-        // オリジナルの complete_sync を self から奪って drop しておく
-        drop(self.ctrl.complete_sync.take().unwrap());
+        // オリジナルの cancel_rx を self から奪って drop しておく
+        drop(self.ctrl.cancel_rx.take().unwrap());
 
         self.ctrl.internal.rt.block_on(async move {
             // SystemModule 全体に on_start イベントを配送
@@ -283,18 +271,16 @@ impl TaskServer {
                 },
             }
 
+            // 値を true に設定して全タスクにキャンセルリクエストを通知する
+            self.cancel_tx.send_replace(true);
             // 全タスク完了待ち
-            // この async block で持っている分の complete_sync を
-            // ctrl ごと drop する
-            // オリジナルの self.ctrl.complete_sync も drop 済みなので
+            // この async block で持っている分の cancel_rx を ctrl ごと drop する
+            // オリジナルの self.ctrl.cancel_rx も drop 済みなので
             // 残りは各 async task に clone された Control
             drop(ctrl);
-            // 全 complete_sync (Sender) が drop されるまで待つ
-            // その時 None を返す
-            // それ以外の用法はしないので、データは送信されてこない
+            // 全 cancel_rx が drop されるまで待つ
             info!("waiting for all tasks to be completed....");
-            let sync_result = self.complete_sync_wait.recv().await;
-            assert!(sync_result.is_none());
+            self.cancel_tx.closed().await;
             info!("OK: all tasks are completed");
 
             run_result
