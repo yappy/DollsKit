@@ -6,6 +6,7 @@ use chrono::prelude::*;
 use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
+use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::watch;
 
@@ -115,7 +116,7 @@ impl Control {
     {
         // move するデータを準備する
         let name = name.to_string();
-        let ctrl = self.clone();
+        let mut ctrl = self.clone();
 
         // 空でなくソート済み、秒以下がゼロなのを確認後
         // 今日のその時刻からなる Local DateTime に変換する
@@ -177,7 +178,14 @@ impl Control {
                             let sleep_duration = target_dt - Local::now();
                             let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
                             trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
-                            tokio::time::sleep(TDuration::from_secs(sleep_sec)).await;
+                            select! {
+                                _ = tokio::time::sleep(TDuration::from_secs(sleep_sec)) => {}
+                                _ = ctrl.cancel_rx().changed() => {
+                                    info!("[{}] cancel periodic task", name);
+                                    return;
+                                }
+                            }
+
                             trace!("[{}] wake up", name);
                         } else {
                             // 一番後ろよりも現在時刻が後
@@ -213,7 +221,13 @@ impl Control {
                 let sleep_duration = target_dt - Local::now();
                 let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
                 trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
-                tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)).await;
+                select! {
+                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) => {}
+                    _ = ctrl.cancel_rx().changed() => {
+                        info!("[{}] cancel periodic task", name);
+                        return;
+                    }
+                }
                 trace!("[{}] wake up", name);
             }
             // drop ctrl
