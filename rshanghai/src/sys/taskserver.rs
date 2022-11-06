@@ -1,4 +1,5 @@
 //! 非同期タスクを管理する。
+
 use crate::sysmod::SystemModules;
 use anyhow::Result;
 use chrono::prelude::*;
@@ -15,9 +16,13 @@ type CompleteSyncChild = mpsc::Sender<()>;
 /// タスク完了待ち側 (単数)
 type CompleteSyncParent = mpsc::Receiver<()>;
 
-/// [Arc] により [TaskServer] と各非同期タスク間で共有されるデータ。
+/// [TaskServer] と各非同期タスク間で共有されるデータ。
+///
+/// インスタンスは1つだけ生成され、[Arc] により共有される。
 struct InternalControl {
+    /// Tokio ランタイム。
     rt: tokio::runtime::Runtime,
+    /// 全システムモジュールのリスト。
     sysmods: SystemModules,
     shutdown_tx: ShutdownTx,
     shutdown_rx: ShutdownRx,
@@ -26,17 +31,17 @@ struct InternalControl {
 /// 各非同期タスクに clone され渡されるコントロールハンドル。
 ///
 /// 各フィールドは private で、メソッドで機能を提供する。
-///
-/// [Clone::clone] 可能で、複製すると [Arc] がインクリメントされる。
-/// また、全タスク完了待ちのための channel も clone される。
+/// [Clone::clone] 可能で、各タスクごとに複製したものが渡される。
 #[derive(Clone)]
 pub struct Control {
     /// private で [InternalControl] への [Arc] を持つ。
     internal: Arc<InternalControl>,
+    /// システムシャットダウン時、全タスクの完了待ちのため、
     /// サーバ側は clone されたこれがすべて drop されるまで待機する。
     complete_sync: Option<CompleteSyncChild>,
 }
 
+/// [TaskServer::run] の返す実行終了種別。
 pub enum RunResult {
     Shutdown,
     Reboot,
@@ -46,7 +51,7 @@ pub enum RunResult {
 pub struct TaskServer {
     /// 各タスクに clone して渡すオリジナルの [Control]。
     ctrl: Control,
-    /// [Control::complete_sync] の対向。
+    /// [Control::complete_sync] (Sender) の対向 (Receiver)。
     ///
     /// clone されたすべての [Control::complete_sync] が drop するまで待機する。
     /// <https://tokio.rs/tokio/topics/shutdown>
@@ -83,7 +88,16 @@ impl Control {
         });
     }
 
-    /// time_list
+    /// 周期タスクを生成する。
+    ///
+    /// wakeup_list: 起動時刻。以下を満たさないと panic する。
+    /// * second 以下が 0 である。(分単位)
+    /// * 昇順ソート済みである。
+    ///
+    /// F: [Control] を引数に、T を返す関数。
+    /// T: Future<Output = anyhow::Result<()> かつスレッド間移動可能。
+    ///
+    /// つまり、F は [Control] を引数に、anyhow::Result<()> を返す async function。
     pub fn spawn_periodic_task<F, T>(&self, name: &str, wakeup_list: &[NaiveTime], f: F)
     where
         F: Fn(Control) -> T + Send + 'static,
@@ -192,14 +206,14 @@ impl Control {
         });
     }
 
-    /// [crate::sysmod::SystemModule] リストを取得する。
+    /// [crate::sysmod::SystemModule] リストへの参照を取得する。
     pub fn sysmods(&self) -> &SystemModules {
         &self.internal.sysmods
     }
 }
 
 impl TaskServer {
-    /// タスクサーバを初期化して開始する。
+    /// タスクサーバを生成して初期化する。
     pub fn new(sysmods: SystemModules) -> Self {
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -226,6 +240,7 @@ impl TaskServer {
         }
     }
 
+    /// [Control::spawn_oneshot_task] と同じ。
     pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
         F: FnOnce(Control) -> T,
@@ -236,7 +251,7 @@ impl TaskServer {
 
     /// 実行を開始し、完了するまでブロックする。
     ///
-    /// self の所有権は consume する。一度しか実行できない。
+    /// self の所有権はを consume するため、一度しか実行できない。
     pub fn run(mut self) -> RunResult {
         // async block へ move するためのコピーを作る
         let ctrl = self.ctrl.clone();
