@@ -13,6 +13,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Twitter API v2
+const TWEET_LEN_MAX: usize = 140;
+
 const URL_USERS_ME: &str = "https://api.twitter.com/2/users/me";
 const URL_USERS_BY: &str = "https://api.twitter.com/2/users/by";
 const LIMIT_USERS_BY: usize = 100;
@@ -342,9 +344,21 @@ impl Twitter {
     }
 
     /// [TwitterConfig::fake_tweet] 設定に対応したツイート。
-    async fn tweet_raw(&mut self, param: TweetParam) -> Result<()> {
+    async fn tweet_raw(&mut self, mut param: TweetParam) -> Result<()> {
         // tl_check_since_id が None なら自分の最新ツイート ID を取得して設定する
         self.get_since_id().await?;
+
+        // 140 字チェック
+        if let Some(ref text) = param.text {
+            let len = text.chars().count();
+            if len > TWEET_LEN_MAX {
+                warn!("tweet length > {}: {}", TWEET_LEN_MAX, len);
+                warn!("before: {}", text);
+                let text = Self::truncate_tweet_text(text).to_string();
+                warn!("after : {}", text);
+                param.text = Some(text);
+            }
+        }
 
         if !self.config.fake_tweet {
             // real tweet!
@@ -352,16 +366,22 @@ impl Twitter {
 
             Ok(())
         } else {
-            let mut len = 0;
-            if let Some(ref text) = param.text {
-                len = text.chars().count();
-            }
-            if len > 140 {
-                warn!("tweet length over 140");
-            }
-            info!("fake tweet: {:?} (len={})", param, len);
+            info!("fake tweet: {:?}", param);
 
             Ok(())
+        }
+    }
+
+    /// 140 字に切り詰める
+    fn truncate_tweet_text(text: &str) -> &str {
+        // 141 文字目の最初のバイトインデックスを得る
+        let lastc = text.char_indices().nth(TWEET_LEN_MAX);
+
+        match lastc {
+            // 0 からそれを含まないバイトまで
+            Some((ind, _)) => &text[0..ind],
+            // 存在しないなら文字列全体を返す
+            None => text,
         }
     }
 
@@ -775,6 +795,20 @@ fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn truncate_tweet_text() {
+        // 20 chars * 7
+        let from1 = "あいうえおかきくけこ0123456789".repeat(7);
+        let to1 = Twitter::truncate_tweet_text(&from1).to_string();
+        assert_eq!(from1.chars().count(), TWEET_LEN_MAX);
+        assert_eq!(from1, to1);
+
+        let from2 = format!("{}あ", from1);
+        let to2 = Twitter::truncate_tweet_text(&from2).to_string();
+        assert_eq!(from2.chars().count(), TWEET_LEN_MAX + 1);
+        assert_eq!(from1, to2);
+    }
 
     #[test]
     fn tweet_pattern_match() {
