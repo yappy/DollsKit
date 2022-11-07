@@ -10,7 +10,7 @@ use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
 use std::sync::Arc;
-use tokio::sync::RwLock as TokioRwLock;
+use tokio::sync::Mutex as TokioMutex;
 
 /// システムモジュールが実装するトレイト。
 pub trait SystemModule: Sync + Send {
@@ -21,9 +21,15 @@ pub trait SystemModule: Sync + Send {
 
 /// [SystemModules] 内の [SystemModule] はマルチスレッドにアクセスされるため、
 /// ロックが必要かつ await 可能。
-type SysModArc<T> = Arc<TokioRwLock<T>>;
+type SysModArc<T> = Arc<TokioMutex<T>>;
 
 /// タスクのエントリポイントに渡される引数からアクセス可能な [SystemModule] のリスト。
+/// デッドロックに注意。
+///
+/// ## デッドロックについて
+/// それぞれの [SystemModule] はアクセスする前にロックを取得する必要があるが、
+/// 複数同時にロックする場合、その順番に気を付けないと
+/// デッドロックを引き起こす可能性がある。
 pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
@@ -57,12 +63,12 @@ impl SystemModules {
 
         let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 
-        let sysinfo = Arc::new(TokioRwLock::new(SystemInfo::new()));
-        let health = Arc::new(TokioRwLock::new(Health::new(
+        let sysinfo = Arc::new(TokioMutex::new(SystemInfo::new()));
+        let health = Arc::new(TokioMutex::new(Health::new(
             wakeup_health_ck,
             wakeup_health_tw,
         )?));
-        let twitter = Arc::new(TokioRwLock::new(Twitter::new(wakeup_twiter)?));
+        let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
         event_target_list.push(twitter.clone());
@@ -79,7 +85,7 @@ impl SystemModules {
     pub async fn on_start(&self, ctrl: &Control) {
         info!("invoke on_start for system modules...");
         for sysmod in self.event_target_list.iter() {
-            sysmod.write().await.on_start(ctrl);
+            sysmod.lock().await.on_start(ctrl);
         }
         info!("OK: invoke on_start for system modules");
     }

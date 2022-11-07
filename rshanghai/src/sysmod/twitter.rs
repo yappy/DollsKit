@@ -356,10 +356,10 @@ impl Twitter {
 
     /// エントリ関数。[Self::twitter_task] を呼ぶ。
     ///
-    /// [Control] 内の [Twitter] オブジェクトを wlock するので
+    /// [Control] 内の [Twitter] オブジェクトを lock するので
     /// [Self::twitter_task] は排他実行となる。
     async fn twitter_task_entry(ctrl: Control) -> Result<()> {
-        let mut twitter = ctrl.sysmods().twitter.write().await;
+        let mut twitter = ctrl.sysmods().twitter.lock().await;
         twitter.twitter_task(&ctrl).await
     }
 

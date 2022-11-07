@@ -188,7 +188,7 @@ async fn boot_tweet_task(ctrl: Control) -> Result<()> {
     let msg = format!("[{}] Boot...\n{}", now, build_info);
 
     {
-        let mut twitter = ctrl.sysmods().twitter.write().await;
+        let mut twitter = ctrl.sysmods().twitter.lock().await;
         twitter.tweet(&msg).await?;
     }
 

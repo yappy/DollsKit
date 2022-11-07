@@ -102,7 +102,7 @@ impl Health {
                 100.0 * disk_info.avail_gib / disk_info.total_gib,
             ));
 
-            let mut twitter = ctrl.sysmods().twitter.write().await;
+            let mut twitter = ctrl.sysmods().twitter.lock().await;
             twitter.tweet(&text).await?;
         }
 
@@ -111,7 +111,7 @@ impl Health {
 
     async fn check_task_entry(ctrl: Control) -> Result<()> {
         // wlock
-        let mut health = ctrl.sysmods().health.write().await;
+        let mut health = ctrl.sysmods().health.lock().await;
         health.check_task(&ctrl).await
         // unlock
     }
@@ -127,7 +127,7 @@ impl Health {
         }
 
         // rlock
-        let health = ctrl.sysmods().health.read().await;
+        let health = ctrl.sysmods().health.lock().await;
         health.tweet_task(&ctrl).await
         // unlock
     }
