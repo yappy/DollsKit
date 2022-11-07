@@ -142,7 +142,9 @@ pub struct Twitter {
     /// 自身の User オブジェクト。最初の1回だけ取得を行う。
     my_user_cache: Option<User>,
     /// screen name -> User オブジェクトのマップ。
-    user_id_cache: HashMap<String, User>,
+    username_user_cache: HashMap<String, User>,
+    /// ID -> screen name のマップ。
+    id_username_cache: HashMap<String, String>,
 }
 
 impl Twitter {
@@ -163,7 +165,8 @@ impl Twitter {
             wakeup_list,
             tl_check_since_id: None,
             my_user_cache: None,
-            user_id_cache: Default::default(),
+            username_user_cache: HashMap::new(),
+            id_username_cache: HashMap::new(),
         })
     }
 
@@ -186,7 +189,7 @@ impl Twitter {
         }
         info!(
             "[tw-check] user id cache size: {}",
-            self.user_id_cache.len()
+            self.username_user_cache.len()
         );
 
         // 以降メイン処理
@@ -204,7 +207,7 @@ impl Twitter {
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
                 let user_match = ch.user_names.iter().any(|user_name| {
-                    let user = self.resolve_id_from_cache(user_name);
+                    let user = self.get_user_from_username(user_name);
                     match user {
                         Some(user) => *tw.author_id.as_ref().unwrap() == user.id,
                         // id 取得に失敗しているので無視
@@ -224,7 +227,11 @@ impl Twitter {
                         let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
                         // リプライツイート (id, text) を一旦バッファする
                         // E0502 回避
-                        reply_buf.push((tw.id.clone(), msgs[rnd_idx].clone()));
+                        reply_buf.push((
+                            tw.id.clone(),
+                            tw.author_id.as_ref().unwrap().clone(),
+                            msgs[rnd_idx].clone(),
+                        ));
                         // 複数種類では反応しない
                         // 反応は1回のみ
                         break;
@@ -234,17 +241,20 @@ impl Twitter {
         }
 
         // バッファしたリプライを実行
-        for (reply_to, text) in reply_buf {
+        for (tw_id, user_id, text) in reply_buf {
             // since_id 更新用データ
             // tweet id を数値比較のため文字列から変換する
             // (リプライ先 ID + 1) の max をとる
             let cur: u64 = self.tl_check_since_id.as_ref().unwrap().parse().unwrap();
-            let next: u64 = reply_to.parse().unwrap();
+            let next: u64 = tw_id.parse().unwrap();
             let max = cur.max(next);
+
+            let name = self.get_username_from_id(&user_id).unwrap();
+            let text = format!("@{} {}", name, text);
 
             let param = TweetParam {
                 reply: Some(TweetParamReply {
-                    in_reply_to_tweet_id: reply_to,
+                    in_reply_to_tweet_id: tw_id,
                 }),
                 text: Some(text),
                 ..Default::default()
@@ -374,20 +384,25 @@ impl Twitter {
         }
     }
 
-    fn resolve_id_from_cache(&self, user: &String) -> Option<&User> {
-        self.user_id_cache.get(user)
+    fn get_user_from_username(&self, name: &String) -> Option<&User> {
+        self.username_user_cache.get(name)
+    }
+
+    fn get_username_from_id(&self, id: &String) -> Option<&String> {
+        self.id_username_cache.get(id)
     }
 
     /// user name (screen name) から id を取得する。
+    /// id -> user name のマップも同時に作成する。
     ///
-    /// 結果は [Self::user_id_cache] に入れる。
+    /// 結果は [Self::name_user_cache] に入れる。
     /// 凍結等で取得できない可能性があり、その場合は無視される。
     async fn resolve_ids(&mut self, user_names: &[String]) -> Result<()> {
-        // user_id_cache にないユーザ名を集める
+        // name_user_cache にないユーザ名を集める
         let unknown_users: Vec<_> = user_names
             .iter()
             .filter_map(|user| {
-                if !self.user_id_cache.contains_key(user) {
+                if !self.username_user_cache.contains_key(user) {
                     Some(user.clone())
                 } else {
                     None
@@ -405,12 +420,15 @@ impl Twitter {
                     "[twitter] resolve username: {} => {}",
                     user.username, user.id
                 );
-                self.user_id_cache
+                self.username_user_cache
                     .insert(user.username.clone(), user.clone());
+                self.id_username_cache
+                    .insert(user.id.clone(), user.username.clone());
             }
 
             start += LIMIT_USERS_BY;
         }
+        assert_eq!(self.username_user_cache.len(), self.id_username_cache.len());
 
         Ok(())
     }
