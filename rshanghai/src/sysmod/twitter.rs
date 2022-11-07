@@ -191,7 +191,7 @@ impl Twitter {
 
         // 以降メイン処理
 
-        // 自分の最終ツイート以降のタイムラインを得る
+        // 自分の最終ツイート以降のタイムラインを得る (リツイートは除く)
         let tl = self.users_timelines_home(&me.id, &since_id).await?;
         info!("{} tweets fetched", tl.data.len());
 
@@ -200,6 +200,7 @@ impl Twitter {
         for ch in self.contents.timeline_check.iter() {
             // 自分のツイートには反応しない
             let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
+
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
                 let user_match = ch.user_names.iter().any(|user_name| {
@@ -254,7 +255,7 @@ impl Twitter {
             self.tl_check_since_id = Some(max.to_string());
         }
 
-        //test
+        // TODO: vote test
         /*
         let param = TweetParam {
             poll: Some(TweetParamPoll {
@@ -443,6 +444,7 @@ impl Twitter {
         let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
             ("since_id".into(), since_id.into()),
+            ("exclude".into(), "retweets".into()),
             ("expansions".into(), "author_id".into()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
