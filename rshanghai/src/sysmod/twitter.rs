@@ -415,7 +415,7 @@ impl Twitter {
     /// user name (screen name) から id を取得する。
     /// id -> user name のマップも同時に作成する。
     ///
-    /// 結果は [Self::name_user_cache] に入れる。
+    /// 結果は [Self::username_user_cache], [Self::id_username_cache] に入れる。
     /// 凍結等で取得できない可能性があり、その場合はエラーを出しながら続行するよりは
     /// panic でユーザに知らせる。
     async fn resolve_ids(&mut self, user_names: &[String]) -> Result<()> {
@@ -463,7 +463,11 @@ impl Twitter {
                 let removed = rest.remove(&user.username);
                 assert!(removed);
             }
-            assert!(rest.is_empty(), "cannot resolved (account suspended?): {:?}", rest);
+            assert!(
+                rest.is_empty(),
+                "cannot resolved (account suspended?): {:?}",
+                rest
+            );
 
             start += LIMIT_USERS_BY;
         }
