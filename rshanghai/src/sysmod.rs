@@ -1,11 +1,15 @@
 //! システムモジュール関連。
 
 pub mod health;
+pub mod httpserver;
 pub mod sysinfo;
 pub mod twitter;
 
 use self::{sysinfo::SystemInfo, twitter::Twitter};
-use crate::{sys::taskserver::Control, sysmod::health::Health};
+use crate::{
+    sys::taskserver::Control,
+    sysmod::{health::Health, httpserver::HttpServer},
+};
 use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
@@ -34,6 +38,7 @@ pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
     pub twitter: SysModArc<twitter::Twitter>,
+    pub http: SysModArc<httpserver::HttpServer>,
 
     /// 全 [SystemModule] にイベントを配送するための参照のリストを作る。
     event_target_list: Vec<SysModArc<dyn SystemModule>>,
@@ -69,15 +74,19 @@ impl SystemModules {
             wakeup_health_tw,
         )?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
+        let http = Arc::new(TokioMutex::new(HttpServer::new()?));
+
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
         event_target_list.push(twitter.clone());
+        event_target_list.push(http.clone());
 
         info!("OK: initialize system modules");
         Ok(Self {
             sysinfo,
             health,
             twitter,
+            http,
             event_target_list,
         })
     }

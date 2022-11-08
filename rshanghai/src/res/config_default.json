@@ -11,5 +11,9 @@
 		"consumer_secret"	: "",
 		"access_token"		: "",
 		"access_secret"		: ""
+	},
+	"http": {
+		"enabled"			: false,
+		"inaddr_any"		: false
 	}
 }
