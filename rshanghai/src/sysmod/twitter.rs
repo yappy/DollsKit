@@ -9,7 +9,7 @@ use log::warn;
 use log::{debug, info};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Twitter API v2
@@ -416,7 +416,8 @@ impl Twitter {
     /// id -> user name のマップも同時に作成する。
     ///
     /// 結果は [Self::name_user_cache] に入れる。
-    /// 凍結等で取得できない可能性があり、その場合は無視される。
+    /// 凍結等で取得できない可能性があり、その場合はエラーを出しながら続行するよりは
+    /// panic でユーザに知らせる。
     async fn resolve_ids(&mut self, user_names: &[String]) -> Result<()> {
         // name_user_cache にないユーザ名を集める
         let unknown_users: Vec<_> = user_names
@@ -434,8 +435,23 @@ impl Twitter {
         let mut start = 0_usize;
         while start < unknown_users.len() {
             let end = std::cmp::min(unknown_users.len(), start + LIMIT_USERS_BY);
-            let result = self.users_by(&unknown_users[start..end]).await?;
-            for user in result.data.iter() {
+            let request_users = &unknown_users[start..end];
+            let mut rest: BTreeSet<_> = request_users.iter().collect();
+
+            // suspend user のみでリクエストすると
+            // {data: {...}} でなく {error: {...}}
+            // が返ってきて API は 200 で成功するがパースに失敗する
+            // やや汚いが panic してユーザリストの見直すよう促す
+            let result = self.users_by(request_users).await;
+            if let Err(e) = result {
+                if e.is::<serde_json::Error>() {
+                    panic!("parse error {:?}", e);
+                } else {
+                    return Err(e);
+                }
+            }
+
+            for user in result?.data.iter() {
                 info!(
                     "[twitter] resolve username: {} => {}",
                     user.username, user.id
@@ -444,7 +460,10 @@ impl Twitter {
                     .insert(user.username.clone(), user.clone());
                 self.id_username_cache
                     .insert(user.id.clone(), user.username.clone());
+                let removed = rest.remove(&user.username);
+                assert!(removed);
             }
+            assert!(rest.is_empty(), "cannot resolved (account suspended?): {:?}", rest);
 
             start += LIMIT_USERS_BY;
         }
