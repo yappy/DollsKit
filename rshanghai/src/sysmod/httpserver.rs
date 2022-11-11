@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 struct HttpConfig {
     enabled: bool,
     inaddr_any: bool,
+    port: u16,
+    github_hook: bool,
 }
 
 pub struct HttpServer {
@@ -49,7 +51,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
         actix_web::App::new().app_data(data.clone()).service(hello)
     })
     .disable_signals()
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", config.port))?
     .run();
 
     // self.handle にサーバ停止用のハンドルを保存する
