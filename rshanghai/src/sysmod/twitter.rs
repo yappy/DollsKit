@@ -252,7 +252,7 @@ impl Twitter {
             let max = cur.max(next);
 
             let name = self.get_username_from_id(&user_id).unwrap();
-            let text = format!("@{} {}", name, text);
+            info!("reply to: {}", name);
 
             let param = TweetParam {
                 reply: Some(TweetParamReply {
