@@ -1,5 +1,6 @@
+mod index;
+
 use super::SystemModule;
-use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
 use actix_web::web;
 use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
@@ -35,8 +36,9 @@ impl HttpServer {
     }
 }
 
+/// <path_prefix>/ 以下の設定
 fn server_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(hello);
+    cfg.service(index::index_get);
 }
 
 async fn http_main_task(ctrl: Control) -> Result<()> {
@@ -54,7 +56,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
         actix_web::App::new()
             .app_data(data_config.clone())
             .app_data(data_ctrl.clone())
-            .service(index)
+            .service(root_index_get)
             .service(web::scope(&data_config.path_prefix).configure(server_config))
     })
     .disable_signals()
@@ -96,12 +98,7 @@ impl SystemModule for HttpServer {
 }
 
 #[actix_web::get("/")]
-async fn index(cfg: web::Data<HttpConfig>) -> impl Responder {
-    let verstr = version::VERSION_INFO_VEC
-        .iter()
-        .map(|s| format!("      <li>{}</li>", s))
-        .collect::<Vec<_>>()
-        .join("\n");
+async fn root_index_get(cfg: web::Data<HttpConfig>) -> impl Responder {
     let body = format!(
         r#"<!DOCTYPE html>
 <html lang="en">
@@ -116,23 +113,12 @@ async fn index(cfg: web::Data<HttpConfig>) -> impl Responder {
       Therefore, this page will not be visible from the network.
     </p>
     <p>Application endpoint (reverse proxy root) is <strong>{}</strong>.<p>
-    <hr>
-    <ul>
-{}
-    </ul>
   </body>
 </html>
 "#,
-        cfg.path_prefix, verstr
+        cfg.path_prefix
     );
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(body)
-}
-
-#[actix_web::get("/")]
-async fn hello(ctrl: web::Data<Control>) -> impl Responder {
-    HttpResponse::Ok()
-        .content_type(ContentType::plaintext())
-        .body("Hello world!\n")
 }

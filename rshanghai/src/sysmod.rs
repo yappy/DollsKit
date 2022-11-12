@@ -1,14 +1,14 @@
 //! システムモジュール関連。
 
 pub mod health;
-pub mod httpserver;
+pub mod http;
 pub mod sysinfo;
 pub mod twitter;
 
 use self::{sysinfo::SystemInfo, twitter::Twitter};
 use crate::{
     sys::taskserver::Control,
-    sysmod::{health::Health, httpserver::HttpServer},
+    sysmod::{health::Health, http::HttpServer},
 };
 use anyhow::Result;
 use chrono::NaiveTime;
@@ -38,7 +38,7 @@ pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
     pub twitter: SysModArc<twitter::Twitter>,
-    pub http: SysModArc<httpserver::HttpServer>,
+    pub http: SysModArc<http::HttpServer>,
 
     /// 全 [SystemModule] にイベントを配送するための参照のリストを作る。
     event_target_list: Vec<SysModArc<dyn SystemModule>>,
