@@ -1,6 +1,7 @@
 use super::SystemModule;
 use chrono::prelude::*;
 
+#[derive(Clone)]
 pub struct SystemInfo {
     pub started: chrono::DateTime<Local>,
 }

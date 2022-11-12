@@ -36,28 +36,26 @@ impl HttpServer {
     }
 }
 
-/// <path_prefix>/ 以下の設定
-fn server_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(index::index_get);
-}
-
 async fn http_main_task(ctrl: Control) -> Result<()> {
-    let config = {
+    let http_config = {
         let http = ctrl.sysmods().http.lock().await;
         http.config.clone()
     };
 
-    let port = config.port;
+    let port = http_config.port;
     // クロージャ内に move するデータの準備
-    let data_config = web::Data::new(config);
+    let data_config = web::Data::new(http_config.clone());
     let data_ctrl = web::Data::new(ctrl.clone());
+    let config_index = index::server_config();
     // クロージャはワーカースレッドごとに複数回呼ばれる
     let server = actix_web::HttpServer::new(move || {
         actix_web::App::new()
             .app_data(data_config.clone())
             .app_data(data_ctrl.clone())
             .service(root_index_get)
-            .service(web::scope(&data_config.path_prefix).configure(server_config))
+            .service(web::scope(&data_config.path_prefix).configure(|cfg| {
+                config_index(cfg, &http_config);
+            }))
     })
     .disable_signals()
     .bind(("127.0.0.1", port))?
