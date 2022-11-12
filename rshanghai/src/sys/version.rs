@@ -64,3 +64,12 @@ Branch: {}
         BUILD_TARGET, BUILD_PROFILE, GIT_BRANCH, GIT_SEMVER, GIT_DATE
     )
 });
+
+pub static VERSION_INFO_VEC: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        format!("Build: {} {}", BUILD_TARGET, BUILD_PROFILE),
+        format!("Branch: {}", GIT_BRANCH),
+        format!("Version: {}", GIT_SEMVER),
+        format!("Last Updated: {}", GIT_DATE),
+    ]
+});

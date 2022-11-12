@@ -1,5 +1,7 @@
 use super::SystemModule;
+use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
+use actix_web::web;
 use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::info;
@@ -8,8 +10,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 struct HttpConfig {
     enabled: bool,
-    inaddr_any: bool,
     port: u16,
+    path_prefix: String,
     github_hook: bool,
 }
 
@@ -33,25 +35,30 @@ impl HttpServer {
     }
 }
 
+fn server_config(cfg: &mut web::ServiceConfig) {
+    cfg.service(hello);
+}
+
 async fn http_main_task(ctrl: Control) -> Result<()> {
     let config = {
         let http = ctrl.sysmods().http.lock().await;
         http.config.clone()
     };
-    let addr = if config.inaddr_any {
-        "0.0.0.0"
-    } else {
-        "127.0.0.1"
-    };
 
-    // clone してクロージャ内に move する
-    let data = AppData::new(ctrl.clone());
+    let port = config.port;
+    // クロージャ内に move するデータの準備
+    let data_config = web::Data::new(config);
+    let data_ctrl = web::Data::new(ctrl.clone());
     // クロージャはワーカースレッドごとに複数回呼ばれる
     let server = actix_web::HttpServer::new(move || {
-        actix_web::App::new().app_data(data.clone()).service(hello)
+        actix_web::App::new()
+            .app_data(data_config.clone())
+            .app_data(data_ctrl.clone())
+            .service(index)
+            .service(web::scope(&data_config.path_prefix).configure(server_config))
     })
     .disable_signals()
-    .bind(("0.0.0.0", config.port))?
+    .bind(("127.0.0.1", port))?
     .run();
 
     // self.handle にサーバ停止用のハンドルを保存する
@@ -88,10 +95,43 @@ impl SystemModule for HttpServer {
     }
 }
 
-type AppData = actix_web::web::Data<Control>;
+#[actix_web::get("/")]
+async fn index(cfg: web::Data<HttpConfig>) -> impl Responder {
+    let verstr = version::VERSION_INFO_VEC
+        .iter()
+        .map(|s| format!("      <li>{}</li>", s))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let body = format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>House Management System Web Interface</title>
+  </head>
+  <body>
+    <h1>House Management System Web Interface</h1>
+    <p>This is the root page. Web module is working fine.</p>
+    <p>
+      This system is intended to be connected from a front web server (reverse proxy).
+      Therefore, this page will not be visible from the network.
+    </p>
+    <p>Application endpoint (reverse proxy root) is <strong>{}</strong>.<p>
+    <hr>
+    <ul>
+{}
+    </ul>
+  </body>
+</html>
+"#,
+        cfg.path_prefix, verstr
+    );
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(body)
+}
 
 #[actix_web::get("/")]
-async fn hello(ctrl: AppData) -> impl Responder {
+async fn hello(ctrl: web::Data<Control>) -> impl Responder {
     HttpResponse::Ok()
         .content_type(ContentType::plaintext())
         .body("Hello world!\n")

@@ -14,8 +14,8 @@
 	},
 	"http": {
 		"enabled"			: false,
-		"inaddr_any"		: false,
 		"port"				: 8899,
+		"path_prefix"		: "/rhouse",
 		"github_hook"		: false
 	}
 }
