@@ -14,8 +14,10 @@
 	},
 	"http": {
 		"enabled"			: false,
+		"priv_enabled"		: false,
 		"port"				: 8899,
 		"path_prefix"		: "/rhouse",
+		"priv_prefix"		: "/rhouse/priv",
 		"github_hook"		: false
 	}
 }

@@ -1,4 +1,5 @@
 mod index;
+mod priv_index;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
@@ -9,10 +10,12 @@ use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
-struct HttpConfig {
+pub struct HttpConfig {
     enabled: bool,
+    priv_enabled: bool,
     port: u16,
     path_prefix: String,
+    priv_prefix: String,
     github_hook: bool,
 }
 
@@ -46,16 +49,25 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     // クロージャ内に move するデータの準備
     let data_config = web::Data::new(http_config.clone());
     let data_ctrl = web::Data::new(ctrl.clone());
-    let config_index = index::server_config();
+    let config_regular = index::server_config();
+    let config_privileged = priv_index::server_config();
     // クロージャはワーカースレッドごとに複数回呼ばれる
     let server = actix_web::HttpServer::new(move || {
-        actix_web::App::new()
+        let app = actix_web::App::new()
             .app_data(data_config.clone())
             .app_data(data_ctrl.clone())
             .service(root_index_get)
-            .service(web::scope(&data_config.path_prefix).configure(|cfg| {
-                config_index(cfg, &http_config);
-            }))
+            .service(
+                web::scope(&data_config.path_prefix)
+                    .configure(|cfg| {
+                        config_regular(cfg, &http_config);
+                    })
+                    .service(web::scope(&data_config.priv_prefix).configure(|cfg| {
+                        config_privileged(cfg, &http_config);
+                    })),
+            );
+
+        app
     })
     .disable_signals()
     .bind(("127.0.0.1", port))?
