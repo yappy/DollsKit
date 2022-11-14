@@ -24,7 +24,7 @@ if(defined $ENV{'OPENSSL'}) {
 
 my $verbose = 1;
 
-my $OPENSSL_CONFIG = $ENV{"OPENSSL_CONFIG"} || "";
+my $OPENSSL_CONFIG = $ENV{"OPENSSL_CONFIG"} || "-config ./openssl.cnf";
 my $DAYS = "-days 365";
 my $CADAYS = "-days 1095";	# 3 years
 my $REQ = "$openssl req $OPENSSL_CONFIG";
@@ -34,7 +34,7 @@ my $X509 = "$openssl x509";
 my $PKCS12 = "$openssl pkcs12";
 
 # default openssl.cnf file has setup as per the following
-my $CATOP = "./demoCA";
+my $CATOP = "./DollsCA";
 my $CAKEY = "cakey.pem";
 my $CAREQ = "careq.pem";
 my $CACERT = "cacert.pem";
