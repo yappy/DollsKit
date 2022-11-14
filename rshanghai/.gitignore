@@ -1,0 +1,5 @@
+/target
+/*.pid
+/std*.txt
+/*.log
+/*.json

@@ -1,0 +1,23 @@
+{
+	"health": {
+		"enabled"			: false,
+		"debug_exec_once"	: false
+	},
+	"twitter": {
+		"tlcheck_enabled"	: false,
+		"debug_exec_once"	: false,
+		"fake_tweet"		: true,
+		"consumer_key"		: "",
+		"consumer_secret"	: "",
+		"access_token"		: "",
+		"access_secret"		: ""
+	},
+	"http": {
+		"enabled"			: false,
+		"priv_enabled"		: false,
+		"port"				: 8899,
+		"path_prefix"		: "/rhouse",
+		"priv_prefix"		: "/rhouse/priv",
+		"github_hook"		: false
+	}
+}

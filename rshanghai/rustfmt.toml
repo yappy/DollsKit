@@ -1,0 +1,9 @@
+# if lorem {
+#     println!("ipsum!");
+# }
+# else {
+#     println!("dolor!");
+# }
+
+# Not stable yet...
+# control_brace_style = "AlwaysSameLine"
