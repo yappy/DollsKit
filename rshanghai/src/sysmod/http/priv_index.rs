@@ -1,4 +1,7 @@
-use super::HttpConfig;
+use super::{
+    priv_camera::{camera_get, camera_take_get},
+    HttpConfig,
+};
 use crate::sys::taskserver::Control;
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 
@@ -8,6 +11,8 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) -
             return;
         }
         cfg.service(index_get);
+        cfg.service(camera_get);
+        cfg.service(camera_take_get);
     }
 }
 
@@ -24,6 +29,8 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
     <h2>Caution</h2>
     <p>This backend program does not provide any security schemes.</p>
     <p>Check again the front server settings for client authentication.</p>
+    <h2>Camera</h2>
+    <p><a href="./camera/">Camera Main Page</a></p>
   </body>
 </html>
 "#

@@ -1,4 +1,5 @@
 mod index;
+mod priv_camera;
 mod priv_index;
 
 use super::SystemModule;
