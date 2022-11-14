@@ -15,6 +15,22 @@ pub fn percent_encode(input: &str) -> String {
     utf8_percent_encode(input, FRAGMENT).to_string()
 }
 
+pub fn html_escape(src: &str) -> String {
+    let mut result = String::new();
+    for c in src.chars() {
+        match c {
+            '&' => result.push_str("&amp;"),
+            '"' => result.push_str("&quot;"),
+            '\'' => result.push_str("&apos;"),
+            '<' => result.push_str("&lt;"),
+            '>' => result.push_str("&gt;"),
+            _ => result.push(c),
+        }
+    }
+
+    result
+}
+
 pub type HmacSha1 = SimpleHmac<Sha1>;
 
 /// HMAC SHA1 を計算する。
