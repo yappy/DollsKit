@@ -54,7 +54,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     let config_privileged = priv_index::server_config();
     // クロージャはワーカースレッドごとに複数回呼ばれる
     let server = actix_web::HttpServer::new(move || {
-        let app = actix_web::App::new()
+        actix_web::App::new()
             .app_data(data_config.clone())
             .app_data(data_ctrl.clone())
             .service(root_index_get)
@@ -66,9 +66,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
                     .service(web::scope(&data_config.priv_prefix).configure(|cfg| {
                         config_privileged(cfg, &http_config);
                     })),
-            );
-
-        app
+            )
     })
     .disable_signals()
     .bind(("127.0.0.1", port))?

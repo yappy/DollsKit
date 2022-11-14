@@ -8,7 +8,7 @@ struct IndexState {
     access_counter: AtomicU32,
 }
 
-pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) -> () + Clone {
+pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {
     let state = web::Data::new(IndexState {
         access_counter: Default::default(),
     });

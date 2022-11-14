@@ -4,10 +4,10 @@ use super::{
     priv_camera::{camera_get, camera_take_get},
     HttpConfig,
 };
-use crate::sys::{taskserver::Control, net::html_escape};
+use crate::sys::{net::html_escape, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 
-pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) -> () + Clone {
+pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {
     move |cfg: &mut web::ServiceConfig, http_config: &HttpConfig| {
         if !http_config.priv_enabled {
             return;
@@ -31,8 +31,8 @@ async fn index_get(
 
     let mut header_str = String::new();
     for (k, v) in sorted {
-        let k = html_escape(&k);
-        let v = html_escape(&v);
+        let k = html_escape(k);
+        let v = html_escape(v);
         header_str.push_str(&format!("      <li>{}: {}</li>\n", k, v));
     }
 
