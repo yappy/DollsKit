@@ -81,6 +81,14 @@ mod tests {
     }
 
     #[test]
+    fn html_escape_1() {
+        let str = "\"<a href='test'>Test&Test</a>\"";
+        let result = html_escape(str);
+        let expected = "&quot;&lt;a href=&apos;test&apos;&gt;Test&amp;Test&lt;/a&gt;&quot;";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
     fn hmac_sha1_rfc2202_1() {
         let key = &hex!("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b");
         let data = b"Hi There";
