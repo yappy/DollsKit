@@ -1,5 +1,8 @@
 use super::{HttpConfig, WebResult};
-use crate::{sys::taskserver::Control, sysmod::camera::take_a_pic};
+use crate::{
+    sys::taskserver::Control,
+    sysmod::camera::{take_a_pic, TakePicOption},
+};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use log::error;
 
@@ -24,7 +27,7 @@ async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -
 
 #[actix_web::get("/camera/take")]
 async fn camera_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
-    let pic_bin = take_a_pic().await;
+    let pic_bin = take_a_pic(TakePicOption::new()).await;
     if let Err(ref e) = pic_bin {
         error!("take a picture error");
         error!("{:#}", e);

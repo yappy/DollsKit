@@ -138,9 +138,39 @@ const PIC_MIN_W: u32 = 32;
 const PIC_MIN_H: u32 = 24;
 const PIC_DEF_W: u32 = PIC_MAX_W;
 const PIC_DEF_H: u32 = PIC_MAX_H;
-const PIC_TIMEOUT_SEC: u32 = 1;
+const PIC_DEF_TO_MS: u32 = 1000;
 
-pub async fn take_a_pic() -> Result<Vec<u8>> {
+pub struct TakePicOption {
+    w: u32,
+    h: u32,
+    timeout_ms: u32,
+}
+
+impl TakePicOption {
+    pub fn new() -> Self {
+        Self {
+            w: PIC_DEF_W,
+            h: PIC_DEF_H,
+            timeout_ms: PIC_DEF_TO_MS,
+        }
+    }
+    pub fn width(mut self, w: u32) -> Self {
+        assert!((PIC_MIN_W..=PIC_MAX_W).contains(&w));
+        self.w = w;
+        self
+    }
+    pub fn height(mut self, h: u32) -> Self {
+        assert!((PIC_MIN_H..=PIC_MAX_H).contains(&h));
+        self.h = h;
+        self
+    }
+    pub fn timeout_ms(mut self, timeout_ms: u32) -> Self {
+        self.timeout_ms = timeout_ms;
+        self
+    }
+}
+
+pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     // raspistill は同時に複数プロセス起動できないので mutex で保護する
@@ -149,11 +179,11 @@ pub async fn take_a_pic() -> Result<Vec<u8>> {
         .arg("-o")
         .arg("-")
         .arg("-t")
-        .arg(PIC_TIMEOUT_SEC.to_string())
+        .arg(opt.timeout_ms.to_string())
         .arg("-w")
-        .arg(PIC_DEF_W.to_string())
+        .arg(opt.w.to_string())
         .arg("-h")
-        .arg(PIC_DEF_H.to_string())
+        .arg(opt.h.to_string())
         .output()
         .await?;
     drop(lock);
