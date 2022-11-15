@@ -2,12 +2,15 @@ mod index;
 mod priv_camera;
 mod priv_index;
 
+use std::fmt::Display;
+
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use actix_web::web;
 use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::info;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -102,6 +105,41 @@ impl SystemModule for HttpServer {
         info!("[http] on_start");
         if self.config.enabled {
             ctrl.spawn_oneshot_task("http", http_main_task);
+        }
+    }
+}
+
+pub type WebResult = Result<HttpResponse, ActixError>;
+
+#[derive(Debug)]
+pub struct ActixError {
+    err: anyhow::Error,
+    status: StatusCode,
+}
+
+impl actix_web::error::ResponseError for ActixError {
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::plaintext())
+            .body(self.status_code().to_string())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        self.status
+    }
+}
+
+impl Display for ActixError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}, status={}", self.err, self.status.as_str())
+    }
+}
+
+impl From<anyhow::Error> for ActixError {
+    fn from(err: anyhow::Error) -> ActixError {
+        ActixError {
+            err,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
