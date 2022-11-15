@@ -1,7 +1,7 @@
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use anyhow::{anyhow, ensure, Ok, Result};
+use anyhow::{anyhow, bail, Ok, Result};
 use chrono::NaiveTime;
 use log::{info, warn};
 use once_cell::sync::Lazy;
@@ -171,23 +171,35 @@ impl TakePicOption {
 }
 
 pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
+    // 他の関数でも raspistill を使う場合外に出す
     static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
-    // raspistill は同時に複数プロセス起動できないので mutex で保護する
-    let lock = LOCK.lock().await;
-    let output = Command::new("raspistill")
-        .arg("-o")
-        .arg("-")
-        .arg("-t")
-        .arg(opt.timeout_ms.to_string())
-        .arg("-w")
-        .arg(opt.w.to_string())
-        .arg("-h")
-        .arg(opt.h.to_string())
-        .output()
-        .await?;
-    drop(lock);
+    let fake = config::get_bool(&["camera", "fake_camera"])?;
 
-    ensure!(output.status.success());
-    Ok(output.stdout)
+    let bin = if !fake {
+        let lock = LOCK.lock().await;
+        let output = Command::new("raspistill")
+            .arg("-o")
+            .arg("-")
+            .arg("-t")
+            .arg(opt.timeout_ms.to_string())
+            .arg("-w")
+            .arg(opt.w.to_string())
+            .arg("-h")
+            .arg(opt.h.to_string())
+            .output()
+            .await?;
+        if !output.status.success() {
+            bail!("raspistill failed: {}", output.status);
+        }
+
+        output.stdout
+        // unlock
+    } else {
+        // バイナリ同梱のデフォルト画像が撮れたことにする
+        include_bytes!("../res/camera_def.jpg").to_vec()
+    };
+    // raspistill は同時に複数プロセス起動できないので mutex で保護する
+
+    Ok(bin)
 }
