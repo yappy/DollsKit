@@ -1,8 +1,9 @@
 //! 設定データの管理。
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 use serde_json::Value;
+use std::fmt::Debug;
 use std::ops::RangeBounds;
 use std::sync::RwLock;
 
@@ -83,43 +84,66 @@ fn search_all(keys: &[&str]) -> serde_json::Value {
     serde_json::Value::Null
 }
 
-pub fn get_object(keys: &[&str]) -> Option<Value> {
+/// json オブジェクトを取得する。
+///
+/// 見つからない場合やオブジェクトでない場合はエラーを返す。
+pub fn get_object(keys: &[&str]) -> Result<Value> {
     let value = search_all(keys);
     if value.is_object() {
-        Some(value)
+        Ok(value)
     } else {
-        None
+        Err(anyhow!("object config not found: {:?}", keys))
     }
 }
 
 /// 真偽値設定データを取得する。
-/// 見つからない場合や真偽値でない場合は None を返す。
-pub fn get_bool(keys: &[&str]) -> Option<bool> {
-    search_all(keys).as_bool()
+///
+/// 見つからない場合や真偽値でない場合はエラーを返す。
+pub fn get_bool(keys: &[&str]) -> Result<bool> {
+    let value = search_all(keys).as_bool();
+    if let Some(b) = value {
+        Ok(b)
+    } else {
+        Err(anyhow!("bool config not found: {:?}", keys))
+    }
 }
 
 /// 数値データを i64 で取得する。
-/// 見つからない場合、数値でない場合、範囲外の場合は None を返す。
-pub fn get_i64<R: RangeBounds<i64>>(keys: &[&str], range: R) -> Option<i64> {
-    search_all(keys).as_i64().and_then(|num| {
-        if range.contains(&num) {
-            Some(num)
+///
+/// 見つからない場合、数値でない場合、範囲外の場合はエラーを返す。
+pub fn get_i64<R>(keys: &[&str], range: R) -> Result<i64>
+where
+    R: RangeBounds<i64> + Debug,
+{
+    let value = search_all(keys).as_i64();
+    if let Some(n) = value {
+        if range.contains(&n) {
+            Ok(n)
         } else {
-            None
+            Err(anyhow!("i64 config range error: {:?} {:?}", keys, range))
         }
-    })
+    } else {
+        Err(anyhow!("i64 config not found: {:?}", keys))
+    }
 }
 
 /// 数値データを u64 で取得する。
-/// 見つからない場合、数値でない場合、範囲外の場合は None を返す。
-pub fn get_u64<R: RangeBounds<u64>>(keys: &[&str], range: R) -> Option<u64> {
-    search_all(keys).as_u64().and_then(|num| {
-        if range.contains(&num) {
-            Some(num)
+///
+/// 見つからない場合、数値でない場合、範囲外の場合はエラーを返す。
+pub fn get_u64<R>(keys: &[&str], range: R) -> Result<u64>
+where
+    R: RangeBounds<u64> + Debug,
+{
+    let value = search_all(keys).as_u64();
+    if let Some(n) = value {
+        if range.contains(&n) {
+            Ok(n)
         } else {
-            None
+            Err(anyhow!("u64 config range error: {:?} {:?}", keys, range))
         }
-    })
+    } else {
+        Err(anyhow!("u64 config not found: {:?}", keys))
+    }
 }
 
 /// 文字列設定データを取得する。
@@ -184,9 +208,9 @@ mod tests {
         assert_eq!(v.unwrap(), i64::MAX);
 
         let v = get_i64(&["i64", "min"], i64::MIN + 1..);
-        assert!(v.is_none());
+        assert!(v.is_err());
         let v = get_i64(&["i64", "max"], ..=i64::MAX - 1);
-        assert!(v.is_none());
+        assert!(v.is_err());
     }
 
     #[test]
@@ -204,9 +228,9 @@ mod tests {
         assert_eq!(v.unwrap(), u64::MAX);
 
         let v = get_u64(&["u64", "min"], u64::MIN + 1..);
-        assert!(v.is_none());
+        assert!(v.is_err());
         let v = get_u64(&["u64", "max"], ..=u64::MAX - 1);
-        assert!(v.is_none());
+        assert!(v.is_err());
     }
 
     #[test]
