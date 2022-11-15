@@ -1,5 +1,6 @@
 //! システムモジュール関連。
 
+pub mod camera;
 pub mod health;
 pub mod http;
 pub mod sysinfo;
@@ -8,7 +9,7 @@ pub mod twitter;
 use self::{sysinfo::SystemInfo, twitter::Twitter};
 use crate::{
     sys::taskserver::Control,
-    sysmod::{health::Health, http::HttpServer},
+    sysmod::{camera::Camera, health::Health, http::HttpServer},
 };
 use anyhow::Result;
 use chrono::NaiveTime;
@@ -37,6 +38,7 @@ type SysModArc<T> = Arc<TokioMutex<T>>;
 pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
+    pub camera: SysModArc<camera::Camera>,
     pub twitter: SysModArc<twitter::Twitter>,
     pub http: SysModArc<http::HttpServer>,
 
@@ -58,6 +60,17 @@ impl SystemModules {
             NaiveTime::from_hms(18, 0, 0),
         ];
 
+        let wakeup_camera = vec![
+            NaiveTime::from_hms(0, 0, 0),
+            NaiveTime::from_hms(3, 0, 0),
+            NaiveTime::from_hms(6, 0, 0),
+            NaiveTime::from_hms(9, 0, 0),
+            NaiveTime::from_hms(12, 0, 0),
+            NaiveTime::from_hms(15, 0, 0),
+            NaiveTime::from_hms(18, 0, 0),
+            NaiveTime::from_hms(21, 0, 0),
+        ];
+
         let wakeup_twiter: Vec<_> = (0..24)
             .flat_map(|hour| {
                 (0..60)
@@ -73,6 +86,7 @@ impl SystemModules {
             wakeup_health_ck,
             wakeup_health_tw,
         )?));
+        let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
 
@@ -85,6 +99,7 @@ impl SystemModules {
         Ok(Self {
             sysinfo,
             health,
+            camera,
             twitter,
             http,
             event_target_list,

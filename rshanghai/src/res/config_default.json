@@ -3,6 +3,14 @@
 		"enabled"			: false,
 		"debug_exec_once"	: false
 	},
+	"camera": {
+		"enabled"			: false,
+		"debug_exec_once"	: false,
+		"fake_camera"		: true,
+		"pic_tmp_dir"		: "./camera/tmp",
+		"pic_save_dir"		: "./camera/save",
+		"pic_del_days"		: 365
+	},
 	"twitter": {
 		"tlcheck_enabled"	: false,
 		"debug_exec_once"	: false,
