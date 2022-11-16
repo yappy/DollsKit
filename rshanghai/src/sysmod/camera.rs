@@ -1,8 +1,8 @@
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use anyhow::{anyhow, bail, Ok, Result};
-use chrono::NaiveTime;
+use anyhow::{anyhow, bail, Result};
+use chrono::{Local, NaiveTime};
 use image::ImageOutputFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
@@ -12,8 +12,9 @@ use std::{
     io::{Seek, Write},
     path::{Path, PathBuf},
 };
-use tokio::{process::Command, sync::Mutex};
+use tokio::{fs::File, io::AsyncWriteExt, process::Command, sync::Mutex};
 
+const THUMB_POSTFIX: &str = "thumb";
 /// 60 * 24 = 1440 /day
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
@@ -28,8 +29,8 @@ struct CameraConfig {
 }
 
 struct PicEntry {
-    path: PathBuf,
-    //thumb_path: PathBuf,
+    path_main: PathBuf,
+    path_th: PathBuf,
     // timestamp
 }
 
@@ -66,6 +67,33 @@ impl Camera {
                 pic_save_list,
             },
         })
+    }
+
+    pub async fn register_picture(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
+        let now = Local::now();
+        let dtstr = now.format("%Y%m%d_%H%M").to_string();
+
+        let root = Path::new(&self.config.pic_tmp_dir);
+        let mut path_main = PathBuf::from(root);
+        path_main.push(dtstr.to_string());
+        path_main.set_extension("jpg");
+        let mut path_th = PathBuf::from(root);
+        path_th.push(format!("{}_{}.jpg", dtstr, THUMB_POSTFIX));
+        path_th.set_extension("jpg");
+
+        info!("write {}", path_main.display());
+        let mut file = File::create(&path_main).await?;
+        file.write_all(img).await?;
+        drop(file);
+
+        info!("write {}", path_th.display());
+        let mut file = File::create(&path_th).await?;
+        file.write_all(thumb).await?;
+        drop(file);
+
+        let entry = PicEntry { path_main, path_th };
+
+        Ok(())
     }
 
     async fn check_task_entry(ctrl: Control) -> Result<()> {
@@ -114,13 +142,20 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
             return Ok(dict);
         }
         let name = path.file_stem().unwrap_or_default().to_string_lossy();
+        if name.is_empty() {
+            return Ok(dict);
+        }
+        let mut path_th = PathBuf::from(path);
+        path_th.set_file_name(format!("{}_{}", name, THUMB_POSTFIX));
+        path_th.set_extension("jpg");
         let entry = PicEntry {
-            path: PathBuf::from(path),
+            path_main: PathBuf::from(path),
+            path_th,
         };
         if let Some(old) = dict.insert(name.to_string(), entry) {
             warn!(
                 "duplicate picture: {}, {}",
-                old.path.display(),
+                old.path_main.display(),
                 path.display()
             );
         }
