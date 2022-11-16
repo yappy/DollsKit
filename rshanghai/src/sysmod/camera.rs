@@ -3,11 +3,13 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 use anyhow::{anyhow, bail, Ok, Result};
 use chrono::NaiveTime;
+use image::ImageOutputFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    io::{Seek, Write},
     path::{Path, PathBuf},
 };
 use tokio::{process::Command, sync::Mutex};
@@ -202,4 +204,15 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     // raspistill は同時に複数プロセス起動できないので mutex で保護する
 
     Ok(bin)
+}
+
+pub fn create_thumbnail<W>(w: &mut W, src_buf: &[u8]) -> Result<()>
+where
+    W: Write + Seek,
+{
+    let src = image::load_from_memory_with_format(src_buf, image::ImageFormat::Jpeg)?;
+    let dst = src.thumbnail(THUMB_W, THUMB_H);
+    dst.write_to(w, ImageOutputFormat::Jpeg(85))?;
+
+    Ok(())
 }

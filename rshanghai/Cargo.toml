@@ -46,6 +46,8 @@ hmac = "0.12.1"
 sha1 = "0.10.5"
 # HTTP Server
 actix-web = "4.2.1"
+# Image convert
+image = "0.24.5"
 
 [dev-dependencies]
 # Concurrent test control
