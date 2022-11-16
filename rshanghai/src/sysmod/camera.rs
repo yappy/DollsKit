@@ -140,11 +140,18 @@ const PIC_MIN_W: u32 = 32;
 const PIC_MIN_H: u32 = 24;
 const PIC_DEF_W: u32 = PIC_MAX_W;
 const PIC_DEF_H: u32 = PIC_MAX_H;
+const PIC_MAX_Q: u32 = 100;
+const PIC_MIN_Q: u32 = 0;
+const PIC_DEF_Q: u32 = 85;
 const PIC_DEF_TO_MS: u32 = 1000;
+const THUMB_W: u32 = 64;
+const THUMB_H: u32 = 48;
+const THUMB_Q: u32 = 35;
 
 pub struct TakePicOption {
     w: u32,
     h: u32,
+    q: u32,
     timeout_ms: u32,
 }
 
@@ -153,6 +160,7 @@ impl TakePicOption {
         Self {
             w: PIC_DEF_W,
             h: PIC_DEF_H,
+            q: PIC_DEF_Q,
             timeout_ms: PIC_DEF_TO_MS,
         }
     }
@@ -164,6 +172,11 @@ impl TakePicOption {
     pub fn height(mut self, h: u32) -> Self {
         assert!((PIC_MIN_H..=PIC_MAX_H).contains(&h));
         self.h = h;
+        self
+    }
+    pub fn quality(mut self, q: u32) -> Self {
+        assert!((PIC_MIN_Q..=PIC_MAX_Q).contains(&q));
+        self.q = q;
         self
     }
     pub fn timeout_ms(mut self, timeout_ms: u32) -> Self {
@@ -185,6 +198,8 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
             .arg("-")
             .arg("-t")
             .arg(opt.timeout_ms.to_string())
+            .arg("-q")
+            .arg(opt.q.to_string())
             .arg("-w")
             .arg(opt.w.to_string())
             .arg("-h")
