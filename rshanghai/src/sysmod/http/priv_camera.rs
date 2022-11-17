@@ -31,8 +31,8 @@ async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -
         .body(body)
 }
 
-#[actix_web::get("/camera/pic/tmp/{name}/{kind}")]
-async fn camera_pic_tmp_get(
+#[actix_web::get("/camera/pic/history/{name}/{kind}")]
+async fn camera_pic_history_get(
     cfg: web::Data<HttpConfig>,
     ctrl: web::Data<Control>,
     path: web::Path<(String, String)>,
@@ -83,7 +83,7 @@ async fn camera_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> Web
     create_thumbnail(&mut thumb, &pic)?;
 
     let mut camera = ctrl.sysmods().camera.lock().await;
-    camera.register_picture(&pic, &thumb.get_ref()).await?;
+    camera.push_pic_history(&pic, &thumb.get_ref()).await?;
     drop(camera);
 
     let resp = HttpResponse::Ok()

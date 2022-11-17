@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     io::{Seek, Write},
+    os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 use tokio::{fs::File, io::AsyncWriteExt, process::Command, sync::Mutex};
@@ -23,23 +24,23 @@ struct CameraConfig {
     enabled: bool,
     debug_exec_once: bool,
     fake_camera: bool,
-    pic_tmp_dir: String,
-    pic_save_dir: String,
-    pic_del_days: i32,
+    pic_histry_dir: String,
+    pic_permanent_dir: String,
+    total_size_limit_mb: u32,
 }
 
 #[derive(Clone)]
 pub struct PicEntry {
     pub path_main: PathBuf,
     pub path_th: PathBuf,
-    // timestamp
+    pub total_size: u64,
 }
 
 type PicDict = BTreeMap<String, PicEntry>;
 /// ストレージ上の全データを管理する
 struct Storage {
-    pic_tmp_list: PicDict,
-    pic_save_list: PicDict,
+    pic_hist_list: PicDict,
+    pic_perm_list: PicDict,
 }
 
 pub struct Camera {
@@ -57,30 +58,32 @@ impl Camera {
             config::get_object(&["camera"]).map_or(Err(anyhow!("Config not found: camera")), Ok)?;
         let config: CameraConfig = serde_json::from_value(jsobj)?;
 
-        let pic_tmp_list = init_pics(&config.pic_tmp_dir)?;
-        let pic_save_list = init_pics(&config.pic_save_dir)?;
+        let pic_hist_list = init_pics(&config.pic_histry_dir)?;
+        let pic_perm_list = init_pics(&config.pic_permanent_dir)?;
 
         Ok(Camera {
             config,
             wakeup_list,
             storage: Storage {
-                pic_tmp_list,
-                pic_save_list,
+                pic_hist_list,
+                pic_perm_list,
             },
         })
     }
 
     pub fn pic_list(&self) -> (&PicDict, &PicDict) {
-        (&self.storage.pic_tmp_list, &self.storage.pic_save_list)
+        (&self.storage.pic_hist_list, &self.storage.pic_perm_list)
     }
 
-    pub async fn register_picture(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
+    pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
         let now = Local::now();
         let dtstr = now.format("%Y%m%d_%H%M").to_string();
+        let total_size = img.len() + thumb.len();
+        let total_size = total_size as u64;
 
-        let root = Path::new(&self.config.pic_tmp_dir);
+        let root = Path::new(&self.config.pic_histry_dir);
         let mut path_main = PathBuf::from(root);
-        path_main.push(dtstr.to_string());
+        path_main.push(&dtstr);
         path_main.set_extension("jpg");
         let mut path_th = PathBuf::from(root);
         path_th.push(format!("{}_{}.jpg", dtstr, THUMB_POSTFIX));
@@ -96,7 +99,14 @@ impl Camera {
         file.write_all(thumb).await?;
         drop(file);
 
-        let entry = PicEntry { path_main, path_th };
+        let entry = PicEntry {
+            path_main,
+            path_th,
+            total_size,
+        };
+        if let Some(old) = self.storage.pic_hist_list.insert(dtstr, entry) {
+            warn!("duplicate picture: {}", old.path_main.display());
+        }
 
         Ok(())
     }
@@ -143,19 +153,31 @@ fn init_pics(dir: &str) -> Result<PicDict> {
 /// [init_pics] 用の再帰関数。
 fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
     if path.is_file() {
+        // 拡張子が jpg でないものは無視
         if path.extension().unwrap_or_default() != "jpg" {
             return Ok(dict);
         }
+        // 拡張子の左部分が空文字列の場合は無視
         let name = path.file_stem().unwrap_or_default().to_string_lossy();
         if name.is_empty() {
             return Ok(dict);
         }
+
+        // サムネイル画像のパスを生成
         let mut path_th = PathBuf::from(path);
         path_th.set_file_name(format!("{}_{}", name, THUMB_POSTFIX));
         path_th.set_extension("jpg");
+
+        // サイズ取得
+        let size = std::fs::metadata(path)?.st_size();
+        let size_th = std::fs::metadata(&path_th).map_or(0, |m| m.st_size());
+        let total_size = size + size_th;
+
+        // PicEntry を生成して結果に追加
         let entry = PicEntry {
             path_main: PathBuf::from(path),
             path_th,
+            total_size,
         };
         if let Some(old) = dict.insert(name.to_string(), entry) {
             warn!(
