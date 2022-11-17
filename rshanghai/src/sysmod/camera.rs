@@ -28,9 +28,10 @@ struct CameraConfig {
     pic_del_days: i32,
 }
 
-struct PicEntry {
-    path_main: PathBuf,
-    path_th: PathBuf,
+#[derive(Clone)]
+pub struct PicEntry {
+    pub path_main: PathBuf,
+    pub path_th: PathBuf,
     // timestamp
 }
 
@@ -67,6 +68,10 @@ impl Camera {
                 pic_save_list,
             },
         })
+    }
+
+    pub fn pic_list(&self) -> (&PicDict, &PicDict) {
+        (&self.storage.pic_tmp_list, &self.storage.pic_save_list)
     }
 
     pub async fn register_picture(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {

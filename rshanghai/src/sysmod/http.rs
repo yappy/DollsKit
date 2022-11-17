@@ -6,8 +6,8 @@ use std::fmt::Display;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
-use actix_web::web;
 use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
+use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
 use log::info;
 use reqwest::StatusCode;
@@ -142,6 +142,17 @@ impl From<anyhow::Error> for ActixError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
+}
+
+pub fn simple_error(status: StatusCode) -> HttpResponse {
+    let body = format!(
+        "{} {}",
+        status.as_str(),
+        status.canonical_reason().unwrap_or_default()
+    );
+    HttpResponseBuilder::new(status)
+        .content_type(ContentType::plaintext())
+        .body(body)
 }
 
 #[actix_web::get("/")]
