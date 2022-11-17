@@ -46,7 +46,7 @@ async fn camera_pic_history_get(
 
     let camera = ctrl.sysmods().camera.lock().await;
     let (dict, _) = camera.pic_list();
-    let value = dict.get(&name).map(|dict| dict.clone());
+    let value = dict.get(&name).cloned();
     drop(camera);
 
     if let Some(entry) = value {
@@ -83,7 +83,7 @@ async fn camera_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> Web
     create_thumbnail(&mut thumb, &pic)?;
 
     let mut camera = ctrl.sysmods().camera.lock().await;
-    camera.push_pic_history(&pic, &thumb.get_ref()).await?;
+    camera.push_pic_history(&pic, thumb.get_ref()).await?;
     drop(camera);
 
     let resp = HttpResponse::Ok()
