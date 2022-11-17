@@ -77,7 +77,7 @@ impl Camera {
 
     pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
         let now = Local::now();
-        let dtstr = now.format("%Y%m%d_%H%M").to_string();
+        let dtstr = now.format("%Y%m%d_%H%M%S").to_string();
         let total_size = img.len() + thumb.len();
         let total_size = total_size as u64;
 
@@ -157,9 +157,9 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
         if path.extension().unwrap_or_default() != "jpg" {
             return Ok(dict);
         }
-        // 拡張子の左部分が空文字列の場合は無視
+        // 拡張子を除いた部分が空文字列およびサムネイルの場合は無視
         let name = path.file_stem().unwrap_or_default().to_string_lossy();
-        if name.is_empty() {
+        if name.is_empty() || name.ends_with(THUMB_POSTFIX) {
             return Ok(dict);
         }
 
@@ -206,8 +206,8 @@ const PIC_MAX_Q: u32 = 100;
 const PIC_MIN_Q: u32 = 0;
 const PIC_DEF_Q: u32 = 85;
 const PIC_DEF_TO_MS: u32 = 1000;
-const THUMB_W: u32 = 64;
-const THUMB_H: u32 = 48;
+const THUMB_W: u32 = 128;
+const THUMB_H: u32 = 96;
 const THUMB_Q: u32 = 35;
 
 pub struct TakePicOption {

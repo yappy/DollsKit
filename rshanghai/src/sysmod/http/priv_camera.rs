@@ -12,6 +12,8 @@ use log::error;
 use reqwest::StatusCode;
 use tokio::{fs::File, io::AsyncReadExt};
 
+const HISTORY_COUNT_BY_PAGE: usize = 100;
+
 #[actix_web::get("/camera/")]
 async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
     let body = r#"<!DOCTYPE html>
@@ -22,9 +24,96 @@ async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -
   <body>
     <h1>(Privileged) Camera</h1>
     <p><a href="./take">Take a picture!</a></p>
+    <p><a href="./history/">Picture List</a></p>
+    <p><a href="./archive/">Archive</a> (TODO)</p>
+    <h2>Navigation</h2>
+    <p><a href="../">Main Page</a></p>
   </body>
 </html>
 "#;
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(body)
+}
+
+#[actix_web::get("/camera/history/")]
+async fn camera_history_get(ctrl: web::Data<Control>) -> HttpResponse {
+    camera_history_get_internal(ctrl, 0).await
+}
+
+#[actix_web::get("/camera/history/{start}")]
+async fn camera_history_start_get(
+    ctrl: web::Data<Control>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let start = path.into_inner();
+    let start = match start.parse::<usize>() {
+        Ok(n) => {
+            if n <= 0 {
+                return simple_error(StatusCode::BAD_REQUEST);
+            }
+            n - 1
+        }
+        Err(_) => {
+            return simple_error(StatusCode::BAD_REQUEST);
+        }
+    };
+
+    camera_history_get_internal(ctrl, start).await
+}
+
+async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+    let camera = ctrl.sysmods().camera.lock().await;
+    let (hist, _) = camera.pic_list();
+    let total = hist.len();
+    let data: Vec<_> = hist
+        .keys()
+        .skip(start)
+        .take(HISTORY_COUNT_BY_PAGE)
+        .collect();
+    let mut html = String::new();
+    for name in data {
+        html.push_str(&format!(
+            r#"    <figure class="pic">
+      <a href="../pic/history/{0}/main"><img src="../pic/history/{0}/thumb" alt="{0}"></a>
+      <figcaption class="pic">{0}</figcaption>
+    </figure>
+"#,
+            name
+        ));
+    }
+    drop(camera);
+
+    let body = format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>(Privileged) Picture History</title>
+    <style>
+      figure.pic {{
+        display: inline-block;
+        margin: 5px;
+      }}
+      figcaption.pic {{
+        font-size: 100%;
+        text-align: center;
+      }}
+    </style>
+  </head>
+  <body>
+    <h1>(Privileged) Picture History</h1>
+
+    <h2>{} -</h2>
+{}
+
+    <h2>Navigation</h2>
+    <p><a href="./camera/">Camera Main Page</a></p>
+  </body>
+</html>
+"#,
+        start, html
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

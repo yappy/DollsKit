@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::{
-    priv_camera::{camera_get, camera_pic_history_get, camera_take_get},
-    HttpConfig,
-};
+use super::{priv_camera, HttpConfig};
 use crate::sys::{net::html_escape, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 
@@ -13,9 +10,11 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
             return;
         }
         cfg.service(index_get);
-        cfg.service(camera_get);
-        cfg.service(camera_pic_history_get);
-        cfg.service(camera_take_get);
+        cfg.service(priv_camera::camera_get);
+        cfg.service(priv_camera::camera_history_get);
+        cfg.service(priv_camera::camera_history_start_get);
+        cfg.service(priv_camera::camera_pic_history_get);
+        cfg.service(priv_camera::camera_take_get);
     }
 }
 
