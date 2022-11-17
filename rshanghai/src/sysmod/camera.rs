@@ -1,7 +1,7 @@
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
 use image::ImageOutputFormat;
 use log::{info, warn};
@@ -20,13 +20,14 @@ const THUMB_POSTFIX: &str = "thumb";
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
 #[derive(Clone, Serialize, Deserialize)]
-struct CameraConfig {
+pub struct CameraConfig {
     enabled: bool,
     debug_exec_once: bool,
     fake_camera: bool,
-    pic_histry_dir: String,
-    pic_permanent_dir: String,
+    pic_history_dir: String,
+    pic_archive_dir: String,
     total_size_limit_mb: u32,
+    pub page_by: u32,
 }
 
 #[derive(Clone)]
@@ -39,12 +40,12 @@ pub struct PicEntry {
 type PicDict = BTreeMap<String, PicEntry>;
 /// ストレージ上の全データを管理する
 struct Storage {
-    pic_hist_list: PicDict,
-    pic_perm_list: PicDict,
+    pic_history_list: PicDict,
+    pic_archive_list: PicDict,
 }
 
 pub struct Camera {
-    config: CameraConfig,
+    pub config: CameraConfig,
     wakeup_list: Vec<NaiveTime>,
 
     storage: Storage,
@@ -57,22 +58,26 @@ impl Camera {
         let jsobj =
             config::get_object(&["camera"]).map_or(Err(anyhow!("Config not found: camera")), Ok)?;
         let config: CameraConfig = serde_json::from_value(jsobj)?;
+        ensure!(config.page_by > 0);
 
-        let pic_hist_list = init_pics(&config.pic_histry_dir)?;
-        let pic_perm_list = init_pics(&config.pic_permanent_dir)?;
+        let pic_history_list = init_pics(&config.pic_history_dir)?;
+        let pic_archive_list = init_pics(&config.pic_archive_dir)?;
 
         Ok(Camera {
             config,
             wakeup_list,
             storage: Storage {
-                pic_hist_list,
-                pic_perm_list,
+                pic_history_list,
+                pic_archive_list,
             },
         })
     }
 
     pub fn pic_list(&self) -> (&PicDict, &PicDict) {
-        (&self.storage.pic_hist_list, &self.storage.pic_perm_list)
+        (
+            &self.storage.pic_history_list,
+            &self.storage.pic_archive_list,
+        )
     }
 
     pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
@@ -81,7 +86,7 @@ impl Camera {
         let total_size = img.len() + thumb.len();
         let total_size = total_size as u64;
 
-        let root = Path::new(&self.config.pic_histry_dir);
+        let root = Path::new(&self.config.pic_history_dir);
         let mut path_main = PathBuf::from(root);
         path_main.push(&dtstr);
         path_main.set_extension("jpg");
@@ -104,7 +109,7 @@ impl Camera {
             path_th,
             total_size,
         };
-        if let Some(old) = self.storage.pic_hist_list.insert(dtstr, entry) {
+        if let Some(old) = self.storage.pic_history_list.insert(dtstr, entry) {
             warn!("duplicate picture: {}", old.path_main.display());
         }
 

@@ -7,9 +7,10 @@
 		"enabled"				: false,
 		"debug_exec_once"		: false,
 		"fake_camera"			: true,
-		"pic_histry_dir"		: "./camera/hist",
-		"pic_permanent_dir"		: "./camera/perma",
-		"total_size_limit_mb"	: 1024
+		"pic_history_dir"		: "./camera/history",
+		"pic_archive_dir"		: "./camera/archive",
+		"total_size_limit_mb"	: 1024,
+		"page_by"				: 100
 	},
 	"twitter": {
 		"tlcheck_enabled"	: false,

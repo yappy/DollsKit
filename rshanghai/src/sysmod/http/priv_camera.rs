@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use super::{HttpConfig, WebResult};
 use crate::{
     sys::taskserver::Control,
@@ -10,9 +8,9 @@ use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::anyhow;
 use log::error;
 use reqwest::StatusCode;
+use std::cmp;
+use std::io::Cursor;
 use tokio::{fs::File, io::AsyncReadExt};
-
-const HISTORY_COUNT_BY_PAGE: usize = 100;
 
 #[actix_web::get("/camera/")]
 async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
@@ -50,7 +48,7 @@ async fn camera_history_start_get(
     let start = path.into_inner();
     let start = match start.parse::<usize>() {
         Ok(n) => {
-            if n <= 0 {
+            if n == 0 {
                 return simple_error(StatusCode::BAD_REQUEST);
             }
             n - 1
@@ -65,13 +63,10 @@ async fn camera_history_start_get(
 
 async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
     let camera = ctrl.sysmods().camera.lock().await;
+    let page_by = camera.config.page_by as usize;
     let (hist, _) = camera.pic_list();
     let total = hist.len();
-    let data: Vec<_> = hist
-        .keys()
-        .skip(start)
-        .take(HISTORY_COUNT_BY_PAGE)
-        .collect();
+    let data: Vec<_> = hist.keys().skip(start).take(page_by).collect();
     let mut html = String::new();
     for name in data {
         html.push_str(&format!(
@@ -84,6 +79,18 @@ async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> 
         ));
     }
     drop(camera);
+
+    let mut page_navi = String::from("<p>");
+    for left in (0..total).step_by(page_by) {
+        let right = cmp::min(left + page_by - 1, total - 1);
+        let link = if (left..=right).contains(&start) {
+            format!(r#"{}-{} "#, left + 1, right + 1)
+        } else {
+            format!(r#"<a href="./{0}">{0}-{1}</a> "#, left + 1, right + 1)
+        };
+        page_navi.push_str(&link);
+    }
+    page_navi.push_str("</p>");
 
     let body = format!(
         r#"<!DOCTYPE html>
@@ -103,8 +110,8 @@ async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> 
   </head>
   <body>
     <h1>(Privileged) Picture History</h1>
+      {}
 
-    <h2>{} -</h2>
 {}
 
     <h2>Navigation</h2>
@@ -112,7 +119,7 @@ async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> 
   </body>
 </html>
 "#,
-        start, html
+        page_navi, html
     );
 
     HttpResponse::Ok()
