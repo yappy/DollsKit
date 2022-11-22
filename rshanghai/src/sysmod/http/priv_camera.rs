@@ -66,7 +66,7 @@ async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> 
     let page_by = camera.config.page_by as usize;
     let (hist, _) = camera.pic_list();
     let total = hist.len();
-    let data: Vec<_> = hist.keys().skip(start).take(page_by).collect();
+    let data: Vec<_> = hist.keys().rev().skip(start).take(page_by).collect();
     let mut html = String::new();
     for name in data {
         html.push_str(&format!(
