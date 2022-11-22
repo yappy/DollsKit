@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    io::{Seek, Write, Cursor},
+    io::{Cursor, Seek, Write},
     os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
@@ -81,8 +81,19 @@ impl Camera {
     }
 
     pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
-        let now = Local::now();
-        let dtstr = now.format("%Y%m%d_%H%M%S").to_string();
+        let mut now;
+        let mut dtstr;
+        loop {
+            now = Local::now();
+            dtstr = now.format("%Y%m%d_%H%M%S").to_string();
+
+            if self.storage.pic_history_list.contains_key(&dtstr) {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
+            } else {
+                break;
+            }
+        }
+
         let total_size = img.len() + thumb.len();
         let total_size = total_size as u64;
 
@@ -109,9 +120,7 @@ impl Camera {
             path_th,
             total_size,
         };
-        if let Some(old) = self.storage.pic_history_list.insert(dtstr, entry) {
-            warn!("duplicate picture: {}", old.path_main.display());
-        }
+        assert!(self.storage.pic_history_list.insert(dtstr, entry).is_none());
 
         Ok(())
     }
