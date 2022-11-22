@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    io::{Seek, Write},
+    io::{Seek, Write, Cursor},
     os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
@@ -117,6 +117,15 @@ impl Camera {
     }
 
     async fn check_task_entry(ctrl: Control) -> Result<()> {
+        let pic = take_a_pic(TakePicOption::new()).await?;
+
+        let mut thumb = Cursor::new(Vec::new());
+        create_thumbnail(&mut thumb, &pic)?;
+
+        let mut camera = ctrl.sysmods().camera.lock().await;
+        camera.push_pic_history(&pic, thumb.get_ref()).await?;
+        drop(camera);
+
         Ok(())
     }
 }
@@ -126,10 +135,10 @@ impl SystemModule for Camera {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("health-check", Camera::check_task_entry);
+                ctrl.spawn_oneshot_task("camera-auto", Camera::check_task_entry);
             } else {
                 ctrl.spawn_periodic_task(
-                    "health-check",
+                    "camera-auto",
                     &self.wakeup_list,
                     Camera::check_task_entry,
                 );
