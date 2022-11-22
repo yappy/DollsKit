@@ -92,6 +92,7 @@ impl SystemModules {
 
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
+        event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
         event_target_list.push(http.clone());
 
