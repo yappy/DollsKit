@@ -1,16 +1,17 @@
 //! システムモジュール関連。
 
 pub mod camera;
+pub mod discord;
 pub mod health;
 pub mod http;
 pub mod sysinfo;
 pub mod twitter;
 
-use self::{sysinfo::SystemInfo, twitter::Twitter};
-use crate::{
-    sys::taskserver::Control,
-    sysmod::{camera::Camera, health::Health, http::HttpServer},
+use self::{
+    camera::Camera, discord::Discord, health::Health, http::HttpServer, sysinfo::SystemInfo,
+    twitter::Twitter,
 };
+use crate::sys::taskserver::Control;
 use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
@@ -40,6 +41,7 @@ pub struct SystemModules {
     pub health: SysModArc<health::Health>,
     pub camera: SysModArc<camera::Camera>,
     pub twitter: SysModArc<twitter::Twitter>,
+    pub discord: SysModArc<discord::Discord>,
     pub http: SysModArc<http::HttpServer>,
 
     /// 全 [SystemModule] にイベントを配送するための参照のリストを作る。
@@ -89,12 +91,14 @@ impl SystemModules {
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
+        let discord = Arc::new(TokioMutex::new(Discord::new()?));
 
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
         event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
         event_target_list.push(http.clone());
+        event_target_list.push(discord.clone());
 
         info!("OK: initialize system modules");
         Ok(Self {
@@ -102,6 +106,7 @@ impl SystemModules {
             health,
             camera,
             twitter,
+            discord,
             http,
             event_target_list,
         })
