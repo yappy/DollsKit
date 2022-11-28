@@ -55,11 +55,11 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
     let mut ctrl_for_cancel = ctrl.clone();
     let shard_manager = client.shard_manager.clone();
-    ctrl.spawn_oneshot_fn("discord-cancel", async move {
+    ctrl.spawn_oneshot_fn("discord-exit", async move {
         ctrl_for_cancel.cancel_rx().changed().await.unwrap();
-        info!("[discord-cancel] recv cancel");
+        info!("[discord-exit] recv cancel");
         shard_manager.lock().await.shutdown_all().await;
-        info!("[discord-cancel] shutdown_all ok");
+        info!("[discord-exit] shutdown_all ok");
 
         Ok(())
     });
