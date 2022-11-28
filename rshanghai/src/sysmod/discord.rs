@@ -33,7 +33,7 @@ impl Discord {
     }
 }
 
-async fn discord_main(mut ctrl: Control) -> Result<()> {
+async fn discord_main(ctrl: Control) -> Result<()> {
     let discord = ctrl.sysmods().discord.lock().await;
     let token = discord.config.token.clone();
     drop(discord);
@@ -53,14 +53,20 @@ async fn discord_main(mut ctrl: Control) -> Result<()> {
         .await
         .expect("Error creating client");
 
+    let mut ctrl_for_cancel = ctrl.clone();
+    let shard_manager = client.shard_manager.clone();
+    ctrl.spawn_oneshot_fn("discord-cancel", async move {
+        ctrl_for_cancel.cancel_rx().changed().await.unwrap();
+        info!("[discord-cancel] recv cancel");
+        shard_manager.lock().await.shutdown_all().await;
+        info!("[discord-cancel] shutdown_all ok");
+
+        Ok(())
+    });
+
     // start listening for events by starting a single shard
-    tokio::select! {
-        _ = client.start() => {
-            info!("[discord] client exit");}
-        _ = ctrl.cancel_rx().changed() => {
-            info!("[discord] cancel");
-        }
-    }
+    client.start().await?;
+    info!("[discord] client exit");
 
     Ok(())
 }
