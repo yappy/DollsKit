@@ -12,16 +12,18 @@ use daemonize::Daemonize;
 use getopts::Options;
 use log::{error, info, warn, LevelFilter};
 use simplelog::format_description;
-use simplelog::{ColorChoice, TerminalMode};
-use simplelog::{CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, WriteLogger};
+use simplelog::{
+    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
+};
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use sys::taskserver::{Control, TaskServer};
+use sys::taskserver::{Control, RunResult, TaskServer};
 use sysmod::SystemModules;
 
-use crate::sys::taskserver::RunResult;
+/// ログフィルタのためのクレート名。[module_path!] による。
+const CRATE_NAME: &str = module_path!();
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
 const STDOUT_FILE: &str = "stdout.txt";
@@ -86,6 +88,7 @@ fn daemon() {
 /// * `is_daemon` - デーモンかどうか。
 fn init_log(is_daemon: bool) {
     let config = ConfigBuilder::new()
+        .add_filter_allow_str(CRATE_NAME)
         .set_time_format_custom(format_description!(
             "[year]-[month]-[day] [hour]:[minute]:[second]"
         ))
