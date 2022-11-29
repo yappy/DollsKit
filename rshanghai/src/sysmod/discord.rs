@@ -126,13 +126,13 @@ const DICE_MAX: u64 = 1u64 << 56;
 const DICE_COUNT_MAX: u64 = 100u64;
 const_assert!(DICE_MAX < u64::MAX / DICE_COUNT_MAX);
 
-fn dice_core(dice: u64, num: u64) -> Vec<u64> {
+fn dice_core(dice: u64, count: u64) -> Vec<u64> {
     assert!((1..=DICE_MAX).contains(&dice));
-    assert!((1..=DICE_COUNT_MAX).contains(&num));
+    assert!((1..=DICE_COUNT_MAX).contains(&count));
 
     let mut result = vec![];
     let mut rng = rand::thread_rng();
-    for _ in 0..num {
+    for _ in 0..count {
         result.push(rng.gen_range(1..=dice));
     }
 
@@ -167,4 +167,33 @@ async fn delmsg(ctx: &Context, msg: &Message) -> CommandResult {
     ctx.http.delete_message(msg.channel_id.0, msg.id.0).await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dice_6_many_times() {
+        let mut result = dice_core(6, DICE_COUNT_MAX);
+        assert_eq!(result.len(), DICE_COUNT_MAX as usize);
+
+        // 100 回も振れば 1..=6 が 1 回ずつは出る
+        result.sort();
+        for x in 1..=6 {
+            assert!(result.binary_search(&x).is_ok());
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn dice_invalid_dice() {
+        let _ = dice_core(DICE_MAX + 1, 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn dice_invalid_count() {
+        let _ = dice_core(6, DICE_COUNT_MAX + 1);
+    }
 }
