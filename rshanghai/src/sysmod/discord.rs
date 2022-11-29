@@ -140,15 +140,25 @@ fn dice_core(dice: u64, count: u64) -> Vec<u64> {
 }
 
 #[command]
+#[description("Roll a dice with 1-**dice** faces **count** times.")]
+#[description("Default: dice=6, count=1")]
+#[usage("[dice] [count]")]
+#[example("")]
+#[example("6 2")]
+#[min_args(0)]
+#[max_args(2)]
 async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let d = if !arg.is_empty() { arg.single()? } else { 6u64 };
-    if !(1..=DICE_MAX).contains(&d) {
-        msg.reply(ctx, format!("Invalid dice: {}", d)).await?;
-        return Ok(());
-    }
     let count = if !arg.is_empty() { arg.single()? } else { 1u64 };
-    if !(1..=DICE_COUNT_MAX).contains(&count) {
-        msg.reply(ctx, format!("Invalid count: {}", count)).await?;
+    if !(1..=DICE_MAX).contains(&d) || !(1..=DICE_COUNT_MAX).contains(&count) {
+        msg.reply(
+            ctx,
+            format!(
+                "Invalid parameter\n1 <= dice <= {}, 1 <= count <= {}",
+                DICE_MAX, DICE_COUNT_MAX
+            ),
+        )
+        .await?;
         return Ok(());
     }
 
