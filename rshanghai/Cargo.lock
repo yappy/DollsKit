@@ -1737,6 +1737,7 @@ dependencies = [
  "serial_test",
  "sha1",
  "simplelog",
+ "static_assertions",
  "time 0.3.17",
  "tokio",
  "vergen",

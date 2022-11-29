@@ -1,15 +1,21 @@
+use std::collections::HashSet;
+
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use anyhow::{anyhow, Result};
 use log::info;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serenity::async_trait;
-use serenity::framework::standard::macros::{command, group};
-use serenity::framework::standard::CommandResult;
+use serenity::framework::standard::macros::{command, group, help};
+use serenity::framework::standard::{
+    help_commands, Args, CommandGroup, CommandResult, HelpOptions,
+};
 use serenity::http::Http;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
+use static_assertions::const_assert;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DiscordConfig {
@@ -43,7 +49,8 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("").on_mention(Some(UserId(info.id.0)))) // set the bot's prefix to "~"
-        .group(&GENERAL_GROUP);
+        .group(&GENERAL_GROUP)
+        .help(&MY_HELP);
 
     // Login with a bot token from the environment
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
@@ -80,10 +87,6 @@ impl SystemModule for Discord {
     }
 }
 
-#[group]
-#[commands(ping, delmsg)]
-struct General;
-
 struct Handler;
 
 #[async_trait]
@@ -95,11 +98,61 @@ impl EventHandler for Handler {
     async fn resume(&self, _: Context, _: ResumedEvent) {
         info!("[discord] resumed");
     }
+
+    async fn cache_ready(&self, _ctx: Context, guilds: Vec<GuildId>) {
+        info!("[discord] cache ready - guild: {}", guilds.len());
+    }
 }
 
+#[help]
+async fn my_help(
+    context: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>,
+) -> CommandResult {
+    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await?;
+
+    Ok(())
+}
+
+#[group]
+#[commands(dice, delmsg)]
+struct General;
+
 #[command]
-async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.reply(ctx, "Pong!").await?;
+async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
+    const DICE_MAX: u64 = 1u64 << 56;
+    const COUNT_MAX: u64 = 100u64;
+    const_assert!(DICE_MAX < u64::MAX / COUNT_MAX);
+
+    let d = if !arg.is_empty() { arg.single()? } else { 6u64 };
+    if !(1..=DICE_MAX).contains(&d) {
+        msg.reply(ctx, format!("Invalid dice: {}", d)).await?;
+        return Ok(());
+    }
+    let count = if !arg.is_empty() { arg.single()? } else { 1u64 };
+    if !(1..=COUNT_MAX).contains(&count) {
+        msg.reply(ctx, format!("Invalid count: {}", count)).await?;
+        return Ok(());
+    }
+
+    let mut buf = String::new();
+    {
+        // ThreadRng はスレッド間移動できないので await をまたげない
+        let mut rng = rand::thread_rng();
+        for _ in 0..count {
+            if !buf.is_empty() {
+                buf.push_str(", ");
+            }
+            buf.push_str(&rng.gen_range(1..=DICE_MAX).to_string());
+        }
+    }
+    assert!(!buf.is_empty());
+
+    msg.reply(ctx, buf).await?;
 
     Ok(())
 }

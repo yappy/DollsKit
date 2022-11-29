@@ -16,6 +16,8 @@ panic = 'abort'
 anyhow = "1.0.66"
 # Global variable
 once_cell = "1.15.0"
+# Static assert
+static_assertions = "1.1.0"
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)

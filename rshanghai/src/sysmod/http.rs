@@ -35,9 +35,7 @@ impl HttpServer {
             config::get_object(&["http"]).map_or(Err(anyhow!("Config not found: http")), Ok)?;
         let config: HttpConfig = serde_json::from_value(jsobj)?;
 
-        Ok(Self {
-            config,
-        })
+        Ok(Self { config })
     }
 }
 
