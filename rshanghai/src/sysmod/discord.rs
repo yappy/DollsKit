@@ -122,34 +122,39 @@ async fn my_help(
 #[commands(dice, delmsg)]
 struct General;
 
+const DICE_MAX: u64 = 1u64 << 56;
+const DICE_COUNT_MAX: u64 = 100u64;
+const_assert!(DICE_MAX < u64::MAX / DICE_COUNT_MAX);
+
+fn dice_core(dice: u64, num: u64) -> Vec<u64> {
+    assert!((1..=DICE_MAX).contains(&dice));
+    assert!((1..=DICE_COUNT_MAX).contains(&num));
+
+    let mut result = vec![];
+    let mut rng = rand::thread_rng();
+    for _ in 0..num {
+        result.push(rng.gen_range(1..=dice));
+    }
+
+    result
+}
+
 #[command]
 async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
-    const DICE_MAX: u64 = 1u64 << 56;
-    const COUNT_MAX: u64 = 100u64;
-    const_assert!(DICE_MAX < u64::MAX / COUNT_MAX);
-
     let d = if !arg.is_empty() { arg.single()? } else { 6u64 };
     if !(1..=DICE_MAX).contains(&d) {
         msg.reply(ctx, format!("Invalid dice: {}", d)).await?;
         return Ok(());
     }
     let count = if !arg.is_empty() { arg.single()? } else { 1u64 };
-    if !(1..=COUNT_MAX).contains(&count) {
+    if !(1..=DICE_COUNT_MAX).contains(&count) {
         msg.reply(ctx, format!("Invalid count: {}", count)).await?;
         return Ok(());
     }
 
-    let mut buf = String::new();
-    {
-        // ThreadRng はスレッド間移動できないので await をまたげない
-        let mut rng = rand::thread_rng();
-        for _ in 0..count {
-            if !buf.is_empty() {
-                buf.push_str(", ");
-            }
-            buf.push_str(&rng.gen_range(1..=DICE_MAX).to_string());
-        }
-    }
+    let nums = dice_core(d, count);
+    let nums: Vec<_> = nums.iter().map(|n| n.to_string()).collect();
+    let buf = nums.join(", ");
     assert!(!buf.is_empty());
 
     msg.reply(ctx, buf).await?;
