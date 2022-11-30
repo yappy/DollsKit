@@ -3,13 +3,13 @@ use std::collections::{BTreeSet, HashSet};
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use anyhow::{anyhow, Result};
-use log::info;
+use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serenity::async_trait;
-use serenity::framework::standard::macros::{command, group, help};
+use serenity::framework::standard::macros::{command, group, help, hook};
 use serenity::framework::standard::{
-    help_commands, Args, CommandGroup, CommandResult, HelpOptions,
+    help_commands, Args, CommandError, CommandGroup, CommandResult, HelpOptions,
 };
 use serenity::http::Http;
 use serenity::model::prelude::*;
@@ -48,7 +48,10 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     let info = http.get_current_application_info().await?;
 
     let framework = StandardFramework::new()
-        .configure(|c| c.prefix("").on_mention(Some(UserId(info.id.0)))) // set the bot's prefix to "~"
+        .configure(|c| c.prefix("").on_mention(Some(UserId(info.id.0))))
+        .before(before_hook)
+        .after(after_hook)
+        .unrecognised_command(unrecognised_hook) // set the bot's prefix to "~"
         .group(&GENERAL_GROUP)
         .help(&MY_HELP);
 
@@ -76,6 +79,28 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     info!("[discord] client exit");
 
     Ok(())
+}
+
+#[hook]
+async fn before_hook(_: &Context, msg: &Message, cmd_name: &str) -> bool {
+    info!("[discord] command {} by {}", cmd_name, msg.author.name);
+
+    true
+}
+
+#[hook]
+async fn after_hook(_: &Context, _: &Message, cmd_name: &str, result: Result<(), CommandError>) {
+    if let Err(why) = result {
+        error!("[discord] error in {}: {:?}", cmd_name, why);
+    }
+}
+
+#[hook]
+async fn unrecognised_hook(_: &Context, msg: &Message, unrecognised_command_name: &str) {
+    warn!(
+        "[discord] unknown command {} by {}",
+        unrecognised_command_name, msg.author.name
+    );
 }
 
 impl SystemModule for Discord {
