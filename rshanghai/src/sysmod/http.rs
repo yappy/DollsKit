@@ -6,7 +6,7 @@ use std::fmt::Display;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
-use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
+use actix_web::{http::header::ContentType, HttpResponse, Responder};
 use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
 use log::info;
@@ -25,21 +25,17 @@ pub struct HttpConfig {
 
 pub struct HttpServer {
     config: HttpConfig,
-    handle: Option<ServerHandle>,
 }
 
 impl HttpServer {
     pub fn new() -> Result<Self> {
-        info!("[health] initialize");
+        info!("[http] initialize");
 
         let jsobj =
             config::get_object(&["http"]).map_or(Err(anyhow!("Config not found: http")), Ok)?;
         let config: HttpConfig = serde_json::from_value(jsobj)?;
 
-        Ok(Self {
-            config,
-            handle: None,
-        })
+        Ok(Self { config })
     }
 }
 
@@ -75,29 +71,22 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     .bind(("127.0.0.1", port))?
     .run();
 
-    // self.handle にサーバ停止用のハンドルを保存する
-    let mut http = ctrl.sysmods().http.lock().await;
-    http.handle = Some(server.handle());
-    drop(http);
     // シャットダウンが来たらハンドルでサーバを停止するタスクを生成
-    ctrl.spawn_oneshot_task("http-exit", server_exit_task);
+    let mut ctrl_for_stop = ctrl.clone();
+    let handle = server.handle();
+    ctrl.spawn_oneshot_fn("http-exit", async move {
+        ctrl_for_stop.cancel_rx().changed().await.unwrap();
+        info!("[http-exit] recv cancel");
+        handle.stop(true).await;
+        info!("[http-exit] server stop ok");
+
+        Ok(())
+    });
 
     server.await?;
     info!("[http] server exit");
 
     Ok(())
-}
-
-async fn server_exit_task(mut ctrl: Control) -> Result<()> {
-    let mut http = ctrl.sysmods().http.lock().await;
-    let handle = http.handle.take().unwrap();
-    drop(http);
-
-    let result = ctrl.cancel_rx().changed().await;
-
-    handle.stop(true).await;
-
-    Ok(result?)
 }
 
 impl SystemModule for HttpServer {

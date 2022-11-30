@@ -99,6 +99,27 @@ impl Control {
         });
     }
 
+    pub fn spawn_oneshot_fn<F>(&self, name: &str, f: F)
+    where
+        F: Future<Output = Result<()>> + Send + 'static,
+    {
+        // move するデータを準備する
+        let name = name.to_string();
+
+        self.internal.rt.spawn(async move {
+            info!("[{}] start (one-shot)", name);
+
+            let result = f.await;
+
+            if let Err(e) = result {
+                error!("[{}] finish (error): {:?}", name, e);
+            } else {
+                info!("[{}] finish (success)", name);
+            }
+            // drop ctrl
+        });
+    }
+
     /// 周期タスクを生成する。
     ///
     /// wakeup_list: 起動時刻。以下を満たさないと panic する。

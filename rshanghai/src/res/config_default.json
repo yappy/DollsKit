@@ -21,6 +21,10 @@
 		"access_token"		: "",
 		"access_secret"		: ""
 	},
+	"discord": {
+		"enabled"			: false,
+		"token"				: ""
+	},
 	"http": {
 		"enabled"			: false,
 		"priv_enabled"		: false,
