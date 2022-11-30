@@ -239,6 +239,7 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 #[usage("N")]
 #[example("100")]
 #[num_args(1)]
+#[owners_only]
 async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let n: u32 = arg.single()?;
 
