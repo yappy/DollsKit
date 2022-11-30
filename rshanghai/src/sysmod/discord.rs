@@ -296,6 +296,9 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
     // id 昇順で後ろ n 個を残して他を消す
     if allmsgs.len() <= n as usize {
+        msg.reply(ctx, format!("0/{} messages deleted", allmsgs.len()))
+            .await?;
+
         return Ok(());
     }
     let delcount = allmsgs.len() - n as usize;
@@ -310,6 +313,12 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
         // https://discord.com/developers/docs/resources/channel#delete-message
         msg.channel_id.delete_message(ctx, mid).await?;
     }
+
+    msg.reply(
+        ctx,
+        format!("{}/{} messages deleted", delcount, allmsgs.len()),
+    )
+    .await?;
 
     Ok(())
 }
