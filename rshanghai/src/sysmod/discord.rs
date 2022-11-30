@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+//! Discord クライアント (bot) 機能。
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
@@ -16,18 +16,28 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
+use std::collections::{BTreeSet, HashSet};
 
+/// Discord 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DiscordConfig {
+    /// 機能を有効化するなら true。
     enabled: bool,
+    /// アクセストークン。Developer Portal で入手できる。
     token: String,
 }
 
+/// Discord システムモジュール。
 pub struct Discord {
+    /// 設定データ。
     config: DiscordConfig,
 }
 
 impl Discord {
+    /// コンストラクタ。
+    ///
+    /// 設定データの読み込みのみ行い、実際の初期化は async が有効になる
+    /// [discord_main] で行う。
     pub fn new() -> Result<Self> {
         info!("[discord] initialize");
 
@@ -39,30 +49,39 @@ impl Discord {
     }
 }
 
+/// システムを初期化し開始する。
+///
+/// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
     let discord = ctrl.sysmods().discord.lock().await;
     let token = discord.config.token.clone();
     drop(discord);
 
+    // 自身の ID が on_mention 設定に必要なので別口で取得しておく
     let http = Http::new(&token);
     let info = http.get_current_application_info().await?;
 
     let framework = StandardFramework::new()
+        // コマンドのプレフィクスはなし
+        // bot へのメンションをトリガとする
         .configure(|c| c.prefix("").on_mention(Some(UserId(info.id.0))))
+        // コマンド前後でのフック (ロギング用)
         .before(before_hook)
         .after(after_hook)
-        .unrecognised_command(unrecognised_hook) // set the bot's prefix to "~"
+        .unrecognised_command(unrecognised_hook)
+        // コマンドとヘルプの登録
         .group(&GENERAL_GROUP)
         .help(&MY_HELP);
 
-    // Login with a bot token from the environment
+    // クライアントの初期化
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     let mut client = Client::builder(token, intents)
         .event_handler(Handler)
         .framework(framework)
-        .await
-        .expect("Error creating client");
+        .await?;
 
+    // システムシャットダウンに対応してクライアントにシャットダウン要求を送る
+    // 別タスクを立ち上げる
     let mut ctrl_for_cancel = ctrl.clone();
     let shard_manager = client.shard_manager.clone();
     ctrl.spawn_oneshot_fn("discord-exit", async move {
@@ -74,13 +93,14 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         Ok(())
     });
 
-    // start listening for events by starting a single shard
+    // システムスタート
     client.start().await?;
     info!("[discord] client exit");
 
     Ok(())
 }
 
+/// コマンド開始前のフック。ロギング用。
 #[hook]
 async fn before_hook(_: &Context, msg: &Message, cmd_name: &str) -> bool {
     info!("[discord] command {} by {}", cmd_name, msg.author.name);
@@ -88,22 +108,32 @@ async fn before_hook(_: &Context, msg: &Message, cmd_name: &str) -> bool {
     true
 }
 
+/// コマンド完了後のフック。ロギング用。
 #[hook]
 async fn after_hook(_: &Context, _: &Message, cmd_name: &str, result: Result<(), CommandError>) {
-    if let Err(why) = result {
-        error!("[discord] error in {}: {:?}", cmd_name, why);
-    }
+    match result {
+        Ok(()) => {
+            info!("[discord] command {} succeeded", cmd_name);
+        }
+        Err(why) => {
+            error!("[discord] error in {}: {:?}", cmd_name, why);
+        }
+    };
 }
 
+/// コマンド認識不能時のフック。ロギング用。
 #[hook]
-async fn unrecognised_hook(_: &Context, msg: &Message, unrecognised_command_name: &str) {
+async fn unrecognised_hook(_: &Context, msg: &Message, cmd_name: &str) {
     warn!(
         "[discord] unknown command {} by {}",
-        unrecognised_command_name, msg.author.name
+        cmd_name, msg.author.name
     );
 }
 
 impl SystemModule for Discord {
+    /// async 使用可能になってからの初期化。
+    ///
+    /// 設定有効ならば [discord_main] を spawn する。
     fn on_start(&self, ctrl: &Control) {
         info!("[discord] on_start");
         if self.config.enabled {
@@ -114,6 +144,7 @@ impl SystemModule for Discord {
 
 struct Handler;
 
+/// Discord クライアントとしてのイベントハンドラ。
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
@@ -147,10 +178,16 @@ async fn my_help(
 #[commands(dice, delmsg)]
 struct General;
 
+/// ダイスの面数の最大値。
 const DICE_MAX: u64 = 1u64 << 56;
+/// ダイスの個数の最大値。
 const DICE_COUNT_MAX: u64 = 100u64;
 const_assert!(DICE_MAX < u64::MAX / DICE_COUNT_MAX);
 
+/// ダイスロール機能のコア。
+///
+/// * `dice` - 何面のダイスを振るか。
+/// * `count` - 何個のダイスを振るか。
 fn dice_core(dice: u64, count: u64) -> Vec<u64> {
     assert!((1..=DICE_MAX).contains(&dice));
     assert!((1..=DICE_COUNT_MAX).contains(&count));
@@ -199,7 +236,6 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
 #[command]
 #[description("Delete messages other than the most recent N ones.")]
-#[description("!!! Implementation Incomplete !!!")]
 #[usage("N")]
 #[example("100")]
 #[num_args(1)]
