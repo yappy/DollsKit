@@ -75,7 +75,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     let mut ctrl_for_stop = ctrl.clone();
     let handle = server.handle();
     ctrl.spawn_oneshot_fn("http-exit", async move {
-        let result = ctrl_for_stop.cancel_rx().changed().await.unwrap();
+        ctrl_for_stop.cancel_rx().changed().await.unwrap();
         info!("[http-exit] recv cancel");
         handle.stop(true).await;
         info!("[http-exit] server stop ok");
