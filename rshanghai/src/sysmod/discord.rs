@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
@@ -173,8 +173,53 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 }
 
 #[command]
-async fn delmsg(ctx: &Context, msg: &Message) -> CommandResult {
-    ctx.http.delete_message(msg.channel_id.0, msg.id.0).await?;
+#[description("Delete messages other than the most recent N ones.")]
+#[description("!!! Implementation Incomplete !!!")]
+#[usage("N")]
+#[example("100")]
+#[num_args(1)]
+async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
+    let n: u32 = arg.single()?;
+
+    // id=0 から 100 件ずつすべてのメッセージを取得する
+    let mut allmsgs = BTreeSet::<u64>::new();
+    const GET_MSG_LIMIT: usize = 100;
+    let mut after = 0u64;
+    loop {
+        // https://discord.com/developers/docs/resources/channel#get-channel-messages
+        let query = format!("?after={}&limit={}", after, GET_MSG_LIMIT);
+        info!("get_messages: {}", query);
+        let msgs = ctx.http.get_messages(msg.channel_id.0, &query).await;
+        let msgs = msgs?;
+
+        // 空配列ならば完了
+        if msgs.is_empty() {
+            break;
+        }
+        // message id を取り出してセットに追加する
+        // 降順で送られてくるのでソートし直す
+        allmsgs.extend(msgs.iter().map(|m| m.id.0));
+        // 最後の message id を次回の after に設定する
+        after = *allmsgs.iter().next_back().unwrap();
+    }
+    info!("obtained {} messages", allmsgs.len());
+
+    // id 昇順で後ろ n 個を残して他を消す
+    if allmsgs.len() <= n as usize {
+        return Ok(());
+    }
+    let delcount = allmsgs.len() - n as usize;
+
+    // Bulk delete 機能で一気に複数を消せるが、2週間以上前のメッセージが
+    // 含まれていると BAD REQUEST になる等扱いが難しいので rate limit は
+    // 気になるが1つずつ消す
+    info!("Delete {} messages...", delcount);
+    for &mid in allmsgs.iter().take(delcount) {
+        // ch, msg はログに残す
+        info!("Delete: ch={}, msg={}", msg.channel_id.0, mid);
+        // https://discord.com/developers/docs/resources/channel#delete-message
+        msg.channel_id.delete_message(ctx, mid).await?;
+    }
 
     Ok(())
 }
