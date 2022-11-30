@@ -3,7 +3,7 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
-use image::ImageOutputFormat;
+use image::{imageops::FilterType, ImageOutputFormat};
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -299,7 +299,15 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
         // unlock
     } else {
         // バイナリ同梱のデフォルト画像が撮れたことにする
-        include_bytes!("../res/camera_def.jpg").to_vec()
+        let buf = include_bytes!("../res/camera_def.jpg").to_vec();
+
+        // オプションの w, h にリサイズする
+        let src = image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg)?;
+        let dst = src.resize_exact(opt.w, opt.h, FilterType::Nearest);
+        let mut output = Cursor::new(vec![]);
+        dst.write_to(&mut output, ImageOutputFormat::Jpeg(85))?;
+
+        output.into_inner()
     };
     // raspistill は同時に複数プロセス起動できないので mutex で保護する
 

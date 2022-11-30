@@ -1,6 +1,8 @@
 //! Discord クライアント (bot) 機能。
 
+use super::camera::{take_a_pic, TakePicOption};
 use super::SystemModule;
+use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
@@ -60,11 +62,13 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
     let http = Http::new(&token);
     let info = http.get_current_application_info().await?;
+    let myid = UserId(info.id.0);
+    let ownerids = HashSet::from([info.owner.id]);
 
     let framework = StandardFramework::new()
         // コマンドのプレフィクスはなし
         // bot へのメンションをトリガとする
-        .configure(|c| c.prefix("").on_mention(Some(UserId(info.id.0))))
+        .configure(|c| c.prefix("").on_mention(Some(myid)).owners(ownerids))
         // コマンド前後でのフック (ロギング用)
         .before(before_hook)
         .after(after_hook)
@@ -79,6 +83,13 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         .event_handler(Handler)
         .framework(framework)
         .await?;
+
+    // グローバルデータの設定
+    {
+        let mut data = client.data.write().await;
+
+        data.insert::<ControlData>(ctrl.clone());
+    }
 
     // システムシャットダウンに対応してクライアントにシャットダウン要求を送る
     // 別タスクを立ち上げる
@@ -142,6 +153,12 @@ impl SystemModule for Discord {
     }
 }
 
+struct ControlData;
+
+impl TypeMapKey for ControlData {
+    type Value = Control;
+}
+
 struct Handler;
 
 /// Discord クライアントとしてのイベントハンドラ。
@@ -175,8 +192,19 @@ async fn my_help(
 }
 
 #[group]
-#[commands(dice, delmsg)]
+#[commands(sysinfo, dice, delmsg, camera)]
 struct General;
+
+#[command]
+#[description("Print system information.")]
+#[usage("")]
+#[example("")]
+async fn sysinfo(ctx: &Context, msg: &Message) -> CommandResult {
+    let ver_info: &str = &*VERSION_INFO;
+    msg.reply(ctx, ver_info).await?;
+
+    Ok(())
+}
 
 /// ダイスの面数の最大値。
 const DICE_MAX: u64 = 1u64 << 56;
@@ -282,6 +310,20 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
         // https://discord.com/developers/docs/resources/channel#delete-message
         msg.channel_id.delete_message(ctx, mid).await?;
     }
+
+    Ok(())
+}
+
+#[command]
+#[description("Take a picture.")]
+#[usage("")]
+#[example("")]
+#[owners_only]
+async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
+    let pic = take_a_pic(TakePicOption::new()).await?;
+    msg.channel_id
+        .send_message(ctx, |m| m.add_file((&pic[..], "camera.jpg")))
+        .await?;
 
     Ok(())
 }
