@@ -231,7 +231,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[group]
-#[commands(sysinfo, dice, delmsg, camera)]
+#[commands(sysinfo, dice, delmsg, camera, attack)]
 struct General;
 
 #[command]
@@ -303,7 +303,7 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
 #[command]
 #[description("Delete messages other than the most recent N ones.")]
-#[usage("N")]
+#[usage("<N>")]
 #[example("100")]
 #[num_args(1)]
 async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
@@ -374,6 +374,32 @@ async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id
         .send_message(ctx, |m| m.add_file((&pic[..], "camera.jpg")))
         .await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("Let me say a message to the specified user.")]
+#[usage("here <user> <msg>")]
+#[usage("<channel> <user> <msg>")]
+#[example("12345 6789 hello")]
+#[num_args(3)]
+async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
+    owner_check(ctx, msg).await?;
+
+    let chstr: String = arg.single()?;
+    let ch = if chstr == "here" {
+        msg.channel_id
+    } else {
+        ChannelId(chstr.parse::<u64>()?)
+    };
+    let user = UserId(arg.single::<u64>()?);
+    let text: String = arg.single_quoted()?;
+
+    ch.send_message(ctx, |m| {
+        m.content(format_args!("{} {}", user.mention(), text))
+    })
+    .await?;
 
     Ok(())
 }
