@@ -751,7 +751,9 @@ Discord::~Discord()
 
 void Discord::Send(const std::string &text) noexcept
 {
-	m_client->SendMessage(text);
+	if (m_client != nullptr) {
+		m_client->SendMessage(text);
+	}
 }
 
 }	// namespace system
