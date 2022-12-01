@@ -27,6 +27,9 @@ pub struct DiscordConfig {
     enabled: bool,
     /// アクセストークン。Developer Portal で入手できる。
     token: String,
+    /// パーミッションエラーメッセージ。
+    /// オーナーのみ使用可能なコマンドを実行しようとした。
+    perm_err_msg: String,
 }
 
 /// Discord システムモジュール。
@@ -55,12 +58,13 @@ impl Discord {
 ///
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
-    let discord = ctrl.sysmods().discord.lock().await;
-    let token = discord.config.token.clone();
-    drop(discord);
+    let config = {
+        let discord = ctrl.sysmods().discord.lock().await;
+        discord.config.clone()
+    };
 
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
-    let http = Http::new(&token);
+    let http = Http::new(&config.token);
     let info = http.get_current_application_info().await?;
     let myid = UserId(info.id.0);
     let ownerids = HashSet::from([info.owner.id]);
@@ -68,7 +72,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     let framework = StandardFramework::new()
         // コマンドのプレフィクスはなし
         // bot へのメンションをトリガとする
-        .configure(|c| c.prefix("").on_mention(Some(myid)).owners(ownerids))
+        .configure(|c| c.prefix("").on_mention(Some(myid)).owners(ownerids.clone()))
         // コマンド前後でのフック (ロギング用)
         .before(before_hook)
         .after(after_hook)
@@ -79,7 +83,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
     // クライアントの初期化
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
-    let mut client = Client::builder(token, intents)
+    let mut client = Client::builder(config.token.clone(), intents)
         .event_handler(Handler)
         .framework(framework)
         .await?;
@@ -89,6 +93,8 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         let mut data = client.data.write().await;
 
         data.insert::<ControlData>(ctrl.clone());
+        data.insert::<ConfigData>(config);
+        data.insert::<OwnerData>(ownerids);
     }
 
     // システムシャットダウンに対応してクライアントにシャットダウン要求を送る
@@ -154,9 +160,18 @@ impl SystemModule for Discord {
 }
 
 struct ControlData;
-
 impl TypeMapKey for ControlData {
     type Value = Control;
+}
+
+struct ConfigData;
+impl TypeMapKey for ConfigData {
+    type Value = DiscordConfig;
+}
+
+struct OwnerData;
+impl TypeMapKey for OwnerData {
+    type Value = HashSet<UserId>;
 }
 
 struct Handler;
@@ -189,6 +204,28 @@ async fn my_help(
     let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await?;
 
     Ok(())
+}
+
+async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
+    let (accept, errmsg) = {
+        let data = ctx.data.read().await;
+        let owners = data.get::<OwnerData>().unwrap();
+        let accept = owners.contains(&msg.author.id);
+        let config = data.get::<ConfigData>().unwrap();
+        let errmsg = config.perm_err_msg.clone();
+
+        (accept, errmsg)
+    };
+
+    if accept {
+        Ok(())
+    } else {
+        if let Err(why) = msg.reply(ctx, errmsg).await {
+            warn!("error on reply: {:#}", why);
+        }
+
+        Err(anyhow!("permission error").into())
+    }
 }
 
 #[group]
@@ -267,8 +304,9 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 #[usage("N")]
 #[example("100")]
 #[num_args(1)]
-#[owners_only]
 async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
+    owner_check(ctx, msg).await?;
+
     let n: u32 = arg.single()?;
 
     // id=0 から 100 件ずつすべてのメッセージを取得する
@@ -327,8 +365,9 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 #[description("Take a picture.")]
 #[usage("")]
 #[example("")]
-#[owners_only]
 async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
+    owner_check(ctx, msg).await?;
+
     let pic = take_a_pic(TakePicOption::new()).await?;
     msg.channel_id
         .send_message(ctx, |m| m.add_file((&pic[..], "camera.jpg")))

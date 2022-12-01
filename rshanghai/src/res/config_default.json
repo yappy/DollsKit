@@ -23,7 +23,8 @@
 	},
 	"discord": {
 		"enabled"			: false,
-		"token"				: ""
+		"token"				: "",
+		"perm_err_msg"		: "バカジャネーノ"
 	},
 	"http": {
 		"enabled"			: false,
