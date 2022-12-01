@@ -24,7 +24,8 @@
 	"discord": {
 		"enabled"			: false,
 		"token"				: "",
-		"perm_err_msg"		: "バカジャネーノ"
+		"perm_err_msg"		: "バカジャネーノ",
+		"force_perm_err"	: false
 	},
 	"http": {
 		"enabled"			: false,

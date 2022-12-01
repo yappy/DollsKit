@@ -30,6 +30,8 @@ pub struct DiscordConfig {
     /// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     perm_err_msg: String,
+    /// パーミッションエラーを強制的に発生させる。デバッグ用。
+    force_perm_err: bool,
 }
 
 /// Discord システムモジュール。
@@ -210,8 +212,8 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
     let (accept, errmsg) = {
         let data = ctx.data.read().await;
         let owners = data.get::<OwnerData>().unwrap();
-        let accept = owners.contains(&msg.author.id);
         let config = data.get::<ConfigData>().unwrap();
+        let accept = !config.force_perm_err && owners.contains(&msg.author.id);
         let errmsg = config.perm_err_msg.clone();
 
         (accept, errmsg)
