@@ -2,8 +2,6 @@ mod index;
 mod priv_camera;
 mod priv_index;
 
-use std::fmt::Display;
-
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use actix_web::{http::header::ContentType, HttpResponse, Responder};
@@ -12,6 +10,7 @@ use anyhow::{anyhow, Result};
 use log::info;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HttpConfig {

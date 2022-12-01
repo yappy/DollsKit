@@ -10,11 +10,11 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
             return;
         }
         cfg.service(index_get);
-        cfg.service(priv_camera::camera_get);
-        cfg.service(priv_camera::camera_history_get);
-        cfg.service(priv_camera::camera_history_start_get);
-        cfg.service(priv_camera::camera_pic_history_get);
-        cfg.service(priv_camera::camera_take_get);
+        cfg.service(priv_camera::take_get);
+        cfg.service(priv_camera::history_get);
+        cfg.service(priv_camera::history_start_get);
+        cfg.service(priv_camera::pic_history_get);
+        cfg.service(priv_camera::index_get);
     }
 }
 

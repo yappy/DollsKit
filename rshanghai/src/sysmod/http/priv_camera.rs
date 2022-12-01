@@ -13,7 +13,7 @@ use std::io::Cursor;
 use tokio::{fs::File, io::AsyncReadExt};
 
 #[actix_web::get("/camera/")]
-async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
+async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
     let body = r#"<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -36,15 +36,12 @@ async fn camera_take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -
 }
 
 #[actix_web::get("/camera/history/")]
-async fn camera_history_get(ctrl: web::Data<Control>) -> HttpResponse {
-    camera_history_get_internal(ctrl, 0).await
+async fn history_get(ctrl: web::Data<Control>) -> HttpResponse {
+    history_get_internal(ctrl, 0).await
 }
 
 #[actix_web::get("/camera/history/{start}")]
-async fn camera_history_start_get(
-    ctrl: web::Data<Control>,
-    path: web::Path<String>,
-) -> HttpResponse {
+async fn history_start_get(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
     let start = path.into_inner();
     let start = match start.parse::<usize>() {
         Ok(n) => {
@@ -58,10 +55,10 @@ async fn camera_history_start_get(
         }
     };
 
-    camera_history_get_internal(ctrl, start).await
+    history_get_internal(ctrl, start).await
 }
 
-async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
     let camera = ctrl.sysmods().camera.lock().await;
     let page_by = camera.config.page_by as usize;
     let (hist, _) = camera.pic_list();
@@ -128,7 +125,7 @@ async fn camera_history_get_internal(ctrl: web::Data<Control>, start: usize) -> 
 }
 
 #[actix_web::get("/camera/pic/history/{name}/{kind}")]
-async fn camera_pic_history_get(
+async fn pic_history_get(
     cfg: web::Data<HttpConfig>,
     ctrl: web::Data<Control>,
     path: web::Path<(String, String)>,
@@ -167,7 +164,7 @@ async fn camera_pic_history_get(
 }
 
 #[actix_web::get("/camera/take")]
-async fn camera_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
+async fn take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
     let pic = take_a_pic(TakePicOption::new()).await;
     if let Err(ref e) = pic {
         error!("take a picture error");
