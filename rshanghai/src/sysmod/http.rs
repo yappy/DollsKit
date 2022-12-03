@@ -1,3 +1,4 @@
+mod github;
 mod index;
 mod priv_camera;
 mod priv_index;
@@ -20,6 +21,7 @@ pub struct HttpConfig {
     path_prefix: String,
     priv_prefix: String,
     github_hook: bool,
+    github_secret: String,
 }
 
 pub struct HttpServer {

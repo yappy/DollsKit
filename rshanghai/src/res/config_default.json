@@ -33,6 +33,7 @@
 		"port"				: 8899,
 		"path_prefix"		: "/rhouse",
 		"priv_prefix"		: "/rhouse/priv",
-		"github_hook"		: false
+		"github_hook"		: false,
+		"github_secret"		: ""
 	}
 }
