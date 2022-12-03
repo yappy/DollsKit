@@ -1,6 +1,11 @@
-use hmac::{digest::CtOutput, Mac, SimpleHmac};
+use anyhow::Result;
+use hmac::{
+    digest::{CtOutput},
+    Mac, SimpleHmac,
+};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
 use sha1::Sha1;
+use sha2::Sha256;
 
 /// [percent_encode] で変換する文字セット。
 ///
@@ -32,6 +37,7 @@ pub fn html_escape(src: &str) -> String {
 }
 
 pub type HmacSha1 = SimpleHmac<Sha1>;
+pub type HmacSha256 = SimpleHmac<Sha256>;
 
 /// HMAC SHA1 を計算する。
 ///
@@ -43,6 +49,15 @@ pub fn hmac_sha1(key: &[u8], data: &[u8]) -> CtOutput<HmacSha1> {
     mac.update(data);
 
     mac.finalize()
+}
+
+/// HMAC SHA2 を計算して
+pub fn hmac_sha256_verify(key: &[u8], data: &[u8], expected: &[u8]) -> Result<()> {
+    let mut mac = HmacSha256::new_from_slice(key).unwrap();
+    mac.update(data);
+    mac.verify_slice(expected)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
