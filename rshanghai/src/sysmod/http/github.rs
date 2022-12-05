@@ -157,7 +157,7 @@ fn create_msg_from_json(json_body: &str) -> Result<String> {
         .as_str()
         .ok_or_else(|| anyhow!("compare not found"))?;
 
-    Ok(format!("{}\n{}", refstr, compare))
+    Ok(format!("Pushed to Github: {}\n{}", refstr, compare))
 }
 
 #[cfg(test)]
@@ -169,7 +169,7 @@ mod tests {
         let jsonstr = include_str!("../../res_test/simplepush.json");
         let msg = create_msg_from_json(jsonstr).unwrap();
 
-        assert_eq!(msg, "refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6");
+        assert_eq!(msg, "Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6");
     }
 
     #[test]
@@ -179,7 +179,7 @@ mod tests {
 
         assert_eq!(
             msg,
-            "refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/newbranch"
+            "Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/newbranch"
         );
     }
 
@@ -188,6 +188,6 @@ mod tests {
         let jsonstr = include_str!("../../res_test/deletebranch.json");
         let msg = create_msg_from_json(jsonstr).unwrap();
 
-        assert_eq!(msg, "refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000");
+        assert_eq!(msg, "Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000");
     }
 }
