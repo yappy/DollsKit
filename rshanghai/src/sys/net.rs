@@ -1,8 +1,5 @@
 use anyhow::Result;
-use hmac::{
-    digest::{CtOutput},
-    Mac, SimpleHmac,
-};
+use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
 use sha1::Sha1;
 use sha2::Sha256;
