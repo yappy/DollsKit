@@ -89,6 +89,8 @@ fn daemon() {
 fn init_log(is_daemon: bool) {
     let config = ConfigBuilder::new()
         .add_filter_allow_str(CRATE_NAME)
+        .set_time_offset_to_local()
+        .unwrap()
         .set_time_format_custom(format_description!(
             "[year]-[month]-[day] [hour]:[minute]:[second]"
         ))
