@@ -165,10 +165,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_real_webhook() {
+    fn webhook_simple_push() {
         let jsonstr = include_str!("../../res_test/simplepush.json");
         let msg = create_msg_from_json(jsonstr).unwrap();
 
         assert_eq!(msg, "refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6");
+    }
+
+    #[test]
+    fn webhook_empty_branch() {
+        let jsonstr = include_str!("../../res_test/emptybranch.json");
+        let msg = create_msg_from_json(jsonstr).unwrap();
+
+        assert_eq!(
+            msg,
+            "refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/newbranch"
+        );
+    }
+
+    #[test]
+    fn webhook_delete_branch() {
+        let jsonstr = include_str!("../../res_test/deletebranch.json");
+        let msg = create_msg_from_json(jsonstr).unwrap();
+
+        assert_eq!(msg, "refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000");
     }
 }
