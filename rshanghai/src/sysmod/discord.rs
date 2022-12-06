@@ -27,6 +27,10 @@ pub struct DiscordConfig {
     enabled: bool,
     /// アクセストークン。Developer Portal で入手できる。
     token: String,
+    /// メッセージの発言先チャネル。
+    /// Discord の詳細設定で開発者モードを有効にして、チャネルを右クリックで
+    /// ID をコピーできる。
+    notif_channel: u64,
     /// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     perm_err_msg: String,
@@ -38,6 +42,10 @@ pub struct DiscordConfig {
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
+    /// 現在有効な Discord Client コンテキスト。
+    ///
+    /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
+    ctx: Option<Context>,
 }
 
 impl Discord {
@@ -52,7 +60,29 @@ impl Discord {
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
-        Ok(Self { config })
+        Ok(Self { config, ctx: None })
+    }
+
+    pub async fn say(&mut self, msg: &str) -> Result<()> {
+        if !self.config.enabled {
+            info!("discord disabled - msg: {}", msg);
+            return Ok(());
+        }
+        if self.config.notif_channel == 0 {
+            info!("discord notification disabled - msg: {}", msg);
+            return Ok(());
+        }
+        if self.ctx.is_none() {
+            warn!("discord not ready - msg: {}", msg);
+            return Ok(());
+        }
+
+        info!("discord say msg: {}", msg);
+        let ch = ChannelId(self.config.notif_channel);
+        let ctx = self.ctx.as_ref().unwrap();
+        ch.say(ctx, msg).await?;
+
+        Ok(())
     }
 }
 
@@ -108,6 +138,13 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         info!("[discord-exit] recv cancel");
         shard_manager.lock().await.shutdown_all().await;
         info!("[discord-exit] shutdown_all ok");
+        // shutdown_all が完了した後は ready は呼ばれないはずなので
+        // ここで ctx を処分する
+        // ctx.data に Control を持たせているので ctx がリークしたままだと
+        // 終了処理が完了しない
+        let ctx = ctrl_for_cancel.sysmods().discord.lock().await.ctx.take();
+        drop(ctx);
+        info!("[discord-exit] context dropped");
 
         Ok(())
     });
@@ -189,8 +226,15 @@ impl EventHandler for Handler {
         info!("[discord] resumed");
     }
 
-    async fn cache_ready(&self, _ctx: Context, guilds: Vec<GuildId>) {
+    /// このタイミングで [Discord::ctx] に ctx をクローンして保存する。
+    async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
         info!("[discord] cache ready - guild: {}", guilds.len());
+
+        let ctx_clone = ctx.clone();
+        let ctx = ctx.data.read().await;
+        let ctrl = ctx.get::<ControlData>().unwrap();
+        let mut discord = ctrl.sysmods().discord.lock().await;
+        discord.ctx = Some(ctx_clone);
     }
 }
 

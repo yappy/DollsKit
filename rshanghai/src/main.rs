@@ -185,7 +185,7 @@ fn load_config() -> Result<()> {
     Ok(())
 }
 
-async fn boot_tweet_task(ctrl: Control) -> Result<()> {
+async fn boot_msg_task(ctrl: Control) -> Result<()> {
     let build_info: &str = &*sys::version::VERSION_INFO;
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
@@ -194,7 +194,17 @@ async fn boot_tweet_task(ctrl: Control) -> Result<()> {
 
     {
         let mut twitter = ctrl.sysmods().twitter.lock().await;
-        twitter.tweet(&msg).await?;
+        if let Err(why) = twitter.tweet(&msg).await {
+            error!("error on tweet");
+            error!("{:#?}", why);
+        }
+    }
+    {
+        let mut discord = ctrl.sysmods().discord.lock().await;
+        if let Err(why) = discord.say(&msg).await {
+            error!("error on discord notification");
+            error!("{:#?}", why);
+        }
     }
 
     Ok(())
@@ -215,7 +225,7 @@ fn system_main() -> Result<()> {
         let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
 
-        ts.spawn_oneshot_task("boot_tweet", boot_tweet_task);
+        ts.spawn_oneshot_task("boot_tweet", boot_msg_task);
         let run_result = ts.run();
 
         info!("task server dropped");
