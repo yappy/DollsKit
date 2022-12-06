@@ -46,7 +46,7 @@ pub struct Discord {
     ///
     /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
     ctx: Option<Context>,
-    /// [ctx] が None の間に発言しようとしたメッセージのキュー。
+    /// [Self::ctx] が None の間に発言しようとしたメッセージのキュー。
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
