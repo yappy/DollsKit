@@ -135,11 +135,17 @@ async fn process_post(ctrl: &Control, json_body: &str) {
                     .await
             });
 
-            //let ctrl_clone = ctrl.clone();
-            //let msg_clone = msg.clone();
-            //ctrl.spawn_oneshot_fn("http-github-discord", async move {
-            // TODO
-            //});
+            let ctrl_clone = ctrl.clone();
+            let msg_clone = msg.clone();
+            ctrl.spawn_oneshot_fn("http-github-discord", async move {
+                ctrl_clone
+                    .sysmods()
+                    .discord
+                    .lock()
+                    .await
+                    .say(&msg_clone)
+                    .await
+            });
         }
         Err(why) => {
             error!("{:#?}", why);
