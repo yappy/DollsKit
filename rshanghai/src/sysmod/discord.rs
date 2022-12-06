@@ -46,6 +46,10 @@ pub struct Discord {
     ///
     /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
     ctx: Option<Context>,
+    /// [ctx] が None の間に発言しようとしたメッセージのキュー。
+    ///
+    /// Some になるタイミングで全て送信する。
+    postponed_msgs: Vec<String>,
 }
 
 impl Discord {
@@ -60,24 +64,29 @@ impl Discord {
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
-        Ok(Self { config, ctx: None })
+        Ok(Self {
+            config,
+            ctx: None,
+            postponed_msgs: Vec::new(),
+        })
     }
 
     pub async fn say(&mut self, msg: &str) -> Result<()> {
         if !self.config.enabled {
-            info!("discord disabled - msg: {}", msg);
+            info!("[discord] disabled - msg: {}", msg);
             return Ok(());
         }
         if self.config.notif_channel == 0 {
-            info!("discord notification disabled - msg: {}", msg);
+            info!("[discord] notification disabled - msg: {}", msg);
             return Ok(());
         }
         if self.ctx.is_none() {
-            warn!("discord not ready - msg: {}", msg);
+            info!("[discord] not ready, postponed - msg: {}", msg);
+            self.postponed_msgs.push(msg.to_string());
             return Ok(());
         }
 
-        info!("discord say msg: {}", msg);
+        info!("[discord] say msg: {}", msg);
         let ch = ChannelId(self.config.notif_channel);
         let ctx = self.ctx.as_ref().unwrap();
         ch.say(ctx, msg).await?;
@@ -227,14 +236,32 @@ impl EventHandler for Handler {
     }
 
     /// このタイミングで [Discord::ctx] に ctx をクローンして保存する。
+    /// [Discord::postponed_msgs] があれば全て送信する。
     async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
         info!("[discord] cache ready - guild: {}", guilds.len());
 
         let ctx_clone = ctx.clone();
-        let ctx = ctx.data.read().await;
-        let ctrl = ctx.get::<ControlData>().unwrap();
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
         let mut discord = ctrl.sysmods().discord.lock().await;
         discord.ctx = Some(ctx_clone);
+
+        info!(
+            "[discord] send postponed msgs ({})",
+            discord.postponed_msgs.len()
+        );
+        for msg in &discord.postponed_msgs {
+            let ch = discord.config.notif_channel;
+            // notif_channel が有効の場合しかキューされない
+            assert_ne!(ch, 0);
+
+            info!("[discord] say msg: {}", msg);
+            let ch = ChannelId(ch);
+            if let Err(why) = ch.say(&ctx, msg).await {
+                error!("{:#?}", why);
+            }
+        }
+        discord.postponed_msgs.clear();
     }
 }
 
