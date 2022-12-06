@@ -136,14 +136,13 @@ async fn process_post(ctrl: &Control, json_body: &str) {
             });
 
             let ctrl_clone = ctrl.clone();
-            let msg_clone = msg.clone();
             ctrl.spawn_oneshot_fn("http-github-discord", async move {
                 ctrl_clone
                     .sysmods()
                     .discord
                     .lock()
                     .await
-                    .say(&msg_clone)
+                    .say(&msg)
                     .await
             });
         }
