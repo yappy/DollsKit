@@ -81,6 +81,8 @@ impl SystemModules {
             })
             .collect();
 
+        let wakeup_discord: Vec<_> = (0..24).map(|h| NaiveTime::from_hms(h, 0, 0)).collect();
+
         let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 
         let sysinfo = Arc::new(TokioMutex::new(SystemInfo::new()));
@@ -91,7 +93,7 @@ impl SystemModules {
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
-        let discord = Arc::new(TokioMutex::new(Discord::new()?));
+        let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
 
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());

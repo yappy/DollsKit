@@ -5,6 +5,7 @@ use super::SystemModule;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
 use anyhow::{anyhow, Result};
+use chrono::NaiveTime;
 use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -18,7 +19,8 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fmt::Display;
 
 /// Discord 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
@@ -31,6 +33,8 @@ pub struct DiscordConfig {
     /// Discord の詳細設定で開発者モードを有効にして、チャネルを右クリックで
     /// ID をコピーできる。
     notif_channel: u64,
+    /// 自動削除機能の対象とするチャネル ID のリスト。
+    auto_del_chs: Vec<u64>,
     /// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     perm_err_msg: String,
@@ -42,6 +46,8 @@ pub struct DiscordConfig {
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
+    /// 定期実行の時刻リスト。
+    wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
     ///
     /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
@@ -50,6 +56,33 @@ pub struct Discord {
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
+    ///
+    auto_del_config: HashMap<u64, AutoDeleteConfig>,
+}
+
+///
+#[derive(Clone, Copy)]
+pub struct AutoDeleteConfig {
+    keep_count: u32,
+    keep_dur_min: u32,
+}
+
+impl Display for AutoDeleteConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let count_str = if self.keep_count != 0 {
+            self.keep_count.to_string()
+        } else {
+            "Disabled".to_string()
+        };
+        let time_str = if self.keep_dur_min != 0 {
+            let (d, h, m) = convert_duration(self.keep_dur_min);
+            format!("{} day(s) {} hour(s) {} minute(s)", d, h, m)
+        } else {
+            "Disabled".to_string()
+        };
+
+        write!(f, "Keep Count: {}\nKeep Time: {}", count_str, time_str)
+    }
 }
 
 impl Discord {
@@ -57,17 +90,30 @@ impl Discord {
     ///
     /// 設定データの読み込みのみ行い、実際の初期化は async が有効になる
     /// [discord_main] で行う。
-    pub fn new() -> Result<Self> {
+    pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[discord] initialize");
 
         let jsobj = config::get_object(&["discord"])
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
+        let mut auto_del_congig = HashMap::new();
+        for ch in &config.auto_del_chs {
+            auto_del_congig.insert(
+                *ch,
+                AutoDeleteConfig {
+                    keep_count: 0,
+                    keep_dur_min: 0,
+                },
+            );
+        }
+
         Ok(Self {
             config,
+            wakeup_list,
             ctx: None,
             postponed_msgs: Vec::new(),
+            auto_del_config: auto_del_congig,
         })
     }
 
@@ -99,9 +145,9 @@ impl Discord {
 ///
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
-    let config = {
+    let (config, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
-        discord.config.clone()
+        (discord.config.clone(), discord.wakeup_list.clone())
     };
 
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
@@ -158,10 +204,17 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         Ok(())
     });
 
+    // 定期チェックタスクを立ち上げる
+    ctrl.spawn_periodic_task("discord-periodic", &wakeup_list, periodic_main);
+
     // システムスタート
     client.start().await?;
     info!("[discord] client exit");
 
+    Ok(())
+}
+
+async fn periodic_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
@@ -302,6 +355,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[group]
+#[sub_groups(autodel)]
 #[commands(sysinfo, dice, delmsg, camera, attack)]
 struct General;
 
@@ -475,6 +529,105 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     Ok(())
 }
 
+#[group]
+#[prefix = "autodel"]
+#[commands(status, set)]
+struct AutoDel;
+
+const INVALID_CH_MSG: &str = "Auto delete feature is not enabled for this channel.
+Please contact the owner.";
+
+fn convert_duration(mut min: u32) -> (u32, u32, u32) {
+    let day = min / (60 * 24);
+    min %= 60 * 24;
+    let hour = min / 60;
+    min %= 60;
+
+    (day, hour, min)
+}
+
+fn parse_duration(src: &str) -> Result<u32> {
+    let mut min = 0u32;
+    let mut buf = String::new();
+    for c in src.chars() {
+        if c == 'd' || c == 'h' || c == 'm' {
+            let n: u32 = buf.parse()?;
+            let n = match c {
+                'd' => n.saturating_mul(24 * 60),
+                'h' => n.saturating_mul(60),
+                'm' => n,
+                _ => panic!(),
+            };
+            min = min.saturating_add(n);
+            buf.clear();
+        } else {
+            buf.push(c);
+        }
+    }
+    Ok(min)
+}
+
+#[command]
+#[description("Get the auto-delete feature status in this channel.")]
+#[usage("")]
+#[example("")]
+async fn status(ctx: &Context, msg: &Message) -> CommandResult {
+    let ch = msg.channel_id.0;
+    let config = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let discord = ctrl.sysmods().discord.lock().await;
+
+        discord.auto_del_config.get(&ch).copied()
+    };
+
+    if let Some(config) = config {
+        msg.reply(ctx, format!("OK\n{}", config)).await?;
+    } else {
+        msg.reply(ctx, INVALID_CH_MSG).await?;
+    }
+
+    Ok(())
+}
+
+#[command]
+#[description(
+    r#"Set the auto-delete feature in this channel.
+"0 0" disables the feature."#
+)]
+#[usage("<keep_count> <keep_duration>")]
+#[example("0 0")]
+#[example("10 1d")]
+#[example("10 12h")]
+#[example("10 1d23h59m")]
+#[num_args(2)]
+async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
+    let keep_count: u32 = arg.single()?;
+    let keep_duration: String = arg.single()?;
+    let keep_duration: u32 = parse_duration(&keep_duration)?;
+    let ch = msg.channel_id.0;
+
+    {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let mut discord = ctrl.sysmods().discord.lock().await;
+
+        let config = discord.auto_del_config.get_mut(&ch);
+        match config {
+            Some(config) => {
+                config.keep_count = keep_count;
+                config.keep_dur_min = keep_duration;
+                msg.reply(ctx, "OK").await?;
+            }
+            None => {
+                msg.reply(ctx, INVALID_CH_MSG).await?;
+            }
+        }
+    };
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -501,5 +654,18 @@ mod tests {
     #[should_panic]
     fn dice_invalid_count() {
         let _ = dice_core(6, DICE_COUNT_MAX + 1);
+    }
+
+    #[test]
+    fn convert_auto_del_time() {
+        let (d, h, m) = convert_duration(0);
+        assert_eq!(d, 0);
+        assert_eq!(h, 0);
+        assert_eq!(m, 0);
+
+        let (d, h, m) = convert_duration(3 * 24 * 60 + 23 * 60 + 59);
+        assert_eq!(d, 3);
+        assert_eq!(h, 23);
+        assert_eq!(m, 59);
     }
 }

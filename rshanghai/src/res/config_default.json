@@ -25,6 +25,7 @@
 		"enabled"			: false,
 		"token"				: "",
 		"notif_channel"		: 0,
+		"auto_del_chs"		: [],
 		"perm_err_msg"		: "バカジャネーノ",
 		"force_perm_err"	: false
 	},
