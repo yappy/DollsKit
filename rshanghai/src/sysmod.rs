@@ -81,7 +81,13 @@ impl SystemModules {
             })
             .collect();
 
-        let wakeup_discord: Vec<_> = (0..24).map(|h| NaiveTime::from_hms(h, 0, 0)).collect();
+        let wakeup_discord: Vec<_> = (0..24)
+            .flat_map(|hour| {
+                (0..60)
+                    .step_by(10)
+                    .map(move |min| NaiveTime::from_hms(hour, min, 0))
+            })
+            .collect();
 
         let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 

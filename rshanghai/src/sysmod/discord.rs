@@ -5,7 +5,7 @@ use super::SystemModule;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
 use anyhow::{anyhow, Result};
-use chrono::NaiveTime;
+use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -60,10 +60,12 @@ pub struct Discord {
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
 }
 
-///
+/// 自動削除設定。チャネルごとに保持される。
 #[derive(Clone, Copy)]
 pub struct AutoDeleteConfig {
+    /// 残す数。0 は無効。
     keep_count: u32,
+    /// 残す時間 (単位は分)。0 は無効。
     keep_dur_min: u32,
 }
 
@@ -226,10 +228,10 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 /// * `filter` - (メッセージ, 番号, 総数) から消すならば true を返す関数。
 ///
 /// (消した数, 総メッセージ数) を返す。
-async fn delete_msgs_in_channel<F: FnMut(&Message, usize, usize) -> bool>(
+async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     ctx: &Context,
     ch: u64,
-    mut filter: F,
+    filter: F,
 ) -> Result<(usize, usize)> {
     // id=0 から 100 件ずつすべてのメッセージを取得する
     let mut allmsgs = BTreeMap::<u64, Message>::new();
@@ -262,14 +264,17 @@ async fn delete_msgs_in_channel<F: FnMut(&Message, usize, usize) -> bool>(
         ctx.http.delete_message(ch, mid).await?;
         delcount += 1;
     }
+    info!("deleted {} messages", delcount);
 
     Ok((delcount, allmsgs.len()))
 }
 
+/// 自動削除周期タスク。
 async fn periodic_main(ctrl: Control) -> Result<()> {
-    let (ctx, config) = {
+    let (ctx, config_map) = {
         let discord = ctrl.sysmods().discord.lock().await;
         if discord.ctx.is_none() {
+            // ready 前なら何もせず正常終了する
             return Ok(());
         }
         (
@@ -277,6 +282,35 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
             discord.auto_del_config.clone(),
         )
     };
+
+    // UNIX timestamp [sec]
+    let now = Utc::now().timestamp() as u64;
+
+    for (ch, config) in config_map {
+        let AutoDeleteConfig {
+            keep_count,
+            keep_dur_min,
+        } = config;
+        if keep_count == 0 && keep_dur_min == 0 {
+            continue;
+        }
+        let keep_dur_sec = (keep_dur_min as u64).saturating_mul(60);
+        let (delcount, total) = delete_msgs_in_channel(&ctx, ch, |msg, i, len| {
+            let mut keep = true;
+            if keep_count != 0 {
+                keep = keep && i + (keep_count as usize) < len;
+            }
+            if keep_dur_min != 0 {
+                let created = msg.timestamp.timestamp() as u64;
+                // u64 [sec] 同士の減算で経過時間を計算する
+                // オーバーフローは代わりに 0 とする
+                let duration = now.saturating_sub(created);
+                keep = keep && duration <= keep_dur_sec;
+            }
+            !keep
+        })
+        .await?;
+    }
 
     Ok(())
 }
@@ -613,14 +647,14 @@ async fn status(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[description(
-    r#"Set the auto-delete feature in this channel.
+    r#"Enable/Disable/Config auto-delete feature in this channel.
 "0 0" disables the feature."#
 )]
 #[usage("<keep_count> <keep_duration>")]
 #[example("0 0")]
-#[example("10 1d")]
-#[example("10 12h")]
-#[example("10 1d23h59m")]
+#[example("100 1d")]
+#[example("200 12h")]
+#[example("300 1d23h59m")]
 #[num_args(2)]
 async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let keep_count: u32 = arg.single()?;
