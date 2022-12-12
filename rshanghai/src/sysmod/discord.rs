@@ -19,7 +19,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 
 /// Discord 設定データ。json 設定に対応する。
@@ -56,8 +56,8 @@ pub struct Discord {
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
-    ///
-    auto_del_config: HashMap<u64, AutoDeleteConfig>,
+    /// 自動削除機能の設定データ
+    auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
 }
 
 ///
@@ -97,7 +97,7 @@ impl Discord {
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
-        let mut auto_del_congig = HashMap::new();
+        let mut auto_del_congig = BTreeMap::new();
         for ch in &config.auto_del_chs {
             auto_del_congig.insert(
                 *ch,
@@ -214,7 +214,70 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
+/// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
+/// すべて削除する。
+///
+/// Bulk delete 機能で一気に複数を消せるが、2週間以上前のメッセージが
+/// 含まれていると BAD REQUEST になる等扱いが難しいので rate limit は
+/// 気になるが1つずつ消す。
+///
+/// * `ctx` - HTTP コンテキスト。
+/// * `ch` - Channel ID。
+/// * `filter` - (メッセージ, 番号, 総数) から消すならば true を返す関数。
+///
+/// (消した数, 総メッセージ数) を返す。
+async fn delete_msgs_in_channel<F: FnMut(&Message, usize, usize) -> bool>(
+    ctx: &Context,
+    ch: u64,
+    mut filter: F,
+) -> Result<(usize, usize)> {
+    // id=0 から 100 件ずつすべてのメッセージを取得する
+    let mut allmsgs = BTreeMap::<u64, Message>::new();
+    const GET_MSG_LIMIT: usize = 100;
+    let mut after = 0u64;
+    loop {
+        // https://discord.com/developers/docs/resources/channel#get-channel-messages
+        let query = format!("?after={}&limit={}", after, GET_MSG_LIMIT);
+        info!("get_messages: {}", query);
+        let msgs = ctx.http.get_messages(ch, &query).await?;
+        // 空配列ならば完了
+        if msgs.is_empty() {
+            break;
+        }
+        // 降順で送られてくるので ID でソートし直す
+        allmsgs.extend(msgs.iter().map(|m| (m.id.0, m.clone())));
+        // 最後の message id を次回の after に設定する
+        after = *allmsgs.keys().next_back().unwrap();
+    }
+    info!("obtained {} messages", allmsgs.len());
+
+    let mut delcount = 0_usize;
+    for (i, (&mid, msg)) in allmsgs.iter().enumerate() {
+        if !filter(msg, i, allmsgs.len()) {
+            continue;
+        }
+        // ch, msg ID はログに残す
+        info!("Delete: ch={}, msg={}", ch, mid);
+        // https://discord.com/developers/docs/resources/channel#delete-message
+        ctx.http.delete_message(ch, mid).await?;
+        delcount += 1;
+    }
+
+    Ok((delcount, allmsgs.len()))
+}
+
 async fn periodic_main(ctrl: Control) -> Result<()> {
+    let (ctx, config) = {
+        let discord = ctrl.sysmods().discord.lock().await;
+        if discord.ctx.is_none() {
+            return Ok(());
+        }
+        (
+            discord.ctx.as_ref().unwrap().clone(),
+            discord.auto_del_config.clone(),
+        )
+    };
+
     Ok(())
 }
 
@@ -434,56 +497,14 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     owner_check(ctx, msg).await?;
 
-    let n: u32 = arg.single()?;
-
-    // id=0 から 100 件ずつすべてのメッセージを取得する
-    let mut allmsgs = BTreeSet::<u64>::new();
-    const GET_MSG_LIMIT: usize = 100;
-    let mut after = 0u64;
-    loop {
-        // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        let query = format!("?after={}&limit={}", after, GET_MSG_LIMIT);
-        info!("get_messages: {}", query);
-        let msgs = ctx.http.get_messages(msg.channel_id.0, &query).await;
-        let msgs = msgs?;
-
-        // 空配列ならば完了
-        if msgs.is_empty() {
-            break;
-        }
-        // message id を取り出してセットに追加する
-        // 降順で送られてくるのでソートし直す
-        allmsgs.extend(msgs.iter().map(|m| m.id.0));
-        // 最後の message id を次回の after に設定する
-        after = *allmsgs.iter().next_back().unwrap();
-    }
-    info!("obtained {} messages", allmsgs.len());
+    let n: usize = arg.single()?;
 
     // id 昇順で後ろ n 個を残して他を消す
-    if allmsgs.len() <= n as usize {
-        msg.reply(ctx, format!("0/{} messages deleted", allmsgs.len()))
-            .await?;
+    let (delcount, total) =
+        delete_msgs_in_channel(ctx, msg.channel_id.0, |m, i, len| i + n < len).await?;
 
-        return Ok(());
-    }
-    let delcount = allmsgs.len() - n as usize;
-
-    // Bulk delete 機能で一気に複数を消せるが、2週間以上前のメッセージが
-    // 含まれていると BAD REQUEST になる等扱いが難しいので rate limit は
-    // 気になるが1つずつ消す
-    info!("Delete {} messages...", delcount);
-    for &mid in allmsgs.iter().take(delcount) {
-        // ch, msg はログに残す
-        info!("Delete: ch={}, msg={}", msg.channel_id.0, mid);
-        // https://discord.com/developers/docs/resources/channel#delete-message
-        msg.channel_id.delete_message(ctx, mid).await?;
-    }
-
-    msg.reply(
-        ctx,
-        format!("{}/{} messages deleted", delcount, allmsgs.len()),
-    )
-    .await?;
+    msg.reply(ctx, format!("{}/{} messages deleted", delcount, total))
+        .await?;
 
     Ok(())
 }
