@@ -656,6 +656,8 @@ async fn status(ctx: &Context, msg: &Message) -> CommandResult {
 #[example("200 12h")]
 #[example("300 1d23h59m")]
 #[num_args(2)]
+// disabled in Direct Message
+#[only_in("guild")]
 async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let keep_count: u32 = arg.single()?;
     let keep_duration: String = arg.single()?;
