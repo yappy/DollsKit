@@ -582,7 +582,7 @@ async fn status(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     if let Some(config) = config {
-        msg.reply(ctx, format!("OK\n{}", config)).await?;
+        msg.reply(ctx, format!("{}", config)).await?;
     } else {
         msg.reply(ctx, INVALID_CH_MSG).await?;
     }
@@ -617,7 +617,7 @@ async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
             Some(config) => {
                 config.keep_count = keep_count;
                 config.keep_dur_min = keep_duration;
-                msg.reply(ctx, "OK").await?;
+                msg.reply(ctx, format!("OK\n{}", config)).await?;
             }
             None => {
                 msg.reply(ctx, INVALID_CH_MSG).await?;
