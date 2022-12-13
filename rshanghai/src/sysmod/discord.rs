@@ -590,7 +590,7 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 struct AutoDel;
 
 const INVALID_CH_MSG: &str = "Auto delete feature is not enabled for this channel.
-Please contact the owner.";
+Please contact my owner.";
 
 fn convert_duration(mut min: u32) -> (u32, u32, u32) {
     let day = min / (60 * 24);
