@@ -9,7 +9,6 @@ use anyhow::anyhow;
 use log::error;
 use reqwest::StatusCode;
 use std::cmp;
-use std::io::Cursor;
 use tokio::{fs::File, io::AsyncReadExt};
 
 #[actix_web::get("/camera/")]
@@ -172,11 +171,10 @@ async fn take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebRe
     }
     let pic = pic?;
 
-    let mut thumb = Cursor::new(Vec::new());
-    create_thumbnail(&mut thumb, &pic)?;
+    let thumb = create_thumbnail(&pic)?;
 
     let mut camera = ctrl.sysmods().camera.lock().await;
-    camera.push_pic_history(&pic, thumb.get_ref()).await?;
+    camera.push_pic_history(&pic, &thumb).await?;
     drop(camera);
 
     let resp = HttpResponse::Ok()

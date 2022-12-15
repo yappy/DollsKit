@@ -9,49 +9,76 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    io::{Cursor, Seek, Write},
+    io::Cursor,
     os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 use tokio::{fs::File, io::AsyncWriteExt, process::Command, sync::Mutex};
 
+/// サムネイルファイル名のポストフィクス。
 const THUMB_POSTFIX: &str = "thumb";
-/// 60 * 24 = 1440 /day
-const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
+/// カメラ設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CameraConfig {
+    /// カメラ自動撮影タスクを有効化する。
     enabled: bool,
+    /// 起動時に1回だけカメラ自動撮影タスクを起動する。デバッグ用。
     debug_exec_once: bool,
+    /// raspistill によるリアル撮影ではなく、ダミー黒画像が撮れたことにする。
+    /// Raspberry Pi 以外の環境でのデバッグ用。
     fake_camera: bool,
+    /// 撮影した画像を保存するディレクトリ。
+    /// [Self::total_size_limit_mb] により自動で削除される。
     pic_history_dir: String,
+    /// [Self::pic_history_dir] から移す、永久保存ディレクトリ。
     pic_archive_dir: String,
+    /// [Self::pic_history_dir] のサイズ制限。これを超えた分が古いものから削除される。
     total_size_limit_mb: u32,
+    /// 画像一覧ページの1ページ当たりの画像数。
     pub page_by: u32,
 }
 
+/// ストレージ上の画像を示すエントリ。
 #[derive(Clone)]
 pub struct PicEntry {
+    /// メイン画像のファイルパス。
     pub path_main: PathBuf,
+    /// サムネイル画像のファイルパス。
     pub path_th: PathBuf,
+    /// [Self::path_main] と [Self::path_th] の合計ファイルサイズ。
     pub total_size: u64,
 }
 
+/// 画像リストは [BTreeMap] により名前でソートされた状態で管理する。
+///
+/// 名前は撮影日時とするため、古い順にソートされる。
 type PicDict = BTreeMap<String, PicEntry>;
-/// ストレージ上の全データを管理する
+
+/// ストレージ上の全データを管理するデータ構造。
 struct Storage {
+    /// 撮影された画像リスト。自動削除対象。
     pic_history_list: PicDict,
+    /// [Self::pic_archive_list] から移動された画像リスト。自動削除しない。
     pic_archive_list: PicDict,
 }
 
+/// Camera システムモジュール。
 pub struct Camera {
+    /// 設定データ。
+    ///
+    /// web からも参照される。
     pub config: CameraConfig,
+    /// 自動撮影の時刻リスト。
     wakeup_list: Vec<NaiveTime>,
-
+    /// ストレージ上の画像リストデータ。
     storage: Storage,
 }
 
 impl Camera {
+    /// コンストラクタ。
+    ///
+    /// 設定データの読み込みと、ストレージの状態取得を行い画像リストを初期化する。
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[camera] initialize");
 
@@ -73,6 +100,7 @@ impl Camera {
         })
     }
 
+    /// ストレージ上の画像リストを取得する。
     pub fn pic_list(&self) -> (&PicDict, &PicDict) {
         (
             &self.storage.pic_history_list,
@@ -80,6 +108,12 @@ impl Camera {
         )
     }
 
+    /// 撮影した画像をストレージに書き出し、管理構造に追加する。
+    ///
+    /// 名前は現在日時から自動的に付与される。
+    ///
+    /// * `img` - jpg ファイルのバイナリデータ。
+    /// * `thumb` - サムネイル jpg ファイルのバイナリデータ。
     pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
         let mut now;
         let mut dtstr;
@@ -125,14 +159,14 @@ impl Camera {
         Ok(())
     }
 
-    async fn check_task_entry(ctrl: Control) -> Result<()> {
+    /// 自動撮影タスク。
+    async fn auto_task(ctrl: Control) -> Result<()> {
         let pic = take_a_pic(TakePicOption::new()).await?;
 
-        let mut thumb = Cursor::new(Vec::new());
-        create_thumbnail(&mut thumb, &pic)?;
+        let thumb = create_thumbnail(&pic)?;
 
         let mut camera = ctrl.sysmods().camera.lock().await;
-        camera.push_pic_history(&pic, thumb.get_ref()).await?;
+        camera.push_pic_history(&pic, &thumb).await?;
         drop(camera);
 
         Ok(())
@@ -140,17 +174,16 @@ impl Camera {
 }
 
 impl SystemModule for Camera {
+    /// async 使用可能になってからの初期化。
+    ///
+    /// 設定有効ならば [Self::auto_task] を spawn する。
     fn on_start(&self, ctrl: &Control) {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("camera-auto", Camera::check_task_entry);
+                ctrl.spawn_oneshot_task("camera-auto", Camera::auto_task);
             } else {
-                ctrl.spawn_periodic_task(
-                    "camera-auto",
-                    &self.wakeup_list,
-                    Camera::check_task_entry,
-                );
+                ctrl.spawn_periodic_task("camera-auto", &self.wakeup_list, Camera::auto_task);
             }
         }
     }
@@ -219,24 +252,42 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
     Ok(dict)
 }
 
+/// 横最大サイズ。(Raspberry Pi Camera V2)
 const PIC_MAX_W: u32 = 3280;
+/// 縦最大サイズ。(Raspberry Pi Camera V2)
 const PIC_MAX_H: u32 = 2464;
+/// 横最小サイズ。(Raspberry Pi Camera V2)
 const PIC_MIN_W: u32 = 32;
+/// 縦最小サイズ。(Raspberry Pi Camera V2)
 const PIC_MIN_H: u32 = 24;
+/// 横デフォルトサイズ。
 const PIC_DEF_W: u32 = PIC_MAX_W;
+/// 縦デフォルトサイズ。
 const PIC_DEF_H: u32 = PIC_MAX_H;
+/// jpeg 最大クオリティ。
 const PIC_MAX_Q: u32 = 100;
+/// jpeg 最小クオリティ。
 const PIC_MIN_Q: u32 = 0;
+/// jpeg デフォルトクオリティ。
 const PIC_DEF_Q: u32 = 85;
+/// デフォルト撮影時間(ms)。TO はタイムアウト。
 const PIC_DEF_TO_MS: u32 = 1000;
+/// サムネイルの横サイズ。
 const THUMB_W: u32 = 128;
+/// サムネイルの縦サイズ。
 const THUMB_H: u32 = 96;
-const THUMB_Q: u32 = 35;
+/// サムネイルの jpeg クオリティ。
+const THUMB_Q: u8 = 35;
 
+/// 写真撮影オプション。
 pub struct TakePicOption {
+    /// 横サイズ。
     w: u32,
+    /// 縦サイズ。
     h: u32,
+    /// jpeg クオリティ。
     q: u32,
+    /// 撮影時間(ms)。
     timeout_ms: u32,
 }
 
@@ -270,6 +321,12 @@ impl TakePicOption {
     }
 }
 
+/// 写真を撮影する。成功すると jpeg バイナリデータを返す。
+///
+/// raspistill コマンドによる。
+/// 同時に2つ以上を実行できないので、[Mutex] で排他する。
+///
+/// * `opt` - 撮影オプション。
 pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     // 他の関数でも raspistill を使う場合外に出す
     static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
@@ -314,13 +371,16 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     Ok(bin)
 }
 
-pub fn create_thumbnail<W>(w: &mut W, src_buf: &[u8]) -> Result<()>
-where
-    W: Write + Seek,
-{
+/// サムネイルを作成する。
+/// 成功すれば jpeg バイナリデータを返す。
+///
+/// * `src_buf` - 元画像とする jpeg バイナリデータ。
+pub fn create_thumbnail(src_buf: &[u8]) -> Result<Vec<u8>> {
     let src = image::load_from_memory_with_format(src_buf, image::ImageFormat::Jpeg)?;
     let dst = src.thumbnail(THUMB_W, THUMB_H);
-    dst.write_to(w, ImageOutputFormat::Jpeg(85))?;
 
-    Ok(())
+    let mut buf = Cursor::new(Vec::<u8>::new());
+    dst.write_to(&mut buf, ImageOutputFormat::Jpeg(THUMB_Q))?;
+
+    Ok(buf.into_inner())
 }
