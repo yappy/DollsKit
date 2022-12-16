@@ -287,6 +287,7 @@ impl Twitter {
     /// text から pat を検索する。
     /// 先頭が '^' だとそれで始まる場合のみ。
     /// 末尾が '$' だとそれで終わる場合のみ。
+    #[allow(clippy::bool_to_int_with_if)]
     fn pattern_match(pat: &str, text: &str) -> bool {
         let count = pat.chars().count();
         if count == 0 {
@@ -296,6 +297,7 @@ impl Twitter {
         let match_end = pat.ends_with('$');
         let begin = pat
             .char_indices()
+            // clippy::bool_to_int_with_if
             .nth(if match_start { 1 } else { 0 })
             .unwrap_or((0, '\0'))
             .0;
@@ -323,7 +325,7 @@ impl Twitter {
     /// 自分のツイートリストを得て最終ツイート ID を得る(キャッシュ付き)。
     async fn get_since_id(&mut self) -> Result<String> {
         let me = self.get_my_id().await?;
-        if self.tl_check_since_id == None {
+        if self.tl_check_since_id.is_none() {
             let usertw = self.users_tweets(&me.id).await?;
             // API は成功したが最新 ID が得られなかった場合は "1" を設定する
             self.tl_check_since_id = Some(usertw.meta.newest_id.unwrap_or_else(|| "1".into()));

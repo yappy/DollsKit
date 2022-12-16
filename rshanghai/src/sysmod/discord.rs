@@ -461,7 +461,7 @@ struct General;
 #[usage("")]
 #[example("")]
 async fn sysinfo(ctx: &Context, msg: &Message) -> CommandResult {
-    let ver_info: &str = &*VERSION_INFO;
+    let ver_info: &str = &VERSION_INFO;
     msg.reply(ctx, ver_info).await?;
 
     Ok(())

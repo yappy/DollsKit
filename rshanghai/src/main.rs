@@ -186,7 +186,7 @@ fn load_config() -> Result<()> {
 }
 
 async fn boot_msg_task(ctrl: Control) -> Result<()> {
-    let build_info: &str = &*sys::version::VERSION_INFO;
+    let build_info: &str = &sys::version::VERSION_INFO;
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
     let now = now.format("%F %T %:z");
