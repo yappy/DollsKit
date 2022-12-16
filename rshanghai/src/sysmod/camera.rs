@@ -4,7 +4,7 @@ use crate::sys::taskserver::Control;
 use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
 use image::{imageops::FilterType, ImageOutputFormat};
-use log::{info, warn};
+use log::{error, info, warn};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -13,7 +13,12 @@ use std::{
     os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
-use tokio::{fs::File, io::AsyncWriteExt, process::Command, sync::Mutex};
+use tokio::{
+    fs::{self, File},
+    io::AsyncWriteExt,
+    process::Command,
+    sync::Mutex,
+};
 
 /// サムネイルファイル名のポストフィクス。
 const THUMB_POSTFIX: &str = "thumb";
@@ -159,6 +164,47 @@ impl Camera {
         Ok(())
     }
 
+    /// [PicDict] の合計ファイルサイズを計算する。
+    ///
+    /// オーダ O(n)。
+    /// 64 bit でオーバーフローすると panic する。
+    fn calc_total_size(list: &PicDict) -> u64 {
+        list.iter().fold(0, |acc, (_, entry)| {
+            // panic if overflow
+            acc.checked_add(entry.total_size).unwrap()
+        })
+    }
+
+    /// 必要に応じて自動削除を行う。
+    async fn clean_pic_history(&mut self) -> Result<()> {
+        info!("[camera] clean history");
+
+        let limit = self.config.total_size_limit_mb as u64 * 1024 * 1024;
+        let history = &mut self.storage.pic_history_list;
+
+        let mut total = Self::calc_total_size(history);
+        while total > limit {
+            info!("[camera] total: {}, limit: {}", total, limit);
+
+            // 一番古いものを削除する (1.66.0 or later)
+            let (key, entry) = history.pop_first().unwrap();
+            // 削除でのエラーはログを出して続行する
+            if let Err(why) = fs::remove_file(entry.path_main).await {
+                error!("[camera] cannot remove {} main: {}", key, why);
+            }
+            if let Err(why) = fs::remove_file(entry.path_th).await {
+                error!("[camera] cannot remove {} thumb: {}", key, why);
+            }
+            info!("[camera] deleted: {}", key);
+
+            total -= entry.total_size;
+        }
+
+        assert!(total == Self::calc_total_size(history));
+        info!("[camera] clean history completed");
+        Ok(())
+    }
+
     /// 自動撮影タスク。
     async fn auto_task(ctrl: Control) -> Result<()> {
         let pic = take_a_pic(TakePicOption::new()).await?;
@@ -167,6 +213,7 @@ impl Camera {
 
         let mut camera = ctrl.sysmods().camera.lock().await;
         camera.push_pic_history(&pic, &thumb).await?;
+        camera.clean_pic_history().await?;
         drop(camera);
 
         Ok(())
