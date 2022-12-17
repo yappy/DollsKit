@@ -11,6 +11,7 @@ use reqwest::StatusCode;
 use std::cmp;
 use tokio::{fs::File, io::AsyncReadExt};
 
+/// GET /priv/camera/ Camera インデックスページ。
 #[actix_web::get("/camera/")]
 async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
     let body = r#"<!DOCTYPE html>
@@ -34,11 +35,13 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
         .body(body)
 }
 
+/// GET /priv/camera/history/ 写真一覧。
 #[actix_web::get("/camera/history/")]
 async fn history_get(ctrl: web::Data<Control>) -> HttpResponse {
     history_get_internal(ctrl, 0).await
 }
 
+/// GET /priv/camera/history/{start} 写真一覧 (開始番号指定)。
 #[actix_web::get("/camera/history/{start}")]
 async fn history_start_get(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
     let start = path.into_inner();
@@ -57,6 +60,32 @@ async fn history_start_get(ctrl: web::Data<Control>, path: web::Path<String>) ->
     history_get_internal(ctrl, start).await
 }
 
+/// GET /priv/camera/archive/ アーカイブ済み写真一覧。
+#[actix_web::get("/camera/archive/")]
+async fn archive_get(ctrl: web::Data<Control>) -> HttpResponse {
+    archive_get_internal(ctrl, 0).await
+}
+
+/// GET /priv/camera/archive/{start} アーカイブ済み写真一覧 (開始番号指定)。
+#[actix_web::get("/camera/archive/{start}")]
+async fn archive_start_get(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
+    let start = path.into_inner();
+    let start = match start.parse::<usize>() {
+        Ok(n) => {
+            if n == 0 {
+                return simple_error(StatusCode::BAD_REQUEST);
+            }
+            n - 1
+        }
+        Err(_) => {
+            return simple_error(StatusCode::BAD_REQUEST);
+        }
+    };
+
+    archive_get_internal(ctrl, start).await
+}
+
+/// history_get シリーズの共通ルーチン。
 async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
     let camera = ctrl.sysmods().camera.lock().await;
     let page_by = camera.config.page_by as usize;
@@ -123,6 +152,15 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
         .body(body)
 }
 
+/// archive_get シリーズの共通ルーチン。
+async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+    unimplemented!();
+}
+
+/// GET /priv/camera/pic/history/{name}/{kind}
+/// 写真取得エンドポイント。
+///
+/// image/jpeg を返す。
 #[actix_web::get("/camera/pic/history/{name}/{kind}")]
 async fn pic_history_get(
     cfg: web::Data<HttpConfig>,
