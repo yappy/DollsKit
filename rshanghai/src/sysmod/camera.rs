@@ -113,6 +113,14 @@ impl Camera {
         )
     }
 
+    /// キーからファイル名を生成する。
+    fn create_file_names(key: &str) -> (String, String) {
+        (
+            format!("{}.jpg", key),
+            format!("{}_{}.jpg", key, THUMB_POSTFIX),
+        )
+    }
+
     /// 撮影した画像をストレージに書き出し、管理構造に追加する。
     ///
     /// 名前は現在日時から自動的に付与される。
@@ -120,6 +128,8 @@ impl Camera {
     /// * `img` - jpg ファイルのバイナリデータ。
     /// * `thumb` - サムネイル jpg ファイルのバイナリデータ。
     pub async fn push_pic_history(&mut self, img: &[u8], thumb: &[u8]) -> Result<()> {
+        // 現在時刻からキーを生成する
+        // 重複するなら少し待ってからリトライする
         let mut now;
         let mut dtstr;
         loop {
@@ -132,34 +142,72 @@ impl Camera {
                 break;
             }
         }
+        let (name_main, name_th) = Self::create_file_names(&dtstr);
 
         let total_size = img.len() + thumb.len();
         let total_size = total_size as u64;
 
+        // ファイルパスを生成する
         let root = Path::new(&self.config.pic_history_dir);
         let mut path_main = PathBuf::from(root);
-        path_main.push(&dtstr);
-        path_main.set_extension("jpg");
+        path_main.push(name_main);
         let mut path_th = PathBuf::from(root);
-        path_th.push(format!("{}_{}.jpg", dtstr, THUMB_POSTFIX));
-        path_th.set_extension("jpg");
+        path_th.push(name_th);
 
-        info!("write {}", path_main.display());
-        let mut file = File::create(&path_main).await?;
-        file.write_all(img).await?;
-        drop(file);
-
-        info!("write {}", path_th.display());
-        let mut file = File::create(&path_th).await?;
-        file.write_all(thumb).await?;
-        drop(file);
-
+        // ファイルに書き込む
+        {
+            info!("[camera-pic] write {}", path_main.display());
+            let mut file = File::create(&path_main).await?;
+            file.write_all(img).await?;
+        }
+        {
+            info!("[camera-pic] write {}", path_th.display());
+            let mut file = File::create(&path_th).await?;
+            file.write_all(thumb).await?;
+        }
+        // 成功したらマップに追加する
         let entry = PicEntry {
             path_main,
             path_th,
             total_size,
         };
         assert!(self.storage.pic_history_list.insert(dtstr, entry).is_none());
+
+        Ok(())
+    }
+
+    /// ヒストリ内の `key` で指定したエントリを永続領域にコピーする。
+    ///
+    /// * `key` - エントリ名。
+    async fn push_pic_archive(&mut self, key: &str) -> Result<()> {
+        // ヒストリから name を検索する
+        let history = &self.storage.pic_history_list;
+        let archive = &mut self.storage.pic_archive_list;
+        let entry = history
+            .get(key)
+            .ok_or_else(|| anyhow!("picture not found: {}", key))?;
+
+        // key からファイル名を生成し、パスを生成する
+        let (name_main, name_th) = Self::create_file_names(key);
+        let root = Path::new(&self.config.pic_archive_dir);
+        let mut path_main = PathBuf::from(root);
+        path_main.push(name_main);
+        let mut path_th = PathBuf::from(root);
+        path_th.push(name_th);
+
+        // コピーを実行する
+        let main_size = fs::copy(&entry.path_main, &path_main).await?;
+        let th_size = fs::copy(&entry.path_th, &path_th).await?;
+
+        // 成功したらマップに追加する
+        let entry = PicEntry {
+            path_main,
+            path_th,
+            total_size: main_size + th_size,
+        };
+        if archive.insert(key.to_string(), entry).is_some() {
+            warn!("[camera-pic] pic archive is overwritten: {}", key);
+        }
 
         Ok(())
     }
