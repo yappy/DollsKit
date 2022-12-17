@@ -21,7 +21,9 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
   </head>
   <body>
     <h1>(Privileged) Camera</h1>
-    <p><a href="./take">Take a picture!</a></p>
+    <form action="./take" method="post">
+      <input type="submit" value="Take a picture!">
+    </form></a>
     <p><a href="./history/">Picture List</a></p>
     <p><a href="./archive/">Archive</a> (TODO)</p>
     <h2>Navigation</h2>
@@ -200,8 +202,9 @@ async fn pic_history_get(
     }
 }
 
-#[actix_web::get("/camera/take")]
-async fn take_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
+
+#[actix_web::post("/camera/take")]
+async fn take_post(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
     let pic = take_a_pic(TakePicOption::new()).await;
     if let Err(ref e) = pic {
         error!("take a picture error");
