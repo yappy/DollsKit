@@ -23,7 +23,7 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
     <h1>(Privileged) Camera</h1>
     <form action="./take" method="post">
       <input type="submit" value="Take a picture!">
-    </form></a>
+    </form>
     <p><a href="./history/">Picture List</a></p>
     <p><a href="./archive/">Archive</a></p>
     <h2>Navigation</h2>
