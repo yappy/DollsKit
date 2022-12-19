@@ -1,14 +1,14 @@
 use super::{HttpConfig, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::camera::{create_thumbnail, take_a_pic, TakePicOption},
+    sysmod::camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
     sysmod::http::simple_error,
 };
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::anyhow;
 use log::error;
 use reqwest::StatusCode;
-use std::cmp;
+use std::{cmp, collections::BTreeMap};
 use tokio::{fs::File, io::AsyncReadExt};
 
 /// GET /priv/camera/ Camera インデックスページ。
@@ -25,7 +25,7 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
       <input type="submit" value="Take a picture!">
     </form></a>
     <p><a href="./history/">Picture List</a></p>
-    <p><a href="./archive/">Archive</a> (TODO)</p>
+    <p><a href="./archive/">Archive</a></p>
     <h2>Navigation</h2>
     <p><a href="../">Main Page</a></p>
   </body>
@@ -89,14 +89,46 @@ async fn archive_start_get(ctrl: web::Data<Control>, path: web::Path<String>) ->
 
 /// history_get シリーズの共通ルーチン。
 async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
-    let camera = ctrl.sysmods().camera.lock().await;
-    let page_by = camera.config.page_by as usize;
-    let (hist, _) = camera.pic_list();
-    let total = hist.len();
-    let data: Vec<_> = hist.keys().rev().skip(start).take(page_by).collect();
-    let mut html = String::new();
+    let html = {
+        let camera = ctrl.sysmods().camera.lock().await;
+        let page_by = camera.config.page_by as usize;
+        let (hist, _) = camera.pic_list();
+
+        create_pic_list_page(hist, start, page_by, "(Privileged) Picture History")
+    };
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}
+
+/// archive_get シリーズの共通ルーチン。
+async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+    let html = {
+        let camera = ctrl.sysmods().camera.lock().await;
+        let page_by = camera.config.page_by as usize;
+        let (_, archive) = camera.pic_list();
+
+        create_pic_list_page(archive, start, page_by, "(Privileged) Picture Archive")
+    };
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}
+
+fn create_pic_list_page(
+    pic_list: &BTreeMap<String, PicEntry>,
+    start: usize,
+    page_by: usize,
+    title: &str,
+) -> String {
+    let total = pic_list.len();
+    let data: Vec<_> = pic_list.keys().rev().skip(start).take(page_by).collect();
+
+    let mut fig_list = String::new();
     for name in data {
-        html.push_str(&format!(
+        fig_list.push_str(&format!(
             r#"    <figure class="pic">
       <a href="../pic/history/{0}/main"><img src="../pic/history/{0}/thumb" alt="{0}"></a>
       <figcaption class="pic">{0}</figcaption>
@@ -105,9 +137,9 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
             name
         ));
     }
-    drop(camera);
 
-    let mut page_navi = String::from("<p>");
+    let mut page_navi = String::new();
+    page_navi.push_str("<p>");
     for left in (0..total).step_by(page_by) {
         let right = cmp::min(left + page_by - 1, total - 1);
         let link = if (left..=right).contains(&start) {
@@ -119,11 +151,11 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
     }
     page_navi.push_str("</p>");
 
-    let body = format!(
+    format!(
         r#"<!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>(Privileged) Picture History</title>
+    <title>{title}</title>
     <style>
       figure.pic {{
         display: inline-block;
@@ -136,27 +168,20 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
     </style>
   </head>
   <body>
-    <h1>(Privileged) Picture History</h1>
-      {}
+    <h1>{title}</h1>
+      {page_navi}
 
-{}
+{fig_list}
 
     <h2>Navigation</h2>
     <p><a href="./camera/">Camera Main Page</a></p>
   </body>
 </html>
 "#,
-        page_navi, html
-    );
-
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(body)
-}
-
-/// archive_get シリーズの共通ルーチン。
-async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
-    unimplemented!();
+        title = title,
+        page_navi = page_navi,
+        fig_list = fig_list
+    )
 }
 
 /// GET /priv/camera/pic/history/{name}/{kind}
@@ -201,7 +226,6 @@ async fn pic_history_get(
         Ok(resp)
     }
 }
-
 
 #[actix_web::post("/camera/take")]
 async fn take_post(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
