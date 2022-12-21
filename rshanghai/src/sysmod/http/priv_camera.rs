@@ -174,7 +174,7 @@ fn create_pic_list_page(
 {fig_list}
 
     <h2>Navigation</h2>
-    <p><a href="./camera/">Camera Main Page</a></p>
+    <p><a href="../">Camera Main Page</a></p>
   </body>
 </html>
 "#,
