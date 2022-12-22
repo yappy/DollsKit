@@ -94,7 +94,13 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
         let page_by = camera.config.page_by as usize;
         let (hist, _) = camera.pic_list();
 
-        create_pic_list_page(hist, start, page_by, "(Privileged) Picture History")
+        create_pic_list_page(
+            hist,
+            start,
+            page_by,
+            "(Privileged) Picture History",
+            &[("archive", "Archive"), ("delete", "Delete")],
+        )
     };
 
     HttpResponse::Ok()
@@ -109,7 +115,13 @@ async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
         let page_by = camera.config.page_by as usize;
         let (_, archive) = camera.pic_list();
 
-        create_pic_list_page(archive, start, page_by, "(Privileged) Picture Archive")
+        create_pic_list_page(
+            archive,
+            start,
+            page_by,
+            "(Privileged) Picture",
+            &[("delete", "Delete")],
+        )
     };
 
     HttpResponse::Ok()
@@ -122,24 +134,49 @@ fn create_pic_list_page(
     start: usize,
     page_by: usize,
     title: &str,
+    commands: &[(&str, &str)],
 ) -> String {
     let total = pic_list.len();
     let data: Vec<_> = pic_list.keys().rev().skip(start).take(page_by).collect();
 
     let mut fig_list = String::new();
+    fig_list += r#"    <form method="post">
+      <fieldset>
+        <legend>Commands for selected items</legend>
+        <input type="submit" value="Execute">
+"#;
+    let is_first = true;
+    for &(cmd, label) in commands {
+        let checked = if is_first {
+            r#" checked="checked""#
+        } else {
+            ""
+        };
+        fig_list += &format!(
+            r#"        <label><input type="radio" name="cmd" value="{}"{}>{}</label>
+"#,
+            cmd, checked, label
+        );
+    }
+    fig_list += "      </fieldset>\n";
+    fig_list += r#"      <p><input type="reset" value="Reset"></p>\n\n"#;
+
     for name in data {
-        fig_list.push_str(&format!(
-            r#"    <figure class="pic">
-      <a href="../pic/history/{0}/main"><img src="../pic/history/{0}/thumb" alt="{0}"></a>
-      <figcaption class="pic">{0}</figcaption>
-    </figure>
+        fig_list += &format!(
+            r#"      <input type="checkbox" id="{0}" name="target" value="{0}">
+      <figure class="pic">
+        <a href="../pic/history/{0}/main"><img src="../pic/history/{0}/thumb" alt="{0}"></a>
+        <figcaption class="pic"><label for="{0}">{0}</label></figcaption>
+      </figure>
 "#,
             name
-        ));
+        );
     }
+    fig_list += "    </form>";
 
     let mut page_navi = String::new();
-    page_navi.push_str("<p>");
+    page_navi += &format!("<p>{} files</p>", pic_list.len());
+    page_navi += "<p>";
     for left in (0..total).step_by(page_by) {
         let right = cmp::min(left + page_by - 1, total - 1);
         let link = if (left..=right).contains(&start) {
@@ -147,9 +184,9 @@ fn create_pic_list_page(
         } else {
             format!(r#"<a href="./{0}">{0}-{1}</a> "#, left + 1, right + 1)
         };
-        page_navi.push_str(&link);
+        page_navi += &link;
     }
-    page_navi.push_str("</p>");
+    page_navi += "</p>";
 
     format!(
         r#"<!DOCTYPE html>
