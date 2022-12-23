@@ -12,9 +12,7 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
         cfg.service(index_get);
         cfg.service(priv_camera::take_post);
         cfg.service(priv_camera::history_get);
-        cfg.service(priv_camera::history_start_get);
         cfg.service(priv_camera::archive_get);
-        cfg.service(priv_camera::archive_start_get);
         cfg.service(priv_camera::pic_history_get);
         cfg.service(priv_camera::index_get);
     }

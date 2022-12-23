@@ -8,6 +8,7 @@ use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::anyhow;
 use log::error;
 use reqwest::StatusCode;
+use serde::Deserialize;
 use std::{cmp, collections::BTreeMap};
 use tokio::{fs::File, io::AsyncReadExt};
 
@@ -37,58 +38,15 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
         .body(body)
 }
 
+#[derive(Deserialize)]
+struct HistArGetQuery {
+    #[serde(default)]
+    page: usize,
+}
+
 /// GET /priv/camera/history/ 写真一覧。
-#[actix_web::get("/camera/history/")]
-async fn history_get(ctrl: web::Data<Control>) -> HttpResponse {
-    history_get_internal(ctrl, 0).await
-}
-
-/// GET /priv/camera/history/{start} 写真一覧 (開始番号指定)。
-#[actix_web::get("/camera/history/{start}")]
-async fn history_start_get(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
-    let start = path.into_inner();
-    let start = match start.parse::<usize>() {
-        Ok(n) => {
-            if n == 0 {
-                return simple_error(StatusCode::BAD_REQUEST);
-            }
-            n - 1
-        }
-        Err(_) => {
-            return simple_error(StatusCode::BAD_REQUEST);
-        }
-    };
-
-    history_get_internal(ctrl, start).await
-}
-
-/// GET /priv/camera/archive/ アーカイブ済み写真一覧。
-#[actix_web::get("/camera/archive/")]
-async fn archive_get(ctrl: web::Data<Control>) -> HttpResponse {
-    archive_get_internal(ctrl, 0).await
-}
-
-/// GET /priv/camera/archive/{start} アーカイブ済み写真一覧 (開始番号指定)。
-#[actix_web::get("/camera/archive/{start}")]
-async fn archive_start_get(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
-    let start = path.into_inner();
-    let start = match start.parse::<usize>() {
-        Ok(n) => {
-            if n == 0 {
-                return simple_error(StatusCode::BAD_REQUEST);
-            }
-            n - 1
-        }
-        Err(_) => {
-            return simple_error(StatusCode::BAD_REQUEST);
-        }
-    };
-
-    archive_get_internal(ctrl, start).await
-}
-
-/// history_get シリーズの共通ルーチン。
-async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+#[actix_web::get("/camera/history")]
+async fn history_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>) -> HttpResponse {
     let html = {
         let camera = ctrl.sysmods().camera.lock().await;
         let page_by = camera.config.page_by as usize;
@@ -96,7 +54,7 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
 
         create_pic_list_page(
             hist,
-            start,
+            query.page,
             page_by,
             "(Privileged) Picture History",
             &[("archive", "Archive"), ("delete", "Delete")],
@@ -108,8 +66,9 @@ async fn history_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
         .body(html)
 }
 
-/// archive_get シリーズの共通ルーチン。
-async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpResponse {
+/// GET /priv/camera/archive/ アーカイブ済み写真一覧。
+#[actix_web::get("/camera/archive")]
+async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>) -> HttpResponse {
     let html = {
         let camera = ctrl.sysmods().camera.lock().await;
         let page_by = camera.config.page_by as usize;
@@ -117,7 +76,7 @@ async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
 
         create_pic_list_page(
             archive,
-            start,
+            query.page,
             page_by,
             "(Privileged) Picture",
             &[("delete", "Delete")],
@@ -129,6 +88,14 @@ async fn archive_get_internal(ctrl: web::Data<Control>, start: usize) -> HttpRes
         .body(html)
 }
 
+/// history/archive 共用写真リスト HTML 生成。
+///
+/// * `pic_list` - 画像データ。
+/// * `start` - pic_list の何番目から表示するか。
+/// * `page_by` - start からいくつ画像を表示するか。
+/// * `title` - タイトル。
+/// * `commands` - POST の "cmd" パラメータで送られる値とラジオボタンに
+/// 添えるラベルからなるタプルの配列
 fn create_pic_list_page(
     pic_list: &BTreeMap<String, PicEntry>,
     start: usize,
@@ -140,7 +107,7 @@ fn create_pic_list_page(
     let data: Vec<_> = pic_list.keys().rev().skip(start).take(page_by).collect();
 
     let mut fig_list = String::new();
-    fig_list += r#"    <form method="post">
+    fig_list += r#"    <form action="./" method="post">
       <fieldset>
         <legend>Commands for selected items</legend>
         <input type="submit" value="Execute">
@@ -158,14 +125,16 @@ fn create_pic_list_page(
             cmd, checked, label
         );
     }
-    fig_list += "      </fieldset>\n";
-    fig_list += r#"      <p><input type="reset" value="Reset"></p>\n\n"#;
+    fig_list += r#"      </fieldset>
+      <p><input type="reset" value="Reset"></p>
+
+"#;
 
     for name in data {
         fig_list += &format!(
             r#"      <input type="checkbox" id="{0}" name="target" value="{0}">
       <figure class="pic">
-        <a href="../pic/history/{0}/main"><img src="../pic/history/{0}/thumb" alt="{0}"></a>
+        <a href="./pic/history/{0}/main"><img src="./pic/history/{0}/thumb" alt="{0}"></a>
         <figcaption class="pic"><label for="{0}">{0}</label></figcaption>
       </figure>
 "#,
@@ -211,7 +180,7 @@ fn create_pic_list_page(
 {fig_list}
 
     <h2>Navigation</h2>
-    <p><a href="../">Camera Main Page</a></p>
+    <p><a href="./">Camera Main Page</a></p>
   </body>
 </html>
 "#,
@@ -219,6 +188,18 @@ fn create_pic_list_page(
         page_navi = page_navi,
         fig_list = fig_list
     )
+}
+
+/// POST /priv/camera/history/
+///
+/// * `cmd` - "archive" or "delete"
+/// * `target` - 対象の picture ID (複数回指定可)
+#[actix_web::post("/camera/history")]
+async fn archive_start_post(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
+    let resp = HttpResponse::NotFound()
+        .content_type(ContentType::plaintext())
+        .body("Not Found");
+    resp
 }
 
 /// GET /priv/camera/pic/history/{name}/{kind}
