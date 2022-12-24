@@ -5,7 +5,7 @@ use crate::{
     sysmod::http::simple_error,
 };
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use log::error;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -25,8 +25,8 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
     <form action="./take" method="post">
       <input type="submit" value="Take a picture!">
     </form>
-    <p><a href="./history/">Picture List</a></p>
-    <p><a href="./archive/">Archive</a></p>
+    <p><a href="./history">Picture List</a></p>
+    <p><a href="./archive">Archive</a></p>
     <h2>Navigation</h2>
     <p><a href="../">Main Page</a></p>
   </body>
@@ -78,7 +78,7 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
             archive,
             query.page,
             page_by,
-            "(Privileged) Picture",
+            "(Privileged) Picture Archive",
             &[("delete", "Delete")],
         )
     };
@@ -107,7 +107,7 @@ fn create_pic_list_page(
     let data: Vec<_> = pic_list.keys().rev().skip(start).take(page_by).collect();
 
     let mut fig_list = String::new();
-    fig_list += r#"    <form action="./" method="post">
+    fig_list += r#"    <form method="post">
       <fieldset>
         <legend>Commands for selected items</legend>
         <input type="submit" value="Execute">
@@ -190,16 +190,80 @@ fn create_pic_list_page(
     )
 }
 
-/// POST /priv/camera/history/
+/// POST /priv/camera/history
 ///
 /// * `cmd` - "archive" or "delete"
 /// * `target` - 対象の picture ID (複数回指定可)
 #[actix_web::post("/camera/history")]
-async fn archive_start_post(ctrl: web::Data<Control>, path: web::Path<String>) -> HttpResponse {
-    let resp = HttpResponse::NotFound()
-        .content_type(ContentType::plaintext())
-        .body("Not Found");
+async fn history_post(
+    ctrl: web::Data<Control>,
+    form: web::Form<Vec<(String, String)>>,
+) -> HttpResponse {
+    // 同一キーはデシリアライズ対応していないので自力でパースする
+    let mut cmd = None;
+    let mut targets = Vec::new();
+    for (key, value) in form.0 {
+        match key.as_str() {
+            "cmd" => {
+                cmd = Some(value);
+            }
+            "target" => {
+                targets.push(value);
+            }
+            _ => {}
+        }
+    }
+    if cmd.is_none() {
+        return HttpResponse::BadRequest()
+            .content_type(ContentType::plaintext())
+            .body("cmd is required");
+    }
+
+    let resp = match cmd.unwrap().as_str() {
+        "archive" => {
+            if let Err(why) = archive_pics(&ctrl, &targets).await {
+                if why.is::<std::io::Error>() {
+                    HttpResponse::InternalServerError()
+                        .content_type(ContentType::plaintext())
+                        .body(why.to_string())
+                } else {
+                    HttpResponse::BadRequest()
+                        .content_type(ContentType::plaintext())
+                        .body(why.to_string())
+                }
+            } else {
+                // 成功したら archive GET へリダイレクト
+                HttpResponse::SeeOther()
+                    .append_header(("LOCATION", "./archive"))
+                    .finish()
+            }
+        }
+        "delete" => HttpResponse::InternalServerError()
+            .content_type(ContentType::plaintext())
+            .body("Not implemented"),
+        _ => HttpResponse::BadRequest()
+            .content_type(ContentType::plaintext())
+            .body("Invalid command"),
+    };
     resp
+}
+
+async fn archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
+    let mut camera = ctrl.sysmods().camera.lock().await;
+    for id in ids {
+        camera.push_pic_archive(id).await?;
+    }
+
+    Ok(())
+}
+
+async fn delete_history_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
+    let mut camera = ctrl.sysmods().camera.lock().await;
+    for id in ids {
+        camera.push_pic_archive(id).await?;
+    }
+
+    todo!()
 }
 
 /// GET /priv/camera/pic/history/{name}/{kind}
