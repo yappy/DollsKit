@@ -238,9 +238,18 @@ async fn history_post(
                     .finish()
             }
         }
-        "delete" => HttpResponse::InternalServerError()
-            .content_type(ContentType::plaintext())
-            .body("Not implemented"),
+        "delete" => {
+            if let Err(why) = delete_history_pics(&ctrl, &targets).await {
+                HttpResponse::BadRequest()
+                    .content_type(ContentType::plaintext())
+                    .body(why.to_string())
+            } else {
+                // 成功したら history GET へリダイレクト
+                HttpResponse::SeeOther()
+                    .append_header(("LOCATION", "./history"))
+                    .finish()
+            }
+        }
         _ => HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body("Invalid command"),
@@ -260,7 +269,7 @@ async fn archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
 async fn delete_history_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
     let mut camera = ctrl.sysmods().camera.lock().await;
     for id in ids {
-        camera.push_pic_archive(id).await?;
+        camera.delete_pic_history(id).await?;
     }
 
     todo!()
