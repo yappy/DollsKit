@@ -105,7 +105,7 @@ impl Camera {
         })
     }
 
-    /// ストレージ上の画像リストを取得する。
+    /// ストレージ上の画像リスト (history, archive) を取得する。
     pub fn pic_list(&self) -> (&PicDict, &PicDict) {
         (
             &self.storage.pic_history_list,

@@ -54,6 +54,7 @@ async fn history_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
 
         create_pic_list_page(
             hist,
+            "history",
             query.page,
             page_by,
             "(Privileged) Picture History",
@@ -76,6 +77,7 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
 
         create_pic_list_page(
             archive,
+            "archive",
             query.page,
             page_by,
             "(Privileged) Picture Archive",
@@ -98,6 +100,7 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
 /// 添えるラベルからなるタプルの配列
 fn create_pic_list_page(
     pic_list: &BTreeMap<String, PicEntry>,
+    img_path_dir: &str,
     start: usize,
     page_by: usize,
     title: &str,
@@ -112,9 +115,10 @@ fn create_pic_list_page(
         <legend>Commands for selected items</legend>
         <input type="submit" value="Execute">
 "#;
-    let is_first = true;
+    let mut is_first = true;
     for &(cmd, label) in commands {
         let checked = if is_first {
+            is_first = false;
             r#" checked="checked""#
         } else {
             ""
@@ -134,11 +138,11 @@ fn create_pic_list_page(
         fig_list += &format!(
             r#"      <input type="checkbox" id="{0}" name="target" value="{0}">
       <figure class="pic">
-        <a href="./pic/history/{0}/main"><img src="./pic/history/{0}/thumb" alt="{0}"></a>
+        <a href="./pic/{1}/{0}/main"><img src="./pic/{1}/{0}/thumb" alt="{0}"></a>
         <figcaption class="pic"><label for="{0}">{0}</label></figcaption>
       </figure>
 "#,
-            name
+            name, img_path_dir
         );
     }
     fig_list += "    </form>";
@@ -190,7 +194,9 @@ fn create_pic_list_page(
     )
 }
 
-/// 同一キーはデシリアライズ対応していないので自力でパースする
+/// 同一キーはデシリアライズ対応していないので自力でパースする。
+///
+/// cmd=c&target=t1&target=t2&...
 fn parse_cmd_targets(
     iter: impl IntoIterator<Item = (String, String)>,
 ) -> Result<(String, Vec<String>)> {
@@ -342,16 +348,46 @@ async fn pic_history_get(
     path: web::Path<(String, String)>,
 ) -> WebResult {
     let (name, kind) = path.into_inner();
-    let is_th = match kind.as_str() {
+
+    pic_get_internal(&ctrl, StorageType::History, &name, &kind).await
+}
+
+/// GET /priv/camera/pic/history/{name}/{kind}
+/// 写真取得エンドポイント。
+///
+/// image/jpeg を返す。
+#[actix_web::get("/camera/pic/archive/{name}/{kind}")]
+async fn pic_archive_get(
+    cfg: web::Data<HttpConfig>,
+    ctrl: web::Data<Control>,
+    path: web::Path<(String, String)>,
+) -> WebResult {
+    let (name, kind) = path.into_inner();
+
+    pic_get_internal(&ctrl, StorageType::Archive, &name, &kind).await
+}
+
+enum StorageType {
+    History,
+    Archive,
+}
+
+async fn pic_get_internal(ctrl: &Control, stype: StorageType, name: &str, kind: &str) -> WebResult {
+    let is_th = match kind {
         "main" => false,
         "thumb" => true,
         _ => return Ok(simple_error(StatusCode::BAD_REQUEST)),
     };
 
-    let camera = ctrl.sysmods().camera.lock().await;
-    let (dict, _) = camera.pic_list();
-    let value = dict.get(&name).cloned();
-    drop(camera);
+    let value = {
+        let camera = ctrl.sysmods().camera.lock().await;
+        let (hist, ar) = camera.pic_list();
+        let dict = match stype {
+            StorageType::History => hist,
+            StorageType::Archive => ar,
+        };
+        dict.get(name).cloned()
+    };
 
     if let Some(entry) = value {
         let path = match is_th {
@@ -367,10 +403,7 @@ async fn pic_history_get(
             .body(bin);
         Ok(resp)
     } else {
-        let resp = HttpResponse::NotFound()
-            .content_type(ContentType::plaintext())
-            .body("Not Found");
-        Ok(resp)
+        Ok(simple_error(StatusCode::NOT_FOUND))
     }
 }
 
