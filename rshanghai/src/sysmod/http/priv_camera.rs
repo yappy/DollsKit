@@ -190,19 +190,14 @@ fn create_pic_list_page(
     )
 }
 
-/// POST /priv/camera/history
-///
-/// * `cmd` - "archive" or "delete"
-/// * `target` - 対象の picture ID (複数回指定可)
-#[actix_web::post("/camera/history")]
-async fn history_post(
-    ctrl: web::Data<Control>,
-    form: web::Form<Vec<(String, String)>>,
-) -> HttpResponse {
-    // 同一キーはデシリアライズ対応していないので自力でパースする
+/// 同一キーはデシリアライズ対応していないので自力でパースする
+fn parse_cmd_targets(
+    iter: impl IntoIterator<Item = (String, String)>,
+) -> Result<(String, Vec<String>)> {
     let mut cmd = None;
     let mut targets = Vec::new();
-    for (key, value) in form.0 {
+
+    for (key, value) in iter {
         match key.as_str() {
             "cmd" => {
                 cmd = Some(value);
@@ -213,13 +208,28 @@ async fn history_post(
             _ => {}
         }
     }
-    if cmd.is_none() {
+
+    cmd.map_or_else(|| Err(anyhow!("cmd is required")), |cmd| Ok((cmd, targets)))
+}
+
+/// POST /priv/camera/history
+///
+/// * `cmd` - "archive" or "delete"
+/// * `target` - 対象の picture ID (複数回指定可)
+#[actix_web::post("/camera/history")]
+async fn history_post(
+    ctrl: web::Data<Control>,
+    form: web::Form<Vec<(String, String)>>,
+) -> HttpResponse {
+    let param = parse_cmd_targets(form.0);
+    if let Err(why) = param {
         return HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body("cmd is required");
+            .body(why.to_string());
     }
+    let (cmd, targets) = param.unwrap();
 
-    let resp = match cmd.unwrap().as_str() {
+    let resp = match cmd.as_str() {
         "archive" => {
             if let Err(why) = archive_pics(&ctrl, &targets).await {
                 if why.is::<std::io::Error>() {
@@ -252,7 +262,44 @@ async fn history_post(
         }
         _ => HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body("Invalid command"),
+            .body("invalid command"),
+    };
+    resp
+}
+
+/// POST /priv/camera/archive
+///
+/// * `cmd` - "delete"
+/// * `target` - 対象の picture ID (複数回指定可)
+#[actix_web::post("/camera/archive")]
+async fn archive_post(
+    ctrl: web::Data<Control>,
+    form: web::Form<Vec<(String, String)>>,
+) -> HttpResponse {
+    let param = parse_cmd_targets(form.0);
+    if let Err(why) = param {
+        return HttpResponse::BadRequest()
+            .content_type(ContentType::plaintext())
+            .body(why.to_string());
+    }
+    let (cmd, targets) = param.unwrap();
+
+    let resp = match cmd.as_str() {
+        "delete" => {
+            if let Err(why) = delete_archive_pics(&ctrl, &targets).await {
+                HttpResponse::BadRequest()
+                    .content_type(ContentType::plaintext())
+                    .body(why.to_string())
+            } else {
+                // 成功したら archive GET へリダイレクト
+                HttpResponse::SeeOther()
+                    .append_header(("LOCATION", "./history"))
+                    .finish()
+            }
+        }
+        _ => HttpResponse::BadRequest()
+            .content_type(ContentType::plaintext())
+            .body("invalid command"),
     };
     resp
 }
@@ -272,7 +319,16 @@ async fn delete_history_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
         camera.delete_pic_history(id).await?;
     }
 
-    todo!()
+    Ok(())
+}
+
+async fn delete_archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
+    let mut camera = ctrl.sysmods().camera.lock().await;
+    for id in ids {
+        camera.delete_pic_archive(id).await?;
+    }
+
+    Ok(())
 }
 
 /// GET /priv/camera/pic/history/{name}/{kind}

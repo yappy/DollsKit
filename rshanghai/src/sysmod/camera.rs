@@ -216,6 +216,10 @@ impl Camera {
         Self::delete_pic(&mut self.storage.pic_history_list, id).await
     }
 
+    pub async fn delete_pic_archive(&mut self, id: &str) -> Result<()> {
+        Self::delete_pic(&mut self.storage.pic_archive_list, id).await
+    }
+
     async fn delete_pic(list: &mut PicDict, id: &str) -> Result<()> {
         let entry = list
             .remove(id)
