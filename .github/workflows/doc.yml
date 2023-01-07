@@ -1,0 +1,53 @@
+# On push to main, checkout doc branch and works in it.
+
+name: Build and Push Documents
+
+on:
+  push:
+    branches:
+      - main
+env:
+  ref: refs/heads/doc
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.ref }}
+          fetch-depth: 0
+
+      - name: Git Setup
+        run: |
+          git remote set-url origin https://github-actions:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+      - name: Merge from main
+        run: |
+          git merge --no-ff ${GITHUB_SHA}
+
+      - name: Build
+        working-directory: ./rshanghai
+        run: |
+          cargo doc --no-deps
+
+      - name: Remove Old Data and Move
+        run: |
+          git rm --ignore-unmatch -r ./docs/doc
+          mv ./rshanghai/target/doc ./docs/
+
+      - name: Git Add
+        run: |
+          git add ./docs/doc
+
+      - name: Git Commit
+        continue-on-error: true
+        run: |
+          git commit -m "Update for ${GITHUB_REF} ${GITHUB_SHA}" -m "Automatic push by github actions"
+
+      - name: Git Push
+        run: |
+          git push origin HEAD:${{ env.ref }}
