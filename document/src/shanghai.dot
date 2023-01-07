@@ -10,7 +10,6 @@ graph graphname {
 	task_health [label="Health Check\nTask"];
 	web_console [label="Web\nConsole"];
 	web_github [label="Github\nWebhook"];
-	web_ci [label="Travis CI\nWebhook"];
 
 	subgraph cluster_ts {
 		label="Task Server";
