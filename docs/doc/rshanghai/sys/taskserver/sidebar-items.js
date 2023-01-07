@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["RunResult","[TaskServer::run] の返す実行終了種別。"]],"struct":[["Control","各非同期タスクに clone され渡されるコントロールハンドル。"],["InternalControl","[TaskServer] と各非同期タスク間で共有されるデータ。"],["TaskServer","タスクサーバ本体。"]],"type":[["CancelRx","システムシャットダウン開始通知受信側 (複数)"],["CancelTx","システムシャットダウン開始通知送信側 (単数)"]]};

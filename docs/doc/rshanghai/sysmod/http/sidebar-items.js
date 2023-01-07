@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["http_main_task",""],["simple_error",""]],"mod":[["github","Github Webhook."],["index",""],["priv_camera",""],["priv_index",""]],"struct":[["ActixError",""],["HttpConfig",""],["HttpServer",""],["root_index_get",""]],"type":[["WebResult",""]]};

@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"rshanghai":[["impl <a class=\"trait\" href=\"https://docs.rs/serenity/*/serenity/client/event_handler/trait.EventHandler.html\" title=\"trait serenity::client::event_handler::EventHandler\">EventHandler</a> for <a class=\"struct\" href=\"rshanghai/sysmod/discord/struct.Handler.html\" title=\"struct rshanghai::sysmod::discord::Handler\">Handler</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["HISTORY_QUEUE_SIZE","60 * 24 = 1440 /day"]],"fn":[["get_cpu_info",""],["get_cpu_temp","CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。"],["get_disk_info",""],["get_mem_info",""]],"struct":[["CpuInfo",""],["CpuTemp",""],["DiskInfo",""],["Health",""],["HealthConfig",""],["HistoryEntry",""],["MemInfo",""]]};

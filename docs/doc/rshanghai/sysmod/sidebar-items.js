@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["camera",""],["discord","Discord クライアント (bot) 機能。"],["health",""],["http",""],["sysinfo",""],["twitter",""]],"struct":[["SystemModules","タスクのエントリポイントに渡される引数からアクセス可能な [SystemModule] のリスト。 デッドロックに注意。"]],"trait":[["SystemModule","システムモジュールが実装するトレイト。"]],"type":[["SysModArc","[SystemModules] 内の [SystemModule] はマルチスレッドにアクセスされるため、 ロックが必要かつ await 可能。"]]};
