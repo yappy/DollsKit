@@ -13,7 +13,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
             toolchain: stable
-            default: true
+            override: true
 
       - name: Format
         working-directory: ./rshanghai
