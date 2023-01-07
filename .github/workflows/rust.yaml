@@ -13,12 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Format
+        working-directory: ./rshanghai
         run: cargo fmt -- --check
       - name: Clippy
+        working-directory: ./rshanghai
         run: cargo clippy --no-deps -- -Dwarnings
       - name: Build
+        working-directory: ./rshanghai
         run: cargo build --verbose
       - name: Test
+        working-directory: ./rshanghai
         run: cargo test --verbose
 
   build-release:
@@ -26,4 +30,5 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build
+        working-directory: ./rshanghai
         run: cargo build --verbose --release
