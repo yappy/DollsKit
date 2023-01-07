@@ -1,8 +1,6 @@
 # DollsKit
 Github Actions: [![CMake](https://github.com/yappy/DollsKit/actions/workflows/cmake.yaml/badge.svg)](https://github.com/yappy/DollsKit/actions/workflows/cmake.yaml)
 
-Travis CI: [![Build Status](https://travis-ci.org/yappy/DollsKit.svg?branch=master)](https://travis-ci.org/yappy/DollsKit)
-
 yappy家の管理プログラム
 
 ## ソースの入手

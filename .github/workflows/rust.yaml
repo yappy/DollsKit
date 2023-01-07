@@ -1,0 +1,42 @@
+name: Auto Build and Test
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+
+      - name: Format
+        working-directory: ./rshanghai
+        run: cargo fmt -- --check
+      - name: Clippy
+        working-directory: ./rshanghai
+        run: cargo clippy --no-deps -- -Dwarnings
+      - name: Build
+        working-directory: ./rshanghai
+        run: cargo build
+      - name: Test
+        working-directory: ./rshanghai
+        run: cargo test
+
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+
+      - name: Build
+        working-directory: ./rshanghai
+        run: cargo build --release
