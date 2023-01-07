@@ -3,6 +3,15 @@
 		"enabled"			: false,
 		"debug_exec_once"	: false
 	},
+	"camera": {
+		"enabled"				: false,
+		"debug_exec_once"		: false,
+		"fake_camera"			: true,
+		"pic_history_dir"		: "./camera/history",
+		"pic_archive_dir"		: "./camera/archive",
+		"total_size_limit_mb"	: 1024,
+		"page_by"				: 100
+	},
 	"twitter": {
 		"tlcheck_enabled"	: false,
 		"debug_exec_once"	: false,
@@ -12,12 +21,21 @@
 		"access_token"		: "",
 		"access_secret"		: ""
 	},
+	"discord": {
+		"enabled"			: false,
+		"token"				: "",
+		"notif_channel"		: 0,
+		"auto_del_chs"		: [],
+		"perm_err_msg"		: "バカジャネーノ",
+		"force_perm_err"	: false
+	},
 	"http": {
 		"enabled"			: false,
 		"priv_enabled"		: false,
 		"port"				: 8899,
 		"path_prefix"		: "/rhouse",
 		"priv_prefix"		: "/rhouse/priv",
-		"github_hook"		: false
+		"github_hook"		: false,
+		"github_secret"		: ""
 	}
 }

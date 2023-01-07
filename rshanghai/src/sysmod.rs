@@ -1,15 +1,17 @@
 //! システムモジュール関連。
 
+pub mod camera;
+pub mod discord;
 pub mod health;
 pub mod http;
 pub mod sysinfo;
 pub mod twitter;
 
-use self::{sysinfo::SystemInfo, twitter::Twitter};
-use crate::{
-    sys::taskserver::Control,
-    sysmod::{health::Health, http::HttpServer},
+use self::{
+    camera::Camera, discord::Discord, health::Health, http::HttpServer, sysinfo::SystemInfo,
+    twitter::Twitter,
 };
+use crate::sys::taskserver::Control;
 use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
@@ -37,7 +39,9 @@ type SysModArc<T> = Arc<TokioMutex<T>>;
 pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
+    pub camera: SysModArc<camera::Camera>,
     pub twitter: SysModArc<twitter::Twitter>,
+    pub discord: SysModArc<discord::Discord>,
     pub http: SysModArc<http::HttpServer>,
 
     /// 全 [SystemModule] にイベントを配送するための参照のリストを作る。
@@ -58,10 +62,29 @@ impl SystemModules {
             NaiveTime::from_hms(18, 0, 0),
         ];
 
+        let wakeup_camera = vec![
+            NaiveTime::from_hms(0, 0, 0),
+            NaiveTime::from_hms(3, 0, 0),
+            NaiveTime::from_hms(6, 0, 0),
+            NaiveTime::from_hms(9, 0, 0),
+            NaiveTime::from_hms(12, 0, 0),
+            NaiveTime::from_hms(15, 0, 0),
+            NaiveTime::from_hms(18, 0, 0),
+            NaiveTime::from_hms(21, 0, 0),
+        ];
+
         let wakeup_twiter: Vec<_> = (0..24)
             .flat_map(|hour| {
                 (0..60)
                     .step_by(5)
+                    .map(move |min| NaiveTime::from_hms(hour, min, 0))
+            })
+            .collect();
+
+        let wakeup_discord: Vec<_> = (0..24)
+            .flat_map(|hour| {
+                (0..60)
+                    .step_by(10)
                     .map(move |min| NaiveTime::from_hms(hour, min, 0))
             })
             .collect();
@@ -73,19 +96,25 @@ impl SystemModules {
             wakeup_health_ck,
             wakeup_health_tw,
         )?));
+        let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
+        let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
 
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
+        event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
         event_target_list.push(http.clone());
+        event_target_list.push(discord.clone());
 
         info!("OK: initialize system modules");
         Ok(Self {
             sysinfo,
             health,
+            camera,
             twitter,
+            discord,
             http,
             event_target_list,
         })

@@ -57,11 +57,11 @@ use once_cell::sync::Lazy;
 #[rustfmt::skip]
 pub static VERSION_INFO: Lazy<String> = Lazy::new(|| {
     format!(
-"Build: {} {}
+"Build: {}
 Branch: {}
 {}
 {}",
-        BUILD_TARGET, BUILD_PROFILE, GIT_BRANCH, GIT_SEMVER, GIT_DATE
+        BUILD_PROFILE, GIT_BRANCH, GIT_SEMVER, GIT_DATE
     )
 });
 

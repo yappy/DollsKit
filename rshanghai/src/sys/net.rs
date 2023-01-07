@@ -1,6 +1,8 @@
+use anyhow::Result;
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
 use sha1::Sha1;
+use sha2::Sha256;
 
 /// [percent_encode] で変換する文字セット。
 ///
@@ -15,7 +17,24 @@ pub fn percent_encode(input: &str) -> String {
     utf8_percent_encode(input, FRAGMENT).to_string()
 }
 
+pub fn html_escape(src: &str) -> String {
+    let mut result = String::new();
+    for c in src.chars() {
+        match c {
+            '&' => result.push_str("&amp;"),
+            '"' => result.push_str("&quot;"),
+            '\'' => result.push_str("&apos;"),
+            '<' => result.push_str("&lt;"),
+            '>' => result.push_str("&gt;"),
+            _ => result.push(c),
+        }
+    }
+
+    result
+}
+
 pub type HmacSha1 = SimpleHmac<Sha1>;
+pub type HmacSha256 = SimpleHmac<Sha256>;
 
 /// HMAC SHA1 を計算する。
 ///
@@ -27,6 +46,15 @@ pub fn hmac_sha1(key: &[u8], data: &[u8]) -> CtOutput<HmacSha1> {
     mac.update(data);
 
     mac.finalize()
+}
+
+/// HMAC SHA2 を計算して
+pub fn hmac_sha256_verify(key: &[u8], data: &[u8], expected: &[u8]) -> Result<()> {
+    let mut mac = HmacSha256::new_from_slice(key).unwrap();
+    mac.update(data);
+    mac.verify_slice(expected)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -61,6 +89,14 @@ mod tests {
         let str = "☃";
         let result = percent_encode(&str);
         let expected = "%E2%98%83";
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn html_escape_1() {
+        let str = "\"<a href='test'>Test&Test</a>\"";
+        let result = html_escape(str);
+        let expected = "&quot;&lt;a href=&apos;test&apos;&gt;Test&amp;Test&lt;/a&gt;&quot;";
         assert_eq!(result, expected);
     }
 

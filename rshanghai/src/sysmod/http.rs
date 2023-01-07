@@ -1,13 +1,17 @@
+mod github;
 mod index;
+mod priv_camera;
 mod priv_index;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
-use actix_web::web;
-use actix_web::{dev::ServerHandle, http::header::ContentType, HttpResponse, Responder};
+use actix_web::{http::header::ContentType, HttpResponse, Responder};
+use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
 use log::info;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HttpConfig {
@@ -17,25 +21,22 @@ pub struct HttpConfig {
     path_prefix: String,
     priv_prefix: String,
     github_hook: bool,
+    github_secret: String,
 }
 
 pub struct HttpServer {
     config: HttpConfig,
-    handle: Option<ServerHandle>,
 }
 
 impl HttpServer {
     pub fn new() -> Result<Self> {
-        info!("[health] initialize");
+        info!("[http] initialize");
 
         let jsobj =
             config::get_object(&["http"]).map_or(Err(anyhow!("Config not found: http")), Ok)?;
         let config: HttpConfig = serde_json::from_value(jsobj)?;
 
-        Ok(Self {
-            config,
-            handle: None,
-        })
+        Ok(Self { config })
     }
 }
 
@@ -53,7 +54,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     let config_privileged = priv_index::server_config();
     // クロージャはワーカースレッドごとに複数回呼ばれる
     let server = actix_web::HttpServer::new(move || {
-        let app = actix_web::App::new()
+        actix_web::App::new()
             .app_data(data_config.clone())
             .app_data(data_ctrl.clone())
             .service(root_index_get)
@@ -65,37 +66,28 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
                     .service(web::scope(&data_config.priv_prefix).configure(|cfg| {
                         config_privileged(cfg, &http_config);
                     })),
-            );
-
-        app
+            )
     })
     .disable_signals()
     .bind(("127.0.0.1", port))?
     .run();
 
-    // self.handle にサーバ停止用のハンドルを保存する
-    let mut http = ctrl.sysmods().http.lock().await;
-    http.handle = Some(server.handle());
-    drop(http);
     // シャットダウンが来たらハンドルでサーバを停止するタスクを生成
-    ctrl.spawn_oneshot_task("http-exit", server_exit_task);
+    let mut ctrl_for_stop = ctrl.clone();
+    let handle = server.handle();
+    ctrl.spawn_oneshot_fn("http-exit", async move {
+        ctrl_for_stop.cancel_rx().changed().await.unwrap();
+        info!("[http-exit] recv cancel");
+        handle.stop(true).await;
+        info!("[http-exit] server stop ok");
+
+        Ok(())
+    });
 
     server.await?;
     info!("[http] server exit");
 
     Ok(())
-}
-
-async fn server_exit_task(mut ctrl: Control) -> Result<()> {
-    let mut http = ctrl.sysmods().http.lock().await;
-    let handle = http.handle.take().unwrap();
-    drop(http);
-
-    let result = ctrl.cancel_rx().changed().await;
-
-    handle.stop(true).await;
-
-    Ok(result?)
 }
 
 impl SystemModule for HttpServer {
@@ -105,6 +97,52 @@ impl SystemModule for HttpServer {
             ctrl.spawn_oneshot_task("http", http_main_task);
         }
     }
+}
+
+pub type WebResult = Result<HttpResponse, ActixError>;
+
+#[derive(Debug)]
+pub struct ActixError {
+    err: anyhow::Error,
+    status: StatusCode,
+}
+
+impl actix_web::error::ResponseError for ActixError {
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::plaintext())
+            .body(self.status_code().to_string())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        self.status
+    }
+}
+
+impl Display for ActixError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}, status={}", self.err, self.status.as_str())
+    }
+}
+
+impl From<anyhow::Error> for ActixError {
+    fn from(err: anyhow::Error) -> ActixError {
+        ActixError {
+            err,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+pub fn simple_error(status: StatusCode) -> HttpResponse {
+    let body = format!(
+        "{} {}",
+        status.as_str(),
+        status.canonical_reason().unwrap_or_default()
+    );
+    HttpResponseBuilder::new(status)
+        .content_type(ContentType::plaintext())
+        .body(body)
 }
 
 #[actix_web::get("/")]

@@ -12,16 +12,18 @@ use daemonize::Daemonize;
 use getopts::Options;
 use log::{error, info, warn, LevelFilter};
 use simplelog::format_description;
-use simplelog::{ColorChoice, TerminalMode};
-use simplelog::{CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, WriteLogger};
+use simplelog::{
+    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
+};
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-use sys::taskserver::{Control, TaskServer};
+use sys::taskserver::{Control, RunResult, TaskServer};
 use sysmod::SystemModules;
 
-use crate::sys::taskserver::RunResult;
+/// ログフィルタのためのクレート名。[module_path!] による。
+const CRATE_NAME: &str = module_path!();
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
 const STDOUT_FILE: &str = "stdout.txt";
@@ -86,6 +88,9 @@ fn daemon() {
 /// * `is_daemon` - デーモンかどうか。
 fn init_log(is_daemon: bool) {
     let config = ConfigBuilder::new()
+        .add_filter_allow_str(CRATE_NAME)
+        .set_time_offset_to_local()
+        .unwrap()
         .set_time_format_custom(format_description!(
             "[year]-[month]-[day] [hour]:[minute]:[second]"
         ))
@@ -180,8 +185,8 @@ fn load_config() -> Result<()> {
     Ok(())
 }
 
-async fn boot_tweet_task(ctrl: Control) -> Result<()> {
-    let build_info: &str = &*sys::version::VERSION_INFO;
+async fn boot_msg_task(ctrl: Control) -> Result<()> {
+    let build_info: &str = &sys::version::VERSION_INFO;
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
     let now = now.format("%F %T %:z");
@@ -189,7 +194,17 @@ async fn boot_tweet_task(ctrl: Control) -> Result<()> {
 
     {
         let mut twitter = ctrl.sysmods().twitter.lock().await;
-        twitter.tweet(&msg).await?;
+        if let Err(why) = twitter.tweet(&msg).await {
+            error!("error on tweet");
+            error!("{:#?}", why);
+        }
+    }
+    {
+        let mut discord = ctrl.sysmods().discord.lock().await;
+        if let Err(why) = discord.say(&msg).await {
+            error!("error on discord notification");
+            error!("{:#?}", why);
+        }
     }
 
     Ok(())
@@ -210,7 +225,7 @@ fn system_main() -> Result<()> {
         let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
 
-        ts.spawn_oneshot_task("boot_tweet", boot_tweet_task);
+        ts.spawn_oneshot_task("boot_tweet", boot_msg_task);
         let run_result = ts.run();
 
         info!("task server dropped");
