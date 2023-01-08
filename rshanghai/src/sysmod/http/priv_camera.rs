@@ -416,6 +416,17 @@ async fn take_post(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebR
     }
     let pic = pic?;
 
+    /*
+    // twitter upload test
+    {
+        let mini = create_thumbnail(&pic)?;
+        let tw = ctrl.sysmods().twitter.lock().await;
+        let id = tw.media_upload(mini).await;
+        info!("{id:?}");
+        id?;
+    }
+     */
+
     let thumb = create_thumbnail(&pic)?;
 
     let mut camera = ctrl.sysmods().camera.lock().await;

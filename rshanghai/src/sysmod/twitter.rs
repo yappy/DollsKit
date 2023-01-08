@@ -8,6 +8,7 @@ use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
 use rand::Rng;
+use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -31,6 +32,8 @@ macro_rules! URL_USERS_TWEET {
 }
 
 const URL_TWEETS: &str = "https://api.twitter.com/2/tweets";
+
+const URL_UPLOAD: &str = "https://upload.twitter.com/1.1/media/upload.json";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct User {
@@ -104,6 +107,13 @@ struct TweetResponse {
 struct TweetResponseData {
     id: String,
     text: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct UploadResponseData {
+    media_id: u64,
+    size: u64,
+    expires_after_secs: u64,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -387,6 +397,29 @@ impl Twitter {
         }
     }
 
+    /// <https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/api-reference/post-media-upload>
+    /// <https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices>
+    pub async fn media_upload<T: Into<reqwest::Body>>(&self, bin: T) -> Result<u64> {
+        if self.config.fake_tweet {
+            info!("fake upload");
+
+            return Ok(0);
+        }
+
+        info!("upload");
+        let part = multipart::Part::stream(bin);
+        let form = multipart::Form::new().part("media", part);
+
+        let resp = self
+            .http_oauth_post_multipart(URL_UPLOAD, &BTreeMap::new(), form)
+            .await?;
+        let json_str = process_response(resp).await?;
+        let obj: UploadResponseData = convert_from_json(&json_str)?;
+        info!("upload OK: media_id={}", obj.media_id);
+
+        Ok(obj.media_id)
+    }
+
     /// エントリ関数。[Self::twitter_task] を呼ぶ。
     ///
     /// [Control] 内の [Twitter] オブジェクトを lock するので
@@ -534,7 +567,7 @@ impl Twitter {
 
     async fn tweets_post(&self, param: TweetParam) -> Result<TweetResponse> {
         let resp = self
-            .http_oauth_post(URL_TWEETS, &KeyValue::new(), param)
+            .http_oauth_post_json(URL_TWEETS, &KeyValue::new(), &param)
             .await?;
         let json_str = process_response(resp).await?;
         let obj: TweetResponse = convert_from_json(&json_str)?;
@@ -572,17 +605,46 @@ impl Twitter {
         Ok(res)
     }
 
-    async fn http_oauth_post<T>(
+    async fn http_oauth_post_json<T: Serialize>(
         &self,
         base_url: &str,
         query_param: &KeyValue,
-        body_param: T,
-    ) -> Result<reqwest::Response>
-    where
-        T: Serialize,
-    {
-        let json_str = serde_json::to_string(&body_param).unwrap();
+        body_param: &T,
+    ) -> Result<reqwest::Response> {
+        let json_str = serde_json::to_string(body_param).unwrap();
+        debug!("POST: {}", json_str);
 
+        let client = reqwest::Client::new();
+        let req = self
+            .http_oauth_post(&client, base_url, query_param)
+            .header("Content-type", "application/json")
+            .body(json_str);
+        let resp = req.send().await?;
+
+        Ok(resp)
+    }
+
+    async fn http_oauth_post_multipart(
+        &self,
+        base_url: &str,
+        query_param: &KeyValue,
+        body: multipart::Form,
+    ) -> Result<reqwest::Response> {
+        let client = reqwest::Client::new();
+        let req = self
+            .http_oauth_post(&client, base_url, query_param)
+            .multipart(body);
+        let resp = req.send().await?;
+
+        Ok(resp)
+    }
+
+    fn http_oauth_post(
+        &self,
+        client: &reqwest::Client,
+        base_url: &str,
+        query_param: &KeyValue,
+    ) -> reqwest::RequestBuilder {
         let cf = &self.config;
         let mut oauth_param = create_oauth_field(&cf.consumer_key, &cf.access_token);
         let signature = create_signature(
@@ -598,17 +660,12 @@ impl Twitter {
 
         let (oauth_k, oauth_v) = create_http_oauth_header(&oauth_param);
 
-        debug!("POST: {}", json_str);
-        let client = reqwest::Client::new();
         let req = client
             .post(base_url)
             .query(query_param)
-            .header(oauth_k, oauth_v)
-            .header("Content-type", "application/json")
-            .body(json_str);
-        let res = req.send().await?;
+            .header(oauth_k, oauth_v);
 
-        Ok(res)
+        req
     }
 }
 
@@ -629,6 +686,9 @@ impl SystemModule for Twitter {
     }
 }
 
+/// 文字列を JSON としてパースし、T 型に変換する。
+///
+/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
 fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
 where
     T: Deserialize<'a>,
@@ -638,6 +698,8 @@ where
     Ok(obj)
 }
 
+/// HTTP status が成功 (200 台) でなければ Err に変換する。
+/// 成功ならば response body を文字列に変換して返す。
 async fn process_response(resp: reqwest::Response) -> Result<String> {
     let status = resp.status();
     let text = resp.text().await?;
