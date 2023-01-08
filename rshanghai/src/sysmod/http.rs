@@ -134,12 +134,13 @@ impl From<anyhow::Error> for ActixError {
     }
 }
 
-pub fn simple_error(status: StatusCode) -> HttpResponse {
-    let body = format!(
-        "{} {}",
-        status.as_str(),
-        status.canonical_reason().unwrap_or_default()
-    );
+pub fn error_resp(status: StatusCode) -> HttpResponse {
+    error_resp_msg(status, status.canonical_reason().unwrap_or_default())
+}
+
+pub fn error_resp_msg(status: StatusCode, msg: &str) -> HttpResponse {
+    let body = format!("{} {}", status.as_str(), msg);
+
     HttpResponseBuilder::new(status)
         .content_type(ContentType::plaintext())
         .body(body)

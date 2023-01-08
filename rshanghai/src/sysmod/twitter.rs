@@ -14,7 +14,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Twitter API v2
-const TWEET_LEN_MAX: usize = 140;
+pub const TWEET_LEN_MAX: usize = 140;
+pub const LIMIT_PHOTO_COUNT: usize = 4;
 
 const URL_USERS_ME: &str = "https://api.twitter.com/2/users/me";
 const URL_USERS_BY: &str = "https://api.twitter.com/2/users/by";
@@ -88,6 +89,14 @@ struct TweetParamPoll {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct Media {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    media_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tagged_user_ids: Option<Vec<String>>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct TweetParam {
     #[serde(skip_serializing_if = "Option::is_none")]
     poll: Option<TweetParamPoll>,
@@ -96,6 +105,9 @@ struct TweetParam {
     /// 本文。media.media_ids が無いなら必須。
     #[serde(skip_serializing_if = "Option::is_none")]
     text: Option<String>,
+    /// 添付メディアデータ。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    media: Option<Media>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -347,8 +359,25 @@ impl Twitter {
     /// シンプルなツイート。
     /// 中身は [Self::tweet_raw]。
     pub async fn tweet(&mut self, text: &str) -> Result<()> {
+        self.tweet_with_media(text, &[]).await
+    }
+
+    /// メディア付きツイート。
+    /// 中身は [Self::tweet_raw]。
+    pub async fn tweet_with_media(&mut self, text: &str, media_ids: &[u64]) -> Result<()> {
+        let media_ids = if media_ids.is_empty() {
+            None
+        } else {
+            let media_ids: Vec<_> = media_ids.iter().map(|id| id.to_string()).collect();
+            Some(media_ids)
+        };
+
         let param = TweetParam {
-            text: Some(text.into()),
+            text: Some(text.to_string()),
+            media: Some(Media {
+                media_ids,
+                ..Default::default()
+            }),
             ..Default::default()
         };
 
