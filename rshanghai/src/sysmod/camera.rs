@@ -384,11 +384,11 @@ const PIC_DEF_W: u32 = PIC_MAX_W;
 /// 縦デフォルトサイズ。
 const PIC_DEF_H: u32 = PIC_MAX_H;
 /// jpeg 最大クオリティ。
-const PIC_MAX_Q: u32 = 100;
+const PIC_MAX_Q: u8 = 100;
 /// jpeg 最小クオリティ。
-const PIC_MIN_Q: u32 = 0;
+const PIC_MIN_Q: u8 = 0;
 /// jpeg デフォルトクオリティ。
-const PIC_DEF_Q: u32 = 85;
+const PIC_DEF_Q: u8 = 85;
 /// デフォルト撮影時間(ms)。TO はタイムアウト。
 const PIC_DEF_TO_MS: u32 = 1000;
 /// サムネイルの横サイズ。
@@ -405,7 +405,7 @@ pub struct TakePicOption {
     /// 縦サイズ。
     h: u32,
     /// jpeg クオリティ。
-    q: u32,
+    q: u8,
     /// 撮影時間(ms)。
     timeout_ms: u32,
 }
@@ -429,7 +429,7 @@ impl TakePicOption {
         self.h = h;
         self
     }
-    pub fn quality(mut self, q: u32) -> Self {
+    pub fn quality(mut self, q: u8) -> Self {
         assert!((PIC_MIN_Q..=PIC_MAX_Q).contains(&q));
         self.q = q;
         self
@@ -481,7 +481,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
         let src = image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg)?;
         let dst = src.resize_exact(opt.w, opt.h, FilterType::Nearest);
         let mut output = Cursor::new(vec![]);
-        dst.write_to(&mut output, ImageOutputFormat::Jpeg(85))?;
+        dst.write_to(&mut output, ImageOutputFormat::Jpeg(PIC_DEF_Q))?;
 
         output.into_inner()
     };
@@ -500,6 +500,16 @@ pub fn create_thumbnail(src_buf: &[u8]) -> Result<Vec<u8>> {
 
     let mut buf = Cursor::new(Vec::<u8>::new());
     dst.write_to(&mut buf, ImageOutputFormat::Jpeg(THUMB_Q))?;
+
+    Ok(buf.into_inner())
+}
+
+pub fn resize(src_buf: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
+    let src = image::load_from_memory_with_format(src_buf, image::ImageFormat::Jpeg)?;
+    let dst = src.resize_exact(w, h, FilterType::Nearest);
+
+    let mut buf = Cursor::new(Vec::<u8>::new());
+    dst.write_to(&mut buf, ImageOutputFormat::Jpeg(PIC_DEF_Q))?;
 
     Ok(buf.into_inner())
 }

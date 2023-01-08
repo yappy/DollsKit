@@ -1,7 +1,7 @@
 use super::{error_resp, HttpConfig, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::http::error_resp_msg,
+    sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE},
     sysmod::{
         camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
         twitter::LIMIT_PHOTO_COUNT,
@@ -356,7 +356,7 @@ async fn delete_archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
 async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
     assert!(ids.len() <= LIMIT_PHOTO_COUNT);
 
-    let mut binlist: Vec<Vec<u8>> = Vec::new();
+    let mut binlist = Vec::new();
     {
         let camera = ctrl.sysmods().camera.lock().await;
 
@@ -372,11 +372,23 @@ async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
             }
         }
     }
+    let mut resized_list = Vec::new();
+    for bin in binlist {
+        let mut w = 1280_u32;
+        let mut h = 720_u32;
+        let mut resized = bin;
+        while resized.len() > LIMIT_PHOTO_SIZE {
+            resized = resize(&resized, w, h)?;
+            w /= 2;
+            h /= 2;
+        }
+        resized_list.push(resized);
+    }
     {
         let mut tw = ctrl.sysmods().twitter.lock().await;
 
         let mut midlist: Vec<u64> = Vec::new();
-        for bin in binlist {
+        for bin in resized_list {
             let media_id = tw.media_upload(bin).await?;
             midlist.push(media_id);
         }

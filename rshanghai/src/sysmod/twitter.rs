@@ -16,6 +16,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Twitter API v2
 pub const TWEET_LEN_MAX: usize = 140;
 pub const LIMIT_PHOTO_COUNT: usize = 4;
+pub const LIMIT_PHOTO_SIZE: usize = 5_000_000;
 
 const URL_USERS_ME: &str = "https://api.twitter.com/2/users/me";
 const URL_USERS_BY: &str = "https://api.twitter.com/2/users/by";
