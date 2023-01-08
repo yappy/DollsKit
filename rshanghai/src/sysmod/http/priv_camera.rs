@@ -298,7 +298,7 @@ async fn archive_post(
 
     let resp = match cmd.as_str() {
         "twitter" => {
-            if targets.len() == 0 || targets.len() > LIMIT_PHOTO_COUNT {
+            if targets.is_empty() || targets.len() > LIMIT_PHOTO_COUNT {
                 error_resp_msg(StatusCode::BAD_REQUEST, "invalid pic count")
             } else if let Err(why) = twitter_post(&ctrl, &targets).await {
                 error_resp_msg(StatusCode::INTERNAL_SERVER_ERROR, &why.to_string())

@@ -690,12 +690,10 @@ impl Twitter {
 
         let (oauth_k, oauth_v) = create_http_oauth_header(&oauth_param);
 
-        let req = client
+        client
             .post(base_url)
             .query(query_param)
-            .header(oauth_k, oauth_v);
-
-        req
+            .header(oauth_k, oauth_v)
     }
 }
 
