@@ -17,7 +17,7 @@ use simplelog::{
 };
 use std::env;
 use std::fs::{remove_file, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{BufWriter, Read, Write};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use sys::taskserver::{Control, RunResult, TaskServer};
 use sysmod::SystemModules;
@@ -26,13 +26,17 @@ use sysmod::SystemModules;
 const CRATE_NAME: &str = module_path!();
 
 /// デーモン化の際に指定する stdout のリダイレクト先。
-const STDOUT_FILE: &str = "stdout.txt";
+const FILE_STDOUT: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
-const STDERR_FILE: &str = "stderr.txt";
+const FILE_STDERR: &str = "stderr.txt";
+/// Cron 用シェルスクリプトの出力先。
+const FILE_EXEC_SH: &str = "exec.sh";
+/// Cron 用シェルスクリプトの出力先。
+const FILE_KILL_SH: &str = "kill.sh";
 /// デーモン化の際に指定する pid ファイルパス。
-const PID_FILE: &str = "rshanghai.pid";
+const FILE_PID: &str = "rshanghai.pid";
 /// ログのファイル出力先。
-const LOG_FILE: &str = "rshanghai.log";
+const FILE_LOG: &str = "rshanghai.log";
 
 /// デフォルトの設定データ(json source)。
 /// [include_str!] でバイナリに含める。
@@ -47,23 +51,23 @@ const CONFIG_DEF_FILE: &str = "config_default.json";
 /// デーモン化に失敗したら exit(1) する。
 /// 成功した場合は元の親プロセスは正常終了し、子プロセスが以降の処理を続行する。
 fn daemon() {
-    let stdout = match File::create(STDOUT_FILE) {
+    let stdout = match File::create(FILE_STDOUT) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Open {} error: {}", STDOUT_FILE, e);
+            eprintln!("Open {} error: {}", FILE_STDOUT, e);
             std::process::exit(1);
         }
     };
-    let stderr = match File::create(STDERR_FILE) {
+    let stderr = match File::create(FILE_STDERR) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Open {} error: {}", STDERR_FILE, e);
+            eprintln!("Open {} error: {}", FILE_STDERR, e);
             std::process::exit(1);
         }
     };
 
     let daemonize = Daemonize::new()
-        .pid_file(PID_FILE)
+        .pid_file(FILE_PID)
         //.chown_pid_file(true)
         .working_directory(".")
         //.user("nobody")
@@ -98,7 +102,7 @@ fn init_log(is_daemon: bool) {
     let file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(LOG_FILE)
+        .open(FILE_LOG)
         .unwrap();
 
     // filter = Off, Error, Warn, Info, Debug, Trace
@@ -244,6 +248,44 @@ fn system_main() -> Result<()> {
     Ok(())
 }
 
+fn create_sh(path: &str) -> Result<File> {
+    let f = File::create(path)?;
+
+    let mut perm = f.metadata()?.permissions();
+    perm.set_mode(0o755);
+    f.set_permissions(perm)?;
+
+    Ok(f)
+}
+
+fn create_run_script() -> Result<()> {
+    let exe = env::current_exe()?;
+    let cd = env::current_dir()?;
+
+    {
+        let f = create_sh(FILE_EXEC_SH)?;
+        let mut w = BufWriter::new(f);
+
+        writeln!(&mut w, "#!/bin/bash")?;
+        writeln!(&mut w, "set -euxo pipefail")?;
+        writeln!(&mut w)?;
+        writeln!(&mut w, "cd '{}'", cd.to_string_lossy())?;
+        writeln!(&mut w, "'{}' --daemon", exe.to_string_lossy())?;
+    }
+    {
+        let f = create_sh(FILE_KILL_SH)?;
+        let mut w = BufWriter::new(f);
+
+        writeln!(&mut w, "#!/bin/bash")?;
+        writeln!(&mut w, "set -euxo pipefail")?;
+        writeln!(&mut w)?;
+        writeln!(&mut w, "cd '{}'", cd.to_string_lossy())?;
+        writeln!(&mut w, "kill `cat {FILE_PID}`")?;
+    }
+
+    Ok(())
+}
+
 /// コマンドラインのヘルプを表示する。
 ///
 /// * `program` - プログラム名 (argv\[0\])。
@@ -257,6 +299,8 @@ fn print_help(program: &str, opts: Options) {
 ///
 /// コマンドラインとデーモン化、ログの初期化処理をしたのち、[system_main] を呼ぶ。
 fn main() -> Result<()> {
+    create_run_script()?;
+
     // コマンドライン引数のパース
     let args: Vec<String> = env::args().collect();
     let program = &args[0];

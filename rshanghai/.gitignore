@@ -1,4 +1,5 @@
 /target
+/*.sh
 /*.pid
 /std*.txt
 /*.log
