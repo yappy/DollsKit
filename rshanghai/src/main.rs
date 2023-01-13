@@ -33,6 +33,8 @@ const FILE_STDERR: &str = "stderr.txt";
 const FILE_EXEC_SH: &str = "exec.sh";
 /// Cron 用シェルスクリプトの出力先。
 const FILE_KILL_SH: &str = "kill.sh";
+/// Cron 設定例の出力先。
+const FILE_CRON: &str = "cron.txt";
 /// デーモン化の際に指定する pid ファイルパス。
 const FILE_PID: &str = "rshanghai.pid";
 /// ログのファイル出力先。
@@ -259,8 +261,8 @@ fn create_sh(path: &str) -> Result<File> {
 }
 
 fn create_run_script() -> Result<()> {
-    let exe = env::current_exe()?;
-    let cd = env::current_dir()?;
+    let exe = env::current_exe()?.to_string_lossy().to_string();
+    let cd = env::current_dir()?.to_string_lossy().to_string();
 
     {
         let f = create_sh(FILE_EXEC_SH)?;
@@ -269,8 +271,8 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "#!/bin/bash")?;
         writeln!(&mut w, "set -euxo pipefail")?;
         writeln!(&mut w)?;
-        writeln!(&mut w, "cd '{}'", cd.to_string_lossy())?;
-        writeln!(&mut w, "'{}' --daemon", exe.to_string_lossy())?;
+        writeln!(&mut w, "cd '{cd}'")?;
+        writeln!(&mut w, "'{exe}' --daemon")?;
     }
     {
         let f = create_sh(FILE_KILL_SH)?;
@@ -279,8 +281,26 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "#!/bin/bash")?;
         writeln!(&mut w, "set -euxo pipefail")?;
         writeln!(&mut w)?;
-        writeln!(&mut w, "cd '{}'", cd.to_string_lossy())?;
+        writeln!(&mut w, "cd '{cd}'")?;
         writeln!(&mut w, "kill `cat {FILE_PID}`")?;
+    }
+    {
+        let f = File::create("cron.txt")?;
+        let mut w = BufWriter::new(f);
+
+        write!(
+            &mut w,
+            "# How to use
+# $ crontab < {FILE_CRON}
+# How to verify
+# $ crontab -l
+
+# workaround: wait for 30 sec to wait for network
+# It seems that DNS fails just after reboot
+
+@reboot sleep 30; cd {cd}; ./{FILE_EXEC_SH}
+"
+        )?;
     }
 
     Ok(())
