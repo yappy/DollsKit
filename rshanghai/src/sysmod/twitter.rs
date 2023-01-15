@@ -372,13 +372,14 @@ impl Twitter {
             let media_ids: Vec<_> = media_ids.iter().map(|id| id.to_string()).collect();
             Some(media_ids)
         };
+        let media = media_ids.map(|media_ids| Media {
+            media_ids: Some(media_ids),
+            ..Default::default()
+        });
 
         let param = TweetParam {
             text: Some(text.to_string()),
-            media: Some(Media {
-                media_ids,
-                ..Default::default()
-            }),
+            media,
             ..Default::default()
         };
 
