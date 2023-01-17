@@ -500,6 +500,11 @@
 <span id="500">500</span>
 <span id="501">501</span>
 <span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
 </pre><pre class="rust"><code><span class="kw">use super</span>::{error_resp, HttpConfig, WebResult};
 <span class="kw">use crate</span>::{
     sys::taskserver::Control,
@@ -663,7 +668,12 @@
         <span class="kw">let </span>link = <span class="kw">if </span>(left..=right).contains(<span class="kw-2">&amp;</span>start) {
             <span class="macro">format!</span>(<span class="string">r#&quot;{}-{} &quot;#</span>, left + <span class="number">1</span>, right + <span class="number">1</span>)
         } <span class="kw">else </span>{
-            <span class="macro">format!</span>(<span class="string">r#&quot;&lt;a href=&quot;?page={}&quot;&gt;{}-{}&lt;/a&gt; &quot;#</span>, left, left + <span class="number">1</span>, right + <span class="number">1</span>)
+            <span class="macro">format!</span>(
+                <span class="string">r#&quot;&lt;a href=&quot;?page={}&quot;&gt;{}-{}&lt;/a&gt; &quot;#</span>,
+                left,
+                left + <span class="number">1</span>,
+                right + <span class="number">1
+            </span>)
         };
         page_navi += <span class="kw-2">&amp;</span>link;
     }
