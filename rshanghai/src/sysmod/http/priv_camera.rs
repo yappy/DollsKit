@@ -161,7 +161,12 @@ fn create_pic_list_page(
         let link = if (left..=right).contains(&start) {
             format!(r#"{}-{} "#, left + 1, right + 1)
         } else {
-            format!(r#"<a href="?page={}">{}-{}</a> "#, left, left + 1, right + 1)
+            format!(
+                r#"<a href="?page={}">{}-{}</a> "#,
+                left,
+                left + 1,
+                right + 1
+            )
         };
         page_navi += &link;
     }
