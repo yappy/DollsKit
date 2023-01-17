@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/priv_camera.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>priv_camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../rshanghai/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/priv_camera.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>priv_camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../rshanghai/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -427,14 +427,90 @@
 <span id="427">427</span>
 <span id="428">428</span>
 <span id="429">429</span>
-</pre><pre class="rust"><code><span class="kw">use super</span>::{HttpConfig, WebResult};
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+</pre><pre class="rust"><code><span class="kw">use super</span>::{error_resp, HttpConfig, WebResult};
 <span class="kw">use crate</span>::{
     sys::taskserver::Control,
-    sysmod::camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
-    sysmod::http::simple_error,
+    sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE},
+    sysmod::{
+        camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
+        twitter::LIMIT_PHOTO_COUNT,
+    },
 };
 <span class="kw">use </span>actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::error;
 <span class="kw">use </span>reqwest::StatusCode;
 <span class="kw">use </span>serde::Deserialize;
@@ -510,7 +586,10 @@
             query.page,
             page_by,
             <span class="string">&quot;(Privileged) Picture Archive&quot;</span>,
-            <span class="kw-2">&amp;</span>[(<span class="string">&quot;delete&quot;</span>, <span class="string">&quot;Delete&quot;</span>)],
+            <span class="kw-2">&amp;</span>[
+                (<span class="string">&quot;twitter&quot;</span>, <span class="string">&quot;Post on Twitter (Max 4 pics or less)&quot;</span>),
+                (<span class="string">&quot;delete&quot;</span>, <span class="string">&quot;Delete&quot;</span>),
+            ],
         )
     };
 
@@ -584,7 +663,7 @@
         <span class="kw">let </span>link = <span class="kw">if </span>(left..=right).contains(<span class="kw-2">&amp;</span>start) {
             <span class="macro">format!</span>(<span class="string">r#&quot;{}-{} &quot;#</span>, left + <span class="number">1</span>, right + <span class="number">1</span>)
         } <span class="kw">else </span>{
-            <span class="macro">format!</span>(<span class="string">r#&quot;&lt;a href=&quot;./{0}&quot;&gt;{0}-{1}&lt;/a&gt; &quot;#</span>, left + <span class="number">1</span>, right + <span class="number">1</span>)
+            <span class="macro">format!</span>(<span class="string">r#&quot;&lt;a href=&quot;?page={}&quot;&gt;{}-{}&lt;/a&gt; &quot;#</span>, left, left + <span class="number">1</span>, right + <span class="number">1</span>)
         };
         page_navi += <span class="kw-2">&amp;</span>link;
     }
@@ -704,7 +783,7 @@
 
 <span class="doccomment">/// POST /priv/camera/archive
 ///
-/// * `cmd` - &quot;delete&quot;
+/// * `cmd` - &quot;twitter&quot; or &quot;delete&quot;
 /// * `target` - 対象の picture ID (複数回指定可)
 </span><span class="attribute">#[actix_web::post(<span class="string">&quot;/camera/archive&quot;</span>)]
 </span><span class="kw">async fn </span>archive_post(
@@ -720,11 +799,21 @@
     <span class="kw">let </span>(cmd, targets) = param.unwrap();
 
     <span class="kw">let </span>resp = <span class="kw">match </span>cmd.as_str() {
+        <span class="string">&quot;twitter&quot; </span>=&gt; {
+            <span class="kw">if </span>targets.is_empty() || targets.len() &gt; LIMIT_PHOTO_COUNT {
+                error_resp_msg(StatusCode::BAD_REQUEST, <span class="string">&quot;invalid pic count&quot;</span>)
+            } <span class="kw">else if let </span><span class="prelude-val">Err</span>(why) = twitter_post(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
+                error_resp_msg(StatusCode::INTERNAL_SERVER_ERROR, <span class="kw-2">&amp;</span>why.to_string())
+            } <span class="kw">else </span>{
+                <span class="comment">// 成功したら archive GET へリダイレクト
+                </span>HttpResponse::SeeOther()
+                    .append_header((<span class="string">&quot;LOCATION&quot;</span>, <span class="string">&quot;./history&quot;</span>))
+                    .finish()
+            }
+        }
         <span class="string">&quot;delete&quot; </span>=&gt; {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = delete_archive_pics(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
-                HttpResponse::BadRequest()
-                    .content_type(ContentType::plaintext())
-                    .body(why.to_string())
+                error_resp_msg(StatusCode::BAD_REQUEST, <span class="kw-2">&amp;</span>why.to_string())
             } <span class="kw">else </span>{
                 <span class="comment">// 成功したら archive GET へリダイレクト
                 </span>HttpResponse::SeeOther()
@@ -761,6 +850,52 @@
     <span class="kw">let </span><span class="kw-2">mut </span>camera = ctrl.sysmods().camera.lock().<span class="kw">await</span>;
     <span class="kw">for </span>id <span class="kw">in </span>ids {
         camera.delete_pic_archive(id).<span class="kw">await</span><span class="question-mark">?</span>;
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>twitter_post(ctrl: <span class="kw-2">&amp;</span>Control, ids: <span class="kw-2">&amp;</span>[String]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="macro">assert!</span>(ids.len() &lt;= LIMIT_PHOTO_COUNT);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>binlist = Vec::new();
+    {
+        <span class="kw">let </span>camera = ctrl.sysmods().camera.lock().<span class="kw">await</span>;
+
+        <span class="kw">let </span>(<span class="kw">_</span>, archive) = camera.pic_list();
+        <span class="kw">for </span>id <span class="kw">in </span>ids {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(entry) = archive.get(id) {
+                <span class="kw">let </span><span class="kw-2">mut </span>file = File::open(<span class="kw-2">&amp;</span>entry.path_main).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>bin = Vec::new();
+                <span class="kw">let _ </span>= file.read_to_end(<span class="kw-2">&amp;mut </span>bin).<span class="kw">await</span><span class="question-mark">?</span>;
+                binlist.push(bin);
+            } <span class="kw">else </span>{
+                <span class="macro">bail!</span>(<span class="string">&quot;ID not found&quot;</span>);
+            }
+        }
+    }
+    <span class="kw">let </span><span class="kw-2">mut </span>resized_list = Vec::new();
+    <span class="kw">for </span>bin <span class="kw">in </span>binlist {
+        <span class="kw">let </span><span class="kw-2">mut </span>w = <span class="number">1280_u32</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>h = <span class="number">720_u32</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>resized = bin;
+        <span class="kw">while </span>resized.len() &gt; LIMIT_PHOTO_SIZE {
+            resized = resize(<span class="kw-2">&amp;</span>resized, w, h)<span class="question-mark">?</span>;
+            w /= <span class="number">2</span>;
+            h /= <span class="number">2</span>;
+        }
+        resized_list.push(resized);
+    }
+    {
+        <span class="kw">let </span><span class="kw-2">mut </span>tw = ctrl.sysmods().twitter.lock().<span class="kw">await</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>midlist: Vec&lt;u64&gt; = Vec::new();
+        <span class="kw">for </span>bin <span class="kw">in </span>resized_list {
+            <span class="kw">let </span>media_id = tw.media_upload(bin).<span class="kw">await</span><span class="question-mark">?</span>;
+            midlist.push(media_id);
+        }
+        <span class="kw">let </span>text = ids.join(<span class="string">&quot;\n&quot;</span>);
+        tw.tweet_with_media(<span class="kw-2">&amp;</span>text, <span class="kw-2">&amp;</span>midlist).<span class="kw">await</span><span class="question-mark">?</span>;
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -805,7 +940,7 @@
     <span class="kw">let </span>is_th = <span class="kw">match </span>kind {
         <span class="string">&quot;main&quot; </span>=&gt; <span class="bool-val">false</span>,
         <span class="string">&quot;thumb&quot; </span>=&gt; <span class="bool-val">true</span>,
-        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(simple_error(StatusCode::BAD_REQUEST)),
+        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(error_resp(StatusCode::BAD_REQUEST)),
     };
 
     <span class="kw">let </span>value = {
@@ -832,7 +967,7 @@
             .body(bin);
         <span class="prelude-val">Ok</span>(resp)
     } <span class="kw">else </span>{
-        <span class="prelude-val">Ok</span>(simple_error(StatusCode::NOT_FOUND))
+        <span class="prelude-val">Ok</span>(error_resp(StatusCode::NOT_FOUND))
     }
 }
 
@@ -845,7 +980,18 @@
     }
     <span class="kw">let </span>pic = pic<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>thumb = create_thumbnail(<span class="kw-2">&amp;</span>pic)<span class="question-mark">?</span>;
+    <span class="comment">/*
+    // twitter upload test
+    {
+        let mini = create_thumbnail(&amp;pic)?;
+        let tw = ctrl.sysmods().twitter.lock().await;
+        let id = tw.media_upload(mini).await;
+        info!(&quot;{id:?}&quot;);
+        id?;
+    }
+     */
+
+    </span><span class="kw">let </span>thumb = create_thumbnail(<span class="kw-2">&amp;</span>pic)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>camera = ctrl.sysmods().camera.lock().<span class="kw">await</span>;
     camera.push_pic_history(<span class="kw-2">&amp;</span>pic, <span class="kw-2">&amp;</span>thumb).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -857,4 +1003,4 @@
     <span class="prelude-val">Ok</span>(resp)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

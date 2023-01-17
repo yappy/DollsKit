@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -912,6 +912,97 @@
 <span id="912">912</span>
 <span id="913">913</span>
 <span id="914">914</span>
+<span id="915">915</span>
+<span id="916">916</span>
+<span id="917">917</span>
+<span id="918">918</span>
+<span id="919">919</span>
+<span id="920">920</span>
+<span id="921">921</span>
+<span id="922">922</span>
+<span id="923">923</span>
+<span id="924">924</span>
+<span id="925">925</span>
+<span id="926">926</span>
+<span id="927">927</span>
+<span id="928">928</span>
+<span id="929">929</span>
+<span id="930">930</span>
+<span id="931">931</span>
+<span id="932">932</span>
+<span id="933">933</span>
+<span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+<span id="941">941</span>
+<span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
+<span id="954">954</span>
+<span id="955">955</span>
+<span id="956">956</span>
+<span id="957">957</span>
+<span id="958">958</span>
+<span id="959">959</span>
+<span id="960">960</span>
+<span id="961">961</span>
+<span id="962">962</span>
+<span id="963">963</span>
+<span id="964">964</span>
+<span id="965">965</span>
+<span id="966">966</span>
+<span id="967">967</span>
+<span id="968">968</span>
+<span id="969">969</span>
+<span id="970">970</span>
+<span id="971">971</span>
+<span id="972">972</span>
+<span id="973">973</span>
+<span id="974">974</span>
+<span id="975">975</span>
+<span id="976">976</span>
+<span id="977">977</span>
+<span id="978">978</span>
+<span id="979">979</span>
+<span id="980">980</span>
+<span id="981">981</span>
+<span id="982">982</span>
+<span id="983">983</span>
+<span id="984">984</span>
+<span id="985">985</span>
+<span id="986">986</span>
+<span id="987">987</span>
+<span id="988">988</span>
+<span id="989">989</span>
+<span id="990">990</span>
+<span id="991">991</span>
+<span id="992">992</span>
+<span id="993">993</span>
+<span id="994">994</span>
+<span id="995">995</span>
+<span id="996">996</span>
+<span id="997">997</span>
+<span id="998">998</span>
+<span id="999">999</span>
+<span id="1000">1000</span>
+<span id="1001">1001</span>
+<span id="1002">1002</span>
+<span id="1003">1003</span>
+<span id="1004">1004</span>
+<span id="1005">1005</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::net;
@@ -922,12 +1013,15 @@
 <span class="kw">use </span>log::warn;
 <span class="kw">use </span>log::{debug, info};
 <span class="kw">use </span>rand::Rng;
+<span class="kw">use </span>reqwest::multipart;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap};
 <span class="kw">use </span>std::time::{SystemTime, UNIX_EPOCH};
 
 <span class="comment">// Twitter API v2
-</span><span class="kw">const </span>TWEET_LEN_MAX: usize = <span class="number">140</span>;
+</span><span class="kw">pub const </span>TWEET_LEN_MAX: usize = <span class="number">140</span>;
+<span class="kw">pub const </span>LIMIT_PHOTO_COUNT: usize = <span class="number">4</span>;
+<span class="kw">pub const </span>LIMIT_PHOTO_SIZE: usize = <span class="number">5_000_000</span>;
 
 <span class="kw">const </span>URL_USERS_ME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/users/me&quot;</span>;
 <span class="kw">const </span>URL_USERS_BY: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/users/by&quot;</span>;
@@ -945,6 +1039,8 @@
 }
 
 <span class="kw">const </span>URL_TWEETS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/tweets&quot;</span>;
+
+<span class="kw">const </span>URL_UPLOAD: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://upload.twitter.com/1.1/media/upload.json&quot;</span>;
 
 <span class="attribute">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>User {
@@ -999,6 +1095,14 @@
 }
 
 <span class="attribute">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Media {
+    <span class="attribute">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>media_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    <span class="attribute">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>tagged_user_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+}
+
+<span class="attribute">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>TweetParam {
     <span class="attribute">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
     </span>poll: <span class="prelude-ty">Option</span>&lt;TweetParamPoll&gt;,
@@ -1007,6 +1111,9 @@
     <span class="doccomment">/// 本文。media.media_ids が無いなら必須。
     </span><span class="attribute">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
     </span>text: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// 添付メディアデータ。
+    </span><span class="attribute">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>media: <span class="prelude-ty">Option</span>&lt;Media&gt;,
 }
 
 <span class="attribute">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1018,6 +1125,13 @@
 </span><span class="kw">struct </span>TweetResponseData {
     id: String,
     text: String,
+}
+
+<span class="attribute">#[derive(Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>UploadResponseData {
+    media_id: u64,
+    size: u64,
+    expires_after_secs: u64,
 }
 
 <span class="attribute">#[derive(Clone, Serialize, Deserialize)]
@@ -1251,8 +1365,26 @@
     <span class="doccomment">/// シンプルなツイート。
     /// 中身は [Self::tweet_raw]。
     </span><span class="kw">pub async fn </span>tweet(<span class="kw-2">&amp;mut </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.tweet_with_media(text, <span class="kw-2">&amp;</span>[]).<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// メディア付きツイート。
+    /// 中身は [Self::tweet_raw]。
+    </span><span class="kw">pub async fn </span>tweet_with_media(<span class="kw-2">&amp;mut </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span>str, media_ids: <span class="kw-2">&amp;</span>[u64]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>media_ids = <span class="kw">if </span>media_ids.is_empty() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="kw">let </span>media_ids: Vec&lt;<span class="kw">_</span>&gt; = media_ids.iter().map(|id| id.to_string()).collect();
+            <span class="prelude-val">Some</span>(media_ids)
+        };
+        <span class="kw">let </span>media = media_ids.map(|media_ids| Media {
+            media_ids: <span class="prelude-val">Some</span>(media_ids),
+            ..Default::default()
+        });
+
         <span class="kw">let </span>param = TweetParam {
-            text: <span class="prelude-val">Some</span>(text.into()),
+            text: <span class="prelude-val">Some</span>(text.to_string()),
+            media,
             ..Default::default()
         };
 
@@ -1299,6 +1431,29 @@
             <span class="comment">// 存在しないなら文字列全体を返す
             </span><span class="prelude-val">None </span>=&gt; text,
         }
+    }
+
+    <span class="doccomment">/// &lt;https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/api-reference/post-media-upload&gt;
+    /// &lt;https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices&gt;
+    </span><span class="kw">pub async fn </span>media_upload&lt;T: Into&lt;reqwest::Body&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, bin: T) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
+        <span class="kw">if </span><span class="self">self</span>.config.fake_tweet {
+            <span class="macro">info!</span>(<span class="string">&quot;fake upload&quot;</span>);
+
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="number">0</span>);
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;upload&quot;</span>);
+        <span class="kw">let </span>part = multipart::Part::stream(bin);
+        <span class="kw">let </span>form = multipart::Form::new().part(<span class="string">&quot;media&quot;</span>, part);
+
+        <span class="kw">let </span>resp = <span class="self">self
+            </span>.http_oauth_post_multipart(URL_UPLOAD, <span class="kw-2">&amp;</span>BTreeMap::new(), form)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: UploadResponseData = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;upload OK: media_id={}&quot;</span>, obj.media_id);
+
+        <span class="prelude-val">Ok</span>(obj.media_id)
     }
 
     <span class="doccomment">/// エントリ関数。[Self::twitter_task] を呼ぶ。
@@ -1448,7 +1603,7 @@
 
     <span class="kw">async fn </span>tweets_post(<span class="kw-2">&amp;</span><span class="self">self</span>, param: TweetParam) -&gt; <span class="prelude-ty">Result</span>&lt;TweetResponse&gt; {
         <span class="kw">let </span>resp = <span class="self">self
-            </span>.http_oauth_post(URL_TWEETS, <span class="kw-2">&amp;</span>KeyValue::new(), param)
+            </span>.http_oauth_post_json(URL_TWEETS, <span class="kw-2">&amp;</span>KeyValue::new(), <span class="kw-2">&amp;</span>param)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>obj: TweetResponse = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
@@ -1486,17 +1641,46 @@
         <span class="prelude-val">Ok</span>(res)
     }
 
-    <span class="kw">async fn </span>http_oauth_post&lt;T&gt;(
+    <span class="kw">async fn </span>http_oauth_post_json&lt;T: Serialize&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         base_url: <span class="kw-2">&amp;</span>str,
         query_param: <span class="kw-2">&amp;</span>KeyValue,
-        body_param: T,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;reqwest::Response&gt;
-    <span class="kw">where
-        </span>T: Serialize,
-    {
-        <span class="kw">let </span>json_str = serde_json::to_string(<span class="kw-2">&amp;</span>body_param).unwrap();
+        body_param: <span class="kw-2">&amp;</span>T,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;reqwest::Response&gt; {
+        <span class="kw">let </span>json_str = serde_json::to_string(body_param).unwrap();
+        <span class="macro">debug!</span>(<span class="string">&quot;POST: {}&quot;</span>, json_str);
 
+        <span class="kw">let </span>client = reqwest::Client::new();
+        <span class="kw">let </span>req = <span class="self">self
+            </span>.http_oauth_post(<span class="kw-2">&amp;</span>client, base_url, query_param)
+            .header(<span class="string">&quot;Content-type&quot;</span>, <span class="string">&quot;application/json&quot;</span>)
+            .body(json_str);
+        <span class="kw">let </span>resp = req.send().<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(resp)
+    }
+
+    <span class="kw">async fn </span>http_oauth_post_multipart(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        base_url: <span class="kw-2">&amp;</span>str,
+        query_param: <span class="kw-2">&amp;</span>KeyValue,
+        body: multipart::Form,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;reqwest::Response&gt; {
+        <span class="kw">let </span>client = reqwest::Client::new();
+        <span class="kw">let </span>req = <span class="self">self
+            </span>.http_oauth_post(<span class="kw-2">&amp;</span>client, base_url, query_param)
+            .multipart(body);
+        <span class="kw">let </span>resp = req.send().<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(resp)
+    }
+
+    <span class="kw">fn </span>http_oauth_post(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        client: <span class="kw-2">&amp;</span>reqwest::Client,
+        base_url: <span class="kw-2">&amp;</span>str,
+        query_param: <span class="kw-2">&amp;</span>KeyValue,
+    ) -&gt; reqwest::RequestBuilder {
         <span class="kw">let </span>cf = <span class="kw-2">&amp;</span><span class="self">self</span>.config;
         <span class="kw">let </span><span class="kw-2">mut </span>oauth_param = create_oauth_field(<span class="kw-2">&amp;</span>cf.consumer_key, <span class="kw-2">&amp;</span>cf.access_token);
         <span class="kw">let </span>signature = create_signature(
@@ -1512,17 +1696,10 @@
 
         <span class="kw">let </span>(oauth_k, oauth_v) = create_http_oauth_header(<span class="kw-2">&amp;</span>oauth_param);
 
-        <span class="macro">debug!</span>(<span class="string">&quot;POST: {}&quot;</span>, json_str);
-        <span class="kw">let </span>client = reqwest::Client::new();
-        <span class="kw">let </span>req = client
+        client
             .post(base_url)
             .query(query_param)
             .header(oauth_k, oauth_v)
-            .header(<span class="string">&quot;Content-type&quot;</span>, <span class="string">&quot;application/json&quot;</span>)
-            .body(json_str);
-        <span class="kw">let </span>res = req.send().<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(res)
     }
 }
 
@@ -1543,7 +1720,10 @@
     }
 }
 
-<span class="kw">fn </span>convert_from_json&lt;<span class="lifetime">&#39;a</span>, T&gt;(json_str: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
+<span class="doccomment">/// 文字列を JSON としてパースし、T 型に変換する。
+///
+/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
+</span><span class="kw">fn </span>convert_from_json&lt;<span class="lifetime">&#39;a</span>, T&gt;(json_str: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
 <span class="kw">where
     </span>T: Deserialize&lt;<span class="lifetime">&#39;a</span>&gt;,
 {
@@ -1552,7 +1732,9 @@
     <span class="prelude-val">Ok</span>(obj)
 }
 
-<span class="kw">async fn </span>process_response(resp: reqwest::Response) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<span class="doccomment">/// HTTP status が成功 (200 台) でなければ Err に変換する。
+/// 成功ならば response body を文字列に変換して返す。
+</span><span class="kw">async fn </span>process_response(resp: reqwest::Response) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
     <span class="kw">let </span>status = resp.status();
     <span class="kw">let </span>text = resp.text().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">if </span>status.is_success() {
@@ -1827,4 +2009,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

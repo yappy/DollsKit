@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../rshanghai/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -476,18 +476,18 @@
         <span class="kw">let </span><span class="kw-2">mut </span>ctrl = <span class="self">self</span>.clone();
 
         <span class="comment">// 空でなくソート済み、秒以下がゼロなのを確認後
-        // 今日のその時刻からなる Local DateTime に変換する
+        // 今日のその時刻からなる NaiveDateTime に変換する
         // TODO: is_sorted() がまだ unstable
         </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">&quot;time list is empty&quot;</span>);
         <span class="kw">let </span>sorted = wakeup_list.windows(<span class="number">2</span>).all(|t| t[<span class="number">0</span>] &lt;= t[<span class="number">1</span>]);
         <span class="macro">assert!</span>(sorted, <span class="string">&quot;time list is not sorted&quot;</span>);
-        <span class="kw">let </span>today = Local::today();
+        <span class="kw">let </span>today = Local::now().date_naive();
         <span class="kw">let </span><span class="kw-2">mut </span>dt_list: Vec&lt;<span class="kw">_</span>&gt; = wakeup_list
             .iter()
             .map(|time| {
                 <span class="macro">assert_eq!</span>(time.second(), <span class="number">0</span>);
                 <span class="macro">assert_eq!</span>(time.nanosecond(), <span class="number">0</span>);
-                today.and_time(<span class="kw-2">*</span>time).unwrap()
+                today.and_time(<span class="kw-2">*</span>time)
             })
             .collect();
 
@@ -515,8 +515,8 @@
 
             <span class="kw">loop </span>{
                 <span class="comment">// 現在時刻を取得して分までに切り捨てる
-                </span><span class="kw">let </span>now = Local::now();
-                <span class="kw">let </span>now_hmd = now.date().and_hms(now.hour(), now.minute(), <span class="number">0</span>);
+                </span><span class="kw">let </span>now = Local::now().naive_local();
+                <span class="kw">let </span>now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), <span class="number">0</span>).unwrap();
                 <span class="kw">let </span>next_min = now_hmd + CDuration::minutes(<span class="number">1</span>);
                 <span class="macro">trace!</span>(<span class="string">&quot;[{}] periodic task check: {}&quot;</span>, name, now_hmd);
 
@@ -532,7 +532,7 @@
                         <span class="comment">// 起きるべき時刻は dt_list[ind]
                         </span><span class="kw">if </span>ind &lt; dt_list.len() {
                             <span class="kw">let </span>target_dt = dt_list[ind] + CDuration::seconds(<span class="number">1</span>);
-                            <span class="kw">let </span>sleep_duration = target_dt - Local::now();
+                            <span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
                             <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
                             <span class="macro">trace!</span>(<span class="string">&quot;[{}] target: {}, sleep_sec: {}&quot;</span>, name, target_dt, sleep_sec);
                             <span class="macro">select! </span>{
@@ -550,7 +550,7 @@
                             </span><span class="kw">for </span>dt <span class="kw">in </span>dt_list.iter_mut() {
                                 <span class="kw">let </span>tomorrow = dt.date() + CDuration::days(<span class="number">1</span>);
                                 <span class="kw">let </span>time = dt.time();
-                                <span class="kw-2">*</span>dt = tomorrow.and_time(time).unwrap();
+                                <span class="kw-2">*</span>dt = tomorrow.and_time(time);
                                 <span class="macro">trace!</span>(<span class="string">&quot;[{}] advance time list by 1 day&quot;</span>, name);
                             }
                         }
@@ -575,7 +575,7 @@
                 <span class="comment">// タスクの実行に1分以上かかると負になるが、
                 // chrono::Duration は負数を許している
                 // その場合は 0 に補正する
-                </span><span class="kw">let </span>sleep_duration = target_dt - Local::now();
+                </span><span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
                 <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
                 <span class="macro">trace!</span>(<span class="string">&quot;[{}] target: {}, sleep_sec: {}&quot;</span>, name, target_dt, sleep_sec);
                 <span class="macro">select! </span>{
@@ -671,4 +671,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="rshanghai" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
