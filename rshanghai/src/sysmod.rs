@@ -53,31 +53,31 @@ impl SystemModules {
         info!("initialize system modules...");
 
         let wakeup_health_ck: Vec<_> = (0..24)
-            .flat_map(|hour| (0..60).map(move |min| NaiveTime::from_hms(hour, min, 0)))
+            .flat_map(|hour| (0..60).map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap()))
             .collect();
         let wakeup_health_tw = vec![
-            NaiveTime::from_hms(0, 0, 0),
-            NaiveTime::from_hms(6, 0, 0),
-            NaiveTime::from_hms(12, 0, 0),
-            NaiveTime::from_hms(18, 0, 0),
+            NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(6, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
         ];
 
         let wakeup_camera = vec![
-            NaiveTime::from_hms(0, 0, 0),
-            NaiveTime::from_hms(3, 0, 0),
-            NaiveTime::from_hms(6, 0, 0),
-            NaiveTime::from_hms(9, 0, 0),
-            NaiveTime::from_hms(12, 0, 0),
-            NaiveTime::from_hms(15, 0, 0),
-            NaiveTime::from_hms(18, 0, 0),
-            NaiveTime::from_hms(21, 0, 0),
+            NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(3, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(6, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(9, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(15, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
+            NaiveTime::from_hms_opt(21, 0, 0).unwrap(),
         ];
 
         let wakeup_twiter: Vec<_> = (0..24)
             .flat_map(|hour| {
                 (0..60)
                     .step_by(5)
-                    .map(move |min| NaiveTime::from_hms(hour, min, 0))
+                    .map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap())
             })
             .collect();
 
@@ -85,7 +85,7 @@ impl SystemModules {
             .flat_map(|hour| {
                 (0..60)
                     .step_by(10)
-                    .map(move |min| NaiveTime::from_hms(hour, min, 0))
+                    .map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap())
             })
             .collect();
 

@@ -140,18 +140,18 @@ impl Control {
         let mut ctrl = self.clone();
 
         // 空でなくソート済み、秒以下がゼロなのを確認後
-        // 今日のその時刻からなる Local DateTime に変換する
+        // 今日のその時刻からなる NaiveDateTime に変換する
         // TODO: is_sorted() がまだ unstable
         assert!(!wakeup_list.is_empty(), "time list is empty");
         let sorted = wakeup_list.windows(2).all(|t| t[0] <= t[1]);
         assert!(sorted, "time list is not sorted");
-        let today = Local::today();
+        let today = Local::now().date_naive();
         let mut dt_list: Vec<_> = wakeup_list
             .iter()
             .map(|time| {
                 assert_eq!(time.second(), 0);
                 assert_eq!(time.nanosecond(), 0);
-                today.and_time(*time).unwrap()
+                today.and_time(*time)
             })
             .collect();
 
@@ -179,8 +179,8 @@ impl Control {
 
             loop {
                 // 現在時刻を取得して分までに切り捨てる
-                let now = Local::now();
-                let now_hmd = now.date().and_hms(now.hour(), now.minute(), 0);
+                let now = Local::now().naive_local();
+                let now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), 0).unwrap();
                 let next_min = now_hmd + CDuration::minutes(1);
                 trace!("[{}] periodic task check: {}", name, now_hmd);
 
@@ -196,7 +196,7 @@ impl Control {
                         // 起きるべき時刻は dt_list[ind]
                         if ind < dt_list.len() {
                             let target_dt = dt_list[ind] + CDuration::seconds(1);
-                            let sleep_duration = target_dt - Local::now();
+                            let sleep_duration = target_dt - Local::now().naive_local();
                             let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
                             trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
                             select! {
@@ -214,7 +214,7 @@ impl Control {
                             for dt in dt_list.iter_mut() {
                                 let tomorrow = dt.date() + CDuration::days(1);
                                 let time = dt.time();
-                                *dt = tomorrow.and_time(time).unwrap();
+                                *dt = tomorrow.and_time(time);
                                 trace!("[{}] advance time list by 1 day", name);
                             }
                         }
@@ -239,7 +239,7 @@ impl Control {
                 // タスクの実行に1分以上かかると負になるが、
                 // chrono::Duration は負数を許している
                 // その場合は 0 に補正する
-                let sleep_duration = target_dt - Local::now();
+                let sleep_duration = target_dt - Local::now().naive_local();
                 let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
                 trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
                 select! {

@@ -1,11 +1,14 @@
-use super::{HttpConfig, WebResult};
+use super::{error_resp, HttpConfig, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
-    sysmod::http::simple_error,
+    sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE},
+    sysmod::{
+        camera::{create_thumbnail, take_a_pic, PicEntry, TakePicOption},
+        twitter::LIMIT_PHOTO_COUNT,
+    },
 };
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use log::error;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -81,7 +84,10 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
             query.page,
             page_by,
             "(Privileged) Picture Archive",
-            &[("delete", "Delete")],
+            &[
+                ("twitter", "Post on Twitter (Max 4 pics or less)"),
+                ("delete", "Delete"),
+            ],
         )
     };
 
@@ -155,7 +161,12 @@ fn create_pic_list_page(
         let link = if (left..=right).contains(&start) {
             format!(r#"{}-{} "#, left + 1, right + 1)
         } else {
-            format!(r#"<a href="./{0}">{0}-{1}</a> "#, left + 1, right + 1)
+            format!(
+                r#"<a href="?page={}">{}-{}</a> "#,
+                left,
+                left + 1,
+                right + 1
+            )
         };
         page_navi += &link;
     }
@@ -275,7 +286,7 @@ async fn history_post(
 
 /// POST /priv/camera/archive
 ///
-/// * `cmd` - "delete"
+/// * `cmd` - "twitter" or "delete"
 /// * `target` - 対象の picture ID (複数回指定可)
 #[actix_web::post("/camera/archive")]
 async fn archive_post(
@@ -291,11 +302,21 @@ async fn archive_post(
     let (cmd, targets) = param.unwrap();
 
     let resp = match cmd.as_str() {
+        "twitter" => {
+            if targets.is_empty() || targets.len() > LIMIT_PHOTO_COUNT {
+                error_resp_msg(StatusCode::BAD_REQUEST, "invalid pic count")
+            } else if let Err(why) = twitter_post(&ctrl, &targets).await {
+                error_resp_msg(StatusCode::INTERNAL_SERVER_ERROR, &why.to_string())
+            } else {
+                // 成功したら archive GET へリダイレクト
+                HttpResponse::SeeOther()
+                    .append_header(("LOCATION", "./history"))
+                    .finish()
+            }
+        }
         "delete" => {
             if let Err(why) = delete_archive_pics(&ctrl, &targets).await {
-                HttpResponse::BadRequest()
-                    .content_type(ContentType::plaintext())
-                    .body(why.to_string())
+                error_resp_msg(StatusCode::BAD_REQUEST, &why.to_string())
             } else {
                 // 成功したら archive GET へリダイレクト
                 HttpResponse::SeeOther()
@@ -332,6 +353,52 @@ async fn delete_archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
     let mut camera = ctrl.sysmods().camera.lock().await;
     for id in ids {
         camera.delete_pic_archive(id).await?;
+    }
+
+    Ok(())
+}
+
+async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
+    assert!(ids.len() <= LIMIT_PHOTO_COUNT);
+
+    let mut binlist = Vec::new();
+    {
+        let camera = ctrl.sysmods().camera.lock().await;
+
+        let (_, archive) = camera.pic_list();
+        for id in ids {
+            if let Some(entry) = archive.get(id) {
+                let mut file = File::open(&entry.path_main).await?;
+                let mut bin = Vec::new();
+                let _ = file.read_to_end(&mut bin).await?;
+                binlist.push(bin);
+            } else {
+                bail!("ID not found");
+            }
+        }
+    }
+    let mut resized_list = Vec::new();
+    for bin in binlist {
+        let mut w = 1280_u32;
+        let mut h = 720_u32;
+        let mut resized = bin;
+        while resized.len() > LIMIT_PHOTO_SIZE {
+            resized = resize(&resized, w, h)?;
+            w /= 2;
+            h /= 2;
+        }
+        resized_list.push(resized);
+    }
+    {
+        let mut tw = ctrl.sysmods().twitter.lock().await;
+
+        let mut midlist: Vec<u64> = Vec::new();
+        for bin in resized_list {
+            let media_id = tw.media_upload(bin).await?;
+            midlist.push(media_id);
+        }
+        let text = ids.join("\n");
+        tw.tweet_with_media(&text, &midlist).await?;
     }
 
     Ok(())
@@ -376,7 +443,7 @@ async fn pic_get_internal(ctrl: &Control, stype: StorageType, name: &str, kind: 
     let is_th = match kind {
         "main" => false,
         "thumb" => true,
-        _ => return Ok(simple_error(StatusCode::BAD_REQUEST)),
+        _ => return Ok(error_resp(StatusCode::BAD_REQUEST)),
     };
 
     let value = {
@@ -403,7 +470,7 @@ async fn pic_get_internal(ctrl: &Control, stype: StorageType, name: &str, kind: 
             .body(bin);
         Ok(resp)
     } else {
-        Ok(simple_error(StatusCode::NOT_FOUND))
+        Ok(error_resp(StatusCode::NOT_FOUND))
     }
 }
 
@@ -415,6 +482,17 @@ async fn take_post(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebR
         error!("{:#}", e);
     }
     let pic = pic?;
+
+    /*
+    // twitter upload test
+    {
+        let mini = create_thumbnail(&pic)?;
+        let tw = ctrl.sysmods().twitter.lock().await;
+        let id = tw.media_upload(mini).await;
+        info!("{id:?}");
+        id?;
+    }
+     */
 
     let thumb = create_thumbnail(&pic)?;
 
