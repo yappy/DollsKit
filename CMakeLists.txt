@@ -37,4 +37,3 @@ add_subdirectory("external/sleepy-discord")
 # projects
 #
 add_subdirectory("shanghai")
-add_subdirectory("document")
