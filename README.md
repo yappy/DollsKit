@@ -1,5 +1,7 @@
 # DollsKit
-Github Actions: [![CMake](https://github.com/yappy/DollsKit/actions/workflows/cmake.yaml/badge.svg)](https://github.com/yappy/DollsKit/actions/workflows/cmake.yaml)
+Github Actions:
+[![Rust](https://github.com/yappy/DollsKit/actions/workflows/rust.yml/badge.svg)](https://github.com/yappy/DollsKit/actions/workflows/rust.yml)
+[![Rust](https://github.com/yappy/DollsKit/actions/workflows/doc.yml/badge.svg)](https://github.com/yappy/DollsKit/actions/workflows/doc.yml)
 
 yappy家の管理プログラム
 
