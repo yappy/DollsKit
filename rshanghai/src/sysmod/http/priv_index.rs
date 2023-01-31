@@ -36,7 +36,7 @@ async fn index_get(
     for (k, v) in sorted {
         let k = html_escape(k);
         let v = html_escape(v);
-        header_str.push_str(&format!("      <li>{}: {}</li>\n", k, v));
+        header_str.push_str(&format!("      <li>{k}: {v}</li>\n"));
     }
 
     let body = format!(

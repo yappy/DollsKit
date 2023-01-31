@@ -46,20 +46,19 @@ async fn index_get(
     let info_list = [
         format!("Started: {}", started.format("%F %T %:z")),
         format!(
-            "Operated for: {} days, {:02}:{:02}:{:02}.{:03}",
-            day, hour, min, sec, ms
+            "Operated for: {day} days, {hour:02}:{min:02}:{sec:02}.{ms:03}"
         ),
     ];
 
     let info_str = info_list
         .iter()
-        .map(|s| format!("      <li>{}</li>", s))
+        .map(|s| format!("      <li>{s}</li>"))
         .collect::<Vec<_>>()
         .join("\n");
 
     let ver_str = version::VERSION_INFO_VEC
         .iter()
-        .map(|s| format!("      <li>{}</li>", s))
+        .map(|s| format!("      <li>{s}</li>"))
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -73,21 +72,18 @@ async fn index_get(
     <h1>House Management System Web Interface</h1>
     <h2>System Available</h2>
     <ul>
-{info}
+{info_str}
     </ul>
     <p>Access count: {counter}</p>
 
     <hr>
 
     <ul>
-{ver}
+{ver_str}
     </ul>
   </body>
 </html>
-"#,
-        info = info_str,
-        counter = counter,
-        ver = ver_str
+"#
     );
 
     HttpResponse::Ok()

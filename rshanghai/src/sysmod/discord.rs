@@ -78,12 +78,12 @@ impl Display for AutoDeleteConfig {
         };
         let time_str = if self.keep_dur_min != 0 {
             let (d, h, m) = convert_duration(self.keep_dur_min);
-            format!("{} day(s) {} hour(s) {} minute(s)", d, h, m)
+            format!("{d} day(s) {h} hour(s) {m} minute(s)")
         } else {
             "Disabled".to_string()
         };
 
-        write!(f, "Keep Count: {}\nKeep Time: {}", count_str, time_str)
+        write!(f, "Keep Count: {count_str}\nKeep Time: {time_str}")
     }
 }
 
@@ -239,7 +239,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     let mut after = 0u64;
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        let query = format!("?after={}&limit={}", after, GET_MSG_LIMIT);
+        let query = format!("?after={after}&limit={GET_MSG_LIMIT}");
         info!("get_messages: {}", query);
         let msgs = ctx.http.get_messages(ch, &query).await?;
         // 空配列ならば完了
@@ -505,8 +505,7 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
         msg.reply(
             ctx,
             format!(
-                "Invalid parameter\n1 <= dice <= {}, 1 <= count <= {}",
-                DICE_MAX, DICE_COUNT_MAX
+                "Invalid parameter\n1 <= dice <= {DICE_MAX}, 1 <= count <= {DICE_COUNT_MAX}"
             ),
         )
         .await?;
@@ -537,7 +536,7 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let (delcount, total) =
         delete_msgs_in_channel(ctx, msg.channel_id.0, |m, i, len| i + n < len).await?;
 
-    msg.reply(ctx, format!("{}/{} messages deleted", delcount, total))
+    msg.reply(ctx, format!("{delcount}/{total} messages deleted"))
         .await?;
 
     Ok(())
@@ -637,7 +636,7 @@ async fn status(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     if let Some(config) = config {
-        msg.reply(ctx, format!("{}", config)).await?;
+        msg.reply(ctx, format!("{config}")).await?;
     } else {
         msg.reply(ctx, INVALID_CH_MSG).await?;
     }
@@ -674,7 +673,7 @@ async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
             Some(config) => {
                 config.keep_count = keep_count;
                 config.keep_dur_min = keep_duration;
-                msg.reply(ctx, format!("OK\n{}", config)).await?;
+                msg.reply(ctx, format!("OK\n{config}")).await?;
             }
             None => {
                 msg.reply(ctx, INVALID_CH_MSG).await?;

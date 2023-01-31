@@ -156,7 +156,7 @@ fn create_msg_from_json(json_body: &str) -> Result<String> {
         .as_str()
         .ok_or_else(|| anyhow!("compare not found"))?;
 
-    Ok(format!("Pushed to Github: {}\n{}", refstr, compare))
+    Ok(format!("Pushed to Github: {refstr}\n{compare}"))
 }
 
 #[cfg(test)]

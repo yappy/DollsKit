@@ -130,9 +130,8 @@ fn create_pic_list_page(
             ""
         };
         fig_list += &format!(
-            r#"        <label><input type="radio" name="cmd" value="{}"{}>{}</label>
-"#,
-            cmd, checked, label
+            r#"        <label><input type="radio" name="cmd" value="{cmd}"{checked}>{label}</label>
+"#
         );
     }
     fig_list += r#"      </fieldset>
@@ -142,13 +141,12 @@ fn create_pic_list_page(
 
     for name in data {
         fig_list += &format!(
-            r#"      <input type="checkbox" id="{0}" name="target" value="{0}">
+            r#"      <input type="checkbox" id="{name}" name="target" value="{name}">
       <figure class="pic">
-        <a href="./pic/{1}/{0}/main"><img src="./pic/{1}/{0}/thumb" alt="{0}"></a>
-        <figcaption class="pic"><label for="{0}">{0}</label></figcaption>
+        <a href="./pic/{img_path_dir}/{name}/main"><img src="./pic/{img_path_dir}/{name}/thumb" alt="{name}"></a>
+        <figcaption class="pic"><label for="{name}">{name}</label></figcaption>
       </figure>
-"#,
-            name, img_path_dir
+"#
         );
     }
     fig_list += "    </form>";
@@ -198,10 +196,7 @@ fn create_pic_list_page(
     <p><a href="./">Camera Main Page</a></p>
   </body>
 </html>
-"#,
-        title = title,
-        page_navi = page_navi,
-        fig_list = fig_list
+"#
     )
 }
 

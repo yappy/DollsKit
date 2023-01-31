@@ -116,8 +116,8 @@ impl Camera {
     /// キーからファイル名を生成する。
     fn create_file_names(key: &str) -> (String, String) {
         (
-            format!("{}.jpg", key),
-            format!("{}_{}.jpg", key, THUMB_POSTFIX),
+            format!("{key}.jpg"),
+            format!("{key}_{THUMB_POSTFIX}.jpg"),
         )
     }
 
@@ -340,7 +340,7 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
 
         // サムネイル画像のパスを生成
         let mut path_th = PathBuf::from(path);
-        path_th.set_file_name(format!("{}_{}", name, THUMB_POSTFIX));
+        path_th.set_file_name(format!("{name}_{THUMB_POSTFIX}"));
         path_th.set_extension("jpg");
 
         // サイズ取得

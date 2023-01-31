@@ -56,14 +56,14 @@ fn daemon() {
     let stdout = match File::create(FILE_STDOUT) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Open {} error: {}", FILE_STDOUT, e);
+            eprintln!("Open {FILE_STDOUT} error: {e}");
             std::process::exit(1);
         }
     };
     let stderr = match File::create(FILE_STDERR) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("Open {} error: {}", FILE_STDERR, e);
+            eprintln!("Open {FILE_STDERR} error: {e}");
             std::process::exit(1);
         }
     };
@@ -78,7 +78,7 @@ fn daemon() {
         .stderr(stderr);
 
     if let Err(e) = daemonize.start() {
-        eprintln!("Daemonize error: {}", e);
+        eprintln!("Daemonize error: {e}");
         std::process::exit(1);
     }
 }
@@ -143,9 +143,9 @@ fn load_config() -> Result<()> {
             .create_new(true)
             .mode(0o600)
             .open(CONFIG_DEF_FILE)
-            .with_context(|| format!("Failed to open {}", CONFIG_DEF_FILE))?;
+            .with_context(|| format!("Failed to open {CONFIG_DEF_FILE}"))?;
         f.write_all(DEF_CONFIG_JSON.as_bytes())
-            .with_context(|| format!("Failed to write {}", CONFIG_DEF_FILE))?;
+            .with_context(|| format!("Failed to write {CONFIG_DEF_FILE}"))?;
         info!("OK: written to {}", CONFIG_DEF_FILE);
         // close
     }
@@ -158,11 +158,10 @@ fn load_config() -> Result<()> {
         let mut f = OpenOptions::new()
             .read(true)
             .open(CONFIG_FILE)
-            .with_context(|| format!("Failed to open {} (the first execution?)", CONFIG_FILE))
+            .with_context(|| format!("Failed to open {CONFIG_FILE} (the first execution?)"))
             .with_context(|| {
                 format!(
-                    "HINT: Copy {} to {} and try again",
-                    CONFIG_DEF_FILE, CONFIG_FILE
+                    "HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again"
                 )
             })?;
 
@@ -176,7 +175,7 @@ fn load_config() -> Result<()> {
         );
 
         f.read_to_string(&mut json_str)
-            .with_context(|| format!("Failed to read {}", CONFIG_FILE))?;
+            .with_context(|| format!("Failed to read {CONFIG_FILE}"))?;
         info!("OK: {} loaded", CONFIG_FILE);
         // close
     }
@@ -185,7 +184,7 @@ fn load_config() -> Result<()> {
     let json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, &json_str];
     sys::config::init();
     for (i, json_str) in json_list.iter().enumerate() {
-        sys::config::add_config(json_str).with_context(|| format!("Config load failed: {}", i))?;
+        sys::config::add_config(json_str).with_context(|| format!("Config load failed: {i}"))?;
     }
 
     Ok(())
@@ -196,7 +195,7 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
     let now = now.format("%F %T %:z");
-    let msg = format!("[{}] Boot...\n{}", now, build_info);
+    let msg = format!("[{now}] Boot...\n{build_info}");
 
     {
         let mut twitter = ctrl.sysmods().twitter.lock().await;
@@ -311,7 +310,7 @@ fn create_run_script() -> Result<()> {
 /// * `program` - プログラム名 (argv\[0\])。
 /// * `opts` - パーサオブジェクト。
 fn print_help(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options]", program);
+    let brief = format!("Usage: {program} [options]");
     print!("{}", opts.usage(&brief));
 }
 
@@ -331,7 +330,7 @@ fn main() -> Result<()> {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(fail) => {
-            eprintln!("{}", fail);
+            eprintln!("{fail}");
             std::process::exit(1);
         }
     };
