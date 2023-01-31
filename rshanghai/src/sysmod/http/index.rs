@@ -45,9 +45,7 @@ async fn index_get(
     let ms = op_time.num_milliseconds() - op_time.num_seconds() * 1000;
     let info_list = [
         format!("Started: {}", started.format("%F %T %:z")),
-        format!(
-            "Operated for: {day} days, {hour:02}:{min:02}:{sec:02}.{ms:03}"
-        ),
+        format!("Operated for: {day} days, {hour:02}:{min:02}:{sec:02}.{ms:03}"),
     ];
 
     let info_str = info_list

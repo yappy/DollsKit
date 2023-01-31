@@ -115,10 +115,7 @@ impl Camera {
 
     /// キーからファイル名を生成する。
     fn create_file_names(key: &str) -> (String, String) {
-        (
-            format!("{key}.jpg"),
-            format!("{key}_{THUMB_POSTFIX}.jpg"),
-        )
+        (format!("{key}.jpg"), format!("{key}_{THUMB_POSTFIX}.jpg"))
     }
 
     /// 撮影した画像をストレージに書き出し、管理構造に追加する。

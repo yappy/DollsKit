@@ -504,9 +504,7 @@ async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     if !(1..=DICE_MAX).contains(&d) || !(1..=DICE_COUNT_MAX).contains(&count) {
         msg.reply(
             ctx,
-            format!(
-                "Invalid parameter\n1 <= dice <= {DICE_MAX}, 1 <= count <= {DICE_COUNT_MAX}"
-            ),
+            format!("Invalid parameter\n1 <= dice <= {DICE_MAX}, 1 <= count <= {DICE_COUNT_MAX}"),
         )
         .await?;
         return Ok(());

@@ -160,9 +160,7 @@ fn load_config() -> Result<()> {
             .open(CONFIG_FILE)
             .with_context(|| format!("Failed to open {CONFIG_FILE} (the first execution?)"))
             .with_context(|| {
-                format!(
-                    "HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again"
-                )
+                format!("HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again")
             })?;
 
         let metadata = f.metadata()?;
