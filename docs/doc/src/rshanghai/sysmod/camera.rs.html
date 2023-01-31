@@ -510,9 +510,6 @@
 <span id="510">510</span>
 <span id="511">511</span>
 <span id="512">512</span>
-<span id="513">513</span>
-<span id="514">514</span>
-<span id="515">515</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
@@ -630,10 +627,7 @@
 
     <span class="doccomment">/// キーからファイル名を生成する。
     </span><span class="kw">fn </span>create_file_names(key: <span class="kw-2">&amp;</span>str) -&gt; (String, String) {
-        (
-            <span class="macro">format!</span>(<span class="string">&quot;{}.jpg&quot;</span>, key),
-            <span class="macro">format!</span>(<span class="string">&quot;{}_{}.jpg&quot;</span>, key, THUMB_POSTFIX),
-        )
+        (<span class="macro">format!</span>(<span class="string">&quot;{key}.jpg&quot;</span>), <span class="macro">format!</span>(<span class="string">&quot;{key}_{THUMB_POSTFIX}.jpg&quot;</span>))
     }
 
     <span class="doccomment">/// 撮影した画像をストレージに書き出し、管理構造に追加する。
@@ -855,7 +849,7 @@
 
         <span class="comment">// サムネイル画像のパスを生成
         </span><span class="kw">let </span><span class="kw-2">mut </span>path_th = PathBuf::from(path);
-        path_th.set_file_name(<span class="macro">format!</span>(<span class="string">&quot;{}_{}&quot;</span>, name, THUMB_POSTFIX));
+        path_th.set_file_name(<span class="macro">format!</span>(<span class="string">&quot;{name}_{THUMB_POSTFIX}&quot;</span>));
         path_th.set_extension(<span class="string">&quot;jpg&quot;</span>);
 
         <span class="comment">// サイズ取得

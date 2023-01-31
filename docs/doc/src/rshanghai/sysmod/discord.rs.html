@@ -723,9 +723,6 @@
 <span id="723">723</span>
 <span id="724">724</span>
 <span id="725">725</span>
-<span id="726">726</span>
-<span id="727">727</span>
-<span id="728">728</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
@@ -806,12 +803,12 @@
         };
         <span class="kw">let </span>time_str = <span class="kw">if </span><span class="self">self</span>.keep_dur_min != <span class="number">0 </span>{
             <span class="kw">let </span>(d, h, m) = convert_duration(<span class="self">self</span>.keep_dur_min);
-            <span class="macro">format!</span>(<span class="string">&quot;{} day(s) {} hour(s) {} minute(s)&quot;</span>, d, h, m)
+            <span class="macro">format!</span>(<span class="string">&quot;{d} day(s) {h} hour(s) {m} minute(s)&quot;</span>)
         } <span class="kw">else </span>{
             <span class="string">&quot;Disabled&quot;</span>.to_string()
         };
 
-        <span class="macro">write!</span>(f, <span class="string">&quot;Keep Count: {}\nKeep Time: {}&quot;</span>, count_str, time_str)
+        <span class="macro">write!</span>(f, <span class="string">&quot;Keep Count: {count_str}\nKeep Time: {time_str}&quot;</span>)
     }
 }
 
@@ -967,7 +964,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>after = <span class="number">0u64</span>;
     <span class="kw">loop </span>{
         <span class="comment">// https://discord.com/developers/docs/resources/channel#get-channel-messages
-        </span><span class="kw">let </span>query = <span class="macro">format!</span>(<span class="string">&quot;?after={}&amp;limit={}&quot;</span>, after, GET_MSG_LIMIT);
+        </span><span class="kw">let </span>query = <span class="macro">format!</span>(<span class="string">&quot;?after={after}&amp;limit={GET_MSG_LIMIT}&quot;</span>);
         <span class="macro">info!</span>(<span class="string">&quot;get_messages: {}&quot;</span>, query);
         <span class="kw">let </span>msgs = ctx.http.get_messages(ch, <span class="kw-2">&amp;</span>query).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// 空配列ならば完了
@@ -1232,10 +1229,7 @@
     <span class="kw">if </span>!(<span class="number">1</span>..=DICE_MAX).contains(<span class="kw-2">&amp;</span>d) || !(<span class="number">1</span>..=DICE_COUNT_MAX).contains(<span class="kw-2">&amp;</span>count) {
         msg.reply(
             ctx,
-            <span class="macro">format!</span>(
-                <span class="string">&quot;Invalid parameter\n1 &lt;= dice &lt;= {}, 1 &lt;= count &lt;= {}&quot;</span>,
-                DICE_MAX, DICE_COUNT_MAX
-            ),
+            <span class="macro">format!</span>(<span class="string">&quot;Invalid parameter\n1 &lt;= dice &lt;= {DICE_MAX}, 1 &lt;= count &lt;= {DICE_COUNT_MAX}&quot;</span>),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -1265,7 +1259,7 @@
     </span><span class="kw">let </span>(delcount, total) =
         delete_msgs_in_channel(ctx, msg.channel_id.<span class="number">0</span>, |m, i, len| i + n &lt; len).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;{}/{} messages deleted&quot;</span>, delcount, total))
+    msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;{delcount}/{total} messages deleted&quot;</span>))
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -1365,7 +1359,7 @@ Please contact my owner.&quot;</span>;
     };
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(config) = config {
-        msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, config)).<span class="kw">await</span><span class="question-mark">?</span>;
+        msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;{config}&quot;</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
     } <span class="kw">else </span>{
         msg.reply(ctx, INVALID_CH_MSG).<span class="kw">await</span><span class="question-mark">?</span>;
     }
@@ -1402,7 +1396,7 @@ Please contact my owner.&quot;</span>;
             <span class="prelude-val">Some</span>(config) =&gt; {
                 config.keep_count = keep_count;
                 config.keep_dur_min = keep_duration;
-                msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;OK\n{}&quot;</span>, config)).<span class="kw">await</span><span class="question-mark">?</span>;
+                msg.reply(ctx, <span class="macro">format!</span>(<span class="string">&quot;OK\n{config}&quot;</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="prelude-val">None </span>=&gt; {
                 msg.reply(ctx, INVALID_CH_MSG).<span class="kw">await</span><span class="question-mark">?</span>;

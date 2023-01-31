@@ -107,7 +107,7 @@
     <span class="kw">for </span>(k, v) <span class="kw">in </span>sorted {
         <span class="kw">let </span>k = html_escape(k);
         <span class="kw">let </span>v = html_escape(v);
-        header_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;      &lt;li&gt;{}: {}&lt;/li&gt;\n&quot;</span>, k, v));
+        header_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;      &lt;li&gt;{k}: {v}&lt;/li&gt;\n&quot;</span>));
     }
 
     <span class="kw">let </span>body = <span class="macro">format!</span>(

@@ -348,7 +348,7 @@
         .as_str()
         .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;compare not found&quot;</span>))<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">&quot;Pushed to Github: {}\n{}&quot;</span>, refstr, compare))
+    <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">&quot;Pushed to Github: {refstr}\n{compare}&quot;</span>))
 }
 
 <span class="attribute">#[cfg(test)]

@@ -403,7 +403,6 @@
 <span id="403">403</span>
 <span id="404">404</span>
 <span id="405">405</span>
-<span id="406">406</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
@@ -491,7 +490,7 @@
             text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;CPU: {:.1}%&quot;</span>, cpu_info.cpu_percent_total));
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(temp) = cpu_temp.temp {
-                text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\nCPU Temp: {:.1}&#39;C&quot;</span>, temp));
+                text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\nCPU Temp: {temp:.1}&#39;C&quot;</span>));
             }
 
             text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -804,9 +803,8 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(temp) = result.temp {
             <span class="macro">assert!</span>(
                 (<span class="number">30.0</span>..=<span class="number">100.0</span>).contains(<span class="kw-2">&amp;</span>temp),
-                <span class="string">&quot;strange temperature: {}&quot;</span>,
-                temp
-            );
+                <span class="string">&quot;strange temperature: {temp}&quot;
+            </span>);
         }
     }
 }

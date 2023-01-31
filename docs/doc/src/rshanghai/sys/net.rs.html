@@ -235,28 +235,28 @@
     </span><span class="attribute">#[test]
     </span><span class="kw">fn </span>percent_encode_twitter_1() {
         <span class="kw">let </span>str = <span class="string">&quot;Ladies + Gentlemen&quot;</span>;
-        <span class="kw">let </span>result = percent_encode(<span class="kw-2">&amp;</span>str);
+        <span class="kw">let </span>result = percent_encode(str);
         <span class="kw">let </span>expected = <span class="string">&quot;Ladies%20%2B%20Gentlemen&quot;</span>;
         <span class="macro">assert_eq!</span>(result, expected);
     }
 
     <span class="kw">fn </span>percent_encode_twitter_2() {
         <span class="kw">let </span>str = <span class="string">&quot;An encoded string!&quot;</span>;
-        <span class="kw">let </span>result = percent_encode(<span class="kw-2">&amp;</span>str);
+        <span class="kw">let </span>result = percent_encode(str);
         <span class="kw">let </span>expected = <span class="string">&quot;An%20encoded%20string%21&quot;</span>;
         <span class="macro">assert_eq!</span>(result, expected);
     }
 
     <span class="kw">fn </span>percent_encode_twitter_3() {
         <span class="kw">let </span>str = <span class="string">&quot;Dogs, Cats &amp; Mice&quot;</span>;
-        <span class="kw">let </span>result = percent_encode(<span class="kw-2">&amp;</span>str);
+        <span class="kw">let </span>result = percent_encode(str);
         <span class="kw">let </span>expected = <span class="string">&quot;Dogs%2C%20Cats%20%26%20Mice&quot;</span>;
         <span class="macro">assert_eq!</span>(result, expected);
     }
 
     <span class="kw">fn </span>percent_encode_twitter_4() {
         <span class="kw">let </span>str = <span class="string">&quot;☃&quot;</span>;
-        <span class="kw">let </span>result = percent_encode(<span class="kw-2">&amp;</span>str);
+        <span class="kw">let </span>result = percent_encode(str);
         <span class="kw">let </span>expected = <span class="string">&quot;%E2%98%83&quot;</span>;
         <span class="macro">assert_eq!</span>(result, expected);
     }

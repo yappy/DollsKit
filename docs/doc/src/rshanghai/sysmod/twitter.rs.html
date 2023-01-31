@@ -1002,7 +1002,6 @@
 <span id="1002">1002</span>
 <span id="1003">1003</span>
 <span id="1004">1004</span>
-<span id="1005">1005</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::net;
@@ -1516,7 +1515,7 @@
             </span><span class="kw">let </span>result = <span class="self">self</span>.users_by(request_users).<span class="kw">await</span>;
             <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
                 <span class="kw">if </span>e.is::&lt;serde_json::Error&gt;() {
-                    <span class="macro">panic!</span>(<span class="string">&quot;parse error {:?}&quot;</span>, e);
+                    <span class="macro">panic!</span>(<span class="string">&quot;parse error {e:?}&quot;</span>);
                 } <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
@@ -1536,9 +1535,8 @@
             }
             <span class="macro">assert!</span>(
                 rest.is_empty(),
-                <span class="string">&quot;cannot resolved (account suspended?): {:?}&quot;</span>,
-                rest
-            );
+                <span class="string">&quot;cannot resolved (account suspended?): {rest:?}&quot;
+            </span>);
 
             start += LIMIT_USERS_BY;
         }
@@ -1843,7 +1841,7 @@
         <span class="kw">for </span>(k, v) <span class="kw">in </span>src.iter() {
             <span class="kw">let </span>old = param.insert(net::percent_encode(k), net::percent_encode(v));
             <span class="kw">if </span>old.is_some() {
-                <span class="macro">panic!</span>(<span class="string">&quot;duplicate key: {}&quot;</span>, k);
+                <span class="macro">panic!</span>(<span class="string">&quot;duplicate key: {k}&quot;</span>);
             }
         }
     };
@@ -1925,7 +1923,7 @@
         <span class="macro">assert_eq!</span>(from1.chars().count(), TWEET_LEN_MAX);
         <span class="macro">assert_eq!</span>(from1, to1);
 
-        <span class="kw">let </span>from2 = <span class="macro">format!</span>(<span class="string">&quot;{}あ&quot;</span>, from1);
+        <span class="kw">let </span>from2 = <span class="macro">format!</span>(<span class="string">&quot;{from1}あ&quot;</span>);
         <span class="kw">let </span>to2 = Twitter::truncate_tweet_text(<span class="kw-2">&amp;</span>from2).to_string();
         <span class="macro">assert_eq!</span>(from2.chars().count(), TWEET_LEN_MAX + <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(from1, to2);

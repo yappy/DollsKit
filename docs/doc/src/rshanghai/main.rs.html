@@ -352,9 +352,6 @@
 <span id="352">352</span>
 <span id="353">353</span>
 <span id="354">354</span>
-<span id="355">355</span>
-<span id="356">356</span>
-<span id="357">357</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Rust 版管理人形
 
 </span><span class="comment">// TODO: 最終的には外すこと
@@ -413,14 +410,14 @@
     <span class="kw">let </span>stdout = <span class="kw">match </span>File::create(FILE_STDOUT) {
         <span class="prelude-val">Ok</span>(f) =&gt; f,
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {} error: {}&quot;</span>, FILE_STDOUT, e);
+            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {FILE_STDOUT} error: {e}&quot;</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
     <span class="kw">let </span>stderr = <span class="kw">match </span>File::create(FILE_STDERR) {
         <span class="prelude-val">Ok</span>(f) =&gt; f,
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {} error: {}&quot;</span>, FILE_STDERR, e);
+            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {FILE_STDERR} error: {e}&quot;</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
@@ -435,7 +432,7 @@
         .stderr(stderr);
 
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = daemonize.start() {
-        <span class="macro">eprintln!</span>(<span class="string">&quot;Daemonize error: {}&quot;</span>, e);
+        <span class="macro">eprintln!</span>(<span class="string">&quot;Daemonize error: {e}&quot;</span>);
         std::process::exit(<span class="number">1</span>);
     }
 }
@@ -500,9 +497,9 @@
             .create_new(<span class="bool-val">true</span>)
             .mode(<span class="number">0o600</span>)
             .open(CONFIG_DEF_FILE)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {}&quot;</span>, CONFIG_DEF_FILE))<span class="question-mark">?</span>;
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {CONFIG_DEF_FILE}&quot;</span>))<span class="question-mark">?</span>;
         f.write_all(DEF_CONFIG_JSON.as_bytes())
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to write {}&quot;</span>, CONFIG_DEF_FILE))<span class="question-mark">?</span>;
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to write {CONFIG_DEF_FILE}&quot;</span>))<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;OK: written to {}&quot;</span>, CONFIG_DEF_FILE);
         <span class="comment">// close
     </span>}
@@ -515,12 +512,9 @@
         <span class="kw">let </span><span class="kw-2">mut </span>f = OpenOptions::new()
             .read(<span class="bool-val">true</span>)
             .open(CONFIG_FILE)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {} (the first execution?)&quot;</span>, CONFIG_FILE))
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {CONFIG_FILE} (the first execution?)&quot;</span>))
             .with_context(|| {
-                <span class="macro">format!</span>(
-                    <span class="string">&quot;HINT: Copy {} to {} and try again&quot;</span>,
-                    CONFIG_DEF_FILE, CONFIG_FILE
-                )
+                <span class="macro">format!</span>(<span class="string">&quot;HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again&quot;</span>)
             })<span class="question-mark">?</span>;
 
         <span class="kw">let </span>metadata = f.metadata()<span class="question-mark">?</span>;
@@ -533,7 +527,7 @@
         );
 
         f.read_to_string(<span class="kw-2">&amp;mut </span>json_str)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to read {}&quot;</span>, CONFIG_FILE))<span class="question-mark">?</span>;
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to read {CONFIG_FILE}&quot;</span>))<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;OK: {} loaded&quot;</span>, CONFIG_FILE);
         <span class="comment">// close
     </span>}
@@ -542,7 +536,7 @@
     </span><span class="kw">let </span>json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, <span class="kw-2">&amp;</span>json_str];
     sys::config::init();
     <span class="kw">for </span>(i, json_str) <span class="kw">in </span>json_list.iter().enumerate() {
-        sys::config::add_config(json_str).with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Config load failed: {}&quot;</span>, i))<span class="question-mark">?</span>;
+        sys::config::add_config(json_str).with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Config load failed: {i}&quot;</span>))<span class="question-mark">?</span>;
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -553,7 +547,7 @@
     <span class="comment">// 同一テキストをツイートしようとするとエラーになるので日時を含める
     </span><span class="kw">let </span>now = chrono::Local::now();
     <span class="kw">let </span>now = now.format(<span class="string">&quot;%F %T %:z&quot;</span>);
-    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;[{}] Boot...\n{}&quot;</span>, now, build_info);
+    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;[{now}] Boot...\n{build_info}&quot;</span>);
 
     {
         <span class="kw">let </span><span class="kw-2">mut </span>twitter = ctrl.sysmods().twitter.lock().<span class="kw">await</span>;
@@ -668,7 +662,7 @@
 /// * `program` - プログラム名 (argv\[0\])。
 /// * `opts` - パーサオブジェクト。
 </span><span class="kw">fn </span>print_help(program: <span class="kw-2">&amp;</span>str, opts: Options) {
-    <span class="kw">let </span>brief = <span class="macro">format!</span>(<span class="string">&quot;Usage: {} [options]&quot;</span>, program);
+    <span class="kw">let </span>brief = <span class="macro">format!</span>(<span class="string">&quot;Usage: {program} [options]&quot;</span>);
     <span class="macro">print!</span>(<span class="string">&quot;{}&quot;</span>, opts.usage(<span class="kw-2">&amp;</span>brief));
 }
 
@@ -688,7 +682,7 @@
     <span class="kw">let </span>matches = <span class="kw">match </span>opts.parse(<span class="kw-2">&amp;</span>args[<span class="number">1</span>..]) {
         <span class="prelude-val">Ok</span>(m) =&gt; m,
         <span class="prelude-val">Err</span>(fail) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, fail);
+            <span class="macro">eprintln!</span>(<span class="string">&quot;{fail}&quot;</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
