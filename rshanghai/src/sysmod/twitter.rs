@@ -511,7 +511,7 @@ impl Twitter {
             let result = self.users_by(request_users).await;
             if let Err(e) = result {
                 if e.is::<serde_json::Error>() {
-                    panic!("parse error {:?}", e);
+                    panic!("parse error {e:?}");
                 } else {
                     return Err(e);
                 }
@@ -531,8 +531,7 @@ impl Twitter {
             }
             assert!(
                 rest.is_empty(),
-                "cannot resolved (account suspended?): {:?}",
-                rest
+                "cannot resolved (account suspended?): {rest:?}"
             );
 
             start += LIMIT_USERS_BY;
@@ -838,7 +837,7 @@ fn create_signature(
         for (k, v) in src.iter() {
             let old = param.insert(net::percent_encode(k), net::percent_encode(v));
             if old.is_some() {
-                panic!("duplicate key: {}", k);
+                panic!("duplicate key: {k}");
             }
         }
     };
@@ -920,7 +919,7 @@ mod tests {
         assert_eq!(from1.chars().count(), TWEET_LEN_MAX);
         assert_eq!(from1, to1);
 
-        let from2 = format!("{}あ", from1);
+        let from2 = format!("{from1}あ");
         let to2 = Twitter::truncate_tweet_text(&from2).to_string();
         assert_eq!(from2.chars().count(), TWEET_LEN_MAX + 1);
         assert_eq!(from1, to2);
