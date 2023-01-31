@@ -66,28 +66,28 @@ mod tests {
     #[test]
     fn percent_encode_twitter_1() {
         let str = "Ladies + Gentlemen";
-        let result = percent_encode(&str);
+        let result = percent_encode(str);
         let expected = "Ladies%20%2B%20Gentlemen";
         assert_eq!(result, expected);
     }
 
     fn percent_encode_twitter_2() {
         let str = "An encoded string!";
-        let result = percent_encode(&str);
+        let result = percent_encode(str);
         let expected = "An%20encoded%20string%21";
         assert_eq!(result, expected);
     }
 
     fn percent_encode_twitter_3() {
         let str = "Dogs, Cats & Mice";
-        let result = percent_encode(&str);
+        let result = percent_encode(str);
         let expected = "Dogs%2C%20Cats%20%26%20Mice";
         assert_eq!(result, expected);
     }
 
     fn percent_encode_twitter_4() {
         let str = "☃";
-        let result = percent_encode(&str);
+        let result = percent_encode(str);
         let expected = "%E2%98%83";
         assert_eq!(result, expected);
     }

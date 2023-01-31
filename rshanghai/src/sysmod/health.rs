@@ -85,7 +85,7 @@ impl Health {
             text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
 
             if let Some(temp) = cpu_temp.temp {
-                text.push_str(&format!("\nCPU Temp: {:.1}'C", temp));
+                text.push_str(&format!("\nCPU Temp: {temp:.1}'C"));
             }
 
             text.push_str(&format!(
@@ -398,8 +398,7 @@ mod tests {
         if let Some(temp) = result.temp {
             assert!(
                 (30.0..=100.0).contains(&temp),
-                "strange temperature: {}",
-                temp
+                "strange temperature: {temp}"
             );
         }
     }

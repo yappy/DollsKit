@@ -160,9 +160,9 @@ impl Control {
         let log_iter = wakeup_list.iter().take(LOG_LIMIT);
         let mut str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
             let str = if i == 0 {
-                format!("{}", v)
+                format!("{v}")
             } else {
-                format!(", {}", v)
+                format!(", {v}")
             };
             sum + &str
         });
