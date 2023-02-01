@@ -82,10 +82,10 @@ $ ./kill.sh
 $ crontab < cron.txt
 ```
 
-## 設定
-ドキュメントを `Config` で検索。
+## 設定ファイル (config.json) のヘルプ
+ドキュメントの config_help モジュールにまとまっています。
 
-TODO: 一か所のモジュールから再エクスポートして一覧を作れないか試す。
+https://yappy.github.io/DollsKit/doc/rshanghai/target/doc/rshanghai/config_help/index.html
 
 ## テストのビルドと実行
 ```
