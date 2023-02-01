@@ -1,0 +1,19 @@
+name: HTTPS Connection Test
+on:
+  schedule:
+    # min[0,59] hour[0,23] day[1,31] mon[1,12] week[0,6; 0=Sunday]
+    # 20:00 UTC = 05:00 JST
+    - cron:  '37 20 * * *'
+  workflow_dispatch:
+
+env:
+  url: https://yappy.mydns.jp/
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: HTTPS Access
+        run: |
+          curl -f ${{ env.url }}
