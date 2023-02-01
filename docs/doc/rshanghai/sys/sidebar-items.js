@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["config","設定データの管理。"],["net",""],["taskserver","非同期タスクを管理する。"],["version","バージョン情報。"]]};
+window.SIDEBAR_ITEMS = {"mod":[["config","設定データの管理。"],["netutil","URL encoding や SHA 計算等のユーティリティ。"],["taskserver","非同期タスクを管理する。"],["version","バージョン情報。"]]};
