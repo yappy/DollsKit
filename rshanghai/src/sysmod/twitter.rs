@@ -130,7 +130,7 @@ struct UploadResponseData {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-struct TwitterConfig {
+pub struct TwitterConfig {
     tlcheck_enabled: bool,
     debug_exec_once: bool,
     fake_tweet: bool,
