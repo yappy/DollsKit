@@ -25,11 +25,7 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
 }
 
 #[actix_web::get("/")]
-async fn index_get(
-    state: web::Data<IndexState>,
-    cfg: web::Data<HttpConfig>,
-    ctrl: web::Data<Control>,
-) -> impl Responder {
+async fn index_get(state: web::Data<IndexState>, ctrl: web::Data<Control>) -> impl Responder {
     let counter = state.access_counter.fetch_add(1, Ordering::Relaxed) + 1;
 
     let sysinfo = ctrl.sysmods().sysinfo.lock().await;

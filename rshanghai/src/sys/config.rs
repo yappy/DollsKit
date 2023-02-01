@@ -111,6 +111,7 @@ pub fn get_bool(keys: &[&str]) -> Result<bool> {
 /// 数値データを i64 で取得する。
 ///
 /// 見つからない場合、数値でない場合、範囲外の場合はエラーを返す。
+#[allow(dead_code)]
 pub fn get_i64<R>(keys: &[&str], range: R) -> Result<i64>
 where
     R: RangeBounds<i64> + Debug,
@@ -130,6 +131,7 @@ where
 /// 数値データを u64 で取得する。
 ///
 /// 見つからない場合、数値でない場合、範囲外の場合はエラーを返す。
+#[allow(dead_code)]
 pub fn get_u64<R>(keys: &[&str], range: R) -> Result<u64>
 where
     R: RangeBounds<u64> + Debug,

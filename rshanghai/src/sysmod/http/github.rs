@@ -2,15 +2,15 @@
 //!
 //! <https://docs.github.com/ja/developers/webhooks-and-events/webhooks>
 
-use super::{HttpConfig, WebResult};
-use crate::sys::{net::hmac_sha256_verify, taskserver::Control};
+use super::WebResult;
+use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::{error, info};
 use serde_json::Value;
 
 #[actix_web::get("/github/")]
-async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
+async fn index_get() -> impl Responder {
     let body = r#"<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -30,12 +30,7 @@ async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl
 
 /// Github webhook 設定で Content type = application/json に設定すること。
 #[actix_web::post("/github/")]
-async fn index_post(
-    req: HttpRequest,
-    body: String,
-    cfg: web::Data<HttpConfig>,
-    ctrl: web::Data<Control>,
-) -> WebResult {
+async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) -> WebResult {
     info!("POST github webhook");
 
     let headers = req.headers();

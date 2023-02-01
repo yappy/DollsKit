@@ -186,7 +186,7 @@ impl Control {
 
                 // 起動時刻リスト内で二分探索
                 match dt_list.binary_search(&now_hmd) {
-                    Ok(ind) => {
+                    Ok(_ind) => {
                         // 一致するものを発見したので続行
                         trace!("[{}] hit in time list: {}", name, now_hmd);
                     }

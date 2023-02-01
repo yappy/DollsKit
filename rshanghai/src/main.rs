@@ -1,9 +1,5 @@
 //! Rust 版管理人形
 
-// TODO: 最終的には外すこと
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 mod sys;
 mod sysmod;
 
@@ -40,11 +36,15 @@ const FILE_PID: &str = "rshanghai.pid";
 /// ログのファイル出力先。
 const FILE_LOG: &str = "rshanghai.log";
 
-/// デフォルトの設定データ(json source)。
+/// デフォルトの設定データ (json source)。
 /// [include_str!] でバイナリに含める。
 const DEF_CONFIG_JSON: &str = include_str!("res/config_default.json");
+/// デフォルトの Twitter コンテンツデータ (json source)。
+/// [include_str!] でバイナリに含める。
 const TW_CONTENTS_JSON: &str = include_str!("res/tw_contents.json");
+/// ロードする設定ファイルパス。
 const CONFIG_FILE: &str = "config.json";
+/// デフォルト設定の出力パス。
 const CONFIG_DEF_FILE: &str = "config_default.json";
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
@@ -188,6 +188,7 @@ fn load_config() -> Result<()> {
     Ok(())
 }
 
+/// 起動時に一度だけブートメッセージをツイートするタスク。
 async fn boot_msg_task(ctrl: Control) -> Result<()> {
     let build_info: &str = &sys::version::VERSION_INFO;
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
@@ -247,6 +248,7 @@ fn system_main() -> Result<()> {
     Ok(())
 }
 
+/// 実行可能パーミッション 755 でファイルを作成して close せずに返す。
 fn create_sh(path: &str) -> Result<File> {
     let f = File::create(path)?;
 
@@ -257,6 +259,9 @@ fn create_sh(path: &str) -> Result<File> {
     Ok(f)
 }
 
+/// 実行ファイル絶対パスから便利なスクリプトを生成する。
+///
+/// [FILE_EXEC_SH], [FILE_KILL_SH], [FILE_CRON].
 fn create_run_script() -> Result<()> {
     let exe = env::current_exe()?.to_string_lossy().to_string();
     let cd = env::current_dir()?.to_string_lossy().to_string();
@@ -282,7 +287,7 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "kill `cat {FILE_PID}`")?;
     }
     {
-        let f = File::create("cron.txt")?;
+        let f = File::create(FILE_CRON)?;
         let mut w = BufWriter::new(f);
 
         write!(
