@@ -71,6 +71,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_2() {
         let str = "An encoded string!";
         let result = percent_encode(str);
@@ -78,6 +79,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_3() {
         let str = "Dogs, Cats & Mice";
         let result = percent_encode(str);
@@ -85,6 +87,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_4() {
         let str = "☃";
         let result = percent_encode(str);
