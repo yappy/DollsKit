@@ -158,6 +158,7 @@ impl SystemModule for Health {
 
 #[derive(Debug, Clone)]
 struct HistoryEntry {
+    #[allow(dead_code)]
     date_time: DateTime<Local>,
     cpu_info: CpuInfo,
     mem_info: MemInfo,

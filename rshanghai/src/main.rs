@@ -1,8 +1,5 @@
 //! Rust 版管理人形
 
-// TODO: 最終的には外すこと
-#![allow(dead_code)]
-
 mod sys;
 mod sysmod;
 

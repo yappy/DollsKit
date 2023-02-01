@@ -407,6 +407,7 @@ pub struct TakePicOption {
     timeout_ms: u32,
 }
 
+#[allow(dead_code)]
 impl TakePicOption {
     pub fn new() -> Self {
         Self {
