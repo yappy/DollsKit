@@ -450,7 +450,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     let fake = config::get_bool(&["camera", "fake_camera"])?;
 
     let bin = if !fake {
-        let lock = LOCK.lock().await;
+        let _lock = LOCK.lock().await;
         let output = Command::new("raspistill")
             .arg("-o")
             .arg("-")

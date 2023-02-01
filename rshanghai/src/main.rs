@@ -2,7 +2,6 @@
 
 // TODO: 最終的には外すこと
 #![allow(dead_code)]
-#![allow(unused_variables)]
 
 mod sys;
 mod sysmod;

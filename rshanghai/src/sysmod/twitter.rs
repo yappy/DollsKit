@@ -196,7 +196,7 @@ impl Twitter {
     }
 
     /// Twitter 巡回タスク。
-    async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
+    async fn twitter_task(&mut self, _ctrl: &Control) -> Result<()> {
         // 自分の ID
         let me = self.get_my_id().await?;
         info!("[tw-check] user_me: {:?}", me);

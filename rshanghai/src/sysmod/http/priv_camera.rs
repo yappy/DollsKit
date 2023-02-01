@@ -1,4 +1,4 @@
-use super::{error_resp, HttpConfig, WebResult};
+use super::{error_resp, WebResult};
 use crate::{
     sys::taskserver::Control,
     sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE},
@@ -17,7 +17,7 @@ use tokio::{fs::File, io::AsyncReadExt};
 
 /// GET /priv/camera/ Camera インデックスページ。
 #[actix_web::get("/camera/")]
-async fn index_get(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> impl Responder {
+async fn index_get() -> impl Responder {
     let body = r#"<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -404,11 +404,7 @@ async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
 ///
 /// image/jpeg を返す。
 #[actix_web::get("/camera/pic/history/{name}/{kind}")]
-async fn pic_history_get(
-    cfg: web::Data<HttpConfig>,
-    ctrl: web::Data<Control>,
-    path: web::Path<(String, String)>,
-) -> WebResult {
+async fn pic_history_get(ctrl: web::Data<Control>, path: web::Path<(String, String)>) -> WebResult {
     let (name, kind) = path.into_inner();
 
     pic_get_internal(&ctrl, StorageType::History, &name, &kind).await
@@ -419,11 +415,7 @@ async fn pic_history_get(
 ///
 /// image/jpeg を返す。
 #[actix_web::get("/camera/pic/archive/{name}/{kind}")]
-async fn pic_archive_get(
-    cfg: web::Data<HttpConfig>,
-    ctrl: web::Data<Control>,
-    path: web::Path<(String, String)>,
-) -> WebResult {
+async fn pic_archive_get(ctrl: web::Data<Control>, path: web::Path<(String, String)>) -> WebResult {
     let (name, kind) = path.into_inner();
 
     pic_get_internal(&ctrl, StorageType::Archive, &name, &kind).await
@@ -470,7 +462,7 @@ async fn pic_get_internal(ctrl: &Control, stype: StorageType, name: &str, kind: 
 }
 
 #[actix_web::post("/camera/take")]
-async fn take_post(cfg: web::Data<HttpConfig>, ctrl: web::Data<Control>) -> WebResult {
+async fn take_post(ctrl: web::Data<Control>) -> WebResult {
     let pic = take_a_pic(TakePicOption::new()).await;
     if let Err(ref e) = pic {
         error!("take a picture error");

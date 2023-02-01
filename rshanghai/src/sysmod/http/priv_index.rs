@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::{priv_camera, HttpConfig};
-use crate::sys::{net::html_escape, taskserver::Control};
+use crate::sys::net::html_escape;
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 
 pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {
@@ -22,11 +22,7 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
 }
 
 #[actix_web::get("/")]
-async fn index_get(
-    req: HttpRequest,
-    cfg: web::Data<HttpConfig>,
-    ctrl: web::Data<Control>,
-) -> impl Responder {
+async fn index_get(req: HttpRequest) -> impl Responder {
     let mut sorted = BTreeMap::new();
     for (k, v) in req.headers() {
         sorted.insert(k.as_str(), v.to_str().unwrap_or_default());

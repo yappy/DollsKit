@@ -295,7 +295,7 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
             continue;
         }
         let keep_dur_sec = (keep_dur_min as u64).saturating_mul(60);
-        let (delcount, total) = delete_msgs_in_channel(&ctx, ch, |msg, i, len| {
+        let (_delcount, _total) = delete_msgs_in_channel(&ctx, ch, |msg, i, len| {
             let mut keep = true;
             if keep_count != 0 {
                 keep = keep && i + (keep_count as usize) < len;
@@ -532,7 +532,7 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
     // id 昇順で後ろ n 個を残して他を消す
     let (delcount, total) =
-        delete_msgs_in_channel(ctx, msg.channel_id.0, |m, i, len| i + n < len).await?;
+        delete_msgs_in_channel(ctx, msg.channel_id.0, |_m, i, len| i + n < len).await?;
 
     msg.reply(ctx, format!("{delcount}/{total} messages deleted"))
         .await?;

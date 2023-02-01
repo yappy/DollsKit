@@ -43,7 +43,7 @@ impl Health {
         })
     }
 
-    async fn check_task(&mut self, ctrl: &Control) -> Result<()> {
+    async fn check_task(&mut self, _ctrl: &Control) -> Result<()> {
         let cpu_info = get_cpu_info().await?;
         let mem_info = get_mem_info().await?;
         let disk_info = get_disk_info().await?;
