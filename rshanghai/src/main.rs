@@ -282,7 +282,7 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "kill `cat {FILE_PID}`")?;
     }
     {
-        let f = File::create("cron.txt")?;
+        let f = File::create(FILE_CRON)?;
         let mut w = BufWriter::new(f);
 
         write!(
