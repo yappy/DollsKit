@@ -43,7 +43,6 @@ https://github.com/rust-lang/rustfmt
 rustfmt.toml で設定を変更できるが、`} else {` は unstable 扱いで
 nightly ツールでないとまだ変更できない。
 ```
-$ rustup component add rustfmt
 $ cargo fmt
 ```
 
