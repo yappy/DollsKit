@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::{priv_camera, HttpConfig};
-use crate::sys::net::html_escape;
+use crate::sys::netutil::html_escape;
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 
 pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {

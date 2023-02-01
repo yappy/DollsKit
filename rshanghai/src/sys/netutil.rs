@@ -1,3 +1,5 @@
+//! URL encoding や SHA 計算等のユーティリティ。
+
 use anyhow::Result;
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};

@@ -3,7 +3,7 @@
 //! <https://docs.github.com/ja/developers/webhooks-and-events/webhooks>
 
 use super::WebResult;
-use crate::sys::{net::hmac_sha256_verify, taskserver::Control};
+use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::{error, info};

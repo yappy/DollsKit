@@ -1,6 +1,6 @@
 use super::SystemModule;
 use crate::sys::config;
-use crate::sys::net;
+use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -835,7 +835,7 @@ fn create_signature(
     let mut param = KeyValue::new();
     let encode_add = |param: &mut KeyValue, src: &KeyValue| {
         for (k, v) in src.iter() {
-            let old = param.insert(net::percent_encode(k), net::percent_encode(v));
+            let old = param.insert(netutil::percent_encode(k), netutil::percent_encode(v));
             if old.is_some() {
                 panic!("duplicate key: {k}");
             }
@@ -872,9 +872,9 @@ fn create_signature(
     let mut signature_base_string = "".to_string();
     signature_base_string.push_str(&http_method.to_ascii_uppercase());
     signature_base_string.push('&');
-    signature_base_string.push_str(&net::percent_encode(base_url));
+    signature_base_string.push_str(&netutil::percent_encode(base_url));
     signature_base_string.push('&');
-    signature_base_string.push_str(&net::percent_encode(&parameter_string));
+    signature_base_string.push_str(&netutil::percent_encode(&parameter_string));
 
     // "Getting a signing key"
     // 署名鍵は consumer_secret と token_secret をエスケープして & でつなぐだけ
@@ -885,7 +885,7 @@ fn create_signature(
 
     // "Calculating the signature"
     // HMAC SHA1
-    let result = net::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
+    let result = netutil::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
 
     // base64 encode したものを署名として "oauth_signature" に設定する
     base64::encode(result.into_bytes())
@@ -899,7 +899,13 @@ fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
     {
         let v: Vec<_> = oauth_param
             .iter()
-            .map(|(k, v)| format!(r#"{}="{}""#, net::percent_encode(k), net::percent_encode(v)))
+            .map(|(k, v)| {
+                format!(
+                    r#"{}="{}""#,
+                    netutil::percent_encode(k),
+                    netutil::percent_encode(v)
+                )
+            })
             .collect();
         oauth_value.push_str(&v.join(", "));
     }
