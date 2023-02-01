@@ -12,7 +12,7 @@ use tokio::{process::Command, select};
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
 #[derive(Clone, Serialize, Deserialize)]
-struct HealthConfig {
+pub struct HealthConfig {
     enabled: bool,
     debug_exec_once: bool,
 }
