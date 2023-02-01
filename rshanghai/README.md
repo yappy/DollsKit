@@ -9,6 +9,11 @@ $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 Q. 最近流行ってるけどこういうの怖くない？  
 A. はい。シェルスクリプトを自分で読む等、自己責任で。
 
+## アップデートの確認
+```
+$ rustup check
+```
+
 ## アップデート
 ```
 # rustup 自身のアップデート

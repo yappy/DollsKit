@@ -5,60 +5,68 @@ Github Actions:
 
 yappy家の管理プログラム
 
+## ドキュメント
+https://yappy.github.io/DollsKit/
+
 ## ソースの入手
 ```
 $ git clone <this_repository>
-# checkout や pull で submodule に更新が入った場合は毎回実行すること
-$ git submodule update --init --recursive
 ```
 
 ## ビルド
 環境の整った人形、または PC の中で
 
 ```
-$ mkdir build
-$ cd build
+$ cd rshanghai
+$ cargo build --release
+# or
+$ cargo b -r
 
-# -GNinja で Make ではなく Ninja build を使用可能
-# (未指定でも動きますが、最初にビルドタイプがツイートされます)
-$ cmake [-GNinja] -DCMAKE_BUILD_TYPE=Release ..
-# 以後、ccmake . で再 config 可能
-
-$ make -j4
-$ make install
-or
-$ ninja
-$ ninja install
-
-# dist/ に必要なファイルができる
+# 以下は debug build となる
+$ cargo build
 ```
+
+Stable 版の Rust 環境があればビルドできるはず。
 
 ## 管理プログラムの実行開始
+### 仮実行
+```
+$ cargo run --release
+# or 
+$ cargo r -r
+```
+
 ### 設定
 起動には設定ファイルが必要です。
-デフォルトファイルをコピーして作成してください。
+初回起動時は設定ファイルが存在しないためエラーになりますが、
+デフォルト設定ファイルが生成されるのでそれをコピーして作成してください。
 ほぼすべての機能はデフォルトでは無効になっています。
 存在しないキーはデフォルトファイルの内容が使われます。
-> cp config.default.json config.json
-
-### 実行
 ```
-$ make run
+$ cp config_default.json config.json
+```
+
+### 本実行
+```
+$ cargo run --release
+# or 
+$ cargo r -r
 ```
 
 ### daemon として実行
+`--daemon` オプション付きで実行します。
 ```
-$ make start
+$ cargo run --release -- --daemon
 or
-$ ninja start
+$ cargo r -r -- --daemon
+```
 
-# kill
-$ make stop
-or
-$ ninja stop
+ただし、`--daemon` なしでもよいので一度実行すると `exec.sh`, `kill.sh` が
+生成されるので、そちらを実行する方が便利です。
+```
+$ ./exec.sh
 
-# 停止の中身は
-$ kill `cat shanghai.pid`
+$ ./kill.sh
 ```
 
 ### シグナル
@@ -67,61 +75,36 @@ $ kill `cat shanghai.pid`
   * プログラムを終了します。
 * SIGHUP
   * (プロセスを終了せずに) 再起動します。設定やリソースファイルのリロードに使えます。
-* SIGUSR1
-  * ログをフラッシュします。
-    SD カード保護のため、ログはなるべくメモリに保持する設計になっています。
-
-例
-```
-$ kill -SIGUSR1 `cat shanghai.pid`
-```
-```
-$ make <stop|reload|flush>
-or
-$ ninja <stop|reload|flush>
-```
 
 ## システム起動時に自動起動
-インストール先ディレクトリに cron.txt ができます。
+一度実行すると `cron.txt` ができます。
 ```
 $ crontab < cron.txt
 ```
 
-## 設定 (抜粋)
-### System
-* AllTasksFirst:
-テストのため、起動直後に全タスクを一回ずつリリースします。
-本番では false にしてください。
+## 設定
+ドキュメントを `Config` で検索。
 
-### TwitterConfig
-* FakeTweet:
-実際にはツイートせず、ログに出力するのみにします。
-確認後、本番では true にしてください。
+TODO: 一か所のモジュールから再エクスポートして一覧を作れないか試す。
 
-### Switch
-SwitchBot の MAC address を文字列の配列として設定してください。
-
-### HttpServer (lighttpd での設定例)
+## テストのビルドと実行
 ```
-server.modules   += ( "mod_proxy" )
-
-$HTTP["url"] =~ "^/house" {
-  proxy.server  = ( "" => ( ( "host" => "127.0.0.1", "port" => 8888 )))
-  proxy.header = ("map-urlpath" => ("/house/" => "/"))
-}
+$ cargo test
 ```
 
-## テストの実行
-```
-% <make or ninja> shorttest
-% <make or ninja> fulltest
-```
+## CI
+GitHub Actions で自動ビルドを行っています。
+`.github/workflows/` 以下を参照。
 
-## 注意
-### Build Type
-CMAKE_BUILD_TYPE は Debug, Release, RelWithDebInfo, MinSizeRel が指定可能です。
+### 自動ビルド
+push および pull request 時に debug/release ビルドおよびテストを行います。
 
-### 並列 make
--jn の n の値は論理コア数に応じて適切な数を指定してください。
-~~人形はメモリが少ないので -j として無制限にするとメモリ不足で死にます。~~
-最近は大量メモリ搭載モデルが出てきているのでそこまででもないかもしれません。
+### ドキュメントの自動更新
+`doc` ブランチの `docs/` ディレクトリが GitHub Pages で公開されています。
+`main` ブランチに変更が push されると自動で `doc` ブランチを更新します。
+
+1. `doc` ブランチをチェックアウト
+1. `doc` ブランチに `main` ブランチをマージ
+1. `cargo doc` で Rust ドキュメントを自動生成
+1. `docs/` 以下を更新して commit
+1. push
