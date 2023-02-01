@@ -1,3 +1,5 @@
+//! URL encoding や SHA 計算等のユーティリティ。
+
 use anyhow::Result;
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
@@ -71,6 +73,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_2() {
         let str = "An encoded string!";
         let result = percent_encode(str);
@@ -78,6 +81,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_3() {
         let str = "Dogs, Cats & Mice";
         let result = percent_encode(str);
@@ -85,6 +89,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
     fn percent_encode_twitter_4() {
         let str = "☃";
         let result = percent_encode(str);

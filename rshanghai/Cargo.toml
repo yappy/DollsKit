@@ -29,7 +29,7 @@ daemonize = "0.4.1"
 # Time for log
 time = "0.3.15"
 # DateTime
-chrono = "0.4.22"
+chrono = "0.4.23"
 # Json
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.86"
@@ -61,4 +61,4 @@ hex-literal = "0.3.4"
 
 [build-dependencies]
 # Version info
-vergen = "7.4.2"
+vergen = "7.5.0"
