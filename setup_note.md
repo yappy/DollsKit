@@ -162,6 +162,21 @@ apt install -t <version>-backports <pkg>
 1. `sudo dpkg-reconfigure -plow unattended-upgrades`
 1. `/etc/apt/apt.conf.d/50unattended-upgrades` を編集
 
+初期設定は以下のようになっているが、Raspberry Pi では origin が
+"Raspbian" や "Raspberry Pi Foundation" になっているのでこのままではマッチせず
+何もアップデートされない。
+```
+"origin=Debian,codename=${distro_codename},label=Debian";
+"origin=Debian,codename=${distro_codename},label=Debian-Security";
+```
+
+origin, label, suite 等の情報は `/var/lib/apt/lists/` 以下にあるファイルに
+書かれているが、いつも `apt update` `apt upgrade` だけしているなら
+以下のようにすればとりあえず全部アップデートできる。
+```
+"o=*";
+```
+
 このあたりを運用に合わせて設定する。
 ```
 // Do automatic removal of new unused dependencies after the upgrade
@@ -171,6 +186,11 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 // Automatically reboot *WITHOUT CONFIRMATION* if
 //  the file /var/run/reboot-required is found after the upgrade
 Unattended-Upgrade::Automatic-Reboot "true";
+```
+
+以下で空実行できる。
+```
+sudo unattended-upgrade --debug --dry-run
 ```
 
 # 自動補完の Beep 音がうるさい
