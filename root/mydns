@@ -7,5 +7,6 @@
 # Copy to:
 # /etc/cron.daily/
 
-HOME=/root
-curl -u `cat $HOME/mydns` $MYDNS https://www.mydns.jp/login.html
+CRED=`cat /root/mydns`
+MYDNS=https://www.mydns.jp/login.html
+curl -u $CRED $MYDNS
