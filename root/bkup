@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Automatic backup script
+# Copy to:
+# /etc/cron.weekly/
+
+ROOT=/root/DollsKit/root
+python3 ${ROOT}/bkup.py --mount-check --exclude-from ${ROOT}/bkup_exclude.txt / /media/usbbkup
