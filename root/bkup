@@ -3,11 +3,19 @@
 # Automatic backup script
 # Copy to:
 # /etc/cron.weekly/
+# Clone this repository to:
+# /root/DollsKit
 
 ROOT=/root/DollsKit/root
+LOG=/root/bkup.log
+
+echo -------------------------------------------------------------------------------- >> ${LOG}
+date -R >> ${LOG}
+echo -------------------------------------------------------------------------------- >> ${LOG}
+
 python3 ${ROOT}/bkup.py \
 --mount-check \
 --reserved-size 10 \
 --exclude-from ${ROOT}/bkup_exclude.txt \
 / /media/usbbkup \
->> ${ROOT}/bkup.log 2>&1
+>> ${LOG} 2>&1
