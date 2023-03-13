@@ -5,4 +5,9 @@
 # /etc/cron.weekly/
 
 ROOT=/root/DollsKit/root
-python3 ${ROOT}/bkup.py --mount-check --reserved-size 10 --exclude-from ${ROOT}/bkup_exclude.txt / /media/usbbkup
+python3 ${ROOT}/bkup.py \
+--mount-check \
+--reserved-size 10 \
+--exclude-from ${ROOT}/bkup_exclude.txt \
+/ /media/usbbkup \
+>> ${ROOT}/bkup.log 2>&1

@@ -2,6 +2,7 @@ import argparse
 import datetime
 import pathlib
 import subprocess
+import tempfile
 import shutil
 import glob
 
@@ -48,11 +49,19 @@ def archive(rsync_dst, ar_dst, dry_run):
 	if dry_run:
 		print("skip by dry-run")
 		return
-	# -a: Use archive suffix to determine the compression program.
-	# -c: Create new.
-	# -f: Specify file name.
-	cmd = ["tar", "-C", str(rsync_dst), "-acvf", str(ar_dst), "."]
-	exec(cmd)
+
+	with tempfile.NamedTemporaryFile() as tf:
+		print(f"Temp file created: {tf.name}")
+		# -a: Use archive suffix to determine the compression program.
+		# -c: Create new.
+		# -f: Specify file name.
+		cmd = ["tar", "-C", str(rsync_dst), "-acvf", tf.name, "."]
+		exec(cmd)
+
+		print(f"Copy {tf.name} -> {ar_dst}")
+		shutil.copyfile(tf.name, str(ar_dst))
+		print(f"Delete temp file: {tf.name}")
+		# close and delete
 	print()
 
 def main():
