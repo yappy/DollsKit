@@ -55,7 +55,7 @@ def archive(rsync_dst, ar_dst, dry_run):
 		# -a: Use archive suffix to determine the compression program.
 		# -c: Create new.
 		# -f: Specify file name.
-		cmd = ["tar", "-C", str(rsync_dst), "-acvf", tf.name, "."]
+		cmd = ["tar", "-C", str(rsync_dst), "-acf", tf.name, "."]
 		exec(cmd)
 
 		print(f"Copy {tf.name} -> {ar_dst}")
