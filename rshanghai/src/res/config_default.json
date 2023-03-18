@@ -29,6 +29,10 @@
 		"perm_err_msg"		: "バカジャネーノ",
 		"force_perm_err"	: false
 	},
+	"openai": {
+		"enabled"			: false,
+		"api_key"			: ""
+	},
 	"http": {
 		"enabled"			: false,
 		"priv_enabled"		: false,
