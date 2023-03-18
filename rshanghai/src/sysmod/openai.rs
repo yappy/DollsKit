@@ -2,9 +2,9 @@ use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 use log::warn;
-use log::{debug, info};
+use log::{info};
 use serde::{Deserialize, Serialize};
 
 /// OpenAI API
