@@ -2,8 +2,10 @@
 
 use super::camera::{take_a_pic, TakePicOption};
 use super::SystemModule;
+use crate::sys::netutil;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
+use crate::sysmod::openai::{ChatMessage, ChatResponse};
 use anyhow::{anyhow, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -453,7 +455,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[group]
 #[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack)]
+#[commands(sysinfo, dice, delmsg, camera, attack, ai)]
 struct General;
 
 #[command]
@@ -577,6 +579,58 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
         m.content(format_args!("{} {}", user.mention(), text))
     })
     .await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("OpenAI chat assistant.")]
+#[usage("ai <your message>")]
+#[example("Hello, what's your name?")]
+#[min_args(1)]
+async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
+    //owner_check(ctx, msg).await?;
+
+    let chat_msg = arg.rest();
+    let msgs = vec![
+        ChatMessage {
+            role: "system".to_string(),
+            content: "あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
+        },
+        ChatMessage {
+            role: "system".to_string(),
+            content: "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string(),
+        },
+        ChatMessage {
+            role: "system".to_string(),
+            content: format!("以下は {} さんからの発言です。", msg.author.name),
+        },
+        ChatMessage {
+            role: "user".to_string(),
+            content: chat_msg.to_string(),
+        },
+    ];
+
+    let reply_msg = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        let resp = ai.chat(msgs).await?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
+
+        resp_msg
+            .choices
+            .get(0)
+            .ok_or(anyhow!("choices is empty"))?
+            .message
+            .content
+            .clone()
+    };
+
+    info!("openai reply: {reply_msg}");
+    msg.reply(ctx, reply_msg).await?;
 
     Ok(())
 }

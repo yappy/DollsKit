@@ -3,7 +3,7 @@ use crate::sys::config;
 use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Result};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -444,8 +444,8 @@ impl Twitter {
         let resp = self
             .http_oauth_post_multipart(URL_UPLOAD, &BTreeMap::new(), form)
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: UploadResponseData = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UploadResponseData = netutil::convert_from_json(&json_str)?;
         info!("upload OK: media_id={}", obj.media_id);
 
         Ok(obj.media_id)
@@ -543,8 +543,8 @@ impl Twitter {
 
     async fn users_me(&self) -> Result<UsersMe> {
         let resp = self.http_oauth_get(URL_USERS_ME, &KeyValue::new()).await?;
-        let json_str = process_response(resp).await?;
-        let obj: UsersMe = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UsersMe = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -560,8 +560,8 @@ impl Twitter {
                 &BTreeMap::from([("usernames".into(), users_str)]),
             )
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: UsersBy = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UsersBy = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -574,8 +574,8 @@ impl Twitter {
             ("expansions".into(), "author_id".into()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
-        let json_str = process_response(resp).await?;
-        let obj: Timeline = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: Timeline = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -589,8 +589,8 @@ impl Twitter {
             ("max_results".into(), "100".into()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
-        let json_str = process_response(resp).await?;
-        let obj: Timeline = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: Timeline = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -599,8 +599,8 @@ impl Twitter {
         let resp = self
             .http_oauth_post_json(URL_TWEETS, &KeyValue::new(), &param)
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: TweetResponse = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: TweetResponse = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -711,30 +711,6 @@ impl SystemModule for Twitter {
                 );
             }
         }
-    }
-}
-
-/// 文字列を JSON としてパースし、T 型に変換する。
-///
-/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
-fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
-where
-    T: Deserialize<'a>,
-{
-    let obj = serde_json::from_str::<T>(json_str).with_context(|| json_str.to_string())?;
-
-    Ok(obj)
-}
-
-/// HTTP status が成功 (200 台) でなければ Err に変換する。
-/// 成功ならば response body を文字列に変換して返す。
-async fn process_response(resp: reqwest::Response) -> Result<String> {
-    let status = resp.status();
-    let text = resp.text().await?;
-    if status.is_success() {
-        Ok(text)
-    } else {
-        bail!("HTTP error {} {}", status, text);
     }
 }
 

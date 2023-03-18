@@ -1,10 +1,38 @@
 //! URL encoding や SHA 計算等のユーティリティ。
-
-use anyhow::Result;
+//!
+use anyhow::{bail, Context, Result};
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
+use serde::Deserialize;
 use sha1::Sha1;
 use sha2::Sha256;
+
+/// HTTP status が成功 (200 台) でなければ Err に変換する。
+///
+/// 成功ならば response body を文字列に変換して返す。
+pub async fn check_http_resp(resp: reqwest::Response) -> Result<String> {
+    let status = resp.status();
+    let text = resp.text().await?;
+
+    if status.is_success() {
+        Ok(text)
+    } else {
+        bail!("HTTP error {} {}", status, text);
+    }
+}
+
+/// 文字列を JSON としてパースし、T 型に変換する。
+///
+/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
+pub fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    let obj = serde_json::from_str::<T>(json_str)
+        .with_context(|| format!("JSON parse failed: {}", json_str.to_string()))?;
+
+    Ok(obj)
+}
 
 /// [percent_encode] で変換する文字セット。
 ///

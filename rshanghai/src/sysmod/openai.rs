@@ -3,8 +3,9 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 
 use anyhow::{anyhow, bail, Result};
+use log::info;
 use log::warn;
-use log::{info};
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 /// OpenAI API
@@ -14,16 +15,40 @@ const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const MODEL: &str = "gpt-3.5-turbo";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Message {
+pub struct ChatMessage {
     /// "system", "user", or "assistant"
-    role: String,
-    content: String,
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Usage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+    pub total_tokens: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Choice {
+    pub message: ChatMessage,
+    pub finish_reason: String,
+    pub index: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChatResponse {
+    pub id: String,
+    pub object: String,
+    pub created: u64,
+    pub model: String,
+    pub usage: Usage,
+    pub choices: Vec<Choice>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct ChatRequest {
     model: String,
-    messages: Vec<Message>,
+    messages: Vec<ChatMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,7 +81,7 @@ impl OpenAi {
         Ok(OpenAi { config })
     }
 
-    pub async fn chat(&self, msgs: Vec<Message>) -> Result<String> {
+    pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<Response> {
         let key = &self.config.api_key;
         let body = ChatRequest {
             model: MODEL.to_string(),
@@ -71,16 +96,13 @@ impl OpenAi {
         }
 
         let client = reqwest::Client::new();
-        let res = client
+        let resp = client
             .post(URL_CHAT)
             .header("Authorization", format!("Bearer {key}"))
             .json(&body)
             .send()
-            .await?
-            .text()
             .await?;
-
-        Ok(res)
+        Ok(resp)
     }
 }
 
@@ -92,30 +114,34 @@ impl SystemModule for OpenAi {
 
 #[cfg(test)]
 mod tests {
+    use crate::sys::netutil;
+
     use super::*;
 
     #[tokio::test]
     #[ignore]
-    // cargo test openai -- --ignore --nocapture
+    // cargo test openai -- --ignored --nocapture
     async fn openai() {
         config::add_config(&std::fs::read_to_string("config.json").unwrap()).unwrap();
 
         let ai = OpenAi::new().unwrap();
         let msgs = vec![
-            Message {
+            ChatMessage {
                 role: "system".to_string(),
                 content: "あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
             },
-            Message {
+            ChatMessage {
                 role: "system".to_string(),
-                content: "やっぴーさんは男性で、ホワイト企業に勤めています。".to_string(),
+                content: "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string(),
             },
-            Message {
+            ChatMessage {
                 role: "user".to_string(),
-                content: "こんにちは。システムメッセージによりあなたの知っている情報を教えてください。".to_string(),
+                content: "こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。".to_string(),
             },
         ];
-        let res = ai.chat(msgs).await.unwrap();
-        println!("{res}");
+        let resp = ai.chat(msgs).await.unwrap();
+        let resp = netutil::check_http_resp(resp).await.unwrap();
+        let resp: ChatResponse = netutil::convert_from_json(&resp).unwrap();
+        println!("{:?}", resp);
     }
 }
