@@ -42,6 +42,10 @@ pub struct DiscordConfig {
     perm_err_msg: String,
     /// パーミッションエラーを強制的に発生させる。デバッグ用。
     force_perm_err: bool,
+    /// ai コマンドで発言の前に与える指示。
+    /// role="system" で与えられる。
+    /// ${user} は発言者の名前で置換される。
+    ai_system_inst: Vec<String>,
 }
 
 /// Discord システムモジュール。
@@ -592,24 +596,26 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     //owner_check(ctx, msg).await?;
 
     let chat_msg = arg.rest();
-    let msgs = vec![
-        ChatMessage {
-            role: "system".to_string(),
-            content: "あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
-        },
-        ChatMessage {
-            role: "system".to_string(),
-            content: "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string(),
-        },
-        ChatMessage {
-            role: "system".to_string(),
-            content: format!("以下は {} さんからの発言です。", msg.author.name),
-        },
-        ChatMessage {
-            role: "user".to_string(),
-            content: chat_msg.to_string(),
-        },
-    ];
+
+    let mut msgs: Vec<_> = {
+        let data = ctx.data.read().await;
+        let config = data.get::<ConfigData>().unwrap();
+        config
+            .ai_system_inst
+            .iter()
+            .map(|text| {
+                let text = text.replace("${user}", &msg.author.name);
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: text,
+                }
+            })
+            .collect()
+    };
+    msgs.push(ChatMessage {
+        role: "user".to_string(),
+        content: chat_msg.to_string(),
+    });
 
     let reply_msg = {
         let data = ctx.data.read().await;
