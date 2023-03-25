@@ -55,11 +55,36 @@ struct UsersBy {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct Mention {
+    start: u32,
+    end: u32,
+    username: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct HashTag {
+    start: u32,
+    end: u32,
+    tag: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct Entities {
+    #[serde(default)]
+    mentions: Vec<Mention>,
+    #[serde(default)]
+    hashtags: Vec<HashTag>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Tweet {
     id: String,
     text: String,
     author_id: Option<String>,
     edit_history_tweet_ids: Vec<String>,
+    /// tweet.fields=entities
+    #[serde(default)]
+    entities: Entities,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -222,6 +247,12 @@ impl Twitter {
         // 自分の最終ツイート以降のタイムラインを得る (リツイートは除く)
         let tl = self.users_timelines_home(&me.id, &since_id).await?;
         info!("{} tweets fetched", tl.data.len());
+        /*
+        let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
+        for tw in tliter {
+            info!("{:?}", tw);
+        }
+        // */
 
         // 反応設定のブロックごとに全ツイートを走査する
         let mut reply_buf = vec![];
@@ -569,9 +600,10 @@ impl Twitter {
     async fn users_timelines_home(&self, id: &str, since_id: &str) -> Result<Timeline> {
         let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
-            ("since_id".into(), since_id.into()),
-            ("exclude".into(), "retweets".into()),
-            ("expansions".into(), "author_id".into()),
+            ("since_id".to_string(), since_id.to_string()),
+            ("exclude".to_string(), "retweets".to_string()),
+            ("expansions".to_string(), "author_id".to_string()),
+            ("tweet.fields".to_string(), "entities".to_string()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
         let json_str = netutil::check_http_resp(resp).await?;
