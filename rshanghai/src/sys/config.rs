@@ -188,9 +188,9 @@ mod tests {
         add_config(main).unwrap();
 
         let v = get_bool(&["root", "bool1"]);
-        assert_eq!(v.unwrap(), false);
+        assert!(!v.unwrap());
         let v = get_bool(&["root", "bool2"]);
-        assert_eq!(v.unwrap(), true);
+        assert!(v.unwrap());
         let v = get_string(&["root", "str"]);
         assert_eq!(v.unwrap(), "Hello");
     }
