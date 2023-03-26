@@ -85,7 +85,7 @@ $ crontab < cron.txt
 ## 設定ファイル (config.json) のヘルプ
 ドキュメントの config_help モジュールにまとまっています。
 
-https://yappy.github.io/DollsKit/doc/rshanghai/target/doc/rshanghai/config_help/index.html
+https://yappy.github.io/DollsKit/doc/rshanghai/config_help/index.html
 
 ## テストのビルドと実行
 ```
