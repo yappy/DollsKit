@@ -1,3 +1,4 @@
+use super::openai::ChatMessage;
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::netutil;
@@ -236,7 +237,7 @@ impl Twitter {
     }
 
     /// Twitter 巡回タスク。
-    async fn twitter_task(&mut self, _ctrl: &Control) -> Result<()> {
+    async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
         // 自分の ID
         let me = self.get_my_id().await?;
         info!("[tw-check] user_me: {:?}", me);
@@ -264,7 +265,9 @@ impl Twitter {
         info!("{} tweets fetched", tl.data.len());
 
         // 全リプライを Vec として得る
-        let reply_buf = self.create_reply_list(tl, &me);
+        let mut reply_buf = self.create_reply_list(&tl, &me);
+        // 全 AI リプライを得て追加
+        reply_buf.append(&mut self.create_ai_reply_list(ctrl, &tl, &me).await);
 
         // バッファしたリプライを実行
         for Reply {
@@ -314,7 +317,7 @@ impl Twitter {
     }
 
     /// 全リプライを生成する
-    fn create_reply_list(&self, tl: Timeline, me: &User) -> Vec<Reply> {
+    fn create_reply_list(&self, tl: &Timeline, me: &User) -> Vec<Reply> {
         let mut reply_buf = Vec::new();
 
         for ch in self.contents.timeline_check.iter() {
@@ -322,7 +325,8 @@ impl Twitter {
             let tliter = tl
                 .data
                 .iter()
-                .filter(|tw| tw.author_id.is_some() && *tw.author_id.as_ref().unwrap() == me.id);
+                .filter(|tw| tw.author_id.is_some())
+                .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id);
 
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
@@ -353,6 +357,71 @@ impl Twitter {
                         // 複数種類では反応しない
                         // 反応は1回のみ
                         break;
+                    }
+                }
+            }
+        }
+
+        reply_buf
+    }
+
+    /// 全 AI リプライを生成する
+    async fn create_ai_reply_list(&self, ctrl: &Control, tl: &Timeline, me: &User) -> Vec<Reply> {
+        let mut reply_buf = Vec::new();
+
+        // 設定からプロローグ分の Vec<ChatMessage> を生成する
+        let system_msgs: Vec<_> = self
+            .config
+            .ai_system_inst
+            .iter()
+            .map(|text| {
+                let text = text.replace("${user}", &me.name);
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: text,
+                }
+            })
+            .collect();
+
+        let tliter = tl
+            .data
+            .iter()
+            // author_id が存在する場合のみ
+            .filter(|tw| tw.author_id.is_some())
+            // 自分のツイートには反応しない
+            .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id)
+            // 自分がメンションされている場合のみ
+            .filter(|tw| tw.entities.mentions.iter().any(|v| v.username == me.username))
+            // 設定で指定されたハッシュタグを含む場合のみ対象
+            .filter(|tw| {
+                tw.entities
+                    .hashtags
+                    .iter()
+                    .any(|v| v.tag == self.config.ai_hashtag)
+            });
+
+        for tw in tliter {
+            info!("FIND (AI): {:?}", tw);
+
+            // 最後にツイートの本文を追加
+            let mut msgs = system_msgs.clone();
+            msgs.push(ChatMessage {
+                role: "user".to_string(),
+                content: tw.text.to_string(),
+            });
+
+            // 結果に追加する
+            // エラーはログのみ出して追加をしない
+            {
+                let ai = ctrl.sysmods().openai.lock().await;
+                match ai.chat(msgs).await {
+                    Ok(resp) => reply_buf.push(Reply {
+                        to_tw_id: tw.id.clone(),
+                        to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                        text: resp,
+                    }),
+                    Err(e) => {
+                        warn!("AI chat error: {e}");
                     }
                 }
             }

@@ -1,11 +1,11 @@
 use super::SystemModule;
 use crate::sys::config;
+use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
 use anyhow::{anyhow, bail, Result};
 use log::info;
 use log::warn;
-use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 /// OpenAI API
@@ -36,7 +36,7 @@ pub struct Choice {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ChatResponse {
+struct ChatResponse {
     pub id: String,
     pub object: String,
     pub created: u64,
@@ -81,7 +81,7 @@ impl OpenAi {
         Ok(OpenAi { config })
     }
 
-    pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<Response> {
+    pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
             model: MODEL.to_string(),
@@ -102,7 +102,19 @@ impl OpenAi {
             .json(&body)
             .send()
             .await?;
-        Ok(resp)
+
+        let json_str = netutil::check_http_resp(resp).await?;
+        let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
+
+        let text = resp_msg
+            .choices
+            .get(0)
+            .ok_or(anyhow!("choices is empty"))?
+            .message
+            .content
+            .clone();
+
+        Ok(text)
     }
 }
 
@@ -114,8 +126,6 @@ impl SystemModule for OpenAi {
 
 #[cfg(test)]
 mod tests {
-    use crate::sys::netutil;
-
     use super::*;
 
     #[tokio::test]
@@ -140,8 +150,6 @@ mod tests {
             },
         ];
         let resp = ai.chat(msgs).await.unwrap();
-        let resp = netutil::check_http_resp(resp).await.unwrap();
-        let resp: ChatResponse = netutil::convert_from_json(&resp).unwrap();
-        println!("{:?}", resp);
+        println!("{resp}");
     }
 }

@@ -2,10 +2,9 @@
 
 use super::camera::{take_a_pic, TakePicOption};
 use super::SystemModule;
-use crate::sys::netutil;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
-use crate::sysmod::openai::{ChatMessage, ChatResponse};
+use crate::sysmod::openai::ChatMessage;
 use anyhow::{anyhow, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -622,17 +621,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         let ctrl = data.get::<ControlData>().unwrap();
         let ai = ctrl.sysmods().openai.lock().await;
 
-        let resp = ai.chat(msgs).await?;
-        let json_str = netutil::check_http_resp(resp).await?;
-        let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
-
-        resp_msg
-            .choices
-            .get(0)
-            .ok_or(anyhow!("choices is empty"))?
-            .message
-            .content
-            .clone()
+        ai.chat(msgs).await?
     };
 
     info!("openai reply: {reply_msg}");
