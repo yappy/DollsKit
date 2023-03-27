@@ -156,13 +156,22 @@ struct UploadResponseData {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TwitterConfig {
+    /// タイムラインの定期確認を有効にする。
     tlcheck_enabled: bool,
+    /// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
     debug_exec_once: bool,
+    /// ツイートを実際にはせずにログにのみ出力する。
     fake_tweet: bool,
+    /// Twitter API のアカウント情報。
     consumer_key: String,
+    /// Twitter API のアカウント情報。
     consumer_secret: String,
+    /// Twitter API のアカウント情報。
     access_token: String,
+    /// Twitter API のアカウント情報。
     access_secret: String,
+    ai_hashtag: String,
+    ai_system_inst: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,6 +204,12 @@ pub struct Twitter {
     username_user_cache: HashMap<String, User>,
     /// ID -> screen name のマップ。
     id_username_cache: HashMap<String, String>,
+}
+
+struct Reply {
+    to_tw_id: String,
+    to_user_id: String,
+    text: String,
 }
 
 impl Twitter {
@@ -247,70 +262,30 @@ impl Twitter {
         // 自分の最終ツイート以降のタイムラインを得る (リツイートは除く)
         let tl = self.users_timelines_home(&me.id, &since_id).await?;
         info!("{} tweets fetched", tl.data.len());
-        /*
-        let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
-        for tw in tliter {
-            info!("{:?}", tw);
-        }
-        // */
 
-        // 反応設定のブロックごとに全ツイートを走査する
-        let mut reply_buf = vec![];
-        for ch in self.contents.timeline_check.iter() {
-            // 自分のツイートには反応しない
-            let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
-
-            for tw in tliter {
-                // author_id が user_names リストに含まれているものでフィルタ
-                let user_match = ch.user_names.iter().any(|user_name| {
-                    let user = self.get_user_from_username(user_name);
-                    match user {
-                        Some(user) => *tw.author_id.as_ref().unwrap() == user.id,
-                        // id 取得に失敗しているので無視
-                        None => false,
-                    }
-                });
-                if !user_match {
-                    continue;
-                }
-                // pattern 判定
-                for (pats, msgs) in ch.pattern.iter() {
-                    // 配列内のすべてのパターンを満たす
-                    let match_hit = pats.iter().all(|pat| Self::pattern_match(pat, &tw.text));
-                    if match_hit {
-                        info!("FIND: {:?}", tw);
-                        // 配列からリプライをランダムに1つ選ぶ
-                        let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
-                        // リプライツイート (id, text) を一旦バッファする
-                        // E0502 回避
-                        reply_buf.push((
-                            tw.id.clone(),
-                            tw.author_id.as_ref().unwrap().clone(),
-                            msgs[rnd_idx].clone(),
-                        ));
-                        // 複数種類では反応しない
-                        // 反応は1回のみ
-                        break;
-                    }
-                }
-            }
-        }
+        // 全リプライを Vec として得る
+        let reply_buf = self.create_reply_list(tl, &me);
 
         // バッファしたリプライを実行
-        for (tw_id, user_id, text) in reply_buf {
+        for Reply {
+            to_tw_id,
+            to_user_id,
+            text,
+        } in reply_buf
+        {
             // since_id 更新用データ
             // tweet id を数値比較のため文字列から変換する
             // (リプライ先 ID + 1) の max をとる
             let cur: u64 = self.tl_check_since_id.as_ref().unwrap().parse().unwrap();
-            let next: u64 = tw_id.parse().unwrap();
+            let next: u64 = to_tw_id.parse().unwrap();
             let max = cur.max(next);
 
-            let name = self.get_username_from_id(&user_id).unwrap();
+            let name = self.get_username_from_id(&to_user_id).unwrap();
             info!("reply to: {}", name);
 
             let param = TweetParam {
                 reply: Some(TweetParamReply {
-                    in_reply_to_tweet_id: tw_id,
+                    in_reply_to_tweet_id: to_tw_id,
                 }),
                 text: Some(text),
                 ..Default::default()
@@ -336,6 +311,54 @@ impl Twitter {
         */
 
         Ok(())
+    }
+
+    /// 全リプライを生成する
+    fn create_reply_list(&self, tl: Timeline, me: &User) -> Vec<Reply> {
+        let mut reply_buf = Vec::new();
+
+        for ch in self.contents.timeline_check.iter() {
+            // 自分のツイートには反応しない
+            let tliter = tl
+                .data
+                .iter()
+                .filter(|tw| tw.author_id.is_some() && *tw.author_id.as_ref().unwrap() == me.id);
+
+            for tw in tliter {
+                // author_id が user_names リストに含まれているものでフィルタ
+                let user_match = ch.user_names.iter().any(|user_name| {
+                    let user = self.get_user_from_username(user_name);
+                    match user {
+                        Some(user) => *tw.author_id.as_ref().unwrap() == user.id,
+                        // id 取得に失敗しているので無視
+                        None => false,
+                    }
+                });
+                if !user_match {
+                    continue;
+                }
+                // pattern 判定
+                for (pats, msgs) in ch.pattern.iter() {
+                    // 配列内のすべてのパターンを満たす
+                    let match_hit = pats.iter().all(|pat| Self::pattern_match(pat, &tw.text));
+                    if match_hit {
+                        info!("FIND: {:?}", tw);
+                        // 配列からリプライをランダムに1つ選ぶ
+                        let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
+                        reply_buf.push(Reply {
+                            to_tw_id: tw.id.clone(),
+                            to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                            text: msgs[rnd_idx].clone(),
+                        });
+                        // 複数種類では反応しない
+                        // 反応は1回のみ
+                        break;
+                    }
+                }
+            }
+        }
+
+        reply_buf
     }
 
     /// text から pat を検索する。
