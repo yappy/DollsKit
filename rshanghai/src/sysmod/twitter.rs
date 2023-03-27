@@ -391,7 +391,12 @@ impl Twitter {
             // 自分のツイートには反応しない
             .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id)
             // 自分がメンションされている場合のみ
-            .filter(|tw| tw.entities.mentions.iter().any(|v| v.username == me.username))
+            .filter(|tw| {
+                tw.entities
+                    .mentions
+                    .iter()
+                    .any(|v| v.username == me.username)
+            })
             // 設定で指定されたハッシュタグを含む場合のみ対象
             .filter(|tw| {
                 tw.entities
@@ -403,11 +408,33 @@ impl Twitter {
         for tw in tliter {
             info!("FIND (AI): {:?}", tw);
 
+            let mut main_msg = String::new();
+            // メンションおよびハッシュタグ部分を削除する
+            for (ind, ch) in tw.text.chars().enumerate() {
+                let ind = ind as u32;
+                let mut deleted = false;
+                for m in tw.entities.mentions.iter() {
+                    if (m.start..m.end).contains(&ind) {
+                        deleted = true;
+                        break;
+                    }
+                }
+                for h in tw.entities.hashtags.iter() {
+                    if (h.start..h.end).contains(&ind) {
+                        deleted = true;
+                        break;
+                    }
+                }
+                if !deleted {
+                    main_msg.push(ch);
+                }
+            }
+
             // 最後にツイートの本文を追加
             let mut msgs = system_msgs.clone();
             msgs.push(ChatMessage {
                 role: "user".to_string(),
-                content: tw.text.to_string(),
+                content: main_msg,
             });
 
             // 結果に追加する
