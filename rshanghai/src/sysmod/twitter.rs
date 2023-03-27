@@ -78,6 +78,12 @@ struct Entities {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct Includes {
+    #[serde(default)]
+    users: Vec<User>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Tweet {
     id: String,
     text: String,
@@ -101,6 +107,8 @@ struct Meta {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Timeline {
     data: Vec<Tweet>,
+    /// expansions=author_id
+    includes: Option<Includes>,
     meta: Meta,
 }
 
@@ -325,8 +333,17 @@ impl Twitter {
             let tliter = tl
                 .data
                 .iter()
+                // author_id が存在する場合のみ
                 .filter(|tw| tw.author_id.is_some())
-                .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id);
+                // 自分のツイートには反応しない
+                .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id)
+                // 特定ハッシュタグを含むものは除外 (別関数で返答する)
+                .filter(|tw| {
+                    !tw.entities
+                        .hashtags
+                        .iter()
+                        .any(|v| v.tag == self.config.ai_hashtag)
+                });
 
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
@@ -369,20 +386,6 @@ impl Twitter {
     async fn create_ai_reply_list(&self, ctrl: &Control, tl: &Timeline, me: &User) -> Vec<Reply> {
         let mut reply_buf = Vec::new();
 
-        // 設定からプロローグ分の Vec<ChatMessage> を生成する
-        let system_msgs: Vec<_> = self
-            .config
-            .ai_system_inst
-            .iter()
-            .map(|text| {
-                let text = text.replace("${user}", &me.name);
-                ChatMessage {
-                    role: "system".to_string(),
-                    content: text,
-                }
-            })
-            .collect();
-
         let tliter = tl
             .data
             .iter()
@@ -407,6 +410,29 @@ impl Twitter {
 
         for tw in tliter {
             info!("FIND (AI): {:?}", tw);
+
+            let user = Self::resolve_user(
+                tw.author_id.as_ref().unwrap(),
+                &tl.includes.as_ref().unwrap().users,
+            );
+            if user.is_none() {
+                warn!("User {} is not found", tw.author_id.as_ref().unwrap());
+                continue;
+            }
+
+            // 設定からプロローグ分の Vec<ChatMessage> を生成する
+            let system_msgs: Vec<_> = self
+                .config
+                .ai_system_inst
+                .iter()
+                .map(|text| {
+                    let text = text.replace("${user}", &user.unwrap().name);
+                    ChatMessage {
+                        role: "system".to_string(),
+                        content: text,
+                    }
+                })
+                .collect();
 
             let mut main_msg = String::new();
             // メンションおよびハッシュタグ部分を削除する
@@ -455,6 +481,16 @@ impl Twitter {
         }
 
         reply_buf
+    }
+
+    fn resolve_user<'a>(id: &str, users: &'a Vec<User>) -> Option<&'a User> {
+        for user in users.iter() {
+            if user.id == id {
+                return Some(user);
+            }
+        }
+
+        None
     }
 
     /// text から pat を検索する。
@@ -726,6 +762,7 @@ impl Twitter {
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
         let json_str = netutil::check_http_resp(resp).await?;
+        debug!("{json_str}");
         let obj: Timeline = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
