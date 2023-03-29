@@ -492,13 +492,7 @@ impl Twitter {
     }
 
     fn resolve_user<'a>(id: &str, users: &'a Vec<User>) -> Option<&'a User> {
-        for user in users.iter() {
-            if user.id == id {
-                return Some(user);
-            }
-        }
-
-        None
+        users.iter().find(|&user| user.id == id)
     }
 
     /// text から pat を検索する。
