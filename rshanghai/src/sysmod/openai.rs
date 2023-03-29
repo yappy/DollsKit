@@ -62,8 +62,20 @@ struct ChatRequest {
 /// OpenAI 設定データ。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OpenAiConfig {
+    /// OpenAI API 利用を有効にする。
     enabled: bool,
+    /// OpenAI API のキー。
     api_key: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpenAiPrompt {
+    /// role="system" で与えられる。
+    /// ${user} は発言者の名前で置換される。
+    pub twitter: Vec<String>,
+    /// role="system" で与えられる。
+    /// ${user} は発言者の名前で置換される。
+    pub discord: Vec<String>,
 }
 
 pub struct OpenAi {

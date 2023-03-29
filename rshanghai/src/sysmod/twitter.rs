@@ -1,4 +1,5 @@
 use super::openai::ChatMessage;
+use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::netutil;
@@ -179,8 +180,8 @@ pub struct TwitterConfig {
     access_token: String,
     /// Twitter API のアカウント情報。
     access_secret: String,
+    /// OpenAI API 応答を起動するハッシュタグ。
     ai_hashtag: String,
-    ai_system_inst: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,13 +191,15 @@ struct TimelineCheck {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TwitterContents {
+pub struct TwitterContents {
     timeline_check: Vec<TimelineCheck>,
 }
 
 pub struct Twitter {
     config: TwitterConfig,
     contents: TwitterContents,
+    prompt: OpenAiPrompt,
+
     wakeup_list: Vec<NaiveTime>,
     /// タイムラインチェックの際の走査開始 tweet id。
     ///
@@ -233,9 +236,14 @@ impl Twitter {
             .map_or(Err(anyhow!("Config not found: tw_contents")), Ok)?;
         let contents: TwitterContents = serde_json::from_value(jsobj)?;
 
+        let jsobj = config::get_object(&["openai_prompt"])
+            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
+        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+
         Ok(Twitter {
             config,
             contents,
+            prompt,
             wakeup_list,
             tl_check_since_id: None,
             my_user_cache: None,
@@ -422,8 +430,8 @@ impl Twitter {
 
             // 設定からプロローグ分の Vec<ChatMessage> を生成する
             let system_msgs: Vec<_> = self
-                .config
-                .ai_system_inst
+                .prompt
+                .twitter
                 .iter()
                 .map(|text| {
                     let text = text.replace("${user}", &user.unwrap().name);

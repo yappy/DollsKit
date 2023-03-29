@@ -1,6 +1,7 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
+use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
@@ -41,16 +42,14 @@ pub struct DiscordConfig {
     perm_err_msg: String,
     /// パーミッションエラーを強制的に発生させる。デバッグ用。
     force_perm_err: bool,
-    /// ai コマンドで発言の前に与える指示。
-    /// role="system" で与えられる。
-    /// ${user} は発言者の名前で置換される。
-    ai_system_inst: Vec<String>,
 }
 
 /// Discord システムモジュール。
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
+    /// ai コマンド応答の先頭に与える指示。
+    prompt: OpenAiPrompt,
     /// 定期実行の時刻リスト。
     wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
@@ -104,6 +103,10 @@ impl Discord {
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
+        let jsobj = config::get_object(&["openai_prompt"])
+            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
+        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+
         let mut auto_del_congig = BTreeMap::new();
         for ch in &config.auto_del_chs {
             auto_del_congig.insert(
@@ -117,6 +120,7 @@ impl Discord {
 
         Ok(Self {
             config,
+            prompt,
             wakeup_list,
             ctx: None,
             postponed_msgs: Vec::new(),
@@ -152,9 +156,13 @@ impl Discord {
 ///
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
-    let (config, wakeup_list) = {
+    let (config, prompt, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
-        (discord.config.clone(), discord.wakeup_list.clone())
+        (
+            discord.config.clone(),
+            discord.prompt.clone(),
+            discord.wakeup_list.clone(),
+        )
     };
 
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
@@ -188,6 +196,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
         data.insert::<ControlData>(ctrl.clone());
         data.insert::<ConfigData>(config);
+        data.insert::<PromptData>(prompt);
         data.insert::<OwnerData>(ownerids);
     }
 
@@ -370,6 +379,11 @@ impl TypeMapKey for ControlData {
 struct ConfigData;
 impl TypeMapKey for ConfigData {
     type Value = DiscordConfig;
+}
+
+struct PromptData;
+impl TypeMapKey for PromptData {
+    type Value = OpenAiPrompt;
 }
 
 struct OwnerData;
@@ -598,9 +612,9 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
 
     let mut msgs: Vec<_> = {
         let data = ctx.data.read().await;
-        let config = data.get::<ConfigData>().unwrap();
-        config
-            .ai_system_inst
+        let prompt = data.get::<PromptData>().unwrap();
+        prompt
+            .discord
             .iter()
             .map(|text| {
                 let text = text.replace("${user}", &msg.author.name);

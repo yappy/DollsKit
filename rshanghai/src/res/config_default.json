@@ -20,13 +20,7 @@
 		"consumer_secret"	: "",
 		"access_token"		: "",
 		"access_secret"		: "",
-		"ai_hashtag"		: "DollsAI",
-		"ai_system_inst"	: [
-			"あなたの名前は「yappy家の管理人形」で、あなたはやっぴー(yappy)さんの人形です。あなたはやっぴー家の優秀なアシスタント人形です。",
-			"やっぴーさんは男性です。「yappy」という名前で呼ばれることもあります。Twitterアカウント名は「yappy_t」 です。",
-			"やっぴーさんはホワイト企業に勤めています。",
-			"以下は「${user}」さんの発言です。可能な限り130字以内で応答してください。"
-		]
+		"ai_hashtag"		: "DollsAI"
 	},
 	"discord": {
 		"enabled"			: false,
@@ -34,13 +28,7 @@
 		"notif_channel"		: 0,
 		"auto_del_chs"		: [],
 		"perm_err_msg"		: "バカジャネーノ",
-		"force_perm_err"	: false,
-		"ai_system_inst"	: [
-			"あなたの名前は「yappy家の管理人形」で、あなたはやっぴー(yappy)さんの人形です。あなたはやっぴー家の優秀なアシスタント人形です。",
-			"やっぴーさんは男性です。「yappy」という名前で呼ばれることもあります。",
-			"やっぴーさんはホワイト企業に勤めています。",
-			"以下は「${user}」さんの発言です。適切に応答してください。"
-		]
+		"force_perm_err"	: false
 	},
 	"openai": {
 		"enabled"			: false,
