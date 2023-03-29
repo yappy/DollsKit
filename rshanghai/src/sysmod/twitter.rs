@@ -491,7 +491,7 @@ impl Twitter {
         reply_buf
     }
 
-    fn resolve_user<'a>(id: &str, users: &'a Vec<User>) -> Option<&'a User> {
+    fn resolve_user<'a>(id: &str, users: &'a [User]) -> Option<&'a User> {
         users.iter().find(|&user| user.id == id)
     }
 
