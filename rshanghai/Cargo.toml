@@ -51,6 +51,8 @@ sha2 = "0.10.6"
 actix-web = "4.2.1"
 # Image convert
 image = "0.24.5"
+# Font
+rusttype="0.9.3"
 # Discord
 serenity = "0.11.5"
 
