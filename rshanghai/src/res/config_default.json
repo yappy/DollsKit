@@ -20,7 +20,8 @@
 		"consumer_secret"	: "",
 		"access_token"		: "",
 		"access_secret"		: "",
-		"ai_hashtag"		: "DollsAI"
+		"ai_hashtag"		: "DollsAI",
+		"font_file"			: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf"
 	},
 	"discord": {
 		"enabled"			: false,

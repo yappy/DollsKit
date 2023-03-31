@@ -2,6 +2,7 @@ use super::openai::ChatMessage;
 use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::config;
+use crate::sys::graphics::FontRenderer;
 use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
@@ -13,7 +14,13 @@ use rand::Rng;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const LONG_TWEET_FONT_SIZE: u32 = 16;
+const LONG_TWEET_IMAGE_WIDTH: u32 = 640;
+const LONG_TWEET_FGCOLOR: (u8, u8, u8) = (255, 255, 255);
+const LONG_TWEET_BGCOLOR: (u8, u8, u8) = (0, 0, 0);
 
 // Twitter API v2
 pub const TWEET_LEN_MAX: usize = 140;
@@ -182,6 +189,8 @@ pub struct TwitterConfig {
     access_secret: String,
     /// OpenAI API 応答を起動するハッシュタグ。
     ai_hashtag: String,
+    /// 長文ツイートの画像化に使う ttf ファイルへのパス。
+    font_file: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -201,6 +210,9 @@ pub struct Twitter {
     prompt: OpenAiPrompt,
 
     wakeup_list: Vec<NaiveTime>,
+
+    font: FontRenderer,
+
     /// タイムラインチェックの際の走査開始 tweet id。
     ///
     /// 初期状態は None で、未取得状態を表す。
@@ -222,6 +234,7 @@ struct Reply {
     to_tw_id: String,
     to_user_id: String,
     text: String,
+    post_image_if_long: bool,
 }
 
 impl Twitter {
@@ -240,11 +253,15 @@ impl Twitter {
             .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
         let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
 
+        let ttf_bin = fs::read(&config.font_file)?;
+        let font = FontRenderer::new(ttf_bin)?;
+
         Ok(Twitter {
             config,
             contents,
             prompt,
             wakeup_list,
+            font,
             tl_check_since_id: None,
             my_user_cache: None,
             username_user_cache: HashMap::new(),
@@ -290,6 +307,7 @@ impl Twitter {
             to_tw_id,
             to_user_id,
             text,
+            post_image_if_long,
         } in reply_buf
         {
             // since_id 更新用データ
@@ -302,14 +320,28 @@ impl Twitter {
             let name = self.get_username_from_id(&to_user_id).unwrap();
             info!("reply to: {}", name);
 
-            let param = TweetParam {
-                reply: Some(TweetParamReply {
-                    in_reply_to_tweet_id: to_tw_id,
-                }),
-                text: Some(text),
-                ..Default::default()
-            };
-            self.tweet_raw(param).await?;
+            // post_image_if_long が有効で文字数オーバーの場合
+            // 画像にして投稿する
+            if post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
+                let pngbin = self.font.draw_multiline_text(
+                    LONG_TWEET_FGCOLOR,
+                    LONG_TWEET_BGCOLOR,
+                    &text,
+                    LONG_TWEET_FONT_SIZE,
+                    LONG_TWEET_IMAGE_WIDTH,
+                );
+                let media_id = self.media_upload(pngbin).await?;
+                self.tweet_with_media("", &[media_id]).await?;
+            } else {
+                let param = TweetParam {
+                    reply: Some(TweetParamReply {
+                        in_reply_to_tweet_id: to_tw_id,
+                    }),
+                    text: Some(text),
+                    ..Default::default()
+                };
+                self.tweet_raw(param).await?;
+            }
 
             // 成功したら since_id を更新する
             self.tl_check_since_id = Some(max.to_string());
@@ -378,6 +410,7 @@ impl Twitter {
                             to_tw_id: tw.id.clone(),
                             to_user_id: tw.author_id.as_ref().unwrap().clone(),
                             text: msgs[rnd_idx].clone(),
+                            post_image_if_long: false,
                         });
                         // 複数種類では反応しない
                         // 反応は1回のみ
@@ -480,6 +513,7 @@ impl Twitter {
                         to_tw_id: tw.id.clone(),
                         to_user_id: tw.author_id.as_ref().unwrap().clone(),
                         text: resp,
+                        post_image_if_long: true,
                     }),
                     Err(e) => {
                         warn!("AI chat error: {e}");

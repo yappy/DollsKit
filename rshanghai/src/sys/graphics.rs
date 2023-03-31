@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use image::{DynamicImage, ImageOutputFormat, Rgba};
 use rusttype::{point, Font, PositionedGlyph, Scale};
 
-struct FontRenderer {
+pub struct FontRenderer {
     font: Font<'static>,
 }
 
@@ -23,7 +23,7 @@ impl FontRenderer {
         text: &str,
         scale: u32,
         width: u32,
-    ) -> Result<Vec<u8>> {
+    ) -> Vec<u8> {
         let scale = Scale::uniform(scale as f32);
         let vmet = self.font.v_metrics(scale);
         let glyphs_h = (vmet.ascent - vmet.descent).ceil() as u32;
@@ -110,9 +110,11 @@ impl FontRenderer {
 
         // Save the image to a png file
         let mut filebuf = Vec::new();
-        image.write_to(&mut Cursor::new(&mut filebuf), ImageOutputFormat::Png)?;
+        image
+            .write_to(&mut Cursor::new(&mut filebuf), ImageOutputFormat::Png)
+            .unwrap();
 
-        Ok(filebuf)
+        filebuf
     }
 
     fn calc_line_w(
@@ -167,7 +169,7 @@ mod tests {
 役割コンストラクタは、複数の役割を組み合わせて新しい役割を構成するための方法です。たとえば、「親子関係」という役割は、「親」と「子」の役割を組み合わせて構成されます。役割コンストラクタには、合成（composition）や逆（inverse）などがあります。
 役割論理は、主に知識表現や推論に用いられます。例えば、役割論理を用いて、複数のエージェントの間で共有される知識を表現することができます。また、役割論理は、オントロジー言語の一種であるOWL（Web Ontology Language）の基盤としても用いられています。";
 
-        let png = r.draw_multiline_text((0xff, 0xff, 0xff), (0x80, 0x00, 0x80), text, 16, 640)?;
+        let png = r.draw_multiline_text((0xff, 0xff, 0xff), (0x80, 0x00, 0x80), text, 16, 640);
 
         let fname = "font_test.png";
         println!("Write image to: {fname}");
