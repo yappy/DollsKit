@@ -331,16 +331,9 @@ impl Twitter {
                     LONG_TWEET_IMAGE_WIDTH,
                 );
                 let media_id = self.media_upload(pngbin).await?;
-                self.tweet_with_media("", &[media_id]).await?;
+                self.tweet_custom("", Some(&to_tw_id), &[media_id]).await?;
             } else {
-                let param = TweetParam {
-                    reply: Some(TweetParamReply {
-                        in_reply_to_tweet_id: to_tw_id,
-                    }),
-                    text: Some(text),
-                    ..Default::default()
-                };
-                self.tweet_raw(param).await?;
+                self.tweet_custom(&text, Some(&to_tw_id),&[]).await?;
             }
 
             // 成功したら since_id を更新する
@@ -582,12 +575,24 @@ impl Twitter {
     /// シンプルなツイート。
     /// 中身は [Self::tweet_raw]。
     pub async fn tweet(&mut self, text: &str) -> Result<()> {
-        self.tweet_with_media(text, &[]).await
+        self.tweet_custom(text, None, &[]).await
     }
 
     /// メディア付きツイート。
     /// 中身は [Self::tweet_raw]。
-    pub async fn tweet_with_media(&mut self, text: &str, media_ids: &[u64]) -> Result<()> {
+    pub async fn tweet_custom(
+        &mut self,
+        text: &str,
+        reply_to: Option<&str>,
+        media_ids: &[u64],
+    ) -> Result<()> {
+        let reply = match reply_to {
+            Some(id) => Some(TweetParamReply {
+                in_reply_to_tweet_id: id.to_string(),
+            }),
+            None => None,
+        };
+
         let media_ids = if media_ids.is_empty() {
             None
         } else {
@@ -600,6 +605,7 @@ impl Twitter {
         });
 
         let param = TweetParam {
+            reply,
             text: Some(text.to_string()),
             media,
             ..Default::default()
