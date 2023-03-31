@@ -586,12 +586,9 @@ impl Twitter {
         reply_to: Option<&str>,
         media_ids: &[u64],
     ) -> Result<()> {
-        let reply = match reply_to {
-            Some(id) => Some(TweetParamReply {
+        let reply = reply_to.map(|id| TweetParamReply {
                 in_reply_to_tweet_id: id.to_string(),
-            }),
-            None => None,
-        };
+            });
 
         let media_ids = if media_ids.is_empty() {
             None
