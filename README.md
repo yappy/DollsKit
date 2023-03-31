@@ -46,6 +46,12 @@ $ cargo r -r
 $ cp config_default.json config.json
 ```
 
+### フォント
+デフォルト設定で指定されているフォントファイルは以下でインストールできます。
+```
+$ sudo apt install fonts-ipafont
+```
+
 ### 本実行
 ```
 $ cargo run --release
