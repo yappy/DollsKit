@@ -16,7 +16,14 @@ impl FontRenderer {
         Ok(Self { font })
     }
 
-    pub fn draw_multiline_text(&self, text: &str, scale: u32, width: u32) -> Result<Vec<u8>> {
+    pub fn draw_multiline_text(
+        &self,
+        fgcolor: (u8, u8, u8),
+        bgcolor: (u8, u8, u8),
+        text: &str,
+        scale: u32,
+        width: u32,
+    ) -> Result<Vec<u8>> {
         let scale = Scale::uniform(scale as f32);
         let vmet = self.font.v_metrics(scale);
         let glyphs_h = (vmet.ascent - vmet.descent).ceil() as u32;
@@ -72,7 +79,7 @@ impl FontRenderer {
         let height = glyphs_h * lines.len() as u32;
         let mut image = DynamicImage::new_rgba8(width, height).to_rgba8();
         for (_x, _y, pixel) in image.enumerate_pixels_mut() {
-            *pixel = Rgba([0, 0, 0, 255 as u8]);
+            *pixel = Rgba([bgcolor.0, bgcolor.1, bgcolor.2, 255_u8]);
         }
 
         for glyphs in lines {
@@ -86,7 +93,7 @@ impl FontRenderer {
                             return;
                         }
                         let [r1, g1, b1, _a1] = image.get_pixel(x, y).0;
-                        let [r2, g2, b2] = [255, 255, 255u8];
+                        let [r2, g2, b2] = [fgcolor.0, fgcolor.1, fgcolor.2];
                         let r3 = (r1 as f32 * (1.0 - v) + r2 as f32 * v) as u8;
                         let g3 = (g1 as f32 * (1.0 - v) + g2 as f32 * v) as u8;
                         let b3 = (b1 as f32 * (1.0 - v) + b2 as f32 * v) as u8;
@@ -160,7 +167,7 @@ mod tests {
 役割コンストラクタは、複数の役割を組み合わせて新しい役割を構成するための方法です。たとえば、「親子関係」という役割は、「親」と「子」の役割を組み合わせて構成されます。役割コンストラクタには、合成（composition）や逆（inverse）などがあります。
 役割論理は、主に知識表現や推論に用いられます。例えば、役割論理を用いて、複数のエージェントの間で共有される知識を表現することができます。また、役割論理は、オントロジー言語の一種であるOWL（Web Ontology Language）の基盤としても用いられています。";
 
-        let png = r.draw_multiline_text(text, 16, 640)?;
+        let png = r.draw_multiline_text((0xff, 0xff, 0xff), (0x80, 0x00, 0x80), text, 16, 640)?;
 
         let fname = "font_test.png";
         println!("Write image to: {fname}");
