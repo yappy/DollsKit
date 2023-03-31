@@ -1,5 +1,7 @@
+use std::io::Cursor;
+
 use anyhow::{Context, Result};
-use image::{DynamicImage, Rgba};
+use image::{DynamicImage, ImageOutputFormat, Rgba};
 use rusttype::{point, Font, PositionedGlyph, Scale};
 
 struct FontRenderer {
@@ -14,7 +16,7 @@ impl FontRenderer {
         Ok(Self { font })
     }
 
-    pub fn draw_multiline_text(&self, text: &str, scale: u32, width: u32) -> Result<()> {
+    pub fn draw_multiline_text(&self, text: &str, scale: u32, width: u32) -> Result<Vec<u8>> {
         let scale = Scale::uniform(scale as f32);
         let vmet = self.font.v_metrics(scale);
         let glyphs_h = (vmet.ascent - vmet.descent).ceil() as u32;
@@ -96,9 +98,10 @@ impl FontRenderer {
         }
 
         // Save the image to a png file
-        image.save("image_example.png")?;
+        let mut filebuf = Vec::new();
+        image.write_to(&mut Cursor::new(&mut filebuf), ImageOutputFormat::Png)?;
 
-        Ok(())
+        Ok(filebuf)
     }
 
     fn calc_line_w(
@@ -129,25 +132,28 @@ impl FontRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{fs::File, io::Read};
+    use std::fs;
 
     #[test]
     #[ignore]
     // sudo apt install fonts-ipafont
     // cargo test font -- --ignored
     fn font() -> Result<()> {
-        let mut file = File::open("/usr/share/fonts/truetype/fonts-japanese-gothic.ttf")?;
-        let mut ttf_bin = Vec::new();
-        let _ = file.read_to_end(&mut ttf_bin)?;
+        let fname = "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf";
+        println!("Load font file from: {fname}");
+        let ttf_bin = fs::read(fname)?;
 
         let r = FontRenderer::new(ttf_bin)?;
 
-        r.draw_multiline_text(
+        let png = r.draw_multiline_text(
             "こんにちは。私はyappy家の管理人形です。\n\nくれぐれもよろしくお願いします。\n",
             32,
             320,
-        )
-        .unwrap();
+        )?;
+
+        let fname = "font_test.png";
+        println!("Write image to: {fname}");
+        fs::write(fname, png)?;
 
         Ok(())
     }
