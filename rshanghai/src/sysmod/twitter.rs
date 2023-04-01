@@ -333,7 +333,7 @@ impl Twitter {
                 let media_id = self.media_upload(pngbin).await?;
                 self.tweet_custom("", Some(&to_tw_id), &[media_id]).await?;
             } else {
-                self.tweet_custom(&text, Some(&to_tw_id),&[]).await?;
+                self.tweet_custom(&text, Some(&to_tw_id), &[]).await?;
             }
 
             // 成功したら since_id を更新する
@@ -587,8 +587,8 @@ impl Twitter {
         media_ids: &[u64],
     ) -> Result<()> {
         let reply = reply_to.map(|id| TweetParamReply {
-                in_reply_to_tweet_id: id.to_string(),
-            });
+            in_reply_to_tweet_id: id.to_string(),
+        });
 
         let media_ids = if media_ids.is_empty() {
             None
