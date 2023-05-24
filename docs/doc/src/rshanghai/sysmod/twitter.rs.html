@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-93196c7a1c3542a8.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-c4dbdcde0fbd8430.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" disabled href="../../../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-be46fdc453a55015.css"><script src="../../../static.files/storage-3891ce972e3a2bf8.js"></script><script defer src="../../../static.files/source-script-1b95b7cca98b26e5.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-98a684e84ae5b08b.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1008,12 +1008,218 @@
 <a href="#1008" id="1008">1008</a>
 <a href="#1009" id="1009">1009</a>
 <a href="#1010" id="1010">1010</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
+<a href="#1011" id="1011">1011</a>
+<a href="#1012" id="1012">1012</a>
+<a href="#1013" id="1013">1013</a>
+<a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
+<a href="#1053" id="1053">1053</a>
+<a href="#1054" id="1054">1054</a>
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+<a href="#1059" id="1059">1059</a>
+<a href="#1060" id="1060">1060</a>
+<a href="#1061" id="1061">1061</a>
+<a href="#1062" id="1062">1062</a>
+<a href="#1063" id="1063">1063</a>
+<a href="#1064" id="1064">1064</a>
+<a href="#1065" id="1065">1065</a>
+<a href="#1066" id="1066">1066</a>
+<a href="#1067" id="1067">1067</a>
+<a href="#1068" id="1068">1068</a>
+<a href="#1069" id="1069">1069</a>
+<a href="#1070" id="1070">1070</a>
+<a href="#1071" id="1071">1071</a>
+<a href="#1072" id="1072">1072</a>
+<a href="#1073" id="1073">1073</a>
+<a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
+<a href="#1076" id="1076">1076</a>
+<a href="#1077" id="1077">1077</a>
+<a href="#1078" id="1078">1078</a>
+<a href="#1079" id="1079">1079</a>
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
+<a href="#1086" id="1086">1086</a>
+<a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
+<a href="#1090" id="1090">1090</a>
+<a href="#1091" id="1091">1091</a>
+<a href="#1092" id="1092">1092</a>
+<a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a>
+<a href="#1098" id="1098">1098</a>
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
+<a href="#1151" id="1151">1151</a>
+<a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
+<a href="#1157" id="1157">1157</a>
+<a href="#1158" id="1158">1158</a>
+<a href="#1159" id="1159">1159</a>
+<a href="#1160" id="1160">1160</a>
+<a href="#1161" id="1161">1161</a>
+<a href="#1162" id="1162">1162</a>
+<a href="#1163" id="1163">1163</a>
+<a href="#1164" id="1164">1164</a>
+<a href="#1165" id="1165">1165</a>
+<a href="#1166" id="1166">1166</a>
+<a href="#1167" id="1167">1167</a>
+<a href="#1168" id="1168">1168</a>
+<a href="#1169" id="1169">1169</a>
+<a href="#1170" id="1170">1170</a>
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::openai::ChatMessage;
+<span class="kw">use </span><span class="kw">super</span>::openai::OpenAiPrompt;
+<span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
+<span class="kw">use </span><span class="kw">crate</span>::sys::graphics::FontRenderer;
 <span class="kw">use </span><span class="kw">crate</span>::sys::netutil;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
 
-<span class="kw">use </span>anyhow::{anyhow, bail, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>chrono::NaiveTime;
 <span class="kw">use </span>log::warn;
 <span class="kw">use </span>log::{debug, info};
@@ -1021,7 +1227,13 @@
 <span class="kw">use </span>reqwest::multipart;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap};
+<span class="kw">use </span>std::fs;
 <span class="kw">use </span>std::time::{SystemTime, UNIX_EPOCH};
+
+<span class="kw">const </span>LONG_TWEET_FONT_SIZE: u32 = <span class="number">16</span>;
+<span class="kw">const </span>LONG_TWEET_IMAGE_WIDTH: u32 = <span class="number">640</span>;
+<span class="kw">const </span>LONG_TWEET_FGCOLOR: (u8, u8, u8) = (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>);
+<span class="kw">const </span>LONG_TWEET_BGCOLOR: (u8, u8, u8) = (<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);
 
 <span class="comment">// Twitter API v2
 </span><span class="kw">pub const </span>TWEET_LEN_MAX: usize = <span class="number">140</span>;
@@ -1065,11 +1277,42 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Mention {
+    start: u32,
+    end: u32,
+    username: String,
+}
+
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>HashTag {
+    start: u32,
+    end: u32,
+    tag: String,
+}
+
+<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Entities {
+    <span class="attr">#[serde(default)]
+    </span>mentions: Vec&lt;Mention&gt;,
+    <span class="attr">#[serde(default)]
+    </span>hashtags: Vec&lt;HashTag&gt;,
+}
+
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">struct </span>Includes {
+    <span class="attr">#[serde(default)]
+    </span>users: Vec&lt;User&gt;,
+}
+
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>Tweet {
     id: String,
     text: String,
     author_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     edit_history_tweet_ids: Vec&lt;String&gt;,
+    <span class="doccomment">/// tweet.fields=entities
+    </span><span class="attr">#[serde(default)]
+    </span>entities: Entities,
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1085,6 +1328,8 @@
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>Timeline {
     data: Vec&lt;Tweet&gt;,
+    <span class="doccomment">/// expansions=author_id
+    </span>includes: <span class="prelude-ty">Option</span>&lt;Includes&gt;,
     meta: Meta,
 }
 
@@ -1141,13 +1386,24 @@
 
 <span class="attr">#[derive(Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>TwitterConfig {
-    tlcheck_enabled: bool,
-    debug_exec_once: bool,
-    fake_tweet: bool,
-    consumer_key: String,
-    consumer_secret: String,
-    access_token: String,
-    access_secret: String,
+    <span class="doccomment">/// タイムラインの定期確認を有効にする。
+    </span>tlcheck_enabled: bool,
+    <span class="doccomment">/// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
+    </span>debug_exec_once: bool,
+    <span class="doccomment">/// ツイートを実際にはせずにログにのみ出力する。
+    </span>fake_tweet: bool,
+    <span class="doccomment">/// Twitter API のアカウント情報。
+    </span>consumer_key: String,
+    <span class="doccomment">/// Twitter API のアカウント情報。
+    </span>consumer_secret: String,
+    <span class="doccomment">/// Twitter API のアカウント情報。
+    </span>access_token: String,
+    <span class="doccomment">/// Twitter API のアカウント情報。
+    </span>access_secret: String,
+    <span class="doccomment">/// OpenAI API 応答を起動するハッシュタグ。
+    </span>ai_hashtag: String,
+    <span class="doccomment">/// 長文ツイートの画像化に使う ttf ファイルへのパス。
+    </span>font_file: String,
 }
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1157,14 +1413,19 @@
 }
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
-</span><span class="kw">struct </span>TwitterContents {
+</span><span class="kw">pub struct </span>TwitterContents {
     timeline_check: Vec&lt;TimelineCheck&gt;,
 }
 
 <span class="kw">pub struct </span>Twitter {
     config: TwitterConfig,
     contents: TwitterContents,
+    prompt: OpenAiPrompt,
+
     wakeup_list: Vec&lt;NaiveTime&gt;,
+
+    font: FontRenderer,
+
     <span class="doccomment">/// タイムラインチェックの際の走査開始 tweet id。
     ///
     /// 初期状態は None で、未取得状態を表す。
@@ -1182,6 +1443,13 @@
     </span>id_username_cache: HashMap&lt;String, String&gt;,
 }
 
+<span class="kw">struct </span>Reply {
+    to_tw_id: String,
+    to_user_id: String,
+    text: String,
+    post_image_if_long: bool,
+}
+
 <span class="kw">impl </span>Twitter {
     <span class="kw">pub fn </span>new(wakeup_list: Vec&lt;NaiveTime&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;[twitter] initialize&quot;</span>);
@@ -1194,10 +1462,19 @@
             .map_or(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Config not found: tw_contents&quot;</span>)), <span class="prelude-val">Ok</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>contents: TwitterContents = serde_json::from_value(jsobj)<span class="question-mark">?</span>;
 
+        <span class="kw">let </span>jsobj = config::get_object(<span class="kw-2">&amp;</span>[<span class="string">&quot;openai_prompt&quot;</span>])
+            .map_or(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Config not found: openai_prompt&quot;</span>)), <span class="prelude-val">Ok</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>prompt: OpenAiPrompt = serde_json::from_value(jsobj)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>ttf_bin = fs::read(<span class="kw-2">&amp;</span>config.font_file)<span class="question-mark">?</span>;
+        <span class="kw">let </span>font = FontRenderer::new(ttf_bin)<span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(Twitter {
             config,
             contents,
+            prompt,
             wakeup_list,
+            font,
             tl_check_since_id: <span class="prelude-val">None</span>,
             my_user_cache: <span class="prelude-val">None</span>,
             username_user_cache: HashMap::new(),
@@ -1206,7 +1483,7 @@
     }
 
     <span class="doccomment">/// Twitter 巡回タスク。
-    </span><span class="kw">async fn </span>twitter_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">async fn </span>twitter_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// 自分の ID
         </span><span class="kw">let </span>me = <span class="self">self</span>.get_my_id().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;[tw-check] user_me: {:?}&quot;</span>, me);
@@ -1233,11 +1510,86 @@
         </span><span class="kw">let </span>tl = <span class="self">self</span>.users_timelines_home(<span class="kw-2">&amp;</span>me.id, <span class="kw-2">&amp;</span>since_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;{} tweets fetched&quot;</span>, tl.data.len());
 
-        <span class="comment">// 反応設定のブロックごとに全ツイートを走査する
-        </span><span class="kw">let </span><span class="kw-2">mut </span>reply_buf = <span class="macro">vec!</span>[];
+        <span class="comment">// 全リプライを Vec として得る
+        </span><span class="kw">let </span><span class="kw-2">mut </span>reply_buf = <span class="self">self</span>.create_reply_list(<span class="kw-2">&amp;</span>tl, <span class="kw-2">&amp;</span>me);
+        <span class="comment">// 全 AI リプライを得て追加
+        </span>reply_buf.append(<span class="kw-2">&amp;mut </span><span class="self">self</span>.create_ai_reply_list(ctrl, <span class="kw-2">&amp;</span>tl, <span class="kw-2">&amp;</span>me).<span class="kw">await</span>);
+
+        <span class="comment">// バッファしたリプライを実行
+        </span><span class="kw">for </span>Reply {
+            to_tw_id,
+            to_user_id,
+            text,
+            post_image_if_long,
+        } <span class="kw">in </span>reply_buf
+        {
+            <span class="comment">// since_id 更新用データ
+            // tweet id を数値比較のため文字列から変換する
+            // (リプライ先 ID + 1) の max をとる
+            </span><span class="kw">let </span>cur: u64 = <span class="self">self</span>.tl_check_since_id.as_ref().unwrap().parse().unwrap();
+            <span class="kw">let </span>next: u64 = to_tw_id.parse().unwrap();
+            <span class="kw">let </span>max = cur.max(next);
+
+            <span class="kw">let </span>name = <span class="self">self</span>.get_username_from_id(<span class="kw-2">&amp;</span>to_user_id).unwrap();
+            <span class="macro">info!</span>(<span class="string">&quot;reply to: {}&quot;</span>, name);
+
+            <span class="comment">// post_image_if_long が有効で文字数オーバーの場合
+            // 画像にして投稿する
+            </span><span class="kw">if </span>post_image_if_long &amp;&amp; text.chars().count() &gt; TWEET_LEN_MAX {
+                <span class="kw">let </span>pngbin = <span class="self">self</span>.font.draw_multiline_text(
+                    LONG_TWEET_FGCOLOR,
+                    LONG_TWEET_BGCOLOR,
+                    <span class="kw-2">&amp;</span>text,
+                    LONG_TWEET_FONT_SIZE,
+                    LONG_TWEET_IMAGE_WIDTH,
+                );
+                <span class="kw">let </span>media_id = <span class="self">self</span>.media_upload(pngbin).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="self">self</span>.tweet_custom(<span class="string">&quot;&quot;</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>to_tw_id), <span class="kw-2">&amp;</span>[media_id]).<span class="kw">await</span><span class="question-mark">?</span>;
+            } <span class="kw">else </span>{
+                <span class="self">self</span>.tweet_custom(<span class="kw-2">&amp;</span>text, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>to_tw_id), <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
+            }
+
+            <span class="comment">// 成功したら since_id を更新する
+            </span><span class="self">self</span>.tl_check_since_id = <span class="prelude-val">Some</span>(max.to_string());
+        }
+
+        <span class="comment">// TODO: vote test
+        /*
+        let param = TweetParam {
+            poll: Some(TweetParamPoll {
+                duration_minutes: 60 * 24,
+                options: vec![&quot;ホワイト&quot;.into(), &quot;ブラック&quot;.into()],
+            }),
+            text: Some(&quot;?&quot;.into()),
+            ..Default::default()
+        };
+        let resp = self.tweets_post(param).await?;
+        info!(&quot;tweet result: {:?}&quot;, resp);
+        */
+
+        </span><span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// 全リプライを生成する
+    </span><span class="kw">fn </span>create_reply_list(<span class="kw-2">&amp;</span><span class="self">self</span>, tl: <span class="kw-2">&amp;</span>Timeline, me: <span class="kw-2">&amp;</span>User) -&gt; Vec&lt;Reply&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>reply_buf = Vec::new();
+
         <span class="kw">for </span>ch <span class="kw">in </span><span class="self">self</span>.contents.timeline_check.iter() {
             <span class="comment">// 自分のツイートには反応しない
-            </span><span class="kw">let </span>tliter = tl.data.iter().filter(|tw| tw.id != me.id);
+            </span><span class="kw">let </span>tliter = tl
+                .data
+                .iter()
+                <span class="comment">// author_id が存在する場合のみ
+                </span>.filter(|tw| tw.author_id.is_some())
+                <span class="comment">// 自分のツイートには反応しない
+                </span>.filter(|tw| <span class="kw-2">*</span>tw.author_id.as_ref().unwrap() != me.id)
+                <span class="comment">// 特定ハッシュタグを含むものは除外 (別関数で返答する)
+                </span>.filter(|tw| {
+                    !tw.entities
+                        .hashtags
+                        .iter()
+                        .any(|v| v.tag == <span class="self">self</span>.config.ai_hashtag)
+                });
 
             <span class="kw">for </span>tw <span class="kw">in </span>tliter {
                 <span class="comment">// author_id が user_names リストに含まれているものでフィルタ
@@ -1260,13 +1612,12 @@
                         <span class="macro">info!</span>(<span class="string">&quot;FIND: {:?}&quot;</span>, tw);
                         <span class="comment">// 配列からリプライをランダムに1つ選ぶ
                         </span><span class="kw">let </span>rnd_idx = rand::thread_rng().gen_range(<span class="number">0</span>..msgs.len());
-                        <span class="comment">// リプライツイート (id, text) を一旦バッファする
-                        // E0502 回避
-                        </span>reply_buf.push((
-                            tw.id.clone(),
-                            tw.author_id.as_ref().unwrap().clone(),
-                            msgs[rnd_idx].clone(),
-                        ));
+                        reply_buf.push(Reply {
+                            to_tw_id: tw.id.clone(),
+                            to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                            text: msgs[rnd_idx].clone(),
+                            post_image_if_long: <span class="bool-val">false</span>,
+                        });
                         <span class="comment">// 複数種類では反応しない
                         // 反応は1回のみ
                         </span><span class="kw">break</span>;
@@ -1275,46 +1626,113 @@
             }
         }
 
-        <span class="comment">// バッファしたリプライを実行
-        </span><span class="kw">for </span>(tw_id, user_id, text) <span class="kw">in </span>reply_buf {
-            <span class="comment">// since_id 更新用データ
-            // tweet id を数値比較のため文字列から変換する
-            // (リプライ先 ID + 1) の max をとる
-            </span><span class="kw">let </span>cur: u64 = <span class="self">self</span>.tl_check_since_id.as_ref().unwrap().parse().unwrap();
-            <span class="kw">let </span>next: u64 = tw_id.parse().unwrap();
-            <span class="kw">let </span>max = cur.max(next);
+        reply_buf
+    }
 
-            <span class="kw">let </span>name = <span class="self">self</span>.get_username_from_id(<span class="kw-2">&amp;</span>user_id).unwrap();
-            <span class="macro">info!</span>(<span class="string">&quot;reply to: {}&quot;</span>, name);
+    <span class="doccomment">/// 全 AI リプライを生成する
+    </span><span class="kw">async fn </span>create_ai_reply_list(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control, tl: <span class="kw-2">&amp;</span>Timeline, me: <span class="kw-2">&amp;</span>User) -&gt; Vec&lt;Reply&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>reply_buf = Vec::new();
 
-            <span class="kw">let </span>param = TweetParam {
-                reply: <span class="prelude-val">Some</span>(TweetParamReply {
-                    in_reply_to_tweet_id: tw_id,
-                }),
-                text: <span class="prelude-val">Some</span>(text),
-                ..Default::default()
-            };
-            <span class="self">self</span>.tweet_raw(param).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>tliter = tl
+            .data
+            .iter()
+            <span class="comment">// author_id が存在する場合のみ
+            </span>.filter(|tw| tw.author_id.is_some())
+            <span class="comment">// 自分のツイートには反応しない
+            </span>.filter(|tw| <span class="kw-2">*</span>tw.author_id.as_ref().unwrap() != me.id)
+            <span class="comment">// 自分がメンションされている場合のみ
+            </span>.filter(|tw| {
+                tw.entities
+                    .mentions
+                    .iter()
+                    .any(|v| v.username == me.username)
+            })
+            <span class="comment">// 設定で指定されたハッシュタグを含む場合のみ対象
+            </span>.filter(|tw| {
+                tw.entities
+                    .hashtags
+                    .iter()
+                    .any(|v| v.tag == <span class="self">self</span>.config.ai_hashtag)
+            });
 
-            <span class="comment">// 成功したら since_id を更新する
-            </span><span class="self">self</span>.tl_check_since_id = <span class="prelude-val">Some</span>(max.to_string());
+        <span class="kw">for </span>tw <span class="kw">in </span>tliter {
+            <span class="macro">info!</span>(<span class="string">&quot;FIND (AI): {:?}&quot;</span>, tw);
+
+            <span class="kw">let </span>user = <span class="self">Self</span>::resolve_user(
+                tw.author_id.as_ref().unwrap(),
+                <span class="kw-2">&amp;</span>tl.includes.as_ref().unwrap().users,
+            );
+            <span class="kw">if </span>user.is_none() {
+                <span class="macro">warn!</span>(<span class="string">&quot;User {} is not found&quot;</span>, tw.author_id.as_ref().unwrap());
+                <span class="kw">continue</span>;
+            }
+
+            <span class="comment">// 設定からプロローグ分の Vec&lt;ChatMessage&gt; を生成する
+            </span><span class="kw">let </span>system_msgs: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self
+                </span>.prompt
+                .twitter
+                .iter()
+                .map(|text| {
+                    <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>user.unwrap().name);
+                    ChatMessage {
+                        role: <span class="string">&quot;system&quot;</span>.to_string(),
+                        content: text,
+                    }
+                })
+                .collect();
+
+            <span class="kw">let </span><span class="kw-2">mut </span>main_msg = String::new();
+            <span class="comment">// メンションおよびハッシュタグ部分を削除する
+            </span><span class="kw">for </span>(ind, ch) <span class="kw">in </span>tw.text.chars().enumerate() {
+                <span class="kw">let </span>ind = ind <span class="kw">as </span>u32;
+                <span class="kw">let </span><span class="kw-2">mut </span>deleted = <span class="bool-val">false</span>;
+                <span class="kw">for </span>m <span class="kw">in </span>tw.entities.mentions.iter() {
+                    <span class="kw">if </span>(m.start..m.end).contains(<span class="kw-2">&amp;</span>ind) {
+                        deleted = <span class="bool-val">true</span>;
+                        <span class="kw">break</span>;
+                    }
+                }
+                <span class="kw">for </span>h <span class="kw">in </span>tw.entities.hashtags.iter() {
+                    <span class="kw">if </span>(h.start..h.end).contains(<span class="kw-2">&amp;</span>ind) {
+                        deleted = <span class="bool-val">true</span>;
+                        <span class="kw">break</span>;
+                    }
+                }
+                <span class="kw">if </span>!deleted {
+                    main_msg.push(ch);
+                }
+            }
+
+            <span class="comment">// 最後にツイートの本文を追加
+            </span><span class="kw">let </span><span class="kw-2">mut </span>msgs = system_msgs.clone();
+            msgs.push(ChatMessage {
+                role: <span class="string">&quot;user&quot;</span>.to_string(),
+                content: main_msg,
+            });
+
+            <span class="comment">// 結果に追加する
+            // エラーはログのみ出して追加をしない
+            </span>{
+                <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+                <span class="kw">match </span>ai.chat(msgs).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(resp) =&gt; reply_buf.push(Reply {
+                        to_tw_id: tw.id.clone(),
+                        to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                        text: resp,
+                        post_image_if_long: <span class="bool-val">true</span>,
+                    }),
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">warn!</span>(<span class="string">&quot;AI chat error: {e}&quot;</span>);
+                    }
+                }
+            }
         }
 
-        <span class="comment">// TODO: vote test
-        /*
-        let param = TweetParam {
-            poll: Some(TweetParamPoll {
-                duration_minutes: 60 * 24,
-                options: vec![&quot;ホワイト&quot;.into(), &quot;ブラック&quot;.into()],
-            }),
-            text: Some(&quot;?&quot;.into()),
-            ..Default::default()
-        };
-        let resp = self.tweets_post(param).await?;
-        info!(&quot;tweet result: {:?}&quot;, resp);
-        */
+        reply_buf
+    }
 
-        </span><span class="prelude-val">Ok</span>(())
+    <span class="kw">fn </span>resolve_user&lt;<span class="lifetime">&#39;a</span>&gt;(id: <span class="kw-2">&amp;</span>str, users: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[User]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>User&gt; {
+        users.iter().find(|<span class="kw-2">&amp;</span>user| user.id == id)
     }
 
     <span class="doccomment">/// text から pat を検索する。
@@ -1370,12 +1788,21 @@
     <span class="doccomment">/// シンプルなツイート。
     /// 中身は [Self::tweet_raw]。
     </span><span class="kw">pub async fn </span>tweet(<span class="kw-2">&amp;mut </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.tweet_with_media(text, <span class="kw-2">&amp;</span>[]).<span class="kw">await
+        <span class="self">self</span>.tweet_custom(text, <span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>[]).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// メディア付きツイート。
     /// 中身は [Self::tweet_raw]。
-    </span><span class="kw">pub async fn </span>tweet_with_media(<span class="kw-2">&amp;mut </span><span class="self">self</span>, text: <span class="kw-2">&amp;</span>str, media_ids: <span class="kw-2">&amp;</span>[u64]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>tweet_custom(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        text: <span class="kw-2">&amp;</span>str,
+        reply_to: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
+        media_ids: <span class="kw-2">&amp;</span>[u64],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>reply = reply_to.map(|id| TweetParamReply {
+            in_reply_to_tweet_id: id.to_string(),
+        });
+
         <span class="kw">let </span>media_ids = <span class="kw">if </span>media_ids.is_empty() {
             <span class="prelude-val">None
         </span>} <span class="kw">else </span>{
@@ -1388,6 +1815,7 @@
         });
 
         <span class="kw">let </span>param = TweetParam {
+            reply,
             text: <span class="prelude-val">Some</span>(text.to_string()),
             media,
             ..Default::default()
@@ -1454,8 +1882,8 @@
         <span class="kw">let </span>resp = <span class="self">self
             </span>.http_oauth_post_multipart(URL_UPLOAD, <span class="kw-2">&amp;</span>BTreeMap::new(), form)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: UploadResponseData = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: UploadResponseData = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;upload OK: media_id={}&quot;</span>, obj.media_id);
 
         <span class="prelude-val">Ok</span>(obj.media_id)
@@ -1553,8 +1981,8 @@
 
     <span class="kw">async fn </span>users_me(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;UsersMe&gt; {
         <span class="kw">let </span>resp = <span class="self">self</span>.http_oauth_get(URL_USERS_ME, <span class="kw-2">&amp;</span>KeyValue::new()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: UsersMe = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: UsersMe = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
     }
@@ -1570,8 +1998,8 @@
                 <span class="kw-2">&amp;</span>BTreeMap::from([(<span class="string">&quot;usernames&quot;</span>.into(), users_str)]),
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: UsersBy = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: UsersBy = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
     }
@@ -1579,13 +2007,15 @@
     <span class="kw">async fn </span>users_timelines_home(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>str, since_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Timeline&gt; {
         <span class="kw">let </span>url = <span class="macro">format!</span>(<span class="macro">URL_USERS_TIMELINES_HOME!</span>(), id);
         <span class="kw">let </span>param = KeyValue::from([
-            (<span class="string">&quot;since_id&quot;</span>.into(), since_id.into()),
-            (<span class="string">&quot;exclude&quot;</span>.into(), <span class="string">&quot;retweets&quot;</span>.into()),
-            (<span class="string">&quot;expansions&quot;</span>.into(), <span class="string">&quot;author_id&quot;</span>.into()),
+            (<span class="string">&quot;since_id&quot;</span>.to_string(), since_id.to_string()),
+            (<span class="string">&quot;exclude&quot;</span>.to_string(), <span class="string">&quot;retweets&quot;</span>.to_string()),
+            (<span class="string">&quot;expansions&quot;</span>.to_string(), <span class="string">&quot;author_id&quot;</span>.to_string()),
+            (<span class="string">&quot;tweet.fields&quot;</span>.to_string(), <span class="string">&quot;entities&quot;</span>.to_string()),
         ]);
         <span class="kw">let </span>resp = <span class="self">self</span>.http_oauth_get(<span class="kw-2">&amp;</span>url, <span class="kw-2">&amp;</span>param).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: Timeline = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;{json_str}&quot;</span>);
+        <span class="kw">let </span>obj: Timeline = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
     }
@@ -1599,8 +2029,8 @@
             </span>(<span class="string">&quot;max_results&quot;</span>.into(), <span class="string">&quot;100&quot;</span>.into()),
         ]);
         <span class="kw">let </span>resp = <span class="self">self</span>.http_oauth_get(<span class="kw-2">&amp;</span>url, <span class="kw-2">&amp;</span>param).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: Timeline = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: Timeline = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
     }
@@ -1609,8 +2039,8 @@
         <span class="kw">let </span>resp = <span class="self">self
             </span>.http_oauth_post_json(URL_TWEETS, <span class="kw-2">&amp;</span>KeyValue::new(), <span class="kw-2">&amp;</span>param)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>json_str = process_response(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>obj: TweetResponse = convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
+        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>obj: TweetResponse = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
     }
@@ -1721,30 +2151,6 @@
                 );
             }
         }
-    }
-}
-
-<span class="doccomment">/// 文字列を JSON としてパースし、T 型に変換する。
-///
-/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
-</span><span class="kw">fn </span>convert_from_json&lt;<span class="lifetime">&#39;a</span>, T&gt;(json_str: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
-<span class="kw">where
-    </span>T: Deserialize&lt;<span class="lifetime">&#39;a</span>&gt;,
-{
-    <span class="kw">let </span>obj = serde_json::from_str::&lt;T&gt;(json_str).with_context(|| json_str.to_string())<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(obj)
-}
-
-<span class="doccomment">/// HTTP status が成功 (200 台) でなければ Err に変換する。
-/// 成功ならば response body を文字列に変換して返す。
-</span><span class="kw">async fn </span>process_response(resp: reqwest::Response) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>status = resp.status();
-    <span class="kw">let </span>text = resp.text().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">if </span>status.is_success() {
-        <span class="prelude-val">Ok</span>(text)
-    } <span class="kw">else </span>{
-        <span class="macro">bail!</span>(<span class="string">&quot;HTTP error {} {}&quot;</span>, status, text);
     }
 }
 
@@ -2019,4 +2425,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0 (2c8cc3432 2023-03-06)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-c3c521c753752a1a.js" data-settings-css="settings-08ddfdda51b8ee2e.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0 (84c898d65 2023-04-16)" data-search-js="search-8a59a8356673ec1f.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

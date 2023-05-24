@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["server_config",""]],"struct":[["index_get",""]]};
+window.SIDEBAR_ITEMS = {"fn":["index_get","server_config"],"struct":["index_get"]};
