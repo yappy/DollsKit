@@ -25,7 +25,7 @@ log = "0.4.17"
 # Logging (concrete layer)
 simplelog = "0.12.0"
 # Daemon util
-daemonize = "0.4.1"
+daemonize = "0.5.0"
 # Time for log
 time = "0.3.15"
 # DateTime
@@ -51,6 +51,8 @@ sha2 = "0.10.6"
 actix-web = "4.2.1"
 # Image convert
 image = "0.24.5"
+# Font
+rusttype="0.9.3"
 # Discord
 serenity = "0.11.5"
 
