@@ -1,9 +1,12 @@
+use super::openai::ChatMessage;
+use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::config;
+use crate::sys::graphics::FontRenderer;
 use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Result};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -11,7 +14,13 @@ use rand::Rng;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const LONG_TWEET_FONT_SIZE: u32 = 16;
+const LONG_TWEET_IMAGE_WIDTH: u32 = 640;
+const LONG_TWEET_FGCOLOR: (u8, u8, u8) = (255, 255, 255);
+const LONG_TWEET_BGCOLOR: (u8, u8, u8) = (0, 0, 0);
 
 // Twitter API v2
 pub const TWEET_LEN_MAX: usize = 140;
@@ -55,11 +64,42 @@ struct UsersBy {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+struct Mention {
+    start: u32,
+    end: u32,
+    username: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct HashTag {
+    start: u32,
+    end: u32,
+    tag: String,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct Entities {
+    #[serde(default)]
+    mentions: Vec<Mention>,
+    #[serde(default)]
+    hashtags: Vec<HashTag>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Includes {
+    #[serde(default)]
+    users: Vec<User>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Tweet {
     id: String,
     text: String,
     author_id: Option<String>,
     edit_history_tweet_ids: Vec<String>,
+    /// tweet.fields=entities
+    #[serde(default)]
+    entities: Entities,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -75,6 +115,8 @@ struct Meta {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Timeline {
     data: Vec<Tweet>,
+    /// expansions=author_id
+    includes: Option<Includes>,
     meta: Meta,
 }
 
@@ -131,13 +173,24 @@ struct UploadResponseData {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TwitterConfig {
+    /// タイムラインの定期確認を有効にする。
     tlcheck_enabled: bool,
+    /// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
     debug_exec_once: bool,
+    /// ツイートを実際にはせずにログにのみ出力する。
     fake_tweet: bool,
+    /// Twitter API のアカウント情報。
     consumer_key: String,
+    /// Twitter API のアカウント情報。
     consumer_secret: String,
+    /// Twitter API のアカウント情報。
     access_token: String,
+    /// Twitter API のアカウント情報。
     access_secret: String,
+    /// OpenAI API 応答を起動するハッシュタグ。
+    ai_hashtag: String,
+    /// 長文ツイートの画像化に使う ttf ファイルへのパス。
+    font_file: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -147,14 +200,19 @@ struct TimelineCheck {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TwitterContents {
+pub struct TwitterContents {
     timeline_check: Vec<TimelineCheck>,
 }
 
 pub struct Twitter {
     config: TwitterConfig,
     contents: TwitterContents,
+    prompt: OpenAiPrompt,
+
     wakeup_list: Vec<NaiveTime>,
+
+    font: FontRenderer,
+
     /// タイムラインチェックの際の走査開始 tweet id。
     ///
     /// 初期状態は None で、未取得状態を表す。
@@ -172,6 +230,13 @@ pub struct Twitter {
     id_username_cache: HashMap<String, String>,
 }
 
+struct Reply {
+    to_tw_id: String,
+    to_user_id: String,
+    text: String,
+    post_image_if_long: bool,
+}
+
 impl Twitter {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[twitter] initialize");
@@ -184,10 +249,19 @@ impl Twitter {
             .map_or(Err(anyhow!("Config not found: tw_contents")), Ok)?;
         let contents: TwitterContents = serde_json::from_value(jsobj)?;
 
+        let jsobj = config::get_object(&["openai_prompt"])
+            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
+        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+
+        let ttf_bin = fs::read(&config.font_file)?;
+        let font = FontRenderer::new(ttf_bin)?;
+
         Ok(Twitter {
             config,
             contents,
+            prompt,
             wakeup_list,
+            font,
             tl_check_since_id: None,
             my_user_cache: None,
             username_user_cache: HashMap::new(),
@@ -196,7 +270,7 @@ impl Twitter {
     }
 
     /// Twitter 巡回タスク。
-    async fn twitter_task(&mut self, _ctrl: &Control) -> Result<()> {
+    async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
         // 自分の ID
         let me = self.get_my_id().await?;
         info!("[tw-check] user_me: {:?}", me);
@@ -223,11 +297,86 @@ impl Twitter {
         let tl = self.users_timelines_home(&me.id, &since_id).await?;
         info!("{} tweets fetched", tl.data.len());
 
-        // 反応設定のブロックごとに全ツイートを走査する
-        let mut reply_buf = vec![];
+        // 全リプライを Vec として得る
+        let mut reply_buf = self.create_reply_list(&tl, &me);
+        // 全 AI リプライを得て追加
+        reply_buf.append(&mut self.create_ai_reply_list(ctrl, &tl, &me).await);
+
+        // バッファしたリプライを実行
+        for Reply {
+            to_tw_id,
+            to_user_id,
+            text,
+            post_image_if_long,
+        } in reply_buf
+        {
+            // since_id 更新用データ
+            // tweet id を数値比較のため文字列から変換する
+            // (リプライ先 ID + 1) の max をとる
+            let cur: u64 = self.tl_check_since_id.as_ref().unwrap().parse().unwrap();
+            let next: u64 = to_tw_id.parse().unwrap();
+            let max = cur.max(next);
+
+            let name = self.get_username_from_id(&to_user_id).unwrap();
+            info!("reply to: {}", name);
+
+            // post_image_if_long が有効で文字数オーバーの場合
+            // 画像にして投稿する
+            if post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
+                let pngbin = self.font.draw_multiline_text(
+                    LONG_TWEET_FGCOLOR,
+                    LONG_TWEET_BGCOLOR,
+                    &text,
+                    LONG_TWEET_FONT_SIZE,
+                    LONG_TWEET_IMAGE_WIDTH,
+                );
+                let media_id = self.media_upload(pngbin).await?;
+                self.tweet_custom("", Some(&to_tw_id), &[media_id]).await?;
+            } else {
+                self.tweet_custom(&text, Some(&to_tw_id), &[]).await?;
+            }
+
+            // 成功したら since_id を更新する
+            self.tl_check_since_id = Some(max.to_string());
+        }
+
+        // TODO: vote test
+        /*
+        let param = TweetParam {
+            poll: Some(TweetParamPoll {
+                duration_minutes: 60 * 24,
+                options: vec!["ホワイト".into(), "ブラック".into()],
+            }),
+            text: Some("?".into()),
+            ..Default::default()
+        };
+        let resp = self.tweets_post(param).await?;
+        info!("tweet result: {:?}", resp);
+        */
+
+        Ok(())
+    }
+
+    /// 全リプライを生成する
+    fn create_reply_list(&self, tl: &Timeline, me: &User) -> Vec<Reply> {
+        let mut reply_buf = Vec::new();
+
         for ch in self.contents.timeline_check.iter() {
             // 自分のツイートには反応しない
-            let tliter = tl.data.iter().filter(|tw| tw.id != me.id);
+            let tliter = tl
+                .data
+                .iter()
+                // author_id が存在する場合のみ
+                .filter(|tw| tw.author_id.is_some())
+                // 自分のツイートには反応しない
+                .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id)
+                // 特定ハッシュタグを含むものは除外 (別関数で返答する)
+                .filter(|tw| {
+                    !tw.entities
+                        .hashtags
+                        .iter()
+                        .any(|v| v.tag == self.config.ai_hashtag)
+                });
 
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
@@ -250,13 +399,12 @@ impl Twitter {
                         info!("FIND: {:?}", tw);
                         // 配列からリプライをランダムに1つ選ぶ
                         let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
-                        // リプライツイート (id, text) を一旦バッファする
-                        // E0502 回避
-                        reply_buf.push((
-                            tw.id.clone(),
-                            tw.author_id.as_ref().unwrap().clone(),
-                            msgs[rnd_idx].clone(),
-                        ));
+                        reply_buf.push(Reply {
+                            to_tw_id: tw.id.clone(),
+                            to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                            text: msgs[rnd_idx].clone(),
+                            post_image_if_long: false,
+                        });
                         // 複数種類では反応しない
                         // 反応は1回のみ
                         break;
@@ -265,46 +413,113 @@ impl Twitter {
             }
         }
 
-        // バッファしたリプライを実行
-        for (tw_id, user_id, text) in reply_buf {
-            // since_id 更新用データ
-            // tweet id を数値比較のため文字列から変換する
-            // (リプライ先 ID + 1) の max をとる
-            let cur: u64 = self.tl_check_since_id.as_ref().unwrap().parse().unwrap();
-            let next: u64 = tw_id.parse().unwrap();
-            let max = cur.max(next);
+        reply_buf
+    }
 
-            let name = self.get_username_from_id(&user_id).unwrap();
-            info!("reply to: {}", name);
+    /// 全 AI リプライを生成する
+    async fn create_ai_reply_list(&self, ctrl: &Control, tl: &Timeline, me: &User) -> Vec<Reply> {
+        let mut reply_buf = Vec::new();
 
-            let param = TweetParam {
-                reply: Some(TweetParamReply {
-                    in_reply_to_tweet_id: tw_id,
-                }),
-                text: Some(text),
-                ..Default::default()
-            };
-            self.tweet_raw(param).await?;
+        let tliter = tl
+            .data
+            .iter()
+            // author_id が存在する場合のみ
+            .filter(|tw| tw.author_id.is_some())
+            // 自分のツイートには反応しない
+            .filter(|tw| *tw.author_id.as_ref().unwrap() != me.id)
+            // 自分がメンションされている場合のみ
+            .filter(|tw| {
+                tw.entities
+                    .mentions
+                    .iter()
+                    .any(|v| v.username == me.username)
+            })
+            // 設定で指定されたハッシュタグを含む場合のみ対象
+            .filter(|tw| {
+                tw.entities
+                    .hashtags
+                    .iter()
+                    .any(|v| v.tag == self.config.ai_hashtag)
+            });
 
-            // 成功したら since_id を更新する
-            self.tl_check_since_id = Some(max.to_string());
+        for tw in tliter {
+            info!("FIND (AI): {:?}", tw);
+
+            let user = Self::resolve_user(
+                tw.author_id.as_ref().unwrap(),
+                &tl.includes.as_ref().unwrap().users,
+            );
+            if user.is_none() {
+                warn!("User {} is not found", tw.author_id.as_ref().unwrap());
+                continue;
+            }
+
+            // 設定からプロローグ分の Vec<ChatMessage> を生成する
+            let system_msgs: Vec<_> = self
+                .prompt
+                .twitter
+                .iter()
+                .map(|text| {
+                    let text = text.replace("${user}", &user.unwrap().name);
+                    ChatMessage {
+                        role: "system".to_string(),
+                        content: text,
+                    }
+                })
+                .collect();
+
+            let mut main_msg = String::new();
+            // メンションおよびハッシュタグ部分を削除する
+            for (ind, ch) in tw.text.chars().enumerate() {
+                let ind = ind as u32;
+                let mut deleted = false;
+                for m in tw.entities.mentions.iter() {
+                    if (m.start..m.end).contains(&ind) {
+                        deleted = true;
+                        break;
+                    }
+                }
+                for h in tw.entities.hashtags.iter() {
+                    if (h.start..h.end).contains(&ind) {
+                        deleted = true;
+                        break;
+                    }
+                }
+                if !deleted {
+                    main_msg.push(ch);
+                }
+            }
+
+            // 最後にツイートの本文を追加
+            let mut msgs = system_msgs.clone();
+            msgs.push(ChatMessage {
+                role: "user".to_string(),
+                content: main_msg,
+            });
+
+            // 結果に追加する
+            // エラーはログのみ出して追加をしない
+            {
+                let ai = ctrl.sysmods().openai.lock().await;
+                match ai.chat(msgs).await {
+                    Ok(resp) => reply_buf.push(Reply {
+                        to_tw_id: tw.id.clone(),
+                        to_user_id: tw.author_id.as_ref().unwrap().clone(),
+                        text: resp,
+                        post_image_if_long: true,
+                    }),
+                    Err(e) => {
+                        warn!("AI chat error: {e}");
+                    }
+                }
+            }
         }
 
-        // TODO: vote test
-        /*
-        let param = TweetParam {
-            poll: Some(TweetParamPoll {
-                duration_minutes: 60 * 24,
-                options: vec!["ホワイト".into(), "ブラック".into()],
-            }),
-            text: Some("?".into()),
-            ..Default::default()
-        };
-        let resp = self.tweets_post(param).await?;
-        info!("tweet result: {:?}", resp);
-        */
+        reply_buf
+    }
 
-        Ok(())
+    fn resolve_user<'a>(id: &str, users: &'a [User]) -> Option<&'a User> {
+        users.iter().find(|&user| user.id == id)
     }
 
     /// text から pat を検索する。
@@ -360,12 +575,21 @@ impl Twitter {
     /// シンプルなツイート。
     /// 中身は [Self::tweet_raw]。
     pub async fn tweet(&mut self, text: &str) -> Result<()> {
-        self.tweet_with_media(text, &[]).await
+        self.tweet_custom(text, None, &[]).await
     }
 
     /// メディア付きツイート。
     /// 中身は [Self::tweet_raw]。
-    pub async fn tweet_with_media(&mut self, text: &str, media_ids: &[u64]) -> Result<()> {
+    pub async fn tweet_custom(
+        &mut self,
+        text: &str,
+        reply_to: Option<&str>,
+        media_ids: &[u64],
+    ) -> Result<()> {
+        let reply = reply_to.map(|id| TweetParamReply {
+            in_reply_to_tweet_id: id.to_string(),
+        });
+
         let media_ids = if media_ids.is_empty() {
             None
         } else {
@@ -378,6 +602,7 @@ impl Twitter {
         });
 
         let param = TweetParam {
+            reply,
             text: Some(text.to_string()),
             media,
             ..Default::default()
@@ -444,8 +669,8 @@ impl Twitter {
         let resp = self
             .http_oauth_post_multipart(URL_UPLOAD, &BTreeMap::new(), form)
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: UploadResponseData = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UploadResponseData = netutil::convert_from_json(&json_str)?;
         info!("upload OK: media_id={}", obj.media_id);
 
         Ok(obj.media_id)
@@ -543,8 +768,8 @@ impl Twitter {
 
     async fn users_me(&self) -> Result<UsersMe> {
         let resp = self.http_oauth_get(URL_USERS_ME, &KeyValue::new()).await?;
-        let json_str = process_response(resp).await?;
-        let obj: UsersMe = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UsersMe = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -560,8 +785,8 @@ impl Twitter {
                 &BTreeMap::from([("usernames".into(), users_str)]),
             )
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: UsersBy = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: UsersBy = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -569,13 +794,15 @@ impl Twitter {
     async fn users_timelines_home(&self, id: &str, since_id: &str) -> Result<Timeline> {
         let url = format!(URL_USERS_TIMELINES_HOME!(), id);
         let param = KeyValue::from([
-            ("since_id".into(), since_id.into()),
-            ("exclude".into(), "retweets".into()),
-            ("expansions".into(), "author_id".into()),
+            ("since_id".to_string(), since_id.to_string()),
+            ("exclude".to_string(), "retweets".to_string()),
+            ("expansions".to_string(), "author_id".to_string()),
+            ("tweet.fields".to_string(), "entities".to_string()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
-        let json_str = process_response(resp).await?;
-        let obj: Timeline = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        debug!("{json_str}");
+        let obj: Timeline = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -589,8 +816,8 @@ impl Twitter {
             ("max_results".into(), "100".into()),
         ]);
         let resp = self.http_oauth_get(&url, &param).await?;
-        let json_str = process_response(resp).await?;
-        let obj: Timeline = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: Timeline = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -599,8 +826,8 @@ impl Twitter {
         let resp = self
             .http_oauth_post_json(URL_TWEETS, &KeyValue::new(), &param)
             .await?;
-        let json_str = process_response(resp).await?;
-        let obj: TweetResponse = convert_from_json(&json_str)?;
+        let json_str = netutil::check_http_resp(resp).await?;
+        let obj: TweetResponse = netutil::convert_from_json(&json_str)?;
 
         Ok(obj)
     }
@@ -711,30 +938,6 @@ impl SystemModule for Twitter {
                 );
             }
         }
-    }
-}
-
-/// 文字列を JSON としてパースし、T 型に変換する。
-///
-/// 変換エラーが発生した場合はエラーにソース文字列を付加する。
-fn convert_from_json<'a, T>(json_str: &'a str) -> Result<T>
-where
-    T: Deserialize<'a>,
-{
-    let obj = serde_json::from_str::<T>(json_str).with_context(|| json_str.to_string())?;
-
-    Ok(obj)
-}
-
-/// HTTP status が成功 (200 台) でなければ Err に変換する。
-/// 成功ならば response body を文字列に変換して返す。
-async fn process_response(resp: reqwest::Response) -> Result<String> {
-    let status = resp.status();
-    let text = resp.text().await?;
-    if status.is_success() {
-        Ok(text)
-    } else {
-        bail!("HTTP error {} {}", status, text);
     }
 }
 

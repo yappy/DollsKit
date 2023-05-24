@@ -1,9 +1,11 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
+use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
+use crate::sysmod::openai::ChatMessage;
 use anyhow::{anyhow, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -46,6 +48,8 @@ pub struct DiscordConfig {
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
+    /// ai コマンド応答の先頭に与える指示。
+    prompt: OpenAiPrompt,
     /// 定期実行の時刻リスト。
     wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
@@ -99,6 +103,10 @@ impl Discord {
             .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
         let config: DiscordConfig = serde_json::from_value(jsobj)?;
 
+        let jsobj = config::get_object(&["openai_prompt"])
+            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
+        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+
         let mut auto_del_congig = BTreeMap::new();
         for ch in &config.auto_del_chs {
             auto_del_congig.insert(
@@ -112,6 +120,7 @@ impl Discord {
 
         Ok(Self {
             config,
+            prompt,
             wakeup_list,
             ctx: None,
             postponed_msgs: Vec::new(),
@@ -147,9 +156,13 @@ impl Discord {
 ///
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
-    let (config, wakeup_list) = {
+    let (config, prompt, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
-        (discord.config.clone(), discord.wakeup_list.clone())
+        (
+            discord.config.clone(),
+            discord.prompt.clone(),
+            discord.wakeup_list.clone(),
+        )
     };
 
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
@@ -183,6 +196,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
         data.insert::<ControlData>(ctrl.clone());
         data.insert::<ConfigData>(config);
+        data.insert::<PromptData>(prompt);
         data.insert::<OwnerData>(ownerids);
     }
 
@@ -367,6 +381,11 @@ impl TypeMapKey for ConfigData {
     type Value = DiscordConfig;
 }
 
+struct PromptData;
+impl TypeMapKey for PromptData {
+    type Value = OpenAiPrompt;
+}
+
 struct OwnerData;
 impl TypeMapKey for OwnerData {
     type Value = HashSet<UserId>;
@@ -453,7 +472,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[group]
 #[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack)]
+#[commands(sysinfo, dice, delmsg, camera, attack, ai)]
 struct General;
 
 #[command]
@@ -577,6 +596,50 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
         m.content(format_args!("{} {}", user.mention(), text))
     })
     .await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("OpenAI chat assistant.")]
+#[usage("ai <your message>")]
+#[example("Hello, what's your name?")]
+#[min_args(1)]
+async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
+    //owner_check(ctx, msg).await?;
+
+    let chat_msg = arg.rest();
+
+    let mut msgs: Vec<_> = {
+        let data = ctx.data.read().await;
+        let prompt = data.get::<PromptData>().unwrap();
+        prompt
+            .discord
+            .iter()
+            .map(|text| {
+                let text = text.replace("${user}", &msg.author.name);
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: text,
+                }
+            })
+            .collect()
+    };
+    msgs.push(ChatMessage {
+        role: "user".to_string(),
+        content: chat_msg.to_string(),
+    });
+
+    let reply_msg = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        ai.chat(msgs).await?
+    };
+
+    info!("openai reply: {reply_msg}");
+    msg.reply(ctx, reply_msg).await?;
 
     Ok(())
 }

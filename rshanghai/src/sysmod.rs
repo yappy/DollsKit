@@ -4,12 +4,13 @@ pub mod camera;
 pub mod discord;
 pub mod health;
 pub mod http;
+pub mod openai;
 pub mod sysinfo;
 pub mod twitter;
 
 use self::{
-    camera::Camera, discord::Discord, health::Health, http::HttpServer, sysinfo::SystemInfo,
-    twitter::Twitter,
+    camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
+    sysinfo::SystemInfo, twitter::Twitter,
 };
 use crate::sys::taskserver::Control;
 use anyhow::Result;
@@ -42,6 +43,7 @@ pub struct SystemModules {
     pub camera: SysModArc<camera::Camera>,
     pub twitter: SysModArc<twitter::Twitter>,
     pub discord: SysModArc<discord::Discord>,
+    pub openai: SysModArc<openai::OpenAi>,
     pub http: SysModArc<http::HttpServer>,
 
     /// 全 [SystemModule] にイベントを配送するための参照のリストを作る。
@@ -98,15 +100,17 @@ impl SystemModules {
         )?));
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
-        let http = Arc::new(TokioMutex::new(HttpServer::new()?));
         let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
+        let openai = Arc::new(TokioMutex::new(OpenAi::new()?));
+        let http = Arc::new(TokioMutex::new(HttpServer::new()?));
 
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
         event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
-        event_target_list.push(http.clone());
         event_target_list.push(discord.clone());
+        event_target_list.push(openai.clone());
+        event_target_list.push(http.clone());
 
         info!("OK: initialize system modules");
         Ok(Self {
@@ -115,6 +119,7 @@ impl SystemModules {
             camera,
             twitter,
             discord,
+            openai,
             http,
             event_target_list,
         })

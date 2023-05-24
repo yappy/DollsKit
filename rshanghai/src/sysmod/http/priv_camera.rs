@@ -393,7 +393,7 @@ async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
             midlist.push(media_id);
         }
         let text = ids.join("\n");
-        tw.tweet_with_media(&text, &midlist).await?;
+        tw.tweet_custom(&text, None, &midlist).await?;
     }
 
     Ok(())

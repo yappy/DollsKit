@@ -19,7 +19,9 @@
 		"consumer_key"		: "",
 		"consumer_secret"	: "",
 		"access_token"		: "",
-		"access_secret"		: ""
+		"access_secret"		: "",
+		"ai_hashtag"		: "DollsAI",
+		"font_file"			: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf"
 	},
 	"discord": {
 		"enabled"			: false,
@@ -28,6 +30,10 @@
 		"auto_del_chs"		: [],
 		"perm_err_msg"		: "バカジャネーノ",
 		"force_perm_err"	: false
+	},
+	"openai": {
+		"enabled"			: false,
+		"api_key"			: ""
 	},
 	"http": {
 		"enabled"			: false,

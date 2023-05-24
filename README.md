@@ -46,6 +46,12 @@ $ cargo r -r
 $ cp config_default.json config.json
 ```
 
+### フォント
+デフォルト設定で指定されているフォントファイルは以下でインストールできます。
+```
+$ sudo apt install fonts-ipafont
+```
+
 ### 本実行
 ```
 $ cargo run --release
@@ -85,7 +91,7 @@ $ crontab < cron.txt
 ## 設定ファイル (config.json) のヘルプ
 ドキュメントの config_help モジュールにまとまっています。
 
-https://yappy.github.io/DollsKit/doc/rshanghai/target/doc/rshanghai/config_help/index.html
+https://yappy.github.io/DollsKit/doc/rshanghai/config_help/index.html
 
 ## テストのビルドと実行
 ```

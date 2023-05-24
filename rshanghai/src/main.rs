@@ -43,6 +43,9 @@ const DEF_CONFIG_JSON: &str = include_str!("res/config_default.json");
 /// デフォルトの Twitter コンテンツデータ (json source)。
 /// [include_str!] でバイナリに含める。
 const TW_CONTENTS_JSON: &str = include_str!("res/tw_contents.json");
+/// デフォルトの OpenAI プロンプトデータ (json source)。
+/// [include_str!] でバイナリに含める。
+const OPENAI_PROMPT_JSON: &str = include_str!("res/openai_prompt.json");
 /// ロードする設定ファイルパス。
 const CONFIG_FILE: &str = "config.json";
 /// デフォルト設定の出力パス。
@@ -180,7 +183,12 @@ fn load_config() -> Result<()> {
     }
 
     // json パースして設定システムを初期化
-    let json_list = [DEF_CONFIG_JSON, TW_CONTENTS_JSON, &json_str];
+    let json_list = [
+        DEF_CONFIG_JSON,
+        TW_CONTENTS_JSON,
+        OPENAI_PROMPT_JSON,
+        &json_str,
+    ];
     sys::config::init();
     for (i, json_str) in json_list.iter().enumerate() {
         sys::config::add_config(json_str).with_context(|| format!("Config load failed: {i}"))?;
