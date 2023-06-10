@@ -752,7 +752,7 @@ async fn aireset(ctx: &Context, msg: &Message) -> CommandResult {
 
         discord.chat_history.clear();
     }
-    msg.reply(ctx, format!("OK")).await?;
+    msg.reply(ctx, "OK").await?;
 
     Ok(())
 }
