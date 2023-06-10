@@ -651,7 +651,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     for elem in discord.chat_history.iter() {
         if let Some(user) = &elem.user {
             msgs.extend(prompt.discord.each.iter().map(|text| {
-                let text = text.replace("${user}", &user);
+                let text = text.replace("${user}", user);
                 ChatMessage {
                     role: "system".to_string(),
                     content: text,
