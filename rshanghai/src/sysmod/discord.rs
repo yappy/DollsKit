@@ -64,7 +64,7 @@ pub struct Discord {
     postponed_msgs: Vec<String>,
     /// 自動削除機能の設定データ。
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
-    ///
+    /// ai コマンドの会話履歴。
     chat_history: VecDeque<ChatElement>,
 }
 
@@ -162,6 +162,20 @@ impl Discord {
         ch.say(ctx, msg).await?;
 
         Ok(())
+    }
+
+    pub fn process_timeout(&mut self) {
+        let history = &mut self.chat_history;
+        let now = Instant::now();
+
+        while !history.is_empty() {
+            let dur = now - history[0].timestamp;
+            if dur > Duration::from_secs(self.prompt.discord.history_timeout_min as u64 * 60) {
+                history.pop_front();
+            } else {
+                break;
+            }
+        }
     }
 }
 
@@ -485,7 +499,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[group]
 #[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack, ai)]
+#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset)]
 struct General;
 
 #[command]
@@ -615,7 +629,7 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
 #[command]
 #[description("OpenAI chat assistant.")]
-#[usage("ai <your message>")]
+#[usage("<your message>")]
 #[example("Hello, what's your name?")]
 #[min_args(1)]
 async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
@@ -628,18 +642,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     let prompt = data.get::<PromptData>().unwrap();
 
     // 履歴からタイムアウトしたものを削除
-    {
-        let history = &mut discord.chat_history;
-        let now = Instant::now();
-        while !history.is_empty() {
-            let dur = now - history[0].timestamp;
-            if dur > Duration::from_secs(prompt.discord.history_timeout_min as u64 * 60) {
-                history.pop_front();
-            } else {
-                break;
-            }
-        }
-    }
+    discord.process_timeout();
 
     let mut msgs = Vec::new();
     // 先頭システムメッセージ
@@ -709,6 +712,47 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
             history.pop_front();
         }
     }
+
+    Ok(())
+}
+
+#[command]
+#[description("Get ai command status.")]
+#[usage("")]
+#[example("")]
+async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
+    let text = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let mut discord = ctrl.sysmods().discord.lock().await;
+        let prompt = data.get::<PromptData>().unwrap();
+
+        discord.process_timeout();
+        format!(
+            "History: {}/{}\nTimeout: {} min",
+            discord.chat_history.len(),
+            prompt.discord.history_max,
+            prompt.discord.history_timeout_min
+        )
+    };
+    msg.reply(ctx, text).await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("Clear ai command history.")]
+#[usage("")]
+#[example("")]
+async fn aireset(ctx: &Context, msg: &Message) -> CommandResult {
+    {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let mut discord = ctrl.sysmods().discord.lock().await;
+
+        discord.chat_history.clear();
+    }
+    msg.reply(ctx, format!("OK")).await?;
 
     Ok(())
 }
