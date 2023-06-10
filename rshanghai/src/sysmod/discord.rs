@@ -21,8 +21,10 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::fmt::Display;
+use std::time::Duration;
+use time::Instant;
 
 /// Discord 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
@@ -60,8 +62,10 @@ pub struct Discord {
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
-    /// 自動削除機能の設定データ
+    /// 自動削除機能の設定データ。
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
+    ///
+    chat_history: VecDeque<ChatElement>,
 }
 
 /// 自動削除設定。チャネルごとに保持される。
@@ -71,6 +75,14 @@ pub struct AutoDeleteConfig {
     keep_count: u32,
     /// 残す時間 (単位は分)。0 は無効。
     keep_dur_min: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct ChatElement {
+    timestamp: Instant,
+    // None の場合 assistant
+    user: Option<String>,
+    msg: String,
 }
 
 impl Display for AutoDeleteConfig {
@@ -125,6 +137,7 @@ impl Discord {
             ctx: None,
             postponed_msgs: Vec::new(),
             auto_del_config: auto_del_congig,
+            chat_history: VecDeque::new(),
         })
     }
 
@@ -606,40 +619,96 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 #[example("Hello, what's your name?")]
 #[min_args(1)]
 async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
-    //owner_check(ctx, msg).await?;
-
     let chat_msg = arg.rest();
 
-    let mut msgs: Vec<_> = {
-        let data = ctx.data.read().await;
-        let prompt = data.get::<PromptData>().unwrap();
-        prompt
-            .discord
-            .iter()
-            .map(|text| {
-                let text = text.replace("${user}", &msg.author.name);
+    let data = ctx.data.read().await;
+    let ctrl = data.get::<ControlData>().unwrap();
+    let ai = ctrl.sysmods().openai.lock().await;
+    let mut discord = ctrl.sysmods().discord.lock().await;
+    let prompt = data.get::<PromptData>().unwrap();
+
+    // 履歴からタイムアウトしたものを削除
+    {
+        let history = &mut discord.chat_history;
+        let now = Instant::now();
+        while !history.is_empty() {
+            let dur = now - history[0].timestamp;
+            if dur > Duration::from_secs(prompt.discord.history_timeout_min as u64 * 60) {
+                history.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+
+    let mut msgs = Vec::new();
+    // 先頭システムメッセージ
+    msgs.extend(prompt.discord.first.iter().map(|text| ChatMessage {
+        role: "system".to_string(),
+        content: text.to_string(),
+    }));
+    // 履歴 (システムメッセージ + 本体)
+    for elem in discord.chat_history.iter() {
+        if let Some(user) = &elem.user {
+            msgs.extend(prompt.discord.each.iter().map(|text| {
+                let text = text.replace("${user}", &user);
                 ChatMessage {
                     role: "system".to_string(),
                     content: text,
                 }
-            })
-            .collect()
-    };
+            }));
+            msgs.push(ChatMessage {
+                role: "user".to_string(),
+                content: elem.msg.to_string(),
+            });
+        } else {
+            msgs.push(ChatMessage {
+                role: "assistant".to_string(),
+                content: elem.msg.to_string(),
+            });
+        }
+    }
+    // 今回の発言 (システムメッセージ + 本体)
+    msgs.extend(prompt.discord.each.iter().map(|text| {
+        let text = text.replace("${user}", &msg.author.name);
+        ChatMessage {
+            role: "system".to_string(),
+            content: text,
+        }
+    }));
     msgs.push(ChatMessage {
         role: "user".to_string(),
         content: chat_msg.to_string(),
     });
 
-    let reply_msg = {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
-        let ai = ctrl.sysmods().openai.lock().await;
+    // ChatGPT API
+    let reply_msg = ai.chat(msgs).await?;
 
-        ai.chat(msgs).await?
-    };
-
+    // discord 返信
     info!("openai reply: {reply_msg}");
-    msg.reply(ctx, reply_msg).await?;
+    msg.reply(ctx, reply_msg.to_string()).await?;
+
+    // ここまで成功したら履歴に追加する
+    {
+        let history = &mut discord.chat_history;
+        let ts = Instant::now();
+
+        history.push_back(ChatElement {
+            timestamp: ts,
+            user: Some(msg.author.name.to_string()),
+            msg: chat_msg.to_string(),
+        });
+        history.push_back(ChatElement {
+            timestamp: ts,
+            user: None,
+            msg: reply_msg.to_string(),
+        });
+
+        // 個数制限を適用
+        while history.len() > prompt.discord.history_max as usize {
+            history.pop_front();
+        }
+    }
 
     Ok(())
 }
