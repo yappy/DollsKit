@@ -69,13 +69,23 @@ pub struct OpenAiConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpenAiPromptDiscord {
+    /// 最初に一度だけ与えられるシステムメッセージ。
+    pub first: Vec<String>,
+    /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
+    pub each: Vec<String>,
+    pub history_max: u32,
+    pub history_timeout_min: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiPrompt {
     /// role="system" で与えられる。
     /// ${user} は発言者の名前で置換される。
     pub twitter: Vec<String>,
     /// role="system" で与えられる。
     /// ${user} は発言者の名前で置換される。
-    pub discord: Vec<String>,
+    pub discord: OpenAiPromptDiscord,
 }
 
 pub struct OpenAi {
