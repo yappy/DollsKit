@@ -45,6 +45,7 @@ VERGEN_SYSINFO_CPU_FREQUENCY	3792
 */
 
 use once_cell::sync::Lazy;
+use rustc_version_runtime;
 
 #[rustfmt::skip] pub const GIT_BRANCH:    &str = env!("VERGEN_GIT_BRANCH");
 #[rustfmt::skip] pub const GIT_HASH:      &str = env!("VERGEN_GIT_SHA");
@@ -54,13 +55,19 @@ use once_cell::sync::Lazy;
 #[rustfmt::skip] pub const BUILD_PROFILE: &str = env!("VERGEN_CARGO_PROFILE");
 #[rustfmt::skip] pub const BUILD_TARGET:  &str = env!("VERGEN_CARGO_TARGET_TRIPLE");
 
+// rustc "major.minor.patch"
+pub static RUSTC_VERSION: Lazy<String> = Lazy::new(|| {
+    let meta = rustc_version_runtime::version_meta();
+    format!("{} {:?}", meta.short_version_string, meta.channel)
+});
+
 #[rustfmt::skip]
 pub static VERSION_INFO: Lazy<String> = Lazy::new(|| {
     format!(
 "Build: {BUILD_PROFILE}
-Branch: {GIT_BRANCH}
-{GIT_SEMVER}
-{GIT_DATE}"
+Branch: {GIT_BRANCH} {GIT_SEMVER} {GIT_DATE}
+{}",
+        RUSTC_VERSION.as_str()
     )
 });
 
@@ -70,5 +77,6 @@ pub static VERSION_INFO_VEC: Lazy<Vec<String>> = Lazy::new(|| {
         format!("Branch: {GIT_BRANCH}"),
         format!("Version: {GIT_SEMVER}"),
         format!("Last Updated: {GIT_DATE}"),
+        RUSTC_VERSION.clone(),
     ]
 });
