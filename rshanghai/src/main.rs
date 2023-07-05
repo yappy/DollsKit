@@ -1,7 +1,6 @@
 //! Rust 版管理人形
 
 mod config_help;
-mod game;
 mod sys;
 mod sysmod;
 
