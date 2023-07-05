@@ -26,6 +26,12 @@ pub struct Hand {
     menzi: Vec<Menzi>,
 }
 
+pub enum Agari {
+    Normal(Hand),
+    Kokushi,
+    Chitoi,
+}
+
 fn id_to_number(id: u8) -> Option<u8> {
     if id < 27 {
         Some(id % 9 + 1)
@@ -63,18 +69,22 @@ pub fn parse(from: &str) -> Result<Hand> {
     Ok(hand)
 }
 
-pub fn all_agari(hand: &Hand) -> Vec<Hand> {
+pub fn all_agari(hand: &Hand) -> Vec<Agari> {
     let mut all = Vec::new();
     all.extend(all_normal_agari(&mut hand.clone(), 0));
 
     all
 }
 
-fn all_normal_agari(hand: &mut Hand, idstart: usize) -> Vec<Hand> {
+fn all_kokushi_agari(hand: &Hand) {}
+
+fn all_chitoi_agari(hand: &Hand) {}
+
+fn all_normal_agari(hand: &mut Hand, idstart: usize) -> Vec<Agari> {
     let mut all = Vec::new();
 
     if hand.size == 0 {
-        all.push(hand.clone());
+        all.push(Agari::Normal(hand.clone()));
     } else if hand.head.is_none() {
         for id in idstart..HAI_ID_COUNT {
             if hand.bucket[id] >= 2 {
@@ -163,6 +173,13 @@ mod tests {
     #[test]
     fn order4() {
         let hand = parse("🀇🀈🀉🀍🀎🀏🀙🀚🀛🀟🀠🀡🀃🀃").unwrap();
+        let agari = all_agari(&hand);
+        assert!(agari.len() == 1);
+    }
+
+    #[test]
+    fn complex() {
+        let hand = parse("🀇🀇🀇🀈🀉🀊🀋🀌🀍🀎🀏🀏🀏🀏").unwrap();
         let agari = all_agari(&hand);
         assert!(agari.len() == 1);
     }
