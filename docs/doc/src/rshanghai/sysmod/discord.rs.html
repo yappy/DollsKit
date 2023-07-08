@@ -899,11 +899,23 @@
 <a href="#899" id="899">899</a>
 <a href="#900" id="900">900</a>
 <a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
 <span class="kw">use </span><span class="kw">super</span>::openai::OpenAiPrompt;
 <span class="kw">use </span><span class="kw">super</span>::SystemModule;
+<span class="kw">use </span><span class="kw">crate</span>::sys::netutil::HttpStatusError;
 <span class="kw">use </span><span class="kw">crate</span>::sys::version::VERSION_INFO;
 <span class="kw">use </span><span class="kw">crate</span>::sys::{config, taskserver::Control};
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::ChatMessage;
@@ -1586,7 +1598,17 @@
     });
 
     <span class="comment">// ChatGPT API
-    </span><span class="kw">let </span>reply_msg = ai.chat(msgs).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>reply_msg = ai.chat(msgs).<span class="kw">await</span>;
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw-2">&amp;</span>reply_msg {
+        <span class="comment">// HTTP status が得られるタイプのエラーのみ discord 返信する
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.downcast_ref::&lt;HttpStatusError&gt;() {
+            <span class="macro">warn!</span>(<span class="string">&quot;openai reply: {} {}&quot;</span>, err.status, err.body);
+            <span class="kw">let </span>reply_msg = <span class="macro">format!</span>(<span class="string">&quot;HTTP Status: {}&quot;</span>, err.status);
+            msg.reply(ctx, reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+        }
+    }
+    <span class="comment">// エラーの場合はここで終了
+    </span><span class="kw">let </span>reply_msg = reply_msg<span class="question-mark">?</span>;
 
     <span class="comment">// discord 返信
     </span><span class="macro">info!</span>(<span class="string">&quot;openai reply: {reply_msg}&quot;</span>);

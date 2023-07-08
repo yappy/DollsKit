@@ -243,6 +243,7 @@
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 設定データの管理。
 
 </span><span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
@@ -481,6 +482,7 @@
     }
 
     <span class="attr">#[test]
+    #[serial(config)]
     #[should_panic]
     </span><span class="kw">fn </span>parse_error() {
         <span class="kw">let </span>jsonstr = <span class="string">&quot;{1: 2&quot;</span>;
