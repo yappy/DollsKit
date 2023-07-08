@@ -1,0 +1,12 @@
+/proc
+/sys
+/dev
+/boot
+/run
+/lost+found
+/media
+/mnt
+/tmp
+/var/tmp
+/etc/fstab
+/etc/resolv.conf
