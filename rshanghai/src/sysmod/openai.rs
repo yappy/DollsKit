@@ -128,6 +128,7 @@ impl OpenAi {
         let json_str = netutil::check_http_resp(resp).await?;
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
+        // 複数候補が返ってくることがあるらしいが、よく分からないので最初のを選ぶ
         let text = resp_msg
             .choices
             .get(0)
@@ -149,6 +150,7 @@ impl SystemModule for OpenAi {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sys::netutil::HttpStatusError;
 
     #[tokio::test]
     #[ignore]
@@ -171,7 +173,14 @@ mod tests {
                 content: "こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。".to_string(),
             },
         ];
-        let resp = ai.chat(msgs).await.unwrap();
+        let resp = match ai.chat(msgs).await {
+            Ok(text) => text,
+            Err(err) => {
+                // HTTP status が得られるタイプのエラーのみ許容する
+                let err = err.downcast_ref::<HttpStatusError>().unwrap();
+                err.to_string()
+            }
+        };
         println!("{resp}");
     }
 }

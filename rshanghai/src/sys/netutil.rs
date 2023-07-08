@@ -1,11 +1,19 @@
 //! URL encoding や SHA 計算等のユーティリティ。
 //!
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
 use serde::Deserialize;
 use sha1::Sha1;
 use sha2::Sha256;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+#[error("Http error {status} {body}")]
+pub struct HttpStatusError {
+    pub status: u16,
+    pub body: String,
+}
 
 /// HTTP status が成功 (200 台) でなければ Err に変換する。
 ///
@@ -17,7 +25,10 @@ pub async fn check_http_resp(resp: reqwest::Response) -> Result<String> {
     if status.is_success() {
         Ok(text)
     } else {
-        bail!("HTTP error {} {}", status, text);
+        Err(anyhow!(HttpStatusError {
+            status: status.as_u16(),
+            body: text
+        }))
     }
 }
 
