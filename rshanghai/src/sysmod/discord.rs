@@ -3,6 +3,7 @@
 use super::camera::{take_a_pic, TakePicOption};
 use super::openai::OpenAiPrompt;
 use super::SystemModule;
+use crate::sys::netutil::HttpStatusError;
 use crate::sys::version::VERSION_INFO;
 use crate::sys::{config, taskserver::Control};
 use crate::sysmod::openai::ChatMessage;
@@ -685,7 +686,17 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     });
 
     // ChatGPT API
-    let reply_msg = ai.chat(msgs).await?;
+    let reply_msg = ai.chat(msgs).await;
+    if let Err(err) = &reply_msg {
+        // HTTP status が得られるタイプのエラーのみ discord 返信する
+        if let Some(err) = err.downcast_ref::<HttpStatusError>() {
+            warn!("openai reply: {} {}", err.status, err.body);
+            let reply_msg = format!("HTTP Status: {}", err.status);
+            msg.reply(ctx, reply_msg.to_string()).await?;
+        }
+    }
+    // エラーの場合はここで終了
+    let reply_msg = reply_msg?;
 
     // discord 返信
     info!("openai reply: {reply_msg}");

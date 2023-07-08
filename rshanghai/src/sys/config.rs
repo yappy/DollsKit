@@ -236,6 +236,7 @@ mod tests {
     }
 
     #[test]
+    #[serial(config)]
     #[should_panic]
     fn parse_error() {
         let jsonstr = "{1: 2";
