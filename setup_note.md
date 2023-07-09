@@ -361,30 +361,16 @@ IMPORTANT NOTES:
 `/etc/cron.d/certbot` に cronjob が登録されている。
 12 時間ごとに自動で renew してくれるらしい？
 
-* 秘密鍵と証明書を結合する。(残念ながら lighttpd ではそのまま使えないため)
-  * `sudo -sE`
-  * `cd /etc/letsencrypt/live/(ドメイン)`
-  * `cat privkey.pem cert.pem > server.pem`
 * lighttpd に設定する。
   * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
   * `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   * `sudo service lighttpd force-reload`
-```
-ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/server.pem"
-ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
-```
+  * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
 
-server.pem の結合更新を行う Makefile を `DollsKit/root/Makefile` に用意してある。
-自動更新されるファイルの置いてある場所に Makefile の名前でシンボリックリンクを
-作成し、そのディレクトリで make すれば結合を行う。
 ```
-# cd /etc/letsencrypt/live/<domain>
-# ln -s /path/to/this/Makefile
+ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
+ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 ```
-
-make を行いサーバにリロードさせるスクリプトを `DollsKit/root/Makefile` に
-用意してある。
-`/etc/cron.weekly` あたりのところにコピーし、ドメイン部分を書き換える。
 
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。
