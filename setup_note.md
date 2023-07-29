@@ -53,9 +53,7 @@ Raspberry Pi OS Lite (32-bit)
 # 準備
 https://www.raspberrypi.com/documentation/computers/getting-started.html
 
-
-
-* Using Raspberry Pi Imager を落とす。
+* Using Raspberry Pi Imager から Raspberry Pi Imager を落とす。
 * Micro SD を挿入し、イメージと書き込み先を選択する。
   * GUI を使わない場合は Lite (no desktop) で OK。
 * `Ctrl + Shift + X` で Advanced Options を開く。
@@ -63,14 +61,13 @@ https://www.raspberrypi.com/documentation/computers/getting-started.html
   * SSH や wifi の設定をここからできる。
     この時点で公開鍵 SSH にもできる。
     (従来の SD root に特定のファイルを置く方法を行っていると思われる)
+  * user:pass = pi:raspberry はセキュリティ上の理由で廃止方向。
 * SD card を本体に入れてから電源をつなぐ。
 * マウスと HDMI をつないでネットワーク設定を見るか、なんらかの他の方法で
   IP address を特定する。
   * DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して
     ping, ssh して試す。ssh TCP 22 番ポートが開いているはず。
-  * `ssh pi@<IP addr>`
-    * user, pass = pi, raspberry (または設定したもの)
-    * これで入れたら当たり
+  * `ssh <user>@<IP addr>` から設定したパスワードで入れたら当たり。
 
 
 # 初期設定
@@ -79,7 +76,7 @@ https://www.raspberrypi.com/documentation/computers/getting-started.html
 バージョンアップで少しずつパワーアップしている気がする。
 * (1) System Options
   * wifi 設定
-  * pi user のパスワード設定
+  * initial user のパスワード設定
   * Network at Boot
     * 新機能？ネットワークに接続するまでブートを待たせるらしい。
     * 以前は起動時に立ち上げたプログラムがネットワークエラーを起こしていたので
@@ -88,7 +85,7 @@ https://www.raspberrypi.com/documentation/computers/getting-started.html
 * (6) Advanced Options
   * Expand Filesystem
     * SDカード全体を使うようにする
-    * 自動で行われるようになったっぽい
+    * 自動でいつの間にか行われるようになったっぽい
   * 確認は `df -h`
 * (8) Update
   * このツールをアップデートする
@@ -202,13 +199,14 @@ set bell-style none
 
 # screen
 * nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
-* `sudo apt-get install screen`
+* `sudo apt install screen`
   * デタッチ: C-a d
 
 
 # ssh をまともにする
 * `sudo vi /etc/ssh/sshd_config`
-  * 放っていると接続が切れる
+* `sshd_config.d/` 以下にファイルを置いて include する方式に変わった気もする。
+  * 放置していると接続が切れる
     * 以下をコメントアウト解除して設定する
       * `ClientAliveInterval 60`
       * `ClientAliveCountMax 3`
@@ -218,8 +216,6 @@ set bell-style none
     * `PermitRootLogin no`
   * パスワード認証の無効化
     * `PasswordAuthentication no`
-  * pi の ssh ログインを不許可 (他にログイン可能な sudoer がいることを確認してから！)
-    * `DenyUsers pi`
   * 設定確認
     * `sshd -t`
   * sshd 再起動
@@ -232,11 +228,15 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 
 # カメラモジュール
 * カメラモジュールの有効化
+  * 従来のカメラ関連コマンドはレガシー扱いとなり非推奨となった。
   * sudo raspi-config
   * Interfacing options
-  * Enable Camera
+  * legacy camera supprt
+  * 有効にしても raspistill 等のコマンドが使えない。。
 
-* 静止画撮影(要 video グループ)
+* 移行先は libcamera
+
+* 静止画撮影(要 video グループ) (旧)
   * `raspistill -t 1 -o pic.jpg`
   * -t 指定すると真っ黒になってしまうことがあるらしい？
     https://mizukama.sakura.ne.jp/blog/archives/4022
@@ -358,33 +358,19 @@ IMPORTANT NOTES:
    Donating to EFF:                    https://eff.org/donate-le
 ```
 
-`/etc/cron.d/cetbot` に cronjob が登録されている。
+`/etc/cron.d/certbot` に cronjob が登録されている。
 12 時間ごとに自動で renew してくれるらしい？
 
-* 秘密鍵と証明書を結合する。(残念ながら lighttpd ではそのまま使えないため)
-  * `sudo -sE`
-  * `cd /etc/letsencrypt/live/(ドメイン)`
-  * `cat privkey.pem cert.pem > server.pem`
 * lighttpd に設定する。
   * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
   * `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   * `sudo service lighttpd force-reload`
-```
-ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/server.pem"
-ssl.ca-file = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
-```
+  * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
 
-server.pem の結合更新を行う Makefile を `DollsKit/root/Makefile` に用意してある。
-自動更新されるファイルの置いてある場所に Makefile の名前でシンボリックリンクを
-作成し、そのディレクトリで make すれば結合を行う。
 ```
-# cd /etc/letsencrypt/live/<domain>
-# ln -s /path/to/this/Makefile
+ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
+ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 ```
-
-make を行いサーバにリロードさせるスクリプトを `DollsKit/root/Makefile` に
-用意してある。
-`/etc/cron.weekly` あたりのところにコピーし、ドメイン部分を書き換える。
 
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。

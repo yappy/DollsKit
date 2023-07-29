@@ -91,6 +91,12 @@ git をインストールして DollsKit を /root に clone。
   * sudoers.d/*
     * 特に 010_pi-nopasswd
 
+ユーザのパスワードも変わってしまうので、復旧先がパスワード無効化状態だったりすると
+ssh できなくなって詰む危険もある。
+また、Debian (Raspbean) は初期状態では root のパスワードが設定されていない。
+公開鍵認証による ssh ログインを確立してから行うことを推奨する。
+sshd の root login 無効や password login 無効もなるべく後で。
+
 
 ## SSH の復旧
 設定ファイルは /etc/ssh/sshd_config だが、トラブルの残っているユーザしか
@@ -107,6 +113,7 @@ crontab で設定したデータは `/var/spool/cron/` 以下にある。
 setup_note.md の通りに lighttpd をインストールし、`/etc/lighttpd` をリストアする。
 ただし証明書の準備ができていない場合は SSL 設定のせいでサーバが起動できなくなって
 しまうので、`lighttpd-disable-mod ssl` で一旦無効にする。
+データは `/var/www/html/` にあるのでバックアップからリストアする。
 
 サーバの再起動: `service lighttpd restart`
 
