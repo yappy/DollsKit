@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["BRANCHES","LOG_LIMIT"],"enum":["RunResult"],"struct":["Control","InternalControl","TaskServer"],"type":["CDuration","CancelRx","CancelTx","TDuration"]};
+window.SIDEBAR_ITEMS = {"enum":["RunResult"],"struct":["Control","InternalControl","TaskServer"],"type":["CancelRx","CancelTx"]};

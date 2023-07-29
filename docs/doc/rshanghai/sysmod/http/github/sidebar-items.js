@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["create_msg_from_json","index_get","index_post","process_post"],"struct":["index_get","index_post"]};
+window.SIDEBAR_ITEMS = {"fn":["create_msg_from_json","process_post"],"struct":["index_get","index_post"]};
