@@ -1,3 +1,8 @@
+//! Raspberry Pi カメラ機能。
+//!
+//! 専用カメラを搭載した Raspberry Pi 以外の環境では撮影できない。
+//! [CameraConfig::fake_camera] 設定でフェイクできる。
+
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
@@ -502,6 +507,10 @@ pub fn create_thumbnail(src_buf: &[u8]) -> Result<Vec<u8>> {
     Ok(buf.into_inner())
 }
 
+/// 画像をリサイズする。
+/// 成功すれば jpeg バイナリデータを返す。
+///
+/// * `src_buf` - 元画像とする jpeg バイナリデータ。
 pub fn resize(src_buf: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
     let src = image::load_from_memory_with_format(src_buf, image::ImageFormat::Jpeg)?;
     let dst = src.resize_exact(w, h, FilterType::Nearest);

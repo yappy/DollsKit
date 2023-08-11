@@ -1,3 +1,5 @@
+//! 定期ヘルスチェック機能。
+
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
@@ -8,23 +10,36 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use tokio::{process::Command, select};
 
+/// [Health::history] の最大サイズ。
+///
 /// 60 * 24 = 1440 /day
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
+/// ヘルスチェック設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HealthConfig {
+    /// ヘルスチェック機能を有効化する。
     enabled: bool,
+    /// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
     debug_exec_once: bool,
 }
 
+/// ヘルスチェックシステムモジュール。
 pub struct Health {
+    /// 設定データ。
     config: HealthConfig,
+    /// 定期実行の時刻リスト。
     wakeup_list_check: Vec<NaiveTime>,
+    /// 定期実行の時刻リスト。
     wakeup_list_tweet: Vec<NaiveTime>,
+    /// 測定データの履歴。最大サイズは [HISTORY_QUEUE_SIZE]。
     history: VecDeque<HistoryEntry>,
 }
 
 impl Health {
+    /// コンストラクタ。
+    ///
+    /// 設定の読み込みのみ行い、async task の初期化は [Self::on_start] で行う。
     pub fn new(
         wakeup_list_check: Vec<NaiveTime>,
         wakeup_list_tweet: Vec<NaiveTime>,
@@ -43,15 +58,17 @@ impl Health {
         })
     }
 
+    /// 測定タスク。
+    /// [Self::history] に最新データを追加する。
     async fn check_task(&mut self, _ctrl: &Control) -> Result<()> {
         let cpu_info = get_cpu_info().await?;
         let mem_info = get_mem_info().await?;
         let disk_info = get_disk_info().await?;
         let cpu_temp = get_cpu_temp().await?;
 
-        let date_time = Local::now();
+        let timestamp = Local::now();
         let enrty = HistoryEntry {
-            date_time,
+            timestamp,
             cpu_info,
             mem_info,
             disk_info,
@@ -69,6 +86,7 @@ impl Health {
         Ok(())
     }
 
+    /// ツイートタスク。
     /// [Self::history] の最新データが存在すればツイートする。
     async fn tweet_task(&self, ctrl: &Control) -> Result<()> {
         if let Some(entry) = self.history.back() {
@@ -109,6 +127,8 @@ impl Health {
         Ok(())
     }
 
+    /// [Self::check_task] のエントリ関数。
+    /// モジュールをロックしてメソッド呼び出しを行う。
     async fn check_task_entry(ctrl: Control) -> Result<()> {
         // wlock
         let mut health = ctrl.sysmods().health.lock().await;
@@ -116,6 +136,8 @@ impl Health {
         // unlock
     }
 
+    /// [Self::tweet_task] のエントリ関数。
+    /// モジュールをロックしてメソッド呼び出しを行う。
     async fn tweet_task_entry(mut ctrl: Control) -> Result<()> {
         // check_task を先に実行する (可能性を高める) ために遅延させる
         select! {
@@ -156,39 +178,58 @@ impl SystemModule for Health {
     }
 }
 
+/// 履歴データのエントリ。
 #[derive(Debug, Clone)]
 struct HistoryEntry {
+    /// タイムスタンプ。
     #[allow(dead_code)]
-    date_time: DateTime<Local>,
+    timestamp: DateTime<Local>,
+    /// CPU 使用率。
     cpu_info: CpuInfo,
+    /// メモリ使用率。
     mem_info: MemInfo,
+    /// ディスク使用率。
     disk_info: DiskInfo,
+    /// CPU 温度。
     cpu_temp: CpuTemp,
 }
 
+/// CPU 使用率。
 #[derive(Debug, Clone)]
 struct CpuInfo {
-    /// 全コア合計の使用率
+    /// 全コア合計の使用率。
     cpu_percent_total: f64,
 }
 
+/// メモリ使用率。
 #[derive(Debug, Clone, Copy)]
 struct MemInfo {
+    /// メモリ総量 (MiB)。
     total_mib: f64,
+    /// 利用可能メモリ量 (MiB)。
     avail_mib: f64,
 }
 
+/// ディスク使用率。
 #[derive(Debug, Clone, Copy)]
 struct DiskInfo {
+    /// ディスク総量 (GiB)。
     total_gib: f64,
+    /// 利用可能ディスクサイズ (GiB)。
     avail_gib: f64,
 }
 
+/// CPU 温度。
 #[derive(Debug, Clone, Copy)]
 struct CpuTemp {
+    /// CPU 温度 (℃)。
+    /// 取得できなかった場合は [None]。
     temp: Option<f64>,
 }
 
+/// [CpuInfo] を計測する。
+///
+/// _/proc/stat_ による。
 async fn get_cpu_info() -> Result<CpuInfo> {
     let buf = tokio::fs::read("/proc/stat").await?;
     let text = String::from_utf8_lossy(&buf);
@@ -253,6 +294,9 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     Ok(CpuInfo { cpu_percent_total })
 }
 
+/// [MemInfo] を計測する。
+///
+/// `free` コマンドによる。
 async fn get_mem_info() -> Result<MemInfo> {
     let mut cmd = Command::new("free");
     let output = cmd.output().await?;
@@ -289,6 +333,9 @@ async fn get_mem_info() -> Result<MemInfo> {
     })
 }
 
+/// [DiskInfo] を計測する。
+///
+/// `df` コマンドによる。
 async fn get_disk_info() -> Result<DiskInfo> {
     let mut cmd = Command::new("df");
     let output = cmd.output().await?;
@@ -337,10 +384,11 @@ async fn get_disk_info() -> Result<DiskInfo> {
     })
 }
 
+/// [CpuTemp] を計測する。
 /// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
-/// "/sys/class/thermal/thermal_zone0/temp" による。
-/// デバイスファイルが存在しない場合は None を返して成功扱いとする。
+/// _/sys/class/thermal/thermal_zone0/temp_ による。
+/// デバイスファイルが存在しない場合は [None] を返して成功扱いとする。
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。

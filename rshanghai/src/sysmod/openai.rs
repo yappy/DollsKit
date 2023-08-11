@@ -1,3 +1,5 @@
+//! OpenAI API.
+
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::netutil;
@@ -8,9 +10,7 @@ use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
 
-/// OpenAI API
-///
-/// https://platform.openai.com/docs/api-reference/chat
+/// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const MODEL: &str = "gpt-3.5-turbo";
 

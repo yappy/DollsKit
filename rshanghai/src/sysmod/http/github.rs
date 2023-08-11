@@ -98,7 +98,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         .lock()
         .await
         .config
-        .github_secret
+        .ghhook_secret
         .clone();
     if hmac_sha256_verify(secret.as_bytes(), body.as_bytes(), &hash).is_err() {
         error!("SHA256 verify error (see github webhook settings)");
