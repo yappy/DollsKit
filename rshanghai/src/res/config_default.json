@@ -41,7 +41,9 @@
 		"port"				: 8899,
 		"path_prefix"		: "/rhouse",
 		"priv_prefix"		: "/rhouse/priv",
-		"github_hook"		: false,
-		"github_secret"		: ""
+		"upload_enabled"	: false,
+		"upload_dir"		: "./upload",
+		"ghhook_enabled"	: false,
+		"ghhook_secret"		: ""
 	}
 }

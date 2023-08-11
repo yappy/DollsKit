@@ -2,26 +2,39 @@ mod github;
 mod index;
 mod priv_camera;
 mod priv_index;
+mod upload;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use actix_web::{http::header::ContentType, HttpResponse, Responder};
 use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
-use log::info;
+use log::{error, info};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+/// HTTP Server 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HttpConfig {
+    /// HTTP Server 機能を有効化する。
     enabled: bool,
+    /// 管理者専用ページを有効化する。
     priv_enabled: bool,
+    /// ポート番号。
     port: u16,
+    /// ルートパス。リバースプロキシ設定に合わせること。
     path_prefix: String,
+    /// 管理者専用ページのルートパス。リバースプロキシ設定に合わせること。
     priv_prefix: String,
-    github_hook: bool,
-    github_secret: String,
+    /// アップローダ機能を有効化する。パスは /_rootpath_/upload/。
+    upload_enabled: bool,
+    /// アップロードされたファイルの保存場所。
+    upload_dir: String,
+    /// GitHub Hook 機能を有効化する。パスは /_rootpath_/github/。
+    ghhook_enabled: bool,
+    /// GitHub Hook の SHA256 検証に使うハッシュ。GitHub の設定ページから手に入る。
+    ghhook_secret: String,
 }
 
 pub struct HttpServer {
@@ -107,15 +120,26 @@ pub struct ActixError {
     status: StatusCode,
 }
 
+impl ActixError {
+    pub fn new(msg: &str, status: u16) -> Self {
+        if !(400..600).contains(&status) {
+            panic!("status must be 400 <= status < 600");
+        }
+        ActixError {
+            err: anyhow!(msg.to_string()),
+            status: StatusCode::from_u16(status).unwrap(),
+        }
+    }
+}
+
 impl actix_web::error::ResponseError for ActixError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        HttpResponse::build(self.status_code())
-            .insert_header(ContentType::plaintext())
-            .body(self.status_code().to_string())
-    }
+        error!("HTTP error by Error: {}", self.status.to_string());
+        error!("{:#}", self.err);
 
-    fn status_code(&self) -> StatusCode {
-        self.status
+        HttpResponse::build(self.status)
+            .insert_header(ContentType::plaintext())
+            .body(self.status.to_string())
     }
 }
 

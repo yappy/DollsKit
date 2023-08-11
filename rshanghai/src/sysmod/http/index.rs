@@ -1,4 +1,5 @@
 use super::github;
+use super::upload;
 use super::HttpConfig;
 use crate::sys::{taskserver::Control, version};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
@@ -17,7 +18,11 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
     move |cfg: &mut web::ServiceConfig, http_config: &HttpConfig| {
         cfg.app_data(state.clone());
         cfg.service(index_get);
-        if http_config.github_hook {
+        if http_config.upload_enabled {
+            cfg.service(upload::index_get);
+            cfg.service(upload::index_post);
+        }
+        if http_config.ghhook_enabled {
             cfg.service(github::index_get);
             cfg.service(github::index_post);
         }

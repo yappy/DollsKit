@@ -171,6 +171,7 @@ struct UploadResponseData {
     expires_after_secs: u64,
 }
 
+/// Twitter 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TwitterConfig {
     /// タイムラインの定期確認を有効にする。
@@ -193,14 +194,26 @@ pub struct TwitterConfig {
     font_file: String,
 }
 
+///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TimelineCheck {
+    /// 対象とするユーザ名 (Screen Name) のリスト。
     user_names: Vec<String>,
+    /// マッチパターンと応答のリスト。
+    ///
+    /// 前者は検索する文字列の配列。どれか1つにマッチしたら応答を行う。
+    /// _^_ で始まる場合、文頭 (行頭ではない) にマッチする。
+    /// _$_ で終わる場合、文末 (行末ではない) にマッチする。
+    ///
+    /// 後者は応答候補の文字列配列。
+    /// この中からランダムに1つが選ばれ応答する。
     pattern: Vec<(Vec<String>, Vec<String>)>,
 }
 
+/// Twitter 応答設定データ。json 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TwitterContents {
+    /// タイムラインチェックのルール。[TimelineCheck] のリスト。
     timeline_check: Vec<TimelineCheck>,
 }
 
