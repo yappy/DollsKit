@@ -2,13 +2,14 @@ mod github;
 mod index;
 mod priv_camera;
 mod priv_index;
+mod upload;
 
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use actix_web::{http::header::ContentType, HttpResponse, Responder};
 use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
-use log::info;
+use log::{error, info};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -20,8 +21,10 @@ pub struct HttpConfig {
     port: u16,
     path_prefix: String,
     priv_prefix: String,
-    github_hook: bool,
-    github_secret: String,
+    upload_enabled: bool,
+    upload_dir: String,
+    ghhook_enabled: bool,
+    ghhook_secret: String,
 }
 
 pub struct HttpServer {
@@ -107,15 +110,26 @@ pub struct ActixError {
     status: StatusCode,
 }
 
+impl ActixError {
+    pub fn new(msg: &str, status: u16) -> Self {
+        if !(400..600).contains(&status) {
+            panic!("status must be 400 <= status < 600");
+        }
+        ActixError {
+            err: anyhow!(msg.to_string()),
+            status: StatusCode::from_u16(status).unwrap(),
+        }
+    }
+}
+
 impl actix_web::error::ResponseError for ActixError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        HttpResponse::build(self.status_code())
-            .insert_header(ContentType::plaintext())
-            .body(self.status_code().to_string())
-    }
+        error!("HTTP error by Error: {}", self.status.to_string());
+        error!("{:#}", self.err);
 
-    fn status_code(&self) -> StatusCode {
-        self.status
+        HttpResponse::build(self.status)
+            .insert_header(ContentType::plaintext())
+            .body(self.status.to_string())
     }
 }
 
