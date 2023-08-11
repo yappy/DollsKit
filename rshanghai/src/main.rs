@@ -362,6 +362,7 @@ fn main() -> Result<()> {
 
     system_main().map_err(|e| {
         error!("Error in system_main");
+        error!("{:#}", e);
         e
     })?;
     Ok(())
