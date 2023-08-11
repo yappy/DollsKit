@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.0 (8ede3aae2 2023-07-12)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.1 (eb26296b5 2023-08-03)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -404,7 +404,57 @@
 <a href="#404" id="404">404</a>
 <a href="#405" id="405">405</a>
 <a href="#406" id="406">406</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::SystemModule;
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! 定期ヘルスチェック機能。
+
+</span><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
 <span class="kw">use </span>anyhow::{anyhow, ensure, <span class="prelude-ty">Result</span>};
@@ -414,24 +464,37 @@
 <span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>tokio::{process::Command, select};
 
-<span class="doccomment">/// 60 * 24 = 1440 /day
+<span class="doccomment">/// [Health::history] の最大サイズ。
+///
+/// 60 * 24 = 1440 /day
 </span><span class="kw">const </span>HISTORY_QUEUE_SIZE: usize = <span class="number">60 </span>* <span class="number">1024 </span>* <span class="number">2</span>;
 
-<span class="attr">#[derive(Clone, Serialize, Deserialize)]
+<span class="doccomment">/// ヘルスチェック設定データ。json 設定に対応する。
+</span><span class="attr">#[derive(Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HealthConfig {
-    enabled: bool,
-    debug_exec_once: bool,
+    <span class="doccomment">/// ヘルスチェック機能を有効化する。
+    </span>enabled: bool,
+    <span class="doccomment">/// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
+    </span>debug_exec_once: bool,
 }
 
-<span class="kw">pub struct </span>Health {
-    config: HealthConfig,
-    wakeup_list_check: Vec&lt;NaiveTime&gt;,
-    wakeup_list_tweet: Vec&lt;NaiveTime&gt;,
-    history: VecDeque&lt;HistoryEntry&gt;,
+<span class="doccomment">/// ヘルスチェックシステムモジュール。
+</span><span class="kw">pub struct </span>Health {
+    <span class="doccomment">/// 設定データ。
+    </span>config: HealthConfig,
+    <span class="doccomment">/// 定期実行の時刻リスト。
+    </span>wakeup_list_check: Vec&lt;NaiveTime&gt;,
+    <span class="doccomment">/// 定期実行の時刻リスト。
+    </span>wakeup_list_tweet: Vec&lt;NaiveTime&gt;,
+    <span class="doccomment">/// 測定データの履歴。最大サイズは [HISTORY_QUEUE_SIZE]。
+    </span>history: VecDeque&lt;HistoryEntry&gt;,
 }
 
 <span class="kw">impl </span>Health {
-    <span class="kw">pub fn </span>new(
+    <span class="doccomment">/// コンストラクタ。
+    ///
+    /// 設定の読み込みのみ行い、async task の初期化は [Self::on_start] で行う。
+    </span><span class="kw">pub fn </span>new(
         wakeup_list_check: Vec&lt;NaiveTime&gt;,
         wakeup_list_tweet: Vec&lt;NaiveTime&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
@@ -449,15 +512,17 @@
         })
     }
 
-    <span class="kw">async fn </span>check_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="doccomment">/// 測定タスク。
+    /// [Self::history] に最新データを追加する。
+    </span><span class="kw">async fn </span>check_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>cpu_info = get_cpu_info().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>mem_info = get_mem_info().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>disk_info = get_disk_info().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>cpu_temp = get_cpu_temp().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>date_time = Local::now();
+        <span class="kw">let </span>timestamp = Local::now();
         <span class="kw">let </span>enrty = HistoryEntry {
-            date_time,
+            timestamp,
             cpu_info,
             mem_info,
             disk_info,
@@ -475,7 +540,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// [Self::history] の最新データが存在すればツイートする。
+    <span class="doccomment">/// ツイートタスク。
+    /// [Self::history] の最新データが存在すればツイートする。
     </span><span class="kw">async fn </span>tweet_task(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(entry) = <span class="self">self</span>.history.back() {
             <span class="kw">let </span>HistoryEntry {
@@ -515,14 +581,18 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>check_task_entry(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="doccomment">/// [Self::check_task] のエントリ関数。
+    /// モジュールをロックしてメソッド呼び出しを行う。
+    </span><span class="kw">async fn </span>check_task_entry(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// wlock
         </span><span class="kw">let </span><span class="kw-2">mut </span>health = ctrl.sysmods().health.lock().<span class="kw">await</span>;
         health.check_task(<span class="kw-2">&amp;</span>ctrl).<span class="kw">await
         </span><span class="comment">// unlock
     </span>}
 
-    <span class="kw">async fn </span>tweet_task_entry(<span class="kw-2">mut </span>ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="doccomment">/// [Self::tweet_task] のエントリ関数。
+    /// モジュールをロックしてメソッド呼び出しを行う。
+    </span><span class="kw">async fn </span>tweet_task_entry(<span class="kw-2">mut </span>ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// check_task を先に実行する (可能性を高める) ために遅延させる
         </span><span class="macro">select! </span>{
             <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(<span class="number">5</span>)) =&gt; {}
@@ -562,40 +632,59 @@
     }
 }
 
-<span class="attr">#[derive(Debug, Clone)]
+<span class="doccomment">/// 履歴データのエントリ。
+</span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">struct </span>HistoryEntry {
-    <span class="attr">#[allow(dead_code)]
-    </span>date_time: DateTime&lt;Local&gt;,
-    cpu_info: CpuInfo,
-    mem_info: MemInfo,
-    disk_info: DiskInfo,
-    cpu_temp: CpuTemp,
+    <span class="doccomment">/// タイムスタンプ。
+    </span><span class="attr">#[allow(dead_code)]
+    </span>timestamp: DateTime&lt;Local&gt;,
+    <span class="doccomment">/// CPU 使用率。
+    </span>cpu_info: CpuInfo,
+    <span class="doccomment">/// メモリ使用率。
+    </span>mem_info: MemInfo,
+    <span class="doccomment">/// ディスク使用率。
+    </span>disk_info: DiskInfo,
+    <span class="doccomment">/// CPU 温度。
+    </span>cpu_temp: CpuTemp,
 }
 
-<span class="attr">#[derive(Debug, Clone)]
+<span class="doccomment">/// CPU 使用率。
+</span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">struct </span>CpuInfo {
-    <span class="doccomment">/// 全コア合計の使用率
+    <span class="doccomment">/// 全コア合計の使用率。
     </span>cpu_percent_total: f64,
 }
 
-<span class="attr">#[derive(Debug, Clone, Copy)]
+<span class="doccomment">/// メモリ使用率。
+</span><span class="attr">#[derive(Debug, Clone, Copy)]
 </span><span class="kw">struct </span>MemInfo {
-    total_mib: f64,
-    avail_mib: f64,
+    <span class="doccomment">/// メモリ総量 (MiB)。
+    </span>total_mib: f64,
+    <span class="doccomment">/// 利用可能メモリ量 (MiB)。
+    </span>avail_mib: f64,
 }
 
-<span class="attr">#[derive(Debug, Clone, Copy)]
+<span class="doccomment">/// ディスク使用率。
+</span><span class="attr">#[derive(Debug, Clone, Copy)]
 </span><span class="kw">struct </span>DiskInfo {
-    total_gib: f64,
-    avail_gib: f64,
+    <span class="doccomment">/// ディスク総量 (GiB)。
+    </span>total_gib: f64,
+    <span class="doccomment">/// 利用可能ディスクサイズ (GiB)。
+    </span>avail_gib: f64,
 }
 
-<span class="attr">#[derive(Debug, Clone, Copy)]
+<span class="doccomment">/// CPU 温度。
+</span><span class="attr">#[derive(Debug, Clone, Copy)]
 </span><span class="kw">struct </span>CpuTemp {
-    temp: <span class="prelude-ty">Option</span>&lt;f64&gt;,
+    <span class="doccomment">/// CPU 温度 (℃)。
+    /// 取得できなかった場合は [None]。
+    </span>temp: <span class="prelude-ty">Option</span>&lt;f64&gt;,
 }
 
-<span class="kw">async fn </span>get_cpu_info() -&gt; <span class="prelude-ty">Result</span>&lt;CpuInfo&gt; {
+<span class="doccomment">/// [CpuInfo] を計測する。
+///
+/// _/proc/stat_ による。
+</span><span class="kw">async fn </span>get_cpu_info() -&gt; <span class="prelude-ty">Result</span>&lt;CpuInfo&gt; {
     <span class="kw">let </span>buf = tokio::fs::read(<span class="string">&quot;/proc/stat&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>text = String::from_utf8_lossy(<span class="kw-2">&amp;</span>buf);
 
@@ -659,7 +748,10 @@
     <span class="prelude-val">Ok</span>(CpuInfo { cpu_percent_total })
 }
 
-<span class="kw">async fn </span>get_mem_info() -&gt; <span class="prelude-ty">Result</span>&lt;MemInfo&gt; {
+<span class="doccomment">/// [MemInfo] を計測する。
+///
+/// `free` コマンドによる。
+</span><span class="kw">async fn </span>get_mem_info() -&gt; <span class="prelude-ty">Result</span>&lt;MemInfo&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">&quot;free&quot;</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;free command failed&quot;</span>);
@@ -695,7 +787,10 @@
     })
 }
 
-<span class="kw">async fn </span>get_disk_info() -&gt; <span class="prelude-ty">Result</span>&lt;DiskInfo&gt; {
+<span class="doccomment">/// [DiskInfo] を計測する。
+///
+/// `df` コマンドによる。
+</span><span class="kw">async fn </span>get_disk_info() -&gt; <span class="prelude-ty">Result</span>&lt;DiskInfo&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">&quot;df&quot;</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;df command failed&quot;</span>);
@@ -743,10 +838,11 @@
     })
 }
 
-<span class="doccomment">/// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
+<span class="doccomment">/// [CpuTemp] を計測する。
+/// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
-/// &quot;/sys/class/thermal/thermal_zone0/temp&quot; による。
-/// デバイスファイルが存在しない場合は None を返して成功扱いとする。
+/// _/sys/class/thermal/thermal_zone0/temp_ による。
+/// デバイスファイルが存在しない場合は [None] を返して成功扱いとする。
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
