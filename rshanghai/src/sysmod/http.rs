@@ -14,16 +14,26 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+/// HTTP Server 設定データ。json 設定に対応する。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct HttpConfig {
+    /// HTTP Server 機能を有効化する。
     enabled: bool,
+    /// 管理者専用ページを有効化する。
     priv_enabled: bool,
+    /// ポート番号。
     port: u16,
+    /// ルートパス。リバースプロキシ設定に合わせること。
     path_prefix: String,
+    /// 管理者専用ページのルートパス。リバースプロキシ設定に合わせること。
     priv_prefix: String,
+    /// アップローダ機能を有効化する。パスは /_rootpath_/upload/。
     upload_enabled: bool,
+    /// アップロードされたファイルの保存場所。
     upload_dir: String,
+    /// GitHub Hook 機能を有効化する。パスは /_rootpath_/github/。
     ghhook_enabled: bool,
+    /// GitHub Hook の SHA256 検証に使うハッシュ。GitHub の設定ページから手に入る。
     ghhook_secret: String,
 }
 

@@ -42,7 +42,7 @@ struct UploadForm {
     files: Vec<TempFile>,
 }
 
-/// https://github.com/actix/examples/tree/master/forms/multipart
+/// <https://github.com/actix/examples/tree/master/forms/multipart>
 #[actix_web::post("/upload/")]
 async fn index_post(
     MultipartForm(form): MultipartForm<UploadForm>,
