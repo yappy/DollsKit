@@ -8,17 +8,19 @@
     return document.getElementById(id);
   }
 
-  function uploadFile(){
+  function uploadFile() {
     let file = _("file_content").files[0];
     if (!file) {
       alert("Select a file.");
       return;
     }
+
     console.log("Upload start");
     console.log(file.name, file.size, file.type);
 
     let formdata = new FormData();
     formdata.append("file_content", file);
+
     let ajax = new XMLHttpRequest();
     ajax.upload.addEventListener("progress", progressHandler, false);
     ajax.addEventListener("load", completeHandler, false);
@@ -26,24 +28,51 @@
     ajax.addEventListener("abort", abortHandler, false);
     ajax.open("POST", ".");
     ajax.send(formdata);
+
+    start();
   }
 
-  function progressHandler(event){
-    _("loaded_n_total").innerText = event.loaded + " / " + event.total;
+  function start() {
+    _("start_button").disabled = true;
+  }
+
+  function finish() {
+    _("progress_bar").value = 0;
+    _("start_button").disabled = false;
+  }
+
+  // event.target = XMLHttpRequest
+  // https://developer.mozilla.org/ja/docs/Web/API/XMLHttpRequest
+
+  function progressHandler(event) {
+    _("progress_text").innerText = event.loaded + " / " + event.total + " bytes uploaded";
     let rate = event.loaded / event.total;
     let percent = rate * 100.0;
-    _("progressBar").value = rate;
-    _("status").innerText = Math.round(percent) + "% ...";
+    _("progress_bar").value = rate;
+    _("status").innerText = Math.round(percent) + " % ...";
   }
-  function completeHandler(event){
-    _("status").innerText = event.target.responseText;
-    _("progressBar").value = 0;
+
+  function completeHandler(event) {
+    let success = event.target.status / 100 == 2;
+
+    let status = event.target.status + " " + event.target.statusText;
+    console.log(event.target.status, event.target.statusText, event.target.responseText);
+    _("status").innerText = status;
+
+    finish();
+    if (success && confirm("Reload this page?")) {
+      location.reload();
+    }
   }
+
   function errorHandler(event){
     _("status").innerText = "Upload Failed";
+    finish();
   }
+
   function abortHandler(event){
     _("status").innerText = "Upload Aborted";
+    finish();
   }
 </script>
 </head>
@@ -52,13 +81,13 @@
   <h1>Uploader</h1>
   <p>Under development</p>
   <form action="" method="post" enctype="multipart/form-data">
-    <input type="file" name="file_content" id="file_content">
+    <input type="file" id="file_content" name="file_content">
     <input type="submit" value="Upload">
 
-    <input type="button" value="Upload (New)" onclick="uploadFile()">
-    <progress id="progressBar" value="0">0%</progress>
-    <h3 id="status"></h3>
-    <p id="loaded_n_total"></p>
+    <input type="button" id="start_button" value="Upload (New)" onclick="uploadFile()">
+    <progress id="progress_bar" value="0">0%</progress>
+    <p id="progress_text"></p>
+    <p id="status"></p>
   </form>
 </body>
 
