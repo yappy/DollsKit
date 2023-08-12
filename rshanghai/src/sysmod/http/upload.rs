@@ -6,10 +6,14 @@ use std::path::Path;
 
 use super::{ActixError, WebResult};
 use crate::sys::taskserver::Control;
-use actix_multipart::form::{tempfile::TempFile, MultipartForm};
+use actix_multipart::{
+    form::{tempfile::TempFile, MultipartForm},
+    Multipart, MultipartError,
+};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use log::info;
+use tokio_stream::StreamExt;
 
 const FILE_NAME_MAX_LEN: usize = 32;
 
@@ -31,31 +35,39 @@ struct UploadForm {
 
 /// <https://github.com/actix/examples/tree/master/forms/multipart>
 #[actix_web::post("/upload/")]
-async fn index_post(
-    MultipartForm(form): MultipartForm<UploadForm>,
-    ctrl: web::Data<Control>,
-) -> WebResult {
-    info!("POST /upload/ ({} files)", form.files.len());
+async fn index_post(mut payload: Multipart, ctrl: web::Data<Control>) -> WebResult {
+    info!("POST /upload/");
 
     let dir = ctrl.sysmods().http.lock().await.config.upload_dir.clone();
     let dir = Path::new(&dir);
     info!("Upload: create {}", dir.to_string_lossy());
     std::fs::create_dir_all(dir).context("")?;
 
-    for f in form.files {
-        info!(
-            "Upload: {:?} {:?} size={}",
-            f.content_type, f.file_name, f.size
-        );
-        let file_name = check_file_name(f.file_name)?;
-        let dst = dir.join(file_name);
-        info!("Upload: saving to {}", dst.to_string_lossy());
-        f.file.persist(dst).context("Temp file error")?;
+    let res = index_post_internal(payload).await;
+    match res {
+        Ok(()) => Ok(HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body("")),
+        Err(e) => Err(ActixError::from(anyhow!(e.to_string()))),
     }
+}
 
-    Ok(HttpResponse::Ok()
-        .content_type(ContentType::plaintext())
-        .body(""))
+async fn index_post_internal(mut payload: Multipart) -> Result<(), MultipartError> {
+    // iterate over multipart stream
+    while let Some(mut field) = payload.try_next().await? {
+        // A multipart/form-data stream has to contain `content_disposition`
+        let content_disposition = field.content_disposition();
+        let filename = content_disposition.get_filename();
+        info!("filename: {:?}", filename);
+
+        // Field in turn is stream of *Bytes* object
+        let mut total = 0;
+        while let Some(chunk) = field.try_next().await? {
+            total += chunk.len();
+            info!("{total} B received");
+        }
+    }
+    Ok(())
 }
 
 fn check_file_name(name: Option<String>) -> Result<String, ActixError> {
