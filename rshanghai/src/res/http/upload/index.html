@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<title>Uploader</title>
+<script>
+  function _(id){
+    return document.getElementById(id);
+  }
+
+  function uploadFile(){
+    let file = _("file_content").files[0];
+    if (!file) {
+      alert("Select a file.");
+      return;
+    }
+    console.log("Upload start");
+    console.log(file.name, file.size, file.type);
+
+    let formdata = new FormData();
+    formdata.append("file_content", file);
+    let ajax = new XMLHttpRequest();
+    ajax.upload.addEventListener("progress", progressHandler, false);
+    ajax.addEventListener("load", completeHandler, false);
+    ajax.addEventListener("error", errorHandler, false);
+    ajax.addEventListener("abort", abortHandler, false);
+    ajax.open("POST", ".");
+    ajax.send(formdata);
+  }
+
+  function progressHandler(event){
+    _("loaded_n_total").innerText = event.loaded + " / " + event.total;
+    let rate = event.loaded / event.total;
+    let percent = rate * 100.0;
+    _("progressBar").value = rate;
+    _("status").innerText = Math.round(percent) + "% ...";
+  }
+  function completeHandler(event){
+    _("status").innerText = event.target.responseText;
+    _("progressBar").value = 0;
+  }
+  function errorHandler(event){
+    _("status").innerText = "Upload Failed";
+  }
+  function abortHandler(event){
+    _("status").innerText = "Upload Aborted";
+  }
+</script>
+</head>
+
+<body>
+  <h1>Uploader</h1>
+  <p>Under development</p>
+  <form action="" method="post" enctype="multipart/form-data">
+    <input type="file" name="file_content" id="file_content">
+    <input type="submit" value="Upload">
+
+    <input type="button" value="Upload (New)" onclick="uploadFile()">
+    <progress id="progressBar" value="0">0%</progress>
+    <h3 id="status"></h3>
+    <p id="loaded_n_total"></p>
+  </form>
+</body>
+
+</html>

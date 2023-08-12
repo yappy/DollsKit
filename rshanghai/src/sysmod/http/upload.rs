@@ -15,21 +15,8 @@ const FILE_NAME_MAX_LEN: usize = 32;
 
 #[actix_web::get("/upload/")]
 async fn index_get() -> impl Responder {
-    let body = r#"<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>Uploader</title>
-  </head>
-  <body>
-    <h1>Uploader</h1>
-    <p>Under development</p>
-    <form action="" method="post" enctype="multipart/form-data">
-      <input type="file" name="file_content">
-      <input type="submit" value="Upload">
-    </form>
-  </body>
-</html>
-"#;
+    info!("GET /upload/");
+    let body = include_str!("../../res/http/upload/index.html");
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -48,7 +35,7 @@ async fn index_post(
     MultipartForm(form): MultipartForm<UploadForm>,
     ctrl: web::Data<Control>,
 ) -> WebResult {
-    info!("POST /upload ({} files)", form.files.len());
+    info!("POST /upload/ ({} files)", form.files.len());
 
     let dir = ctrl.sysmods().http.lock().await.config.upload_dir.clone();
     let dir = Path::new(&dir);
