@@ -1,21 +1,27 @@
 //! Uploader.
 //!
-//! FileName := [a-zA-Z0-9.-_]+
-
-use std::path::Path;
+//! ファイル名のルールは [[check_file_name]] を参照。
 
 use super::{ActixError, WebResult};
 use crate::sys::taskserver::Control;
-use actix_multipart::{
-    form::{tempfile::TempFile, MultipartForm},
-    Multipart, MultipartError,
-};
+use actix_multipart::{Multipart, MultipartError};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::{anyhow, Context};
-use log::info;
+use log::{info, trace};
+use std::path::Path;
+use tokio::{fs::File, io::AsyncWriteExt};
 use tokio_stream::StreamExt;
 
 const FILE_NAME_MAX_LEN: usize = 32;
+const TMP_FILE_NAME: &str = "upload.tmp~";
+// TODO: config file
+const UPLOAD_FILE_LIMIT_MB: usize = 4 << 30;
+const UPLOAD_TOTAL_LIMIT_MB: usize = 32 << 30;
+
+/// テンポラリファイルに書き込めるのは一度に一人だけ。
+///
+/// アップロード完了までには時間がかかるのでロック中に await 可能な Mutex とする。
+static FS_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[actix_web::get("/upload/")]
 async fn index_get() -> impl Responder {
@@ -27,51 +33,104 @@ async fn index_get() -> impl Responder {
         .body(body)
 }
 
-#[derive(Debug, MultipartForm)]
-struct UploadForm {
-    #[multipart(rename = "file_content")]
-    files: Vec<TempFile>,
-}
-
 /// <https://github.com/actix/examples/tree/master/forms/multipart>
 #[actix_web::post("/upload/")]
 async fn index_post(mut payload: Multipart, ctrl: web::Data<Control>) -> WebResult {
     info!("POST /upload/");
 
-    let dir = ctrl.sysmods().http.lock().await.config.upload_dir.clone();
+    let (dir, flimit, tlimit) = {
+        let http = ctrl.sysmods().http.lock().await;
+        let config = &http.config;
+        (
+            config.upload_dir.clone(),
+            UPLOAD_FILE_LIMIT_MB,
+            UPLOAD_TOTAL_LIMIT_MB,
+        )
+    };
     let dir = Path::new(&dir);
-    info!("Upload: create {}", dir.to_string_lossy());
-    std::fs::create_dir_all(dir).context("")?;
+    let tmppath = dir.join(TMP_FILE_NAME);
 
-    let res = index_post_internal(payload).await;
-    match res {
-        Ok(()) => Ok(HttpResponse::Ok()
-            .content_type(ContentType::plaintext())
-            .body("")),
-        Err(e) => Err(ActixError::from(anyhow!(e.to_string()))),
-    }
-}
+    // tempfile の使用権を取得する
+    // 取れない場合は 503 System Unavailable
+    let fs_lock = match FS_LOCK.try_lock() {
+        Ok(lock) => lock,
+        Err(_) => return Err(ActixError::new("Upload is busy", 503)),
+    };
 
-async fn index_post_internal(mut payload: Multipart) -> Result<(), MultipartError> {
-    // iterate over multipart stream
-    while let Some(mut field) = payload.try_next().await? {
-        // A multipart/form-data stream has to contain `content_disposition`
-        let content_disposition = field.content_disposition();
-        let filename = content_disposition.get_filename();
-        info!("filename: {:?}", filename);
+    // ディレクトリが無ければ作成
+    info!("Upload: create all: {}", dir.to_string_lossy());
+    std::fs::create_dir_all(dir).context("Failed to create upload dir")?;
 
-        // Field in turn is stream of *Bytes* object
+    // multipart/form-data のパース
+    let mut processed = false;
+    while let Some(mut field) = conv_mperror(payload.try_next().await)? {
+        info!("Upload: multipart/form-data entry");
+
+        // content_disposition からファイル名を取得、チェック
+        let cont_disp = field.content_disposition();
+        let fname = cont_disp.get_filename();
+        let fname = check_file_name(fname)?;
+        info!("Upload: filename: {fname}");
+        let dstpath = dir.join(fname);
+
+        // tempfile 作成
+        info!("Upload: create: {}", tmppath.to_string_lossy());
+        let mut tmpf = File::create(&tmppath)
+            .await
+            .context("Failed to create temp file")?;
+
+        // ファイルデータ本体
         let mut total = 0;
-        while let Some(chunk) = field.try_next().await? {
+        while let Some(chunk) = conv_mperror(field.try_next().await)? {
+            tmpf.write(&chunk).await.context("Write error")?;
             total += chunk.len();
-            info!("{total} B received");
+            trace!("{total} B received");
         }
+
+        // リネーム
+        info!(
+            "Upload: rename from {} to {}",
+            tmppath.to_string_lossy(),
+            dstpath.to_string_lossy()
+        );
+        tokio::fs::rename(&tmppath, &dstpath)
+            .await
+            .context("Rename failed")?;
+
+        processed = true;
+
+        // close
     }
-    Ok(())
+
+    // ファイルシステムアンロック
+    drop(fs_lock);
+
+    if !processed {
+        return Err(ActixError::new("File data required", 400));
+    }
+
+    Ok(HttpResponse::Ok()
+        .content_type(ContentType::plaintext())
+        .body(""))
 }
 
-fn check_file_name(name: Option<String>) -> Result<String, ActixError> {
-    let name = name.unwrap_or("".to_string());
+/// MultipartError に [Send] が実装されていないからか自動変換が効かない。
+/// 文字列データを取り出して [anyhow::Error] 型に変換する。
+fn conv_mperror<T>(res: Result<T, MultipartError>) -> Result<T, anyhow::Error> {
+    match res {
+        Ok(x) => Ok(x),
+        Err(e) => Err(anyhow!(e.to_string())),
+    }
+}
+
+/// ファイル名をチェックする。
+///
+/// * None および空文字列は NG
+/// * [FILE_NAME_MAX_LEN] 文字まで
+/// * 半角英数字およびドット、ハイフン、アンダースコアのみ
+/// * ドットで始まらない (隠しファイルや `.` `..` などで何かが起こらないようにする)
+fn check_file_name(name: Option<&str>) -> Result<&str, ActixError> {
+    let name = name.unwrap_or("");
     if name.is_empty() {
         Err(ActixError::new("No file name", 400))
     } else if name.len() > FILE_NAME_MAX_LEN {
@@ -79,6 +138,7 @@ fn check_file_name(name: Option<String>) -> Result<String, ActixError> {
     } else if name
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
+        && name.chars().next().unwrap() != '.'
     {
         Ok(name)
     } else {
@@ -92,23 +152,28 @@ mod tests {
 
     #[test]
     fn check_file_name_ok() {
-        assert!(check_file_name(Some("ok.txt".to_string())).is_ok());
+        assert!(check_file_name(Some("ok.txt")).is_ok());
     }
 
     #[test]
     fn check_file_name_empty() {
         assert!(check_file_name(None).is_err());
-        assert!(check_file_name(Some("".to_string())).is_err());
+        assert!(check_file_name(Some("")).is_err());
     }
 
     #[test]
     fn check_file_name_long() {
-        let long_name = "012345678901234567890123456789.txt".to_string();
+        let long_name = "012345678901234567890123456789.txt";
         assert!(check_file_name(Some(long_name)).is_err());
     }
 
     #[test]
     fn check_file_name_invalid() {
-        assert!(check_file_name(Some("あ.txt".to_string())).is_err());
+        assert!(check_file_name(Some("あ.txt")).is_err());
+    }
+
+    #[test]
+    fn check_file_name_tmpfile() {
+        assert!(check_file_name(Some(TMP_FILE_NAME)).is_err());
     }
 }

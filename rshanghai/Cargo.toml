@@ -21,6 +21,7 @@ once_cell = "1.15.0"
 static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.2.1"
+
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
@@ -36,6 +37,7 @@ chrono = "0.4.23"
 # Json
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.86"
+
 # Async
 tokio = { version = "1.31.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.1"
