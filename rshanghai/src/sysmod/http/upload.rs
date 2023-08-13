@@ -7,7 +7,7 @@ use crate::sys::taskserver::Control;
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::{anyhow, Context};
-use log::{info, trace};
+use log::{info, trace, warn};
 use std::path::Path;
 use tokio::{fs::File, io::AsyncWriteExt};
 use tokio_stream::StreamExt;
@@ -33,9 +33,31 @@ async fn index_get() -> impl Responder {
         .body(body)
 }
 
-/// <https://github.com/actix/examples/tree/master/forms/multipart>
 #[actix_web::post("/upload/")]
 async fn index_post(mut payload: Multipart, ctrl: web::Data<Control>) -> WebResult {
+    let res = index_post_main(&mut payload, ctrl).await;
+
+    // finally
+    loop {
+        match payload.try_next().await {
+            Ok(res) => {
+                // 読み捨てる、None で完了
+                if res.is_none() {
+                    break;
+                }
+            }
+            Err(e) => {
+                warn!("Upload: Error while drain: {e}");
+                break;
+            }
+        }
+    }
+
+    res
+}
+
+/// <https://github.com/actix/examples/tree/master/forms/multipart>
+async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> WebResult {
     info!("POST /upload/");
 
     let (dir, flimit, tlimit) = {
@@ -86,6 +108,7 @@ async fn index_post(mut payload: Multipart, ctrl: web::Data<Control>) -> WebResu
             total += chunk.len();
             trace!("{total} B received");
         }
+        info!("{total} B received");
 
         // リネーム
         info!(
