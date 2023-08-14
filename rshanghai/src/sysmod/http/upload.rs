@@ -6,10 +6,10 @@ use super::{ActixError, WebResult};
 use crate::sys::taskserver::Control;
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-use anyhow::{anyhow, Context};
-use log::{info, trace, warn};
+use anyhow::{anyhow, ensure, Context, Result};
+use log::{error, info, trace, warn};
 use std::path::Path;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt, process::Command};
 use tokio_stream::StreamExt;
 
 const FILE_NAME_MAX_LEN: usize = 32;
@@ -112,15 +112,28 @@ async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> W
         }
         info!("{total} B received");
 
-        // リネーム
-        info!(
-            "Upload: rename from {} to {}",
-            tmppath.to_string_lossy(),
-            dstpath.to_string_lossy()
-        );
-        tokio::fs::rename(&tmppath, &dstpath)
-            .await
-            .context("Rename failed")?;
+        let dirsize = get_disk_usage(&dir.to_string_lossy()).await?;
+        info!("Upload: du: {dirsize}");
+
+        if dirsize <= UPLOAD_TOTAL_LIMIT_MB << 20 {
+            // リネーム
+            info!(
+                "Upload: rename from {} to {}",
+                tmppath.to_string_lossy(),
+                dstpath.to_string_lossy()
+            );
+            tokio::fs::rename(&tmppath, &dstpath)
+                .await
+                .context("Rename failed")?;
+        } else {
+            // トータルサイズオーバーなので削除
+            error!("Upload: total size over");
+            info!("Upload: remove {}", tmppath.to_string_lossy());
+            tokio::fs::remove_file(&tmppath)
+                .await
+                .context("Remove failed")?;
+            return Err(ActixError::new("Insufficient storage", 507));
+        }
 
         // close
     } else {
@@ -165,6 +178,22 @@ fn check_file_name(name: Option<&str>) -> Result<&str, ActixError> {
     } else {
         Err(ActixError::new("Invalid file name", 400))
     }
+}
+
+async fn get_disk_usage(dirpath: &str) -> Result<usize> {
+    let mut cmd = Command::new(format!("du -s -B 1 {dirpath}"));
+    let output = cmd.output().await?;
+    ensure!(output.status.success(), "du command failed");
+
+    // example: "2903404544      ."
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let token = stdout
+        .split_ascii_whitespace()
+        .next()
+        .context("du parse error")?;
+    let size = token.parse().context("du parse error")?;
+
+    Ok(size)
 }
 
 #[cfg(test)]
