@@ -172,7 +172,7 @@ fn check_file_name(name: Option<&str>) -> Result<&str, ActixError> {
     } else if name
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
-        && name.chars().next().unwrap() != '.'
+        && !name.starts_with('.')
     {
         Ok(name)
     } else {
