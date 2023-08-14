@@ -443,8 +443,11 @@ impl TakePicOption {
 
 /// 写真を撮影する。成功すると jpeg バイナリデータを返す。
 ///
-/// raspistill コマンドによる。
-/// 同時に2つ以上を実行できないので、[Mutex] で排他する。
+/// 従来は raspistill コマンドを使っていたが、Bullseye より廃止された。
+/// カメラ関連の各種操作は libcamera に移動、集約された。
+/// raspistill コマンド互換の libcamera-still コマンドを使う。
+///
+/// 同時に2つ以上を実行できないかつ時間がかかるので、[tokio::sync::Mutex] で排他する。
 ///
 /// * `opt` - 撮影オプション。
 pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
@@ -455,7 +458,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
 
     let bin = if !fake {
         let _lock = LOCK.lock().await;
-        let output = Command::new("raspistill")
+        let output = Command::new("libcamera-still")
             .arg("-o")
             .arg("-")
             .arg("-t")
@@ -469,7 +472,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
             .output()
             .await?;
         if !output.status.success() {
-            bail!("raspistill failed: {}", output.status);
+            bail!("libcamera-still failed: {}", output.status);
         }
 
         output.stdout
