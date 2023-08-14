@@ -60,7 +60,7 @@ async fn index_post(mut payload: Multipart, ctrl: web::Data<Control>) -> WebResu
 async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> WebResult {
     info!("POST /upload/");
 
-    let (dir, flimit, tlimit) = {
+    let (dir, _flimit, _tlimit) = {
         let http = ctrl.sysmods().http.lock().await;
         let config = &http.config;
         (
@@ -84,8 +84,7 @@ async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> W
     std::fs::create_dir_all(dir).context("Failed to create upload dir")?;
 
     // multipart/form-data のパース
-    let mut processed = false;
-    while let Some(mut field) = conv_mperror(payload.try_next().await)? {
+    if let Some(mut field) = conv_mperror(payload.try_next().await)? {
         info!("Upload: multipart/form-data entry");
 
         // content_disposition からファイル名を取得、チェック
@@ -107,6 +106,9 @@ async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> W
             tmpf.write(&chunk).await.context("Write error")?;
             total += chunk.len();
             trace!("{total} B received");
+            if total > UPLOAD_FILE_LIMIT_MB << 20 {
+                return Err(ActixError::new("File size is too large", 413));
+            }
         }
         info!("{total} B received");
 
@@ -120,17 +122,13 @@ async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> W
             .await
             .context("Rename failed")?;
 
-        processed = true;
-
         // close
+    } else {
+        return Err(ActixError::new("File data required", 400));
     }
 
     // ファイルシステムアンロック
     drop(fs_lock);
-
-    if !processed {
-        return Err(ActixError::new("File data required", 400));
-    }
 
     Ok(HttpResponse::Ok()
         .content_type(ContentType::plaintext())
