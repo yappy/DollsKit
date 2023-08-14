@@ -465,9 +465,9 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
             .arg(opt.timeout_ms.to_string())
             .arg("-q")
             .arg(opt.q.to_string())
-            .arg("-w")
+            .arg("--width")
             .arg(opt.w.to_string())
-            .arg("-h")
+            .arg("--height")
             .arg(opt.h.to_string())
             .output()
             .await?;
