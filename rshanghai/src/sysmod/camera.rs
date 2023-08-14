@@ -10,7 +10,6 @@ use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
 use image::{imageops::FilterType, ImageOutputFormat};
 use log::{error, info, warn};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -22,7 +21,6 @@ use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
     process::Command,
-    sync::Mutex,
 };
 
 /// サムネイルファイル名のポストフィクス。
@@ -451,7 +449,7 @@ impl TakePicOption {
 /// * `opt` - 撮影オプション。
 pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     // 他の関数でも raspistill を使う場合外に出す
-    static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+    static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     let fake = config::get_bool(&["camera", "fake_camera"])?;
 
