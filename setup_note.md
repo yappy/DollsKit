@@ -235,6 +235,9 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   * 有効にしても raspistill 等のコマンドが使えない。。
 
 * 移行先は libcamera
+  * libcamera-still が raspistill 互換 (多分)。
+  * libcamera-jpeg との関係は不明。
+  * legacy camera supprt = ON だと使えないっぽい。
 
 * 静止画撮影(要 video グループ) (旧)
   * `raspistill -t 1 -o pic.jpg`

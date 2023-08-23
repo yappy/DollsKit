@@ -10,7 +10,6 @@ use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
 use image::{imageops::FilterType, ImageOutputFormat};
 use log::{error, info, warn};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -22,7 +21,6 @@ use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
     process::Command,
-    sync::Mutex,
 };
 
 /// サムネイルファイル名のポストフィクス。
@@ -445,33 +443,36 @@ impl TakePicOption {
 
 /// 写真を撮影する。成功すると jpeg バイナリデータを返す。
 ///
-/// raspistill コマンドによる。
-/// 同時に2つ以上を実行できないので、[Mutex] で排他する。
+/// 従来は raspistill コマンドを使っていたが、Bullseye より廃止された。
+/// カメラ関連の各種操作は libcamera に移動、集約された。
+/// raspistill コマンド互換の libcamera-still コマンドを使う。
+///
+/// 同時に2つ以上を実行できないかつ時間がかかるので、[tokio::sync::Mutex] で排他する。
 ///
 /// * `opt` - 撮影オプション。
 pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     // 他の関数でも raspistill を使う場合外に出す
-    static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+    static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     let fake = config::get_bool(&["camera", "fake_camera"])?;
 
     let bin = if !fake {
         let _lock = LOCK.lock().await;
-        let output = Command::new("raspistill")
+        let output = Command::new("libcamera-still")
             .arg("-o")
             .arg("-")
             .arg("-t")
             .arg(opt.timeout_ms.to_string())
             .arg("-q")
             .arg(opt.q.to_string())
-            .arg("-w")
+            .arg("--width")
             .arg(opt.w.to_string())
-            .arg("-h")
+            .arg("--height")
             .arg(opt.h.to_string())
             .output()
             .await?;
         if !output.status.success() {
-            bail!("raspistill failed: {}", output.status);
+            bail!("libcamera-still failed: {}", output.status);
         }
 
         output.stdout
