@@ -105,6 +105,8 @@ https://github.com/rust-lang/rust/issues/43155
 #[parallel(group)]
 ```
 
+## グローバル変数
+
 ## エラーハンドリング
 関数の返り値を Result にするとき、`Err<T>` 時の型が合っていないと
 ? 演算子で楽ができない。
