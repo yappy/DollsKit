@@ -520,6 +520,7 @@
 <a href="#520" id="520">520</a>
 <a href="#521" id="521">521</a>
 <a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Raspberry Pi カメラ機能。
 //!
 //! 専用カメラを搭載した Raspberry Pi 以外の環境では撮影できない。
@@ -532,7 +533,6 @@
 <span class="kw">use </span>chrono::{Local, NaiveTime};
 <span class="kw">use </span>image::{imageops::FilterType, ImageOutputFormat};
 <span class="kw">use </span>log::{error, info, warn};
-<span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::{
     collections::BTreeMap,
@@ -544,7 +544,6 @@
     fs::{<span class="self">self</span>, File},
     io::AsyncWriteExt,
     process::Command,
-    sync::Mutex,
 };
 
 <span class="doccomment">/// サムネイルファイル名のポストフィクス。
@@ -967,33 +966,36 @@
 
 <span class="doccomment">/// 写真を撮影する。成功すると jpeg バイナリデータを返す。
 ///
-/// raspistill コマンドによる。
-/// 同時に2つ以上を実行できないので、[Mutex] で排他する。
+/// 従来は raspistill コマンドを使っていたが、Bullseye より廃止された。
+/// カメラ関連の各種操作は libcamera に移動、集約された。
+/// raspistill コマンド互換の libcamera-still コマンドを使う。
+///
+/// 同時に2つ以上を実行できないかつ時間がかかるので、[tokio::sync::Mutex] で排他する。
 ///
 /// * `opt` - 撮影オプション。
 </span><span class="kw">pub async fn </span>take_a_pic(opt: TakePicOption) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
     <span class="comment">// 他の関数でも raspistill を使う場合外に出す
-    </span><span class="kw">static </span>LOCK: Lazy&lt;Mutex&lt;()&gt;&gt; = Lazy::new(|| Mutex::new(()));
+    </span><span class="kw">static </span>LOCK: tokio::sync::Mutex&lt;()&gt; = tokio::sync::Mutex::const_new(());
 
     <span class="kw">let </span>fake = config::get_bool(<span class="kw-2">&amp;</span>[<span class="string">&quot;camera&quot;</span>, <span class="string">&quot;fake_camera&quot;</span>])<span class="question-mark">?</span>;
 
     <span class="kw">let </span>bin = <span class="kw">if </span>!fake {
         <span class="kw">let </span>_lock = LOCK.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>output = Command::new(<span class="string">&quot;raspistill&quot;</span>)
+        <span class="kw">let </span>output = Command::new(<span class="string">&quot;libcamera-still&quot;</span>)
             .arg(<span class="string">&quot;-o&quot;</span>)
             .arg(<span class="string">&quot;-&quot;</span>)
             .arg(<span class="string">&quot;-t&quot;</span>)
             .arg(opt.timeout_ms.to_string())
             .arg(<span class="string">&quot;-q&quot;</span>)
             .arg(opt.q.to_string())
-            .arg(<span class="string">&quot;-w&quot;</span>)
+            .arg(<span class="string">&quot;--width&quot;</span>)
             .arg(opt.w.to_string())
-            .arg(<span class="string">&quot;-h&quot;</span>)
+            .arg(<span class="string">&quot;--height&quot;</span>)
             .arg(opt.h.to_string())
             .output()
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">if </span>!output.status.success() {
-            <span class="macro">bail!</span>(<span class="string">&quot;raspistill failed: {}&quot;</span>, output.status);
+            <span class="macro">bail!</span>(<span class="string">&quot;libcamera-still failed: {}&quot;</span>, output.status);
         }
 
         output.stdout

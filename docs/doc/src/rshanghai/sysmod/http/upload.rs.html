@@ -113,81 +113,287 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Uploader.
 //!
-//! FileName := [a-zA-Z0-9.-_]+
+//! ファイル名のルールは [[check_file_name]] を参照。
 
-</span><span class="kw">use </span>std::path::Path;
-
-<span class="kw">use super</span>::{ActixError, WebResult};
+</span><span class="kw">use super</span>::{ActixError, WebResult};
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
-<span class="kw">use </span>actix_multipart::form::{tempfile::TempFile, MultipartForm};
+<span class="kw">use </span>actix_multipart::{Multipart, MultipartError};
 <span class="kw">use </span>actix_web::{http::header::ContentType, web, HttpResponse, Responder};
-<span class="kw">use </span>anyhow::Context;
-<span class="kw">use </span>log::info;
+<span class="kw">use </span>anyhow::{anyhow, ensure, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>log::{error, info, trace, warn};
+<span class="kw">use </span>std::path::Path;
+<span class="kw">use </span>tokio::{fs::File, io::AsyncWriteExt, process::Command};
+<span class="kw">use </span>tokio_stream::StreamExt;
 
 <span class="kw">const </span>FILE_NAME_MAX_LEN: usize = <span class="number">32</span>;
+<span class="kw">const </span>TMP_FILE_NAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;upload.tmp~&quot;</span>;
+<span class="comment">// TODO: config file
+</span><span class="kw">const </span>UPLOAD_FILE_LIMIT_MB: usize = <span class="number">4 </span>&lt;&lt; <span class="number">30</span>;
+<span class="kw">const </span>UPLOAD_TOTAL_LIMIT_MB: usize = <span class="number">32 </span>&lt;&lt; <span class="number">30</span>;
+
+<span class="doccomment">/// テンポラリファイルに書き込めるのは一度に一人だけ。
+///
+/// アップロード完了までには時間がかかるのでロック中に await 可能な Mutex とする。
+</span><span class="kw">static </span>FS_LOCK: tokio::sync::Mutex&lt;()&gt; = tokio::sync::Mutex::const_new(());
 
 <span class="attr">#[actix_web::get(<span class="string">&quot;/upload/&quot;</span>)]
 </span><span class="kw">async fn </span>index_get() -&gt; <span class="kw">impl </span>Responder {
-    <span class="kw">let </span>body = <span class="string">r#&quot;&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
-  &lt;head&gt;
-    &lt;title&gt;Uploader&lt;/title&gt;
-  &lt;/head&gt;
-  &lt;body&gt;
-    &lt;h1&gt;Uploader&lt;/h1&gt;
-    &lt;p&gt;Under development&lt;/p&gt;
-    &lt;form action=&quot;&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
-      &lt;input type=&quot;file&quot; name=&quot;file_content&quot;&gt;
-      &lt;input type=&quot;submit&quot; value=&quot;Upload&quot;&gt;
-    &lt;/form&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-&quot;#</span>;
+    <span class="macro">info!</span>(<span class="string">&quot;GET /upload/&quot;</span>);
+    <span class="kw">let </span>body = <span class="macro">include_str!</span>(<span class="string">&quot;../../res/http/upload/index.html&quot;</span>);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(body)
 }
 
-<span class="attr">#[derive(Debug, MultipartForm)]
-</span><span class="kw">struct </span>UploadForm {
-    <span class="attr">#[multipart(rename = <span class="string">&quot;file_content&quot;</span>)]
-    </span>files: Vec&lt;TempFile&gt;,
+<span class="attr">#[actix_web::post(<span class="string">&quot;/upload/&quot;</span>)]
+</span><span class="kw">async fn </span>index_post(<span class="kw-2">mut </span>payload: Multipart, ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
+    <span class="kw">let </span>res = index_post_main(<span class="kw-2">&amp;mut </span>payload, ctrl).<span class="kw">await</span>;
+
+    <span class="comment">// finally
+    </span><span class="kw">loop </span>{
+        <span class="kw">match </span>payload.try_next().<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(res) =&gt; {
+                <span class="comment">// 読み捨てる、None で完了
+                </span><span class="kw">if </span>res.is_none() {
+                    <span class="kw">break</span>;
+                }
+            }
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">warn!</span>(<span class="string">&quot;Upload: Error while drain: {e}&quot;</span>);
+                <span class="kw">break</span>;
+            }
+        }
+    }
+
+    res
 }
 
 <span class="doccomment">/// &lt;https://github.com/actix/examples/tree/master/forms/multipart&gt;
-</span><span class="attr">#[actix_web::post(<span class="string">&quot;/upload/&quot;</span>)]
-</span><span class="kw">async fn </span>index_post(
-    MultipartForm(form): MultipartForm&lt;UploadForm&gt;,
-    ctrl: web::Data&lt;Control&gt;,
-) -&gt; WebResult {
-    <span class="macro">info!</span>(<span class="string">&quot;POST /upload ({} files)&quot;</span>, form.files.len());
+</span><span class="kw">async fn </span>index_post_main(payload: <span class="kw-2">&amp;mut </span>Multipart, ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
+    <span class="macro">info!</span>(<span class="string">&quot;POST /upload/&quot;</span>);
 
-    <span class="kw">let </span>dir = ctrl.sysmods().http.lock().<span class="kw">await</span>.config.upload_dir.clone();
+    <span class="kw">let </span>(dir, _flimit, _tlimit) = {
+        <span class="kw">let </span>http = ctrl.sysmods().http.lock().<span class="kw">await</span>;
+        <span class="kw">let </span>config = <span class="kw-2">&amp;</span>http.config;
+        (
+            config.upload_dir.clone(),
+            UPLOAD_FILE_LIMIT_MB,
+            UPLOAD_TOTAL_LIMIT_MB,
+        )
+    };
     <span class="kw">let </span>dir = Path::new(<span class="kw-2">&amp;</span>dir);
-    <span class="macro">info!</span>(<span class="string">&quot;Upload: create {}&quot;</span>, dir.to_string_lossy());
-    std::fs::create_dir_all(dir).context(<span class="string">&quot;&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>tmppath = dir.join(TMP_FILE_NAME);
 
-    <span class="kw">for </span>f <span class="kw">in </span>form.files {
-        <span class="macro">info!</span>(
-            <span class="string">&quot;Upload: {:?} {:?} size={}&quot;</span>,
-            f.content_type, f.file_name, f.size
-        );
-        <span class="kw">let </span>file_name = check_file_name(f.file_name)<span class="question-mark">?</span>;
-        <span class="kw">let </span>dst = dir.join(file_name);
-        <span class="macro">info!</span>(<span class="string">&quot;Upload: saving to {}&quot;</span>, dst.to_string_lossy());
-        f.file.persist(dst).context(<span class="string">&quot;Temp file error&quot;</span>)<span class="question-mark">?</span>;
+    <span class="comment">// tempfile の使用権を取得する
+    // 取れない場合は 503 System Unavailable
+    </span><span class="kw">let </span>fs_lock = <span class="kw">match </span>FS_LOCK.try_lock() {
+        <span class="prelude-val">Ok</span>(lock) =&gt; lock,
+        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Upload is busy&quot;</span>, <span class="number">503</span>)),
+    };
+
+    <span class="comment">// ディレクトリが無ければ作成
+    </span><span class="macro">info!</span>(<span class="string">&quot;Upload: create all: {}&quot;</span>, dir.to_string_lossy());
+    std::fs::create_dir_all(dir).context(<span class="string">&quot;Failed to create upload dir&quot;</span>)<span class="question-mark">?</span>;
+
+    <span class="comment">// multipart/form-data のパース
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>field) = conv_mperror(payload.try_next().<span class="kw">await</span>)<span class="question-mark">? </span>{
+        <span class="macro">info!</span>(<span class="string">&quot;Upload: multipart/form-data entry&quot;</span>);
+
+        <span class="comment">// content_disposition からファイル名を取得、チェック
+        </span><span class="kw">let </span>cont_disp = field.content_disposition();
+        <span class="kw">let </span>fname = cont_disp.get_filename();
+        <span class="kw">let </span>fname = check_file_name(fname)<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;Upload: filename: {fname}&quot;</span>);
+        <span class="kw">let </span>dstpath = dir.join(fname);
+
+        <span class="comment">// tempfile 作成
+        </span><span class="macro">info!</span>(<span class="string">&quot;Upload: create: {}&quot;</span>, tmppath.to_string_lossy());
+        <span class="kw">let </span><span class="kw-2">mut </span>tmpf = File::create(<span class="kw-2">&amp;</span>tmppath)
+            .<span class="kw">await
+            </span>.context(<span class="string">&quot;Failed to create temp file&quot;</span>)<span class="question-mark">?</span>;
+
+        <span class="comment">// ファイルデータ本体
+        </span><span class="kw">let </span><span class="kw-2">mut </span>total = <span class="number">0</span>;
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(chunk) = conv_mperror(field.try_next().<span class="kw">await</span>)<span class="question-mark">? </span>{
+            tmpf.write(<span class="kw-2">&amp;</span>chunk).<span class="kw">await</span>.context(<span class="string">&quot;Write error&quot;</span>)<span class="question-mark">?</span>;
+            total += chunk.len();
+            <span class="macro">trace!</span>(<span class="string">&quot;{total} B received&quot;</span>);
+            <span class="kw">if </span>total &gt; UPLOAD_FILE_LIMIT_MB &lt;&lt; <span class="number">20 </span>{
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;File size is too large&quot;</span>, <span class="number">413</span>));
+            }
+        }
+        <span class="macro">info!</span>(<span class="string">&quot;{total} B received&quot;</span>);
+
+        <span class="kw">let </span>dirsize = get_disk_usage(<span class="kw-2">&amp;</span>dir.to_string_lossy()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;Upload: du: {dirsize}&quot;</span>);
+
+        <span class="kw">if </span>dirsize &lt;= UPLOAD_TOTAL_LIMIT_MB &lt;&lt; <span class="number">20 </span>{
+            <span class="comment">// リネーム
+            </span><span class="macro">info!</span>(
+                <span class="string">&quot;Upload: rename from {} to {}&quot;</span>,
+                tmppath.to_string_lossy(),
+                dstpath.to_string_lossy()
+            );
+            tokio::fs::rename(<span class="kw-2">&amp;</span>tmppath, <span class="kw-2">&amp;</span>dstpath)
+                .<span class="kw">await
+                </span>.context(<span class="string">&quot;Rename failed&quot;</span>)<span class="question-mark">?</span>;
+        } <span class="kw">else </span>{
+            <span class="comment">// トータルサイズオーバーなので削除
+            </span><span class="macro">error!</span>(<span class="string">&quot;Upload: total size over&quot;</span>);
+            <span class="macro">info!</span>(<span class="string">&quot;Upload: remove {}&quot;</span>, tmppath.to_string_lossy());
+            tokio::fs::remove_file(<span class="kw-2">&amp;</span>tmppath)
+                .<span class="kw">await
+                </span>.context(<span class="string">&quot;Remove failed&quot;</span>)<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Insufficient storage&quot;</span>, <span class="number">507</span>));
+        }
+
+        <span class="comment">// close
+    </span>} <span class="kw">else </span>{
+        <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;File data required&quot;</span>, <span class="number">400</span>));
     }
+
+    <span class="comment">// ファイルシステムアンロック
+    </span>drop(fs_lock);
 
     <span class="prelude-val">Ok</span>(HttpResponse::Ok()
         .content_type(ContentType::plaintext())
         .body(<span class="string">&quot;&quot;</span>))
 }
 
-<span class="kw">fn </span>check_file_name(name: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String, ActixError&gt; {
-    <span class="kw">let </span>name = name.unwrap_or(<span class="string">&quot;&quot;</span>.to_string());
+<span class="doccomment">/// MultipartError に [Send] が実装されていないからか自動変換が効かない。
+/// 文字列データを取り出して [anyhow::Error] 型に変換する。
+</span><span class="kw">fn </span>conv_mperror&lt;T&gt;(res: <span class="prelude-ty">Result</span>&lt;T, MultipartError&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, anyhow::Error&gt; {
+    <span class="kw">match </span>res {
+        <span class="prelude-val">Ok</span>(x) =&gt; <span class="prelude-val">Ok</span>(x),
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(e.to_string())),
+    }
+}
+
+<span class="doccomment">/// ファイル名をチェックする。
+///
+/// * None および空文字列は NG
+/// * [FILE_NAME_MAX_LEN] 文字まで
+/// * 半角英数字およびドット、ハイフン、アンダースコアのみ
+/// * ドットで始まらない (隠しファイルや `.` `..` などで何かが起こらないようにする)
+</span><span class="kw">fn </span>check_file_name(name: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str, ActixError&gt; {
+    <span class="kw">let </span>name = name.unwrap_or(<span class="string">&quot;&quot;</span>);
     <span class="kw">if </span>name.is_empty() {
         <span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;No file name&quot;</span>, <span class="number">400</span>))
     } <span class="kw">else if </span>name.len() &gt; FILE_NAME_MAX_LEN {
@@ -195,11 +401,28 @@
     } <span class="kw">else if </span>name
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == <span class="string">&#39;.&#39; </span>|| c == <span class="string">&#39;-&#39; </span>|| c == <span class="string">&#39;_&#39;</span>)
+        &amp;&amp; !name.starts_with(<span class="string">&#39;.&#39;</span>)
     {
         <span class="prelude-val">Ok</span>(name)
     } <span class="kw">else </span>{
         <span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Invalid file name&quot;</span>, <span class="number">400</span>))
     }
+}
+
+<span class="kw">async fn </span>get_disk_usage(dirpath: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="macro">format!</span>(<span class="string">&quot;du -s -B 1 {dirpath}&quot;</span>));
+    <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;du command failed&quot;</span>);
+
+    <span class="comment">// example: &quot;2903404544      .&quot;
+    </span><span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
+    <span class="kw">let </span>token = stdout
+        .split_ascii_whitespace()
+        .next()
+        .context(<span class="string">&quot;du parse error&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>size = token.parse().context(<span class="string">&quot;du parse error&quot;</span>)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(size)
 }
 
 <span class="attr">#[cfg(test)]
@@ -208,24 +431,29 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_ok() {
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;ok.txt&quot;</span>.to_string())).is_ok());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;ok.txt&quot;</span>)).is_ok());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_empty() {
         <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">None</span>).is_err());
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;&quot;</span>.to_string())).is_err());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;&quot;</span>)).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_long() {
-        <span class="kw">let </span>long_name = <span class="string">&quot;012345678901234567890123456789.txt&quot;</span>.to_string();
+        <span class="kw">let </span>long_name = <span class="string">&quot;012345678901234567890123456789.txt&quot;</span>;
         <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(long_name)).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_invalid() {
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;あ.txt&quot;</span>.to_string())).is_err());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;あ.txt&quot;</span>)).is_err());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>check_file_name_tmpfile() {
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(TMP_FILE_NAME)).is_err());
     }
 }
 </code></pre></div></section></main></body></html>
