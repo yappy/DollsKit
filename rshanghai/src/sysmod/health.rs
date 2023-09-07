@@ -24,6 +24,15 @@ pub struct HealthConfig {
     debug_exec_once: bool,
 }
 
+impl Default for HealthConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            debug_exec_once: false,
+        }
+    }
+}
+
 /// ヘルスチェックシステムモジュール。
 pub struct Health {
     /// 設定データ。

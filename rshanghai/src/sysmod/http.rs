@@ -37,6 +37,22 @@ pub struct HttpConfig {
     ghhook_secret: String,
 }
 
+impl Default for HttpConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            priv_enabled: false,
+            port: 8899,
+            path_prefix: "/rhouse".to_string(),
+            priv_prefix: "/rhouse/priv".to_string(),
+            upload_enabled: false,
+            upload_dir: "./upload".to_string(),
+            ghhook_enabled: false,
+            ghhook_secret: "".to_string(),
+        }
+    }
+}
+
 pub struct HttpServer {
     config: HttpConfig,
 }

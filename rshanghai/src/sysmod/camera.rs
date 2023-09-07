@@ -47,6 +47,20 @@ pub struct CameraConfig {
     pub page_by: u32,
 }
 
+impl Default for CameraConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            debug_exec_once: false,
+            fake_camera: true,
+            pic_history_dir: "./camera/history".to_string(),
+            pic_archive_dir: "./camera/archive".to_string(),
+            total_size_limit_mb: 1024,
+            page_by: 100,
+        }
+    }
+}
+
 /// ストレージ上の画像を示すエントリ。
 #[derive(Clone)]
 pub struct PicEntry {

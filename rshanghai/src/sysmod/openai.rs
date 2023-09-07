@@ -68,6 +68,15 @@ pub struct OpenAiConfig {
     api_key: String,
 }
 
+impl Default for OpenAiConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            api_key: "".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiPromptDiscord {
     /// 最初に一度だけ与えられるシステムメッセージ。

@@ -194,6 +194,22 @@ pub struct TwitterConfig {
     font_file: String,
 }
 
+impl Default for TwitterConfig {
+    fn default() -> Self {
+        Self {
+            tlcheck_enabled: false,
+            debug_exec_once: false,
+            fake_tweet: true,
+            consumer_key: "".to_string(),
+            consumer_secret: "".to_string(),
+            access_token: "".to_string(),
+            access_secret: "".to_string(),
+            ai_hashtag: "DollsAI".to_string(),
+            font_file: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf".to_string(),
+        }
+    }
+}
+
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct TimelineCheck {
@@ -266,6 +282,7 @@ impl Twitter {
             .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
         let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
 
+        // TODO: allow disabled
         let ttf_bin = fs::read(&config.font_file)?;
         let font = FontRenderer::new(ttf_bin)?;
 

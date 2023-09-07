@@ -47,6 +47,19 @@ pub struct DiscordConfig {
     force_perm_err: bool,
 }
 
+impl Default for DiscordConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            token: "".to_string(),
+            notif_channel: 0,
+            auto_del_chs: Default::default(),
+            perm_err_msg: "バカジャネーノ".to_string(),
+            force_perm_err: true,
+        }
+    }
+}
+
 /// Discord システムモジュール。
 pub struct Discord {
     /// 設定データ。
