@@ -23,11 +23,11 @@ const CONFIG_FILE: &str = "config.toml";
 const CONFIG_DEF_FILE: &str = "config_default.toml";
 
 /// 設定データ(グローバル変数)。
-static CONFIG: RwLock<Option<ConfigData>> = RwLock::new(None);
+static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
 
-/// グローバルに保持するデータ。
+/// 設定データ。
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct ConfigData {
+pub struct Config {
     #[serde(default)]
     pub health: HealthConfig,
     #[serde(default)]
@@ -56,7 +56,7 @@ pub fn load() -> Result<()> {
         // デフォルト設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
         info!("writing default config to {}", CONFIG_DEF_FILE);
-        let main_cfg: ConfigData = Default::default();
+        let main_cfg: Config = Default::default();
         let main_toml = toml::to_string(&main_cfg)?;
         let mut f = OpenOptions::new()
             .write(true)
@@ -110,7 +110,7 @@ pub fn load() -> Result<()> {
 
 pub fn get<F, R>(f: F) -> R
 where
-    F: FnOnce(&ConfigData) -> R,
+    F: FnOnce(&Config) -> R,
 {
     let config = CONFIG.read().unwrap();
     f(config.as_ref().unwrap())

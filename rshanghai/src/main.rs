@@ -1,6 +1,7 @@
-//! Rust 版管理人形
+//! Rust 版管理人形。
+//!
+//! 設定ファイルの説明は [sys::config::Config] にある。
 
-mod config_help;
 mod sys;
 mod sysmod;
 
