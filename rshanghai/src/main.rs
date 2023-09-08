@@ -4,17 +4,17 @@ mod config_help;
 mod sys;
 mod sysmod;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::Result;
 use daemonize::Daemonize;
 use getopts::Options;
-use log::{error, info, warn, LevelFilter};
+use log::{error, info, LevelFilter};
 use simplelog::format_description;
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
 use std::env;
-use std::fs::{remove_file, File, OpenOptions};
-use std::io::{BufWriter, Read, Write};
+use std::fs::{File, OpenOptions};
+use std::io::{BufWriter, Write};
 use std::os::unix::prelude::*;
 use sys::taskserver::{Control, RunResult, TaskServer};
 use sysmod::SystemModules;

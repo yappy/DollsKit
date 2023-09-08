@@ -135,7 +135,4 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use serial_test::serial;
-}
+mod tests {}

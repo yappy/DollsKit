@@ -16,21 +16,12 @@ use tokio::{process::Command, select};
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
 /// ヘルスチェック設定データ。json 設定に対応する。
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HealthConfig {
     /// ヘルスチェック機能を有効化する。
     enabled: bool,
     /// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
     debug_exec_once: bool,
-}
-
-impl Default for HealthConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            debug_exec_once: false,
-        }
-    }
 }
 
 /// ヘルスチェックシステムモジュール。
