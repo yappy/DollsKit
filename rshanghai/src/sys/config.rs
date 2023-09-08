@@ -21,6 +21,8 @@ use crate::sysmod::twitter::TwitterConfig;
 const CONFIG_FILE: &str = "config.toml";
 /// デフォルト設定の出力パス。
 const CONFIG_DEF_FILE: &str = "config_default.toml";
+/// 現在設定の出力パス。
+const CONFIG_CUR_FILE: &str = "config_current.toml";
 
 /// 設定データ(グローバル変数)。
 static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
@@ -100,9 +102,33 @@ pub fn load() -> Result<()> {
         // close f
     };
 
+    // グローバル変数に設定する
+    let mut config = CONFIG.write().unwrap();
+    *config = Some(toml::from_str(&toml_str)?);
+
     {
-        let mut config = CONFIG.write().unwrap();
-        *config = Some(toml::from_str(&toml_str)?);
+        // 現在設定ファイルを削除する
+        info!("remove {}", CONFIG_CUR_FILE);
+        if let Err(e) = remove_file(CONFIG_CUR_FILE) {
+            warn!(
+                "removing {} failed (the first time execution?): {}",
+                CONFIG_CUR_FILE, e
+            );
+        }
+        // 現在設定を書き出す
+        // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
+        info!("writing current config to {}", CONFIG_CUR_FILE);
+        let main_toml = toml::to_string(&*config)?;
+        let mut f = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(CONFIG_CUR_FILE)
+            .with_context(|| format!("Failed to open {CONFIG_CUR_FILE}"))?;
+        f.write_all(main_toml.as_bytes())
+            .with_context(|| format!("Failed to write {CONFIG_CUR_FILE}"))?;
+        info!("OK: written to {}", CONFIG_CUR_FILE);
+        // close
     }
 
     Ok(())
@@ -115,6 +141,3 @@ where
     let config = CONFIG.read().unwrap();
     f(config.as_ref().unwrap())
 }
-
-#[cfg(test)]
-mod tests {}
