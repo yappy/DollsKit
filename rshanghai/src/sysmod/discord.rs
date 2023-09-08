@@ -57,7 +57,7 @@ impl Default for DiscordConfig {
             notif_channel: 0,
             auto_del_chs: Default::default(),
             perm_err_msg: "バカジャネーノ".to_string(),
-            force_perm_err: true,
+            force_perm_err: false,
             prompt: Default::default(),
         }
     }
