@@ -15,9 +15,7 @@ use crate::sysmod::discord::DiscordConfig;
 use crate::sysmod::health::HealthConfig;
 use crate::sysmod::http::HttpConfig;
 use crate::sysmod::openai::OpenAiConfig;
-use crate::sysmod::openai::OpenAiPrompt;
 use crate::sysmod::twitter::TwitterConfig;
-use crate::sysmod::twitter::TwitterContents;
 
 /// ロードする設定ファイルパス。
 const CONFIG_FILE: &str = "config.toml";
@@ -28,15 +26,8 @@ const CONFIG_DEF_FILE: &str = "config_default.toml";
 static CONFIG: RwLock<Option<ConfigData>> = RwLock::new(None);
 
 /// グローバルに保持するデータ。
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ConfigData {
-    pub main: MainConfig,
-    pub twitter_cont: TwitterContents,
-    pub openai_prompt: OpenAiPrompt,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct MainConfig {
     #[serde(default)]
     pub health: HealthConfig,
     #[serde(default)]
@@ -65,7 +56,7 @@ pub fn load() -> Result<()> {
         // デフォルト設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
         info!("writing default config to {}", CONFIG_DEF_FILE);
-        let main_cfg: MainConfig = Default::default();
+        let main_cfg: ConfigData = Default::default();
         let main_toml = toml::to_string(&main_cfg)?;
         let mut f = OpenOptions::new()
             .write(true)
@@ -111,16 +102,7 @@ pub fn load() -> Result<()> {
 
     {
         let mut config = CONFIG.write().unwrap();
-        *config = Some(ConfigData {
-            main: toml::from_str(&toml_str)?,
-            twitter_cont: TwitterContents {
-                timeline_check: Default::default(),
-            },
-            openai_prompt: OpenAiPrompt {
-                twitter: Default::default(),
-                discord: Default::default(),
-            },
-        });
+        *config = Some(toml::from_str(&toml_str)?);
     }
 
     Ok(())

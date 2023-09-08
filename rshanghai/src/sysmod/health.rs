@@ -15,7 +15,7 @@ use tokio::{process::Command, select};
 /// 60 * 24 = 1440 /day
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
-/// ヘルスチェック設定データ。json 設定に対応する。
+/// ヘルスチェック設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HealthConfig {
     /// ヘルスチェック機能を有効化する。
@@ -46,7 +46,7 @@ impl Health {
     ) -> Result<Self> {
         info!("[health] initialize");
 
-        let config: HealthConfig = config::get(|cfg| cfg.main.health.clone());
+        let config: HealthConfig = config::get(|cfg| cfg.health.clone());
 
         Ok(Health {
             config,

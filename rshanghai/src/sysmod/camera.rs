@@ -26,7 +26,7 @@ use tokio::{
 /// サムネイルファイル名のポストフィクス。
 const THUMB_POSTFIX: &str = "thumb";
 
-/// カメラ設定データ。json 設定に対応する。
+/// カメラ設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CameraConfig {
     /// カメラ自動撮影タスクを有効化する。
@@ -104,7 +104,7 @@ impl Camera {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[camera] initialize");
 
-        let config = config::get(|cfg| cfg.main.camera.clone());
+        let config = config::get(|cfg| cfg.camera.clone());
         ensure!(config.page_by > 0);
 
         let pic_history_list = init_pics(&config.pic_history_dir)?;
@@ -466,7 +466,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     // 他の関数でも raspistill を使う場合外に出す
     static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-    let fake = config::get(|cfg| cfg.main.camera.fake_camera);
+    let fake = config::get(|cfg| cfg.camera.fake_camera);
 
     let bin = if !fake {
         let _lock = LOCK.lock().await;

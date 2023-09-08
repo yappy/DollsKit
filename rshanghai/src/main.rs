@@ -37,13 +37,6 @@ const FILE_PID: &str = "rshanghai.pid";
 /// ログのファイル出力先。
 const FILE_LOG: &str = "rshanghai.log";
 
-/// デフォルトの Twitter コンテンツデータ (json source)。
-/// [include_str!] でバイナリに含める。
-const TW_CONTENTS_JSON: &str = include_str!("res/tw_contents.json");
-/// デフォルトの OpenAI プロンプトデータ (json source)。
-/// [include_str!] でバイナリに含める。
-const OPENAI_PROMPT_JSON: &str = include_str!("res/openai_prompt.json");
-
 /// stdout, stderr をリダイレクトし、デーモン化する。
 ///
 /// ファイルオープンに失敗したら exit(1) する。

@@ -14,7 +14,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-/// HTTP Server 設定データ。json 設定に対応する。
+/// HTTP Server 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpConfig {
     /// HTTP Server 機能を有効化する。
@@ -61,7 +61,7 @@ impl HttpServer {
     pub fn new() -> Result<Self> {
         info!("[http] initialize");
 
-        let config = config::get(|cfg| cfg.main.http.clone());
+        let config = config::get(|cfg| cfg.http.clone());
 
         Ok(Self { config })
     }

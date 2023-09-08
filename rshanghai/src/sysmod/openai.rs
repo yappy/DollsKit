@@ -77,37 +77,6 @@ impl Default for OpenAiConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OpenAiPromptDiscord {
-    /// 最初に一度だけ与えられるシステムメッセージ。
-    pub first: Vec<String>,
-    /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
-    pub each: Vec<String>,
-    pub history_max: u32,
-    pub history_timeout_min: u32,
-}
-
-impl Default for OpenAiPromptDiscord {
-    fn default() -> Self {
-        Self {
-            first: Default::default(),
-            each: Default::default(),
-            history_max: 8,
-            history_timeout_min: 30,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct OpenAiPrompt {
-    /// role="system" で与えられる。
-    /// ${user} は発言者の名前で置換される。
-    pub twitter: Vec<String>,
-    /// role="system" で与えられる。
-    /// ${user} は発言者の名前で置換される。
-    pub discord: OpenAiPromptDiscord,
-}
-
 pub struct OpenAi {
     config: OpenAiConfig,
 }
@@ -116,7 +85,7 @@ impl OpenAi {
     pub fn new() -> Result<Self> {
         info!("[openai] initialize");
 
-        let config = config::get(|cfg| cfg.main.openai.clone());
+        let config = config::get(|cfg| cfg.openai.clone());
 
         Ok(OpenAi { config })
     }

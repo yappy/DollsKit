@@ -1,5 +1,4 @@
 use super::openai::ChatMessage;
-use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::graphics::FontRenderer;
@@ -171,7 +170,7 @@ struct UploadResponseData {
     expires_after_secs: u64,
 }
 
-/// Twitter 設定データ。json 設定に対応する。
+/// Twitter 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TwitterConfig {
     /// タイムラインの定期確認を有効にする。
@@ -192,6 +191,12 @@ pub struct TwitterConfig {
     ai_hashtag: String,
     /// 長文ツイートの画像化に使う ttf ファイルへのパス。
     font_file: String,
+    // タイムラインチェックルール。
+    #[serde(default)]
+    tlcheck: TimelineCheck,
+    /// OpenAI プロンプト。
+    #[serde(default)]
+    prompt: TwitterPrompt,
 }
 
 impl Default for TwitterConfig {
@@ -206,13 +211,15 @@ impl Default for TwitterConfig {
             access_secret: "".to_string(),
             ai_hashtag: "DollsAI".to_string(),
             font_file: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf".to_string(),
+            tlcheck: Default::default(),
+            prompt: Default::default(),
         }
     }
 }
 
-///
+/// Twitter 応答設定データの要素。
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct TimelineCheck {
+pub struct TimelineCheckRule {
     /// 対象とするユーザ名 (Screen Name) のリスト。
     pub user_names: Vec<String>,
     /// マッチパターンと応答のリスト。
@@ -223,20 +230,44 @@ pub struct TimelineCheck {
     ///
     /// 後者は応答候補の文字列配列。
     /// この中からランダムに1つが選ばれ応答する。
-    pub pattern: Vec<(Vec<String>, Vec<String>)>,
+    pub patterns: Vec<(Vec<String>, Vec<String>)>,
 }
 
-/// Twitter 応答設定データ。json 設定に対応する。
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct TwitterContents {
-    /// タイムラインチェックのルール。[TimelineCheck] のリスト。
-    pub timeline_check: Vec<TimelineCheck>,
+/// Twitter 応答設定データ。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimelineCheck {
+    /// タイムラインチェックのルール。[TimelineCheckRule] のリスト。
+    pub rules: Vec<TimelineCheckRule>,
+}
+
+/// [TimelineCheck] のデフォルト値。
+const DEFAULT_TLCHECK_TOML: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res/tlcheck.toml"));
+impl Default for TimelineCheck {
+    fn default() -> Self {
+        toml::from_str(DEFAULT_TLCHECK_TOML).unwrap()
+    }
+}
+
+/// OpenAI プロンプト設定。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TwitterPrompt {
+    pub pre: Vec<String>,
+}
+
+/// [TwitterPrompt] のデフォルト値。
+const DEFAULT_PROMPT_TOML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/src/res/openai_twitter.toml"
+));
+impl Default for TwitterPrompt {
+    fn default() -> Self {
+        toml::from_str(DEFAULT_PROMPT_TOML).unwrap()
+    }
 }
 
 pub struct Twitter {
     config: TwitterConfig,
-    contents: TwitterContents,
-    prompt: OpenAiPrompt,
 
     wakeup_list: Vec<NaiveTime>,
 
@@ -270,9 +301,7 @@ impl Twitter {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[twitter] initialize");
 
-        let config = config::get(|cfg| cfg.main.twitter.clone());
-        let contents = config::get(|cfg| cfg.twitter_cont.clone());
-        let prompt = config::get(|cfg| cfg.openai_prompt.clone());
+        let config = config::get(|cfg| cfg.twitter.clone());
 
         // TODO: allow disabled
         let ttf_bin = fs::read(&config.font_file)?;
@@ -280,8 +309,6 @@ impl Twitter {
 
         Ok(Twitter {
             config,
-            contents,
-            prompt,
             wakeup_list,
             font,
             tl_check_since_id: None,
@@ -304,9 +331,9 @@ impl Twitter {
         // 設定ファイル中の全 user name (screen name) から ID を得る
         info!("[tw-check] get all user info from screen name");
         // borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
-        let tlc_list = self.contents.timeline_check.clone();
-        for tlcheck in tlc_list.iter() {
-            self.resolve_ids(&tlcheck.user_names).await?;
+        let rules = self.config.tlcheck.rules.clone();
+        for rule in rules.iter() {
+            self.resolve_ids(&rule.user_names).await?;
         }
         info!(
             "[tw-check] user id cache size: {}",
@@ -383,7 +410,7 @@ impl Twitter {
     fn create_reply_list(&self, tl: &Timeline, me: &User) -> Vec<Reply> {
         let mut reply_buf = Vec::new();
 
-        for ch in self.contents.timeline_check.iter() {
+        for rule in self.config.tlcheck.rules.iter() {
             // 自分のツイートには反応しない
             let tliter = tl
                 .data
@@ -402,7 +429,7 @@ impl Twitter {
 
             for tw in tliter {
                 // author_id が user_names リストに含まれているものでフィルタ
-                let user_match = ch.user_names.iter().any(|user_name| {
+                let user_match = rule.user_names.iter().any(|user_name| {
                     let user = self.get_user_from_username(user_name);
                     match user {
                         Some(user) => *tw.author_id.as_ref().unwrap() == user.id,
@@ -414,7 +441,7 @@ impl Twitter {
                     continue;
                 }
                 // pattern 判定
-                for (pats, msgs) in ch.pattern.iter() {
+                for (pats, msgs) in rule.patterns.iter() {
                     // 配列内のすべてのパターンを満たす
                     let match_hit = pats.iter().all(|pat| Self::pattern_match(pat, &tw.text));
                     if match_hit {
@@ -478,8 +505,9 @@ impl Twitter {
 
             // 設定からプロローグ分の Vec<ChatMessage> を生成する
             let system_msgs: Vec<_> = self
+                .config
                 .prompt
-                .twitter
+                .pre
                 .iter()
                 .map(|text| {
                     let text = text.replace("${user}", &user.unwrap().name);
@@ -1141,6 +1169,16 @@ fn create_http_oauth_header(oauth_param: &KeyValue) -> (String, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_default_toml() {
+        // should not panic
+        let obj: TimelineCheck = Default::default();
+        assert_ne!(obj.rules.len(), 0);
+
+        let obj: TwitterPrompt = Default::default();
+        assert_ne!(obj.pre.len(), 0);
+    }
 
     #[test]
     fn truncate_tweet_text() {
