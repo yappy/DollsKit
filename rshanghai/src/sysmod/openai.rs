@@ -60,7 +60,7 @@ struct ChatRequest {
 }
 
 /// OpenAI 設定データ。
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiConfig {
     /// OpenAI API 利用を有効にする。
     enabled: bool,
@@ -87,7 +87,18 @@ pub struct OpenAiPromptDiscord {
     pub history_timeout_min: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl Default for OpenAiPromptDiscord {
+    fn default() -> Self {
+        Self {
+            first: Default::default(),
+            each: Default::default(),
+            history_max: 8,
+            history_timeout_min: 30,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OpenAiPrompt {
     /// role="system" で与えられる。
     /// ${user} は発言者の名前で置換される。
@@ -105,9 +116,7 @@ impl OpenAi {
     pub fn new() -> Result<Self> {
         info!("[openai] initialize");
 
-        let jsobj =
-            config::get_object(&["openai"]).map_or(Err(anyhow!("Config not found: openai")), Ok)?;
-        let config: OpenAiConfig = serde_json::from_value(jsobj)?;
+        let config = config::get(|cfg| cfg.main.openai.clone());
 
         Ok(OpenAi { config })
     }
@@ -165,7 +174,8 @@ mod tests {
     #[ignore]
     // cargo test openai -- --ignored --nocapture
     async fn openai() {
-        config::add_config(&std::fs::read_to_string("config.json").unwrap()).unwrap();
+        todo!();
+        //config::add_config(&std::fs::read_to_string("config.json").unwrap()).unwrap();
 
         let ai = OpenAi::new().unwrap();
         let msgs = vec![

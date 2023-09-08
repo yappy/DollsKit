@@ -6,7 +6,7 @@ use crate::sys::graphics::FontRenderer;
 use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -172,7 +172,7 @@ struct UploadResponseData {
 }
 
 /// Twitter 設定データ。json 設定に対応する。
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TwitterConfig {
     /// タイムラインの定期確認を有効にする。
     tlcheck_enabled: bool,
@@ -211,10 +211,10 @@ impl Default for TwitterConfig {
 }
 
 ///
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct TimelineCheck {
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct TimelineCheck {
     /// 対象とするユーザ名 (Screen Name) のリスト。
-    user_names: Vec<String>,
+    pub user_names: Vec<String>,
     /// マッチパターンと応答のリスト。
     ///
     /// 前者は検索する文字列の配列。どれか1つにマッチしたら応答を行う。
@@ -223,14 +223,14 @@ struct TimelineCheck {
     ///
     /// 後者は応答候補の文字列配列。
     /// この中からランダムに1つが選ばれ応答する。
-    pattern: Vec<(Vec<String>, Vec<String>)>,
+    pub pattern: Vec<(Vec<String>, Vec<String>)>,
 }
 
 /// Twitter 応答設定データ。json 設定に対応する。
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct TwitterContents {
     /// タイムラインチェックのルール。[TimelineCheck] のリスト。
-    timeline_check: Vec<TimelineCheck>,
+    pub timeline_check: Vec<TimelineCheck>,
 }
 
 pub struct Twitter {
@@ -270,17 +270,9 @@ impl Twitter {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[twitter] initialize");
 
-        let jsobj = config::get_object(&["twitter"])
-            .map_or(Err(anyhow!("Config not found: twitter")), Ok)?;
-        let config: TwitterConfig = serde_json::from_value(jsobj)?;
-
-        let jsobj = config::get_object(&["tw_contents"])
-            .map_or(Err(anyhow!("Config not found: tw_contents")), Ok)?;
-        let contents: TwitterContents = serde_json::from_value(jsobj)?;
-
-        let jsobj = config::get_object(&["openai_prompt"])
-            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
-        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+        let config = config::get(|cfg| cfg.main.twitter.clone());
+        let contents = config::get(|cfg| cfg.twitter_cont.clone());
+        let prompt = config::get(|cfg| cfg.openai_prompt.clone());
 
         // TODO: allow disabled
         let ttf_bin = fs::read(&config.font_file)?;

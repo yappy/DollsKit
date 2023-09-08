@@ -17,7 +17,7 @@
 			"each": [
 				"次の発言は「${user}」さんからです。"
 			],
-			"history_max": 16,
+			"history_max": 8,
 			"history_timeout_min": 30
 		}
 	}

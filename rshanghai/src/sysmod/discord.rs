@@ -28,7 +28,7 @@ use std::time::Duration;
 use time::Instant;
 
 /// Discord 設定データ。json 設定に対応する。
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordConfig {
     /// 機能を有効化するなら true。
     enabled: bool,
@@ -125,13 +125,8 @@ impl Discord {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[discord] initialize");
 
-        let jsobj = config::get_object(&["discord"])
-            .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
-        let config: DiscordConfig = serde_json::from_value(jsobj)?;
-
-        let jsobj = config::get_object(&["openai_prompt"])
-            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
-        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+        let config = config::get(|cfg| cfg.main.discord.clone());
+        let prompt = config::get(|cfg| cfg.openai_prompt.clone());
 
         let mut auto_del_congig = BTreeMap::new();
         for ch in &config.auto_del_chs {

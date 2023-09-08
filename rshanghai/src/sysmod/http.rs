@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 /// HTTP Server 設定データ。json 設定に対応する。
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpConfig {
     /// HTTP Server 機能を有効化する。
     enabled: bool,
@@ -61,9 +61,7 @@ impl HttpServer {
     pub fn new() -> Result<Self> {
         info!("[http] initialize");
 
-        let jsobj =
-            config::get_object(&["http"]).map_or(Err(anyhow!("Config not found: http")), Ok)?;
-        let config: HttpConfig = serde_json::from_value(jsobj)?;
+        let config = config::get(|cfg| cfg.main.http.clone());
 
         Ok(Self { config })
     }
