@@ -143,8 +143,8 @@ mod tests {
     #[ignore]
     // cargo test openai -- --ignored --nocapture
     async fn openai() {
-        todo!();
-        //config::add_config(&std::fs::read_to_string("config.json").unwrap()).unwrap();
+        let src = std::fs::read_to_string("config.toml").unwrap();
+        let _unset = config::set(toml::from_str(&src).unwrap());
 
         let ai = OpenAi::new().unwrap();
         let msgs = vec![

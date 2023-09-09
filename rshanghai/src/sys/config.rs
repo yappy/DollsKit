@@ -134,10 +134,45 @@ pub fn load() -> Result<()> {
     Ok(())
 }
 
+pub struct ConfigGuard;
+
+impl Drop for ConfigGuard {
+    fn drop(&mut self) {
+        unset();
+    }
+}
+
+#[must_use]
+pub fn set(cfg: Config) -> ConfigGuard {
+    let mut config = CONFIG.write().unwrap();
+    assert!(config.is_none());
+    *config = Some(cfg);
+    ConfigGuard
+}
+
+pub fn unset() {
+    let mut config = CONFIG.write().unwrap();
+    assert!(config.is_some());
+    *config = None;
+}
+
 pub fn get<F, R>(f: F) -> R
 where
     F: FnOnce(&Config) -> R,
 {
     let config = CONFIG.read().unwrap();
     f(config.as_ref().unwrap())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+
+    #[test]
+    #[serial(config)]
+    fn test_if() {
+        let _unset = set(Default::default());
+        get(|cfg| println!("{:?}", cfg));
+    }
 }
