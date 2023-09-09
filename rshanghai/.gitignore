@@ -4,6 +4,6 @@
 /*.pid
 /std*.txt
 /*.log
-/*.toml
+/config*.*
 /camera
 /upload
