@@ -15,8 +15,8 @@ use tokio::{process::Command, select};
 /// 60 * 24 = 1440 /day
 const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 
-/// ヘルスチェック設定データ。json 設定に対応する。
-#[derive(Clone, Serialize, Deserialize)]
+/// ヘルスチェック設定データ。toml 設定に対応する。
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HealthConfig {
     /// ヘルスチェック機能を有効化する。
     enabled: bool,
@@ -46,9 +46,7 @@ impl Health {
     ) -> Result<Self> {
         info!("[health] initialize");
 
-        let jsobj =
-            config::get_object(&["health"]).map_or(Err(anyhow!("Config not found: health")), Ok)?;
-        let config: HealthConfig = serde_json::from_value(jsobj)?;
+        let config: HealthConfig = config::get(|cfg| cfg.health.clone());
 
         Ok(Health {
             config,
