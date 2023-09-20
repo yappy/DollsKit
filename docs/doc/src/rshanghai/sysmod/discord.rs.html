@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.1 (eb26296b5 2023-08-03)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9bb858ba049f1f21.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0 (5680fa18f 2023-08-23)" data-channel="1.72.0" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../rshanghai/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -910,10 +910,35 @@
 <a href="#910" id="910">910</a>
 <a href="#911" id="911">911</a>
 <a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
-<span class="kw">use </span><span class="kw">super</span>::openai::OpenAiPrompt;
 <span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::netutil::HttpStatusError;
 <span class="kw">use </span><span class="kw">crate</span>::sys::version::VERSION_INFO;
@@ -939,8 +964,8 @@
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>time::Instant;
 
-<span class="doccomment">/// Discord 設定データ。json 設定に対応する。
-</span><span class="attr">#[derive(Clone, Serialize, Deserialize)]
+<span class="doccomment">/// Discord 設定データ。toml 設定に対応する。
+</span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>DiscordConfig {
     <span class="doccomment">/// 機能を有効化するなら true。
     </span>enabled: bool,
@@ -957,14 +982,50 @@
     </span>perm_err_msg: String,
     <span class="doccomment">/// パーミッションエラーを強制的に発生させる。デバッグ用。
     </span>force_perm_err: bool,
+    <span class="doccomment">/// OpenAI プロンプト。
+    </span><span class="attr">#[serde(default)]
+    </span>prompt: DiscordPrompt,
+}
+
+<span class="kw">impl </span>Default <span class="kw">for </span>DiscordConfig {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            enabled: <span class="bool-val">false</span>,
+            token: <span class="string">&quot;&quot;</span>.to_string(),
+            notif_channel: <span class="number">0</span>,
+            auto_del_chs: Default::default(),
+            perm_err_msg: <span class="string">&quot;バカジャネーノ&quot;</span>.to_string(),
+            force_perm_err: <span class="bool-val">false</span>,
+            prompt: Default::default(),
+        }
+    }
+}
+
+<span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
+</span><span class="kw">pub struct </span>DiscordPrompt {
+    <span class="doccomment">/// 最初に一度だけ与えられるシステムメッセージ。
+    </span><span class="kw">pub </span>pre: Vec&lt;String&gt;,
+    <span class="doccomment">/// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
+    </span><span class="kw">pub </span>each: Vec&lt;String&gt;,
+    <span class="kw">pub </span>history_max: u32,
+    <span class="kw">pub </span>history_timeout_min: u32,
+}
+
+<span class="doccomment">/// [DiscordPrompt] のデフォルト値。
+</span><span class="kw">const </span>DEFAULT_TOML: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
+    <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
+    <span class="string">&quot;/src/res/openai_discord.toml&quot;
+</span>));
+<span class="kw">impl </span>Default <span class="kw">for </span>DiscordPrompt {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        toml::from_str(DEFAULT_TOML).unwrap()
+    }
 }
 
 <span class="doccomment">/// Discord システムモジュール。
 </span><span class="kw">pub struct </span>Discord {
     <span class="doccomment">/// 設定データ。
     </span>config: DiscordConfig,
-    <span class="doccomment">/// ai コマンド応答の先頭に与える指示。
-    </span>prompt: OpenAiPrompt,
     <span class="doccomment">/// 定期実行の時刻リスト。
     </span>wakeup_list: Vec&lt;NaiveTime&gt;,
     <span class="doccomment">/// 現在有効な Discord Client コンテキスト。
@@ -1024,13 +1085,7 @@
     </span><span class="kw">pub fn </span>new(wakeup_list: Vec&lt;NaiveTime&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;[discord] initialize&quot;</span>);
 
-        <span class="kw">let </span>jsobj = config::get_object(<span class="kw-2">&amp;</span>[<span class="string">&quot;discord&quot;</span>])
-            .map_or(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Config not found: discord&quot;</span>)), <span class="prelude-val">Ok</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>config: DiscordConfig = serde_json::from_value(jsobj)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>jsobj = config::get_object(<span class="kw-2">&amp;</span>[<span class="string">&quot;openai_prompt&quot;</span>])
-            .map_or(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Config not found: openai_prompt&quot;</span>)), <span class="prelude-val">Ok</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>prompt: OpenAiPrompt = serde_json::from_value(jsobj)<span class="question-mark">?</span>;
+        <span class="kw">let </span>config = config::get(|cfg| cfg.discord.clone());
 
         <span class="kw">let </span><span class="kw-2">mut </span>auto_del_congig = BTreeMap::new();
         <span class="kw">for </span>ch <span class="kw">in </span><span class="kw-2">&amp;</span>config.auto_del_chs {
@@ -1045,7 +1100,6 @@
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             config,
-            prompt,
             wakeup_list,
             ctx: <span class="prelude-val">None</span>,
             postponed_msgs: Vec::new(),
@@ -1083,7 +1137,7 @@
 
         <span class="kw">while </span>!history.is_empty() {
             <span class="kw">let </span>dur = now - history[<span class="number">0</span>].timestamp;
-            <span class="kw">if </span>dur &gt; Duration::from_secs(<span class="self">self</span>.prompt.discord.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>) {
+            <span class="kw">if </span>dur &gt; Duration::from_secs(<span class="self">self</span>.config.prompt.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>) {
                 history.pop_front();
             } <span class="kw">else </span>{
                 <span class="kw">break</span>;
@@ -1096,13 +1150,9 @@
 ///
 /// [Discord::on_start] から spawn される。
 </span><span class="kw">async fn </span>discord_main(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(config, prompt, wakeup_list) = {
+    <span class="kw">let </span>(config, wakeup_list) = {
         <span class="kw">let </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-        (
-            discord.config.clone(),
-            discord.prompt.clone(),
-            discord.wakeup_list.clone(),
-        )
+        (discord.config.clone(), discord.wakeup_list.clone())
     };
 
     <span class="comment">// 自身の ID が on_mention 設定に必要なので別口で取得しておく
@@ -1136,7 +1186,6 @@
 
         data.insert::&lt;ControlData&gt;(ctrl.clone());
         data.insert::&lt;ConfigData&gt;(config);
-        data.insert::&lt;PromptData&gt;(prompt);
         data.insert::&lt;OwnerData&gt;(ownerids);
     }
 
@@ -1319,11 +1368,6 @@
 <span class="kw">struct </span>ConfigData;
 <span class="kw">impl </span>TypeMapKey <span class="kw">for </span>ConfigData {
     <span class="kw">type </span>Value = DiscordConfig;
-}
-
-<span class="kw">struct </span>PromptData;
-<span class="kw">impl </span>TypeMapKey <span class="kw">for </span>PromptData {
-    <span class="kw">type </span>Value = OpenAiPrompt;
 }
 
 <span class="kw">struct </span>OwnerData;
@@ -1552,21 +1596,21 @@
     <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
     <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-    <span class="kw">let </span>prompt = data.get::&lt;PromptData&gt;().unwrap();
+    <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
 
     <span class="comment">// 履歴からタイムアウトしたものを削除
     </span>discord.process_timeout();
 
     <span class="kw">let </span><span class="kw-2">mut </span>msgs = Vec::new();
     <span class="comment">// 先頭システムメッセージ
-    </span>msgs.extend(prompt.discord.first.iter().map(|text| ChatMessage {
+    </span>msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
         role: <span class="string">&quot;system&quot;</span>.to_string(),
         content: text.to_string(),
     }));
     <span class="comment">// 履歴 (システムメッセージ + 本体)
     </span><span class="kw">for </span>elem <span class="kw">in </span>discord.chat_history.iter() {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(user) = <span class="kw-2">&amp;</span>elem.user {
-            msgs.extend(prompt.discord.each.iter().map(|text| {
+            msgs.extend(config.prompt.each.iter().map(|text| {
                 <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, user);
                 ChatMessage {
                     role: <span class="string">&quot;system&quot;</span>.to_string(),
@@ -1585,7 +1629,7 @@
         }
     }
     <span class="comment">// 今回の発言 (システムメッセージ + 本体)
-    </span>msgs.extend(prompt.discord.each.iter().map(|text| {
+    </span>msgs.extend(config.prompt.each.iter().map(|text| {
         <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>msg.author.name);
         ChatMessage {
             role: <span class="string">&quot;system&quot;</span>.to_string(),
@@ -1631,7 +1675,7 @@
         });
 
         <span class="comment">// 個数制限を適用
-        </span><span class="kw">while </span>history.len() &gt; prompt.discord.history_max <span class="kw">as </span>usize {
+        </span><span class="kw">while </span>history.len() &gt; config.prompt.history_max <span class="kw">as </span>usize {
             history.pop_front();
         }
     }
@@ -1648,14 +1692,14 @@
         <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
         <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>prompt = data.get::&lt;PromptData&gt;().unwrap();
+        <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
 
         discord.process_timeout();
         <span class="macro">format!</span>(
             <span class="string">&quot;History: {}/{}\nTimeout: {} min&quot;</span>,
             discord.chat_history.len(),
-            prompt.discord.history_max,
-            prompt.discord.history_timeout_min
+            config.prompt.history_max,
+            config.prompt.history_timeout_min
         )
     };
     msg.reply(ctx, text).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1784,6 +1828,14 @@ Please contact my owner.&quot;</span>;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>parse_default_toml() {
+        <span class="comment">// should not panic
+        </span><span class="kw">let </span>obj: DiscordPrompt = Default::default();
+        <span class="macro">assert_ne!</span>(obj.pre.len(), <span class="number">0</span>);
+        <span class="macro">assert_ne!</span>(obj.each.len(), <span class="number">0</span>);
+    }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>dice_6_many_times() {

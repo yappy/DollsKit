@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["add_config","get_bool","get_i64","get_object","get_string","get_u64","init","search","search_all"],"static":["CONFIG"],"struct":["ConfigData"]};
+window.SIDEBAR_ITEMS = {"constant":["CONFIG_CUR_FILE","CONFIG_DEF_FILE","CONFIG_FILE"],"fn":["get","load","set","unset"],"static":["CONFIG"],"struct":["Config","ConfigGuard"]};

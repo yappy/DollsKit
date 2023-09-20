@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.1 (eb26296b5 2023-08-03)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../rshanghai/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9bb858ba049f1f21.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0 (5680fa18f 2023-08-23)" data-channel="1.72.0" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../rshanghai/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -285,106 +285,25 @@
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a>
-<a href="#290" id="290">290</a>
-<a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
-<a href="#308" id="308">308</a>
-<a href="#309" id="309">309</a>
-<a href="#310" id="310">310</a>
-<a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a>
-<a href="#326" id="326">326</a>
-<a href="#327" id="327">327</a>
-<a href="#328" id="328">328</a>
-<a href="#329" id="329">329</a>
-<a href="#330" id="330">330</a>
-<a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
-<a href="#340" id="340">340</a>
-<a href="#341" id="341">341</a>
-<a href="#342" id="342">342</a>
-<a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
-<a href="#347" id="347">347</a>
-<a href="#348" id="348">348</a>
-<a href="#349" id="349">349</a>
-<a href="#350" id="350">350</a>
-<a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a>
-<a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
-<a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a>
-<a href="#364" id="364">364</a>
-<a href="#365" id="365">365</a>
-<a href="#366" id="366">366</a>
-<a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Rust 版管理人形
+</pre></div><pre class="rust"><code><span class="doccomment">//! Rust 版管理人形。
+//!
+//! 設定ファイルの説明は [sys::config::Config] にある。
 
-</span><span class="kw">mod </span>config_help;
-<span class="kw">mod </span>sys;
+</span><span class="kw">mod </span>sys;
 <span class="kw">mod </span>sysmod;
 
-<span class="kw">use </span>anyhow::{ensure, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>daemonize::Daemonize;
 <span class="kw">use </span>getopts::Options;
-<span class="kw">use </span>log::{error, info, warn, LevelFilter};
+<span class="kw">use </span>log::{error, info, LevelFilter};
 <span class="kw">use </span>simplelog::format_description;
 <span class="kw">use </span>simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
 <span class="kw">use </span>std::env;
-<span class="kw">use </span>std::fs::{remove_file, File, OpenOptions};
-<span class="kw">use </span>std::io::{BufWriter, Read, Write};
-<span class="kw">use </span>std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+<span class="kw">use </span>std::fs::{File, OpenOptions};
+<span class="kw">use </span>std::io::{BufWriter, Write};
+<span class="kw">use </span>std::os::unix::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>sys::taskserver::{Control, RunResult, TaskServer};
 <span class="kw">use </span>sysmod::SystemModules;
 
@@ -405,20 +324,6 @@
 </span><span class="kw">const </span>FILE_PID: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rshanghai.pid&quot;</span>;
 <span class="doccomment">/// ログのファイル出力先。
 </span><span class="kw">const </span>FILE_LOG: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rshanghai.log&quot;</span>;
-
-<span class="doccomment">/// デフォルトの設定データ (json source)。
-/// [include_str!] でバイナリに含める。
-</span><span class="kw">const </span>DEF_CONFIG_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">&quot;res/config_default.json&quot;</span>);
-<span class="doccomment">/// デフォルトの Twitter コンテンツデータ (json source)。
-/// [include_str!] でバイナリに含める。
-</span><span class="kw">const </span>TW_CONTENTS_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">&quot;res/tw_contents.json&quot;</span>);
-<span class="doccomment">/// デフォルトの OpenAI プロンプトデータ (json source)。
-/// [include_str!] でバイナリに含める。
-</span><span class="kw">const </span>OPENAI_PROMPT_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">&quot;res/openai_prompt.json&quot;</span>);
-<span class="doccomment">/// ロードする設定ファイルパス。
-</span><span class="kw">const </span>CONFIG_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;config.json&quot;</span>;
-<span class="doccomment">/// デフォルト設定の出力パス。
-</span><span class="kw">const </span>CONFIG_DEF_FILE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;config_default.json&quot;</span>;
 
 <span class="doccomment">/// stdout, stderr をリダイレクトし、デーモン化する。
 ///
@@ -497,75 +402,6 @@
     CombinedLogger::init(loggers).unwrap();
 }
 
-<span class="doccomment">/// 設定データをロードする。
-</span><span class="kw">fn </span>load_config() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    {
-        <span class="comment">// デフォルト設定ファイルを削除する
-        </span><span class="macro">info!</span>(<span class="string">&quot;remove {}&quot;</span>, CONFIG_DEF_FILE);
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = remove_file(CONFIG_DEF_FILE) {
-            <span class="macro">warn!</span>(
-                <span class="string">&quot;removing {} failed (the first time execution?): {}&quot;</span>,
-                CONFIG_DEF_FILE, e
-            );
-        }
-        <span class="comment">// デフォルト設定を書き出す
-        // 600 でアトミックに必ず新規作成する、失敗したらエラー
-        </span><span class="macro">info!</span>(<span class="string">&quot;writing default config to {}&quot;</span>, CONFIG_DEF_FILE);
-        <span class="kw">let </span><span class="kw-2">mut </span>f = OpenOptions::new()
-            .write(<span class="bool-val">true</span>)
-            .create_new(<span class="bool-val">true</span>)
-            .mode(<span class="number">0o600</span>)
-            .open(CONFIG_DEF_FILE)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {CONFIG_DEF_FILE}&quot;</span>))<span class="question-mark">?</span>;
-        f.write_all(DEF_CONFIG_JSON.as_bytes())
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to write {CONFIG_DEF_FILE}&quot;</span>))<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;OK: written to {}&quot;</span>, CONFIG_DEF_FILE);
-        <span class="comment">// close
-    </span>}
-
-    <span class="kw">let </span><span class="kw-2">mut </span>json_str = String::new();
-    {
-        <span class="comment">// 設定ファイルを読む
-        // open 後パーミッションを確認し、危険ならエラーとする
-        </span><span class="macro">info!</span>(<span class="string">&quot;loading config: {}&quot;</span>, CONFIG_FILE);
-        <span class="kw">let </span><span class="kw-2">mut </span>f = OpenOptions::new()
-            .read(<span class="bool-val">true</span>)
-            .open(CONFIG_FILE)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open {CONFIG_FILE} (the first execution?)&quot;</span>))
-            .with_context(|| {
-                <span class="macro">format!</span>(<span class="string">&quot;HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again&quot;</span>)
-            })<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>metadata = f.metadata()<span class="question-mark">?</span>;
-        <span class="kw">let </span>permissions = metadata.permissions();
-        <span class="kw">let </span>masked = permissions.mode() &amp; <span class="number">0o777</span>;
-        <span class="macro">ensure!</span>(
-            masked == <span class="number">0o600</span>,
-            <span class="string">&quot;Config file permission is not 600: {:03o}&quot;</span>,
-            permissions.mode()
-        );
-
-        f.read_to_string(<span class="kw-2">&amp;mut </span>json_str)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to read {CONFIG_FILE}&quot;</span>))<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;OK: {} loaded&quot;</span>, CONFIG_FILE);
-        <span class="comment">// close
-    </span>}
-
-    <span class="comment">// json パースして設定システムを初期化
-    </span><span class="kw">let </span>json_list = [
-        DEF_CONFIG_JSON,
-        TW_CONTENTS_JSON,
-        OPENAI_PROMPT_JSON,
-        <span class="kw-2">&amp;</span>json_str,
-    ];
-    sys::config::init();
-    <span class="kw">for </span>(i, json_str) <span class="kw">in </span>json_list.iter().enumerate() {
-        sys::config::add_config(json_str).with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Config load failed: {i}&quot;</span>))<span class="question-mark">?</span>;
-    }
-
-    <span class="prelude-val">Ok</span>(())
-}
-
 <span class="doccomment">/// 起動時に一度だけブートメッセージをツイートするタスク。
 </span><span class="kw">async fn </span>boot_msg_task(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>build_info: <span class="kw-2">&amp;</span>str = <span class="kw-2">&amp;</span>sys::version::VERSION_INFO;
@@ -602,7 +438,7 @@
         <span class="macro">info!</span>(<span class="string">&quot;system main&quot;</span>);
         <span class="macro">info!</span>(<span class="string">&quot;{}&quot;</span>, <span class="kw-2">*</span>sys::version::VERSION_INFO);
 
-        load_config()<span class="question-mark">?</span>;
+        sys::config::load()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>sysmods = SystemModules::new()<span class="question-mark">?</span>;
         <span class="kw">let </span>ts = TaskServer::new(sysmods);
