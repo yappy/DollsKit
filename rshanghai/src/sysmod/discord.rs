@@ -1,7 +1,6 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
-use super::openai::OpenAiPrompt;
 use super::SystemModule;
 use crate::sys::netutil::HttpStatusError;
 use crate::sys::version::VERSION_INFO;
@@ -27,8 +26,8 @@ use std::fmt::Display;
 use std::time::Duration;
 use time::Instant;
 
-/// Discord 設定データ。json 設定に対応する。
-#[derive(Clone, Serialize, Deserialize)]
+/// Discord 設定データ。toml 設定に対応する。
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordConfig {
     /// 機能を有効化するなら true。
     enabled: bool,
@@ -45,14 +44,50 @@ pub struct DiscordConfig {
     perm_err_msg: String,
     /// パーミッションエラーを強制的に発生させる。デバッグ用。
     force_perm_err: bool,
+    /// OpenAI プロンプト。
+    #[serde(default)]
+    prompt: DiscordPrompt,
+}
+
+impl Default for DiscordConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            token: "".to_string(),
+            notif_channel: 0,
+            auto_del_chs: Default::default(),
+            perm_err_msg: "バカジャネーノ".to_string(),
+            force_perm_err: false,
+            prompt: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscordPrompt {
+    /// 最初に一度だけ与えられるシステムメッセージ。
+    pub pre: Vec<String>,
+    /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
+    pub each: Vec<String>,
+    pub history_max: u32,
+    pub history_timeout_min: u32,
+}
+
+/// [DiscordPrompt] のデフォルト値。
+const DEFAULT_TOML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/src/res/openai_discord.toml"
+));
+impl Default for DiscordPrompt {
+    fn default() -> Self {
+        toml::from_str(DEFAULT_TOML).unwrap()
+    }
 }
 
 /// Discord システムモジュール。
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
-    /// ai コマンド応答の先頭に与える指示。
-    prompt: OpenAiPrompt,
     /// 定期実行の時刻リスト。
     wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
@@ -112,13 +147,7 @@ impl Discord {
     pub fn new(wakeup_list: Vec<NaiveTime>) -> Result<Self> {
         info!("[discord] initialize");
 
-        let jsobj = config::get_object(&["discord"])
-            .map_or(Err(anyhow!("Config not found: discord")), Ok)?;
-        let config: DiscordConfig = serde_json::from_value(jsobj)?;
-
-        let jsobj = config::get_object(&["openai_prompt"])
-            .map_or(Err(anyhow!("Config not found: openai_prompt")), Ok)?;
-        let prompt: OpenAiPrompt = serde_json::from_value(jsobj)?;
+        let config = config::get(|cfg| cfg.discord.clone());
 
         let mut auto_del_congig = BTreeMap::new();
         for ch in &config.auto_del_chs {
@@ -133,7 +162,6 @@ impl Discord {
 
         Ok(Self {
             config,
-            prompt,
             wakeup_list,
             ctx: None,
             postponed_msgs: Vec::new(),
@@ -171,7 +199,7 @@ impl Discord {
 
         while !history.is_empty() {
             let dur = now - history[0].timestamp;
-            if dur > Duration::from_secs(self.prompt.discord.history_timeout_min as u64 * 60) {
+            if dur > Duration::from_secs(self.config.prompt.history_timeout_min as u64 * 60) {
                 history.pop_front();
             } else {
                 break;
@@ -184,13 +212,9 @@ impl Discord {
 ///
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
-    let (config, prompt, wakeup_list) = {
+    let (config, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
-        (
-            discord.config.clone(),
-            discord.prompt.clone(),
-            discord.wakeup_list.clone(),
-        )
+        (discord.config.clone(), discord.wakeup_list.clone())
     };
 
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
@@ -224,7 +248,6 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
         data.insert::<ControlData>(ctrl.clone());
         data.insert::<ConfigData>(config);
-        data.insert::<PromptData>(prompt);
         data.insert::<OwnerData>(ownerids);
     }
 
@@ -407,11 +430,6 @@ impl TypeMapKey for ControlData {
 struct ConfigData;
 impl TypeMapKey for ConfigData {
     type Value = DiscordConfig;
-}
-
-struct PromptData;
-impl TypeMapKey for PromptData {
-    type Value = OpenAiPrompt;
 }
 
 struct OwnerData;
@@ -640,21 +658,21 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     let ctrl = data.get::<ControlData>().unwrap();
     let ai = ctrl.sysmods().openai.lock().await;
     let mut discord = ctrl.sysmods().discord.lock().await;
-    let prompt = data.get::<PromptData>().unwrap();
+    let config = data.get::<ConfigData>().unwrap();
 
     // 履歴からタイムアウトしたものを削除
     discord.process_timeout();
 
     let mut msgs = Vec::new();
     // 先頭システムメッセージ
-    msgs.extend(prompt.discord.first.iter().map(|text| ChatMessage {
+    msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
         role: "system".to_string(),
         content: text.to_string(),
     }));
     // 履歴 (システムメッセージ + 本体)
     for elem in discord.chat_history.iter() {
         if let Some(user) = &elem.user {
-            msgs.extend(prompt.discord.each.iter().map(|text| {
+            msgs.extend(config.prompt.each.iter().map(|text| {
                 let text = text.replace("${user}", user);
                 ChatMessage {
                     role: "system".to_string(),
@@ -673,7 +691,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         }
     }
     // 今回の発言 (システムメッセージ + 本体)
-    msgs.extend(prompt.discord.each.iter().map(|text| {
+    msgs.extend(config.prompt.each.iter().map(|text| {
         let text = text.replace("${user}", &msg.author.name);
         ChatMessage {
             role: "system".to_string(),
@@ -719,7 +737,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         });
 
         // 個数制限を適用
-        while history.len() > prompt.discord.history_max as usize {
+        while history.len() > config.prompt.history_max as usize {
             history.pop_front();
         }
     }
@@ -736,14 +754,14 @@ async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
         let data = ctx.data.read().await;
         let ctrl = data.get::<ControlData>().unwrap();
         let mut discord = ctrl.sysmods().discord.lock().await;
-        let prompt = data.get::<PromptData>().unwrap();
+        let config = data.get::<ConfigData>().unwrap();
 
         discord.process_timeout();
         format!(
             "History: {}/{}\nTimeout: {} min",
             discord.chat_history.len(),
-            prompt.discord.history_max,
-            prompt.discord.history_timeout_min
+            config.prompt.history_max,
+            config.prompt.history_timeout_min
         )
     };
     msg.reply(ctx, text).await?;
@@ -872,6 +890,14 @@ async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_default_toml() {
+        // should not panic
+        let obj: DiscordPrompt = Default::default();
+        assert_ne!(obj.pre.len(), 0);
+        assert_ne!(obj.each.len(), 0);
+    }
 
     #[test]
     fn dice_6_many_times() {

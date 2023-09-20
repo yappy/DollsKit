@@ -1,21 +1,22 @@
-//! Rust 版管理人形
+//! Rust 版管理人形。
+//!
+//! 設定ファイルの説明は [sys::config::Config] にある。
 
-mod config_help;
 mod sys;
 mod sysmod;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::Result;
 use daemonize::Daemonize;
 use getopts::Options;
-use log::{error, info, warn, LevelFilter};
+use log::{error, info, LevelFilter};
 use simplelog::format_description;
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
 use std::env;
-use std::fs::{remove_file, File, OpenOptions};
-use std::io::{BufWriter, Read, Write};
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::fs::{File, OpenOptions};
+use std::io::{BufWriter, Write};
+use std::os::unix::prelude::*;
 use sys::taskserver::{Control, RunResult, TaskServer};
 use sysmod::SystemModules;
 
@@ -36,20 +37,6 @@ const FILE_CRON: &str = "cron.txt";
 const FILE_PID: &str = "rshanghai.pid";
 /// ログのファイル出力先。
 const FILE_LOG: &str = "rshanghai.log";
-
-/// デフォルトの設定データ (json source)。
-/// [include_str!] でバイナリに含める。
-const DEF_CONFIG_JSON: &str = include_str!("res/config_default.json");
-/// デフォルトの Twitter コンテンツデータ (json source)。
-/// [include_str!] でバイナリに含める。
-const TW_CONTENTS_JSON: &str = include_str!("res/tw_contents.json");
-/// デフォルトの OpenAI プロンプトデータ (json source)。
-/// [include_str!] でバイナリに含める。
-const OPENAI_PROMPT_JSON: &str = include_str!("res/openai_prompt.json");
-/// ロードする設定ファイルパス。
-const CONFIG_FILE: &str = "config.json";
-/// デフォルト設定の出力パス。
-const CONFIG_DEF_FILE: &str = "config_default.json";
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
 ///
@@ -128,75 +115,6 @@ fn init_log(is_daemon: bool) {
     CombinedLogger::init(loggers).unwrap();
 }
 
-/// 設定データをロードする。
-fn load_config() -> Result<()> {
-    {
-        // デフォルト設定ファイルを削除する
-        info!("remove {}", CONFIG_DEF_FILE);
-        if let Err(e) = remove_file(CONFIG_DEF_FILE) {
-            warn!(
-                "removing {} failed (the first time execution?): {}",
-                CONFIG_DEF_FILE, e
-            );
-        }
-        // デフォルト設定を書き出す
-        // 600 でアトミックに必ず新規作成する、失敗したらエラー
-        info!("writing default config to {}", CONFIG_DEF_FILE);
-        let mut f = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(CONFIG_DEF_FILE)
-            .with_context(|| format!("Failed to open {CONFIG_DEF_FILE}"))?;
-        f.write_all(DEF_CONFIG_JSON.as_bytes())
-            .with_context(|| format!("Failed to write {CONFIG_DEF_FILE}"))?;
-        info!("OK: written to {}", CONFIG_DEF_FILE);
-        // close
-    }
-
-    let mut json_str = String::new();
-    {
-        // 設定ファイルを読む
-        // open 後パーミッションを確認し、危険ならエラーとする
-        info!("loading config: {}", CONFIG_FILE);
-        let mut f = OpenOptions::new()
-            .read(true)
-            .open(CONFIG_FILE)
-            .with_context(|| format!("Failed to open {CONFIG_FILE} (the first execution?)"))
-            .with_context(|| {
-                format!("HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again")
-            })?;
-
-        let metadata = f.metadata()?;
-        let permissions = metadata.permissions();
-        let masked = permissions.mode() & 0o777;
-        ensure!(
-            masked == 0o600,
-            "Config file permission is not 600: {:03o}",
-            permissions.mode()
-        );
-
-        f.read_to_string(&mut json_str)
-            .with_context(|| format!("Failed to read {CONFIG_FILE}"))?;
-        info!("OK: {} loaded", CONFIG_FILE);
-        // close
-    }
-
-    // json パースして設定システムを初期化
-    let json_list = [
-        DEF_CONFIG_JSON,
-        TW_CONTENTS_JSON,
-        OPENAI_PROMPT_JSON,
-        &json_str,
-    ];
-    sys::config::init();
-    for (i, json_str) in json_list.iter().enumerate() {
-        sys::config::add_config(json_str).with_context(|| format!("Config load failed: {i}"))?;
-    }
-
-    Ok(())
-}
-
 /// 起動時に一度だけブートメッセージをツイートするタスク。
 async fn boot_msg_task(ctrl: Control) -> Result<()> {
     let build_info: &str = &sys::version::VERSION_INFO;
@@ -233,7 +151,7 @@ fn system_main() -> Result<()> {
         info!("system main");
         info!("{}", *sys::version::VERSION_INFO);
 
-        load_config()?;
+        sys::config::load()?;
 
         let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
