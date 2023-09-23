@@ -6,6 +6,7 @@ use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
 use anyhow::Result;
+use base64::{engine::general_purpose, Engine as _};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -1024,7 +1025,7 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     // 32byte の乱数を BASE64 にして英数字のみを残したものとする
     let mut rng = rand::thread_rng();
     let rnd32: [u8; 32] = rng.gen();
-    let rnd32_str = base64::encode(rnd32);
+    let rnd32_str = general_purpose::STANDARD.encode(rnd32);
     let mut nonce_str = "".to_string();
     for c in rnd32_str.chars() {
         if c.is_alphanumeric() {
@@ -1148,7 +1149,7 @@ fn create_signature(
     let result = netutil::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
 
     // base64 encode したものを署名として "oauth_signature" に設定する
-    base64::encode(result.into_bytes())
+    general_purpose::STANDARD.encode(result.into_bytes())
 }
 
 /// HTTP header に設定する (key, value) を文字列として生成して返す。
