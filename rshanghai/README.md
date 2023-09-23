@@ -93,6 +93,38 @@ cargo update
 `Cargo.lock` が更新されるので、それをコミットすれば OK。
 github のセキュリティボットからの警告もだいたいこれで対応できる。
 
+### cargo-edit
+
+```sh
+cargo install cargo-edit
+```
+
+`Cargo.toml` を自力で編集していたのをコマンドで自動化する。
+
+```sh
+cargo add regex
+# dev-dependencies + specify version
+cargo add regex@0.1.41 --dev
+# build-dependencies
+cargo add regex --build
+```
+
+多重に追加しても何も起こらず、また、feature list が表示される。とても便利。
+`cargo add --features <FEATURES>` (カンマ or スペース区切り) で指定できる。
+
+```sh
+cargo add serde
+    Updating crates.io index
+      Adding serde v1.0.188 to dependencies.
+             Features:
+             + derive
+             + serde_derive
+             + std
+             - alloc
+             - rc
+             - unstable
+```
+
 ## Tech Note
 
 ### 並列テストが失敗する
