@@ -55,7 +55,7 @@ async fn index_get(state: web::Data<IndexState>, ctrl: web::Data<Control>) -> im
         .collect::<Vec<_>>()
         .join("\n");
 
-    let ver_str = version::VERSION_INFO_VEC
+    let ver_str = version::version_info_vec()
         .iter()
         .map(|s| format!("      <li>{s}</li>"))
         .collect::<Vec<_>>()

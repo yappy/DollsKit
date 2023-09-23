@@ -43,8 +43,8 @@ cargo:rerun-if-env-changed=VERGEN_IDEMPOTENT
 cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
 */
 
-use once_cell::sync::Lazy;
 use rustc_version_runtime;
+use std::sync::OnceLock;
 
 #[rustfmt::skip] pub const GIT_BRANCH:    &str = env!("VERGEN_GIT_BRANCH");
 #[rustfmt::skip] pub const GIT_HASH:      &str = env!("VERGEN_GIT_SHA");
@@ -54,39 +54,58 @@ use rustc_version_runtime;
 #[rustfmt::skip] pub const BUILD_DEBUG:   &str = env!("VERGEN_CARGO_DEBUG");
 #[rustfmt::skip] pub const BUILD_TARGET:  &str = env!("VERGEN_CARGO_TARGET_TRIPLE");
 
-// rustc "major.minor.patch"
-pub static BUILD_PROFILE: Lazy<&str> = Lazy::new(|| {
-    if BUILD_DEBUG == "true" {
-        "debug"
-    } else {
-        "release"
-    }
-});
+// OnceLock / LazyLock が stable になったら LazyLock に書き換えたほうがよい
 
 // rustc "major.minor.patch"
-pub static RUSTC_VERSION: Lazy<String> = Lazy::new(|| {
-    let meta = rustc_version_runtime::version_meta();
-    format!("{} {:?}", meta.short_version_string, meta.channel)
-});
+pub fn build_profile() -> &'static str {
+    static BUILD_PROFILE: OnceLock<&str> = OnceLock::new();
+
+    BUILD_PROFILE.get_or_init(|| {
+        if BUILD_DEBUG == "true" {
+            "debug"
+        } else {
+            "release"
+        }
+    })
+}
+
+// rustc "major.minor.patch"
+pub fn rustc_version() -> &'static str {
+    static RUSTC_VERSION: OnceLock<String> = OnceLock::new();
+
+    RUSTC_VERSION.get_or_init(|| {
+        let meta = rustc_version_runtime::version_meta();
+        format!("{} {:?}", meta.short_version_string, meta.channel)
+    })
+}
 
 #[rustfmt::skip]
-pub static VERSION_INFO: Lazy<String> = Lazy::new(|| {
-    let prof = *BUILD_PROFILE;
-    format!(
+pub fn version_info() -> &'static str {
+    static VERSION_INFO: OnceLock<String> = OnceLock::new();
+
+    VERSION_INFO.get_or_init(|| {
+        let prof = build_profile();
+        let rustc = rustc_version();
+        format!(
 "Build: {prof}
 Branch: {GIT_BRANCH} {GIT_DESCRIBE} {GIT_DATE}
-{}",
-        RUSTC_VERSION.as_str()
+{rustc}"
     )
-});
+})
+}
 
-pub static VERSION_INFO_VEC: Lazy<Vec<String>> = Lazy::new(|| {
-    let prof = *BUILD_PROFILE;
-    vec![
-        format!("Build: {BUILD_TARGET} {prof}"),
-        format!("Branch: {GIT_BRANCH}"),
-        format!("Version: {GIT_DESCRIBE}"),
-        format!("Last Updated: {GIT_DATE}"),
-        RUSTC_VERSION.clone(),
-    ]
-});
+pub fn version_info_vec() -> &'static Vec<String> {
+    static VERSION_INFO_VEC: OnceLock<Vec<String>> = OnceLock::new();
+
+    VERSION_INFO_VEC.get_or_init(|| {
+        let prof = build_profile();
+        let rustc = rustc_version();
+        vec![
+            format!("Build: {BUILD_TARGET} {prof}"),
+            format!("Branch: {GIT_BRANCH}"),
+            format!("Version: {GIT_DESCRIBE}"),
+            format!("Last Updated: {GIT_DATE}"),
+            rustc.to_string(),
+        ]
+    })
+}
