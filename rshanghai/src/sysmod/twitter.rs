@@ -190,6 +190,11 @@ pub struct TwitterConfig {
     /// OpenAI API 応答を起動するハッシュタグ。
     ai_hashtag: String,
     /// 長文ツイートの画像化に使う ttf ファイルへのパス。
+    /// 空文字列にすると機能を無効化する。
+    ///
+    /// Debian 環境の例\
+    /// `sudo apt install fonts-ipafont`\
+    /// /usr/share/fonts/truetype/fonts-japanese-gothic.ttf
     font_file: String,
     // タイムラインチェックルール。
     #[serde(default)]
@@ -210,7 +215,7 @@ impl Default for TwitterConfig {
             access_token: "".to_string(),
             access_secret: "".to_string(),
             ai_hashtag: "DollsAI".to_string(),
-            font_file: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf".to_string(),
+            font_file: "".to_string(),
             tlcheck: Default::default(),
             prompt: Default::default(),
         }
@@ -271,7 +276,7 @@ pub struct Twitter {
 
     wakeup_list: Vec<NaiveTime>,
 
-    font: FontRenderer,
+    font: Option<FontRenderer>,
 
     /// タイムラインチェックの際の走査開始 tweet id。
     ///
@@ -303,9 +308,12 @@ impl Twitter {
 
         let config = config::get(|cfg| cfg.twitter.clone());
 
-        // TODO: allow disabled
-        let ttf_bin = fs::read(&config.font_file)?;
-        let font = FontRenderer::new(ttf_bin)?;
+        let font = if !config.font_file.is_empty() {
+            let ttf_bin = fs::read(&config.font_file)?;
+            Some(FontRenderer::new(ttf_bin)?)
+        } else {
+            None
+        };
 
         Ok(Twitter {
             config,
@@ -369,10 +377,9 @@ impl Twitter {
             let name = self.get_username_from_id(&to_user_id).unwrap();
             info!("reply to: {}", name);
 
-            // post_image_if_long が有効で文字数オーバーの場合
-            // 画像にして投稿する
-            if post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
-                let pngbin = self.font.draw_multiline_text(
+            // post_image_if_long が有効で文字数オーバーの場合、画像にして投稿する
+            if self.font.is_some() && post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
+                let pngbin = self.font.as_ref().unwrap().draw_multiline_text(
                     LONG_TWEET_FGCOLOR,
                     LONG_TWEET_BGCOLOR,
                     &text,
