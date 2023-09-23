@@ -125,6 +125,14 @@ cargo add serde
              - unstable
 ```
 
+`cargo upgrade` で `Cargo.toml` 内のバージョンを上げられる。
+`cargo update` は `Cargo.lock` を更新するのみ。
+upgrade 後にリビルドすれば update 相当のことが起こるはず。
+
+```sh
+cargo upgrade
+```
+
 ## Tech Note
 
 ### 並列テストが失敗する
