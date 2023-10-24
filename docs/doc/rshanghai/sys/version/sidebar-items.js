@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["BUILD_PROFILE","BUILD_TARGET","GIT_BRANCH","GIT_DATE","GIT_HASH","GIT_SEMVER","GIT_TIMESTAMP"],"static":["RUSTC_VERSION","VERSION_INFO","VERSION_INFO_VEC"]};
+window.SIDEBAR_ITEMS = {"constant":["BUILD_DEBUG","BUILD_TARGET","GIT_BRANCH","GIT_DATE","GIT_DESCRIBE","GIT_HASH","GIT_TIMESTAMP"],"fn":["build_profile","rustc_version","version_info","version_info_vec"]};
