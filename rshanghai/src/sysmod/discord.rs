@@ -3,7 +3,7 @@
 use super::camera::{take_a_pic, TakePicOption};
 use super::SystemModule;
 use crate::sys::netutil::HttpStatusError;
-use crate::sys::version::VERSION_INFO;
+use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
 use crate::sysmod::openai::ChatMessage;
 use anyhow::{anyhow, Result};
@@ -526,7 +526,7 @@ struct General;
 #[usage("")]
 #[example("")]
 async fn sysinfo(ctx: &Context, msg: &Message) -> CommandResult {
-    let ver_info: &str = &VERSION_INFO;
+    let ver_info: &str = version::version_info();
     msg.reply(ctx, ver_info).await?;
 
     Ok(())

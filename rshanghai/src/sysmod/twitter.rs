@@ -6,6 +6,7 @@ use crate::sys::netutil;
 use crate::sys::taskserver::Control;
 
 use anyhow::Result;
+use base64::{engine::general_purpose, Engine as _};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -190,6 +191,11 @@ pub struct TwitterConfig {
     /// OpenAI API 応答を起動するハッシュタグ。
     ai_hashtag: String,
     /// 長文ツイートの画像化に使う ttf ファイルへのパス。
+    /// 空文字列にすると機能を無効化する。
+    ///
+    /// Debian 環境の例\
+    /// `sudo apt install fonts-ipafont`\
+    /// /usr/share/fonts/truetype/fonts-japanese-gothic.ttf
     font_file: String,
     // タイムラインチェックルール。
     #[serde(default)]
@@ -210,7 +216,7 @@ impl Default for TwitterConfig {
             access_token: "".to_string(),
             access_secret: "".to_string(),
             ai_hashtag: "DollsAI".to_string(),
-            font_file: "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf".to_string(),
+            font_file: "".to_string(),
             tlcheck: Default::default(),
             prompt: Default::default(),
         }
@@ -271,7 +277,7 @@ pub struct Twitter {
 
     wakeup_list: Vec<NaiveTime>,
 
-    font: FontRenderer,
+    font: Option<FontRenderer>,
 
     /// タイムラインチェックの際の走査開始 tweet id。
     ///
@@ -303,9 +309,12 @@ impl Twitter {
 
         let config = config::get(|cfg| cfg.twitter.clone());
 
-        // TODO: allow disabled
-        let ttf_bin = fs::read(&config.font_file)?;
-        let font = FontRenderer::new(ttf_bin)?;
+        let font = if !config.font_file.is_empty() {
+            let ttf_bin = fs::read(&config.font_file)?;
+            Some(FontRenderer::new(ttf_bin)?)
+        } else {
+            None
+        };
 
         Ok(Twitter {
             config,
@@ -369,10 +378,9 @@ impl Twitter {
             let name = self.get_username_from_id(&to_user_id).unwrap();
             info!("reply to: {}", name);
 
-            // post_image_if_long が有効で文字数オーバーの場合
-            // 画像にして投稿する
-            if post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
-                let pngbin = self.font.draw_multiline_text(
+            // post_image_if_long が有効で文字数オーバーの場合、画像にして投稿する
+            if self.font.is_some() && post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
+                let pngbin = self.font.as_ref().unwrap().draw_multiline_text(
                     LONG_TWEET_FGCOLOR,
                     LONG_TWEET_BGCOLOR,
                     &text,
@@ -1017,7 +1025,7 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     // 32byte の乱数を BASE64 にして英数字のみを残したものとする
     let mut rng = rand::thread_rng();
     let rnd32: [u8; 32] = rng.gen();
-    let rnd32_str = base64::encode(rnd32);
+    let rnd32_str = general_purpose::STANDARD.encode(rnd32);
     let mut nonce_str = "".to_string();
     for c in rnd32_str.chars() {
         if c.is_alphanumeric() {
@@ -1141,7 +1149,7 @@ fn create_signature(
     let result = netutil::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
 
     // base64 encode したものを署名として "oauth_signature" に設定する
-    base64::encode(result.into_bytes())
+    general_purpose::STANDARD.encode(result.into_bytes())
 }
 
 /// HTTP header に設定する (key, value) を文字列として生成して返す。
