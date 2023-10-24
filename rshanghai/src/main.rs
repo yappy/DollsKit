@@ -117,7 +117,7 @@ fn init_log(is_daemon: bool) {
 
 /// 起動時に一度だけブートメッセージをツイートするタスク。
 async fn boot_msg_task(ctrl: Control) -> Result<()> {
-    let build_info: &str = &sys::version::VERSION_INFO;
+    let build_info = sys::version::version_info();
     // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
     let now = now.format("%F %T %:z");
@@ -149,7 +149,7 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
 fn system_main() -> Result<()> {
     loop {
         info!("system main");
-        info!("{}", *sys::version::VERSION_INFO);
+        info!("{}", sys::version::version_info());
 
         sys::config::load()?;
 

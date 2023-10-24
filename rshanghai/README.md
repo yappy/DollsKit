@@ -1,65 +1,79 @@
 # Rust
-## インストール
-https://www.rust-lang.org/ja/tools/install
 
-```
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+## Daily Commands
+
+### インストール
+
+<https://www.rust-lang.org/ja/tools/install>
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 Q. 最近流行ってるけどこういうの怖くない？  
 A. はい。シェルスクリプトを自分で読む等、自己責任で。
 
-## アップデートの確認
-```
-$ rustup check
+### アップデートの確認
+
+```sh
+rustup check
 ```
 
-## アップデート
-```
+### アップデート
+
+```sh
 # rustup 自身のアップデート
-$ rustup self update
+rustup self update
 # rust のアップデート
-$ rustup update
-$ cargo --version
+rustup update
+cargo --version
 ```
 
-## アンインストール
+### アンインストール
+
 (やったことない)
-```
-$ rustup self uninstall
+
+```sh
+rustup self uninstall
 ```
 
-## vscode 拡張
+### vscode 拡張
+
 `rust-analyzer` が公式かつつよそう。
 入力補助が結構すごい。
 vscode で検索して入れればよいので rustup の必要はなし。
 
 rts (Rust Language Server) は廃止されたので非推奨。
 
-## rustfmt
-https://github.com/rust-lang/rustfmt
+### rustfmt
+
+<https://github.com/rust-lang/rustfmt>
 
 フォーマッタ。
 rustfmt.toml で設定を変更できるが、`} else {` は unstable 扱いで
 nightly ツールでないとまだ変更できない。
-```
-$ cargo fmt
+
+```sh
+cargo fmt
 ```
 
 ソースコード上で `#[rustfmt::skip]` をつけると部分的に無効にできる。
 
-## clippy (lint)
+### clippy (lint)
+
 いわゆる静的解析ツール。
-```
-$ rustup component add clippy
-$ cargo clippy --no-deps
+
+```sh
+rustup component add clippy
+cargo clippy --no-deps
 ```
 
 `--no-deps` をつけないと、全ての依存先に対してチェックが働き遅い。
 
-## doc
-```
-$ cargo doc --no-deps
+### doc
+
+```sh
+cargo doc --no-deps
 ```
 
 `--no-deps` をつけないと、全ての依存先に対してドキュメント生成されて大変なことになる。
@@ -69,17 +83,60 @@ public でない要素も出力される。
 
 `--open` をつけるとブラウザで開いてくれるそうだが、WSL では動かない。。
 
-## update
-```
-$ cargo update
+### update
+
+```sh
+cargo update
 ```
 
 `Cargo.toml` に書かれた依存パッケージのバージョンを上げる。
 `Cargo.lock` が更新されるので、それをコミットすれば OK。
 github のセキュリティボットからの警告もだいたいこれで対応できる。
 
-# Tech Note
-## 並列テストが失敗する
+### cargo-edit
+
+```sh
+cargo install cargo-edit
+```
+
+`Cargo.toml` を自力で編集していたのをコマンドで自動化する。
+
+```sh
+cargo add regex
+# dev-dependencies + specify version
+cargo add regex@0.1.41 --dev
+# build-dependencies
+cargo add regex --build
+```
+
+多重に追加しても何も起こらず、また、feature list が表示される。とても便利。
+`cargo add --features <FEATURES>` (カンマ or スペース区切り) で指定できる。
+
+```sh
+cargo add serde
+    Updating crates.io index
+      Adding serde v1.0.188 to dependencies.
+             Features:
+             + derive
+             + serde_derive
+             + std
+             - alloc
+             - rc
+             - unstable
+```
+
+`cargo upgrade` で `Cargo.toml` 内のバージョンを上げられる。
+`cargo update` は `Cargo.lock` を更新するのみ。
+upgrade 後にリビルドすれば update 相当のことが起こるはず。
+
+```sh
+cargo upgrade
+```
+
+## Tech Note
+
+### 並列テストが失敗する
+
 デフォルトで test attribute のついたテストは並列実行される。
 ファイルやグローバル変数等のグローバル状態を変更するテストは
 並列実行すると失敗する可能性がある。
@@ -91,10 +148,11 @@ github のセキュリティボットからの警告もだいたいこれで対�
 ロックを取れば直列化できるが、assert 失敗で panic した場合に
 Mutex の PoisonError で他のテストを巻き込んで失敗してしまう。
 
-https://github.com/rust-lang/rust/issues/43155
+<https://github.com/rust-lang/rust/issues/43155>
 
 結論としては `serial_test` クレートを使うのが便利。
-```
+
+```rust
 // これがついたテストは直列化される
 #[serial]
 // 引数をつけるとその名前のグループ内でのみ排他される
@@ -108,6 +166,7 @@ https://github.com/rust-lang/rust/issues/43155
 ## グローバル変数
 
 ## エラーハンドリング
+
 関数の返り値を Result にするとき、`Err<T>` 時の型が合っていないと
 ? 演算子で楽ができない。
 このままだと関数内でいろいろな種類のエラーが返ってくる場合に困る。
@@ -115,15 +174,16 @@ https://github.com/rust-lang/rust/issues/43155
 この型でエラーを返すようにする。
 
 The Book でも実は
-https://doc.rust-jp.rs/book-ja/ch12-03-improving-error-handling-and-modularity.html
+<https://doc.rust-jp.rs/book-ja/ch12-03-improving-error-handling-and-modularity.html>
 で導入している。
 (Result のエラーハンドリングの章にはない。。)
 
 Rust By Example ではここ。
-https://doc.rust-jp.rs/rust-by-example-ja/error/multiple_error_types/boxing_errors.html
+<https://doc.rust-jp.rs/rust-by-example-ja/error/multiple_error_types/boxing_errors.html>
 
 オススメ
-```
+
+```rust
 Result<(), Box<dyn Error + Send + Sync + 'static>>
 ```
 
@@ -134,12 +194,13 @@ Send, Sync 制約をつけるとスレッド間でエラーオブジェクトを
 
 'static をつけると `is` や `downcast_ref` 等が使えるようになる。
 
-https://doc.rust-lang.org/stable/std/error/trait.Error.html#method.is
+<https://doc.rust-lang.org/stable/std/error/trait.Error.html#method.is>
 
 ## エラーハンドリング - anyhow
+
 標準ライブラリのみで行うならば前節の通り。
 
-https://qiita.com/legokichi/items/d4819f7d464c0d2ce2b8
+<https://qiita.com/legokichi/items/d4819f7d464c0d2ce2b8>
 スマートなエラー処理に関しては昔からかなり苦労しているらしい…。
 
 anyhow はこの辺りをもっと簡単に書けるようにしてくれるライブラリ。
@@ -149,7 +210,7 @@ anyhow はこの辺りをもっと簡単に書けるようにしてくれるラ�
 (個人的にはあまりそういうのは好きではないけど、Rust は基本的なところですら変遷期であり、
 しばらく時間が経てば標準入りするんじゃないかな？)
 
-https://docs.rs/anyhow/latest/anyhow/
+<https://docs.rs/anyhow/latest/anyhow/>
 
 使い方は、とりあえず全部 `anyhow::Result<T>` を返せば OK!
 これは `Result<T, anyhow::Error>` に等しい。
@@ -158,7 +219,8 @@ https://docs.rs/anyhow/latest/anyhow/
 (`From` trait によって実現されているっぽい。)
 
 `std::process::Termination` を実装しているので main から返しても大丈夫。
-```
+
+```rust
 fn main() -> anyhow::Result<()> {
     Ok(())
 }
@@ -169,7 +231,8 @@ Send + Sync 問題とかも解決しているので async fn から返しても�
 ダウンキャストの確認や実行も可能。
 
 `context()` を使うと情報を付け加えつつエラーを投げられる。
-```
+
+```rust
 fn main() -> Result<()> {
     ...
     it.detach().context("Failed to detach the important thing")?;
@@ -191,21 +254,22 @@ nightly channel を使うか features "backtrace" を指定するとバックト
 if まで省略して early return できる。
 
 ## Twitter API v2
+
 Last update: 2022/10
 
-https://developer.twitter.com/en/docs
+<https://developer.twitter.com/en/docs>
 
 "en" を "ja" に直すと日本語のページが表示されるが、
 トップページ以外は英語しかないようなので諦めて英語を読む。
 
 これの curl あたりを読めばだいたい把握できる。
 
-https://developer.twitter.com/en/docs/tools-and-libraries/using-postman
+<https://developer.twitter.com/en/docs/tools-and-libraries/using-postman>
 
-https://documenter.getpostman.com/view/9956214/T1LMiT5U
-
+<https://documenter.getpostman.com/view/9956214/T1LMiT5U>
 
 ### 登録
+
 Developer Portal へ bot 用のアカウントでサインイン。
 最初にいくつかの質問に答え、規約に同意する。
 
@@ -224,21 +288,25 @@ Academic Research も無料で、学術研究用。
 authentication settings で認証トークンを作成する。
 
 ### エンドポイントの例
+
 v2 では User ID が必要。
+
 * Standard v1.1 endpoints:
-	* https://api.twitter.com/1.1/statuses/home_timeline
-	* https://api.twitter.com/1.1/statuses/user_timeline
-	* https://api.twitter.com/1.1/statuses/mention_timeline
+  * <https://api.twitter.com/1.1/statuses/home_timeline>
+  * <https://api.twitter.com/1.1/statuses/user_timeline>
+  * <https://api.twitter.com/1.1/statuses/mention_timeline>
 * Twitter API v2 endpoint:
-	* https://api.twitter.com/2/users/:id/timelines/reverse_chronological
-	* https://api.twitter.com/2/users/:id/tweets
-	* https://api.twitter.com/2/users/:id/mentions
+  * <https://api.twitter.com/2/users/:id/timelines/reverse_chronological>
+  * <https://api.twitter.com/2/users/:id/tweets>
+  * <https://api.twitter.com/2/users/:id/mentions>
 
 ### 認証
-https://developer.twitter.com/en/docs/authentication/overview
+
+<https://developer.twitter.com/en/docs/authentication/overview>
 
 適当なエンドポイントに認証なしでアクセスすると 401 で失敗する。
-```
+
+```sh
 $ curl https://api.twitter.com/2/users/by/username/yappy_y
 {
   "title": "Unauthorized",
@@ -249,7 +317,8 @@ $ curl https://api.twitter.com/2/users/by/username/yappy_y
 ```
 
 #### App Only (OAuth 2.0 Bearer Token)
-https://developer.twitter.com/en/docs/authentication/oauth-2-0
+
+<https://developer.twitter.com/en/docs/authentication/oauth-2-0>
 
 誰でも見える public なデータは Developers Portal で生成できる Bearer Token による
 アプリの認証のみで取得できるようになる。
@@ -260,13 +329,15 @@ Revoke および再生成も可能。
 
 HTTP header に Authorization: Bearer \<TOKEN\> を追加するだけで OK。
 curl なら --header/-H オプション。
-```
+
+```sh
 curl "https://api.twitter.com/2/tweets?ids=1261326399320715264,1278347468690915330" \
   -H "Authorization: Bearer AAAAAAAAAAAAAAAAAAAAAFnz2wAAAAAAxTmQbp%2BIHDtAhTBbyNJon%2BA72K4%3DeIaigY0QBrv6Rp8KZQQLOTpo9ubw5Jt?WRE8avbi"
 ```
 
 #### OAuth 1.0a User Context
-https://developer.twitter.com/en/docs/authentication/oauth-1-0a
+
+<https://developer.twitter.com/en/docs/authentication/oauth-1-0a>
 
 昔からあるいつものやつ。
 そのアカウントでしか行えない操作を行える。

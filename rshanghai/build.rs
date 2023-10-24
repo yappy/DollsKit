@@ -1,9 +1,10 @@
-use vergen::{vergen, Config, TimestampKind};
+use vergen::EmitBuilder;
 
 fn main() {
-    let mut config = Config::default();
-    *config.git_mut().commit_timestamp_kind_mut() = TimestampKind::All;
-    *config.git_mut().semver_dirty_mut() = Some("-dirty");
-
-    vergen(config).unwrap();
+    EmitBuilder::builder()
+        .all_cargo()
+        .all_git()
+        .git_describe(true, false, None)
+        .emit()
+        .unwrap();
 }
