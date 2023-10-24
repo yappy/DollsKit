@@ -1,5 +1,6 @@
 mod github;
 mod index;
+mod line;
 mod priv_camera;
 mod priv_index;
 mod upload;
@@ -35,6 +36,8 @@ pub struct HttpConfig {
     ghhook_enabled: bool,
     /// GitHub Hook の SHA256 検証に使うハッシュ。GitHub の設定ページから手に入る。
     ghhook_secret: String,
+    /// LINE webhook 機能を有効化する。パスは /_rootpath_/line/。
+    line_hook_enabled: bool,
 }
 
 impl Default for HttpConfig {
@@ -49,6 +52,7 @@ impl Default for HttpConfig {
             upload_dir: "./upload".to_string(),
             ghhook_enabled: false,
             ghhook_secret: "".to_string(),
+            line_hook_enabled: false,
         }
     }
 }
