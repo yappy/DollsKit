@@ -104,6 +104,7 @@ struct Detail {
     property: Option<String>,
 }
 
+#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize)]
 struct ReplyReq {
     #[serde(rename = "replyToken")]
@@ -127,6 +128,7 @@ struct SentMessage {
     quote_token: Option<String>,
 }
 
+#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum Message {
