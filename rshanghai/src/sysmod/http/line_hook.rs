@@ -3,7 +3,7 @@
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
 use super::{ActixError, WebResult};
-use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
+use crate::sys::taskserver::Control;
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::Result;
 use log::{error, info};
@@ -249,6 +249,4 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

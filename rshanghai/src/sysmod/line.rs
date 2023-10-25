@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use log::info;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+
 use time::Instant;
 
 /// Discord 設定データ。toml 設定に対応する。
@@ -84,7 +84,7 @@ impl Line {
 }
 
 impl SystemModule for Line {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&self, _ctrl: &Control) {
         info!("[line] on_start");
     }
 }
