@@ -2,9 +2,10 @@
 //!
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
-use super::WebResult;
+use super::{ActixError, WebResult};
 use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
+use anyhow::Result;
 use log::{error, info};
 use serde::Deserialize;
 
@@ -201,26 +202,50 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
 
     // TODO: verify signature
 
-    process_post(&ctrl, &body).await;
-
-    Ok(HttpResponse::Ok()
-        .content_type(ContentType::plaintext())
-        .body(""))
+    if let Err(e) = process_post(&ctrl, &body).await {
+        Err(ActixError::new(&e.to_string(), 400))
+    } else {
+        Ok(HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(""))
+    }
 }
 
-async fn process_post(_ctrl: &Control, json_body: &str) {
+async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
     // TODO
     info!("{json_body}");
 
-    let req = serde_json::from_str::<WebHookRequest>(json_body);
-    match req {
-        Ok(req) => {
-            info!("{:?}", req);
-        }
-        Err(err) => {
-            error!("{:?}", err);
+    let req = serde_json::from_str::<WebHookRequest>(json_body)?;
+    info!("{:?}", req);
+
+    for ev in req.events.iter() {
+        let line = ctrl.sysmods().line.lock().await;
+        match &ev.body {
+            WebhookEventBody::Message {
+                reply_token,
+                message,
+            } => match message {
+                Message::Text {
+                    id: _,
+                    quoteToken: _,
+                    text,
+                    mention: _,
+                    quotedMessageId: _,
+                } => {
+                    // TODO: think reply
+                    line.reply(reply_token, text).await?;
+                }
+                other => {
+                    info!("[line] Ignore message type: {:?}", other);
+                }
+            },
+            other => {
+                info!("[line] Ignore event: {:?}", other);
+            }
         }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
