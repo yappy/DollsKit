@@ -213,9 +213,10 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
 
 async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
     // TODO
-    info!("{json_body}");
-
-    let req = serde_json::from_str::<WebHookRequest>(json_body)?;
+    let req = serde_json::from_str::<WebHookRequest>(json_body).map_err(|err| {
+        error!("Json parse error: {json_body}");
+        err
+    })?;
     info!("{:?}", req);
 
     for ev in req.events.iter() {
@@ -232,6 +233,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     mention: _,
                     quotedMessageId: _,
                 } => {
+                    info!("[line] Receive text message: {text}");
                     // TODO: think reply
                     line.reply(reply_token, text).await?;
                 }
@@ -247,6 +249,3 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {}

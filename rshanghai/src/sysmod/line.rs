@@ -164,7 +164,8 @@ impl Line {
             messages,
             notification_disabled: None,
         };
-        let _ = self.post_auth_json(URL_REPLY, &req).await;
+        let resp = self.post_auth_json(URL_REPLY, &req).await?;
+        info!("{:?}", resp);
 
         Ok(())
     }
