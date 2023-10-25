@@ -1,5 +1,4 @@
 //! LINE API。
-
 use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 
@@ -7,7 +6,7 @@ use anyhow::{bail, Result};
 use log::info;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
-
+use std::fmt::Debug;
 use time::Instant;
 
 /// Discord 設定データ。toml 設定に対応する。
@@ -191,14 +190,17 @@ impl Line {
         }
     }
 
-    async fn post_auth_json<T: Serialize>(&self, url: &str, body: &T) -> Result<ReplyResp> {
+    async fn post_auth_json<T>(&self, url: &str, body: &T) -> Result<ReplyResp>
+    where
+        T: Serialize + Debug,
+    {
+        info!("[line] POST {:?}", body);
         let token = &self.config.token;
-        let json_str = serde_json::to_string(body).unwrap();
         let resp = self
             .client
             .post(url)
             .header("Authorization", format!("Bearer {token}"))
-            .body(json_str)
+            .json(body)
             .send()
             .await?;
 

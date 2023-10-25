@@ -116,11 +116,13 @@ enum Message {
     #[serde(rename = "text")]
     Text {
         id: String,
-        quoteToken: String,
+        #[serde(rename = "quoteToken")]
+        quote_token: String,
         text: String,
         // emojis
         mention: Option<Mention>,
-        quotedMessageId: Option<String>,
+        #[serde(rename = "quotedMessageId")]
+        quoted_message_id: Option<String>,
     },
     #[serde(other)]
     Other,
@@ -228,10 +230,10 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
             } => match message {
                 Message::Text {
                     id: _,
-                    quoteToken: _,
+                    quote_token: _,
                     text,
                     mention: _,
-                    quotedMessageId: _,
+                    quoted_message_id: _,
                 } => {
                     info!("[line] Receive text message: {text}");
                     // TODO: think reply
