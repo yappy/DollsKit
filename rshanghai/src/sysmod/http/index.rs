@@ -1,5 +1,5 @@
 use super::HttpConfig;
-use super::{github, line, upload};
+use super::{github, line_hook, upload};
 use crate::sys::{taskserver::Control, version};
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use chrono::Local;
@@ -26,8 +26,8 @@ pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) +
             cfg.service(github::index_post);
         }
         if http_config.line_hook_enabled {
-            cfg.service(line::index_get);
-            cfg.service(line::index_post);
+            cfg.service(line_hook::index_get);
+            cfg.service(line_hook::index_post);
         }
     }
 }
