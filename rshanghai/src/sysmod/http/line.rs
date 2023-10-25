@@ -5,10 +5,8 @@
 use super::WebResult;
 use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
-use anyhow::{anyhow, Result};
 use log::{error, info};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 struct WebHookRequest {
@@ -74,7 +72,12 @@ enum WebhookEventBody {
     Message {
         #[serde(rename = "replyToken")]
         reply_token: String,
-        // message: Object
+        message: Message,
+    },
+    #[serde(rename = "unsend")]
+    Unsend {
+        #[serde(rename = "messageId")]
+        message_id: String,
     },
     #[serde(rename = "follow")]
     Follow {
@@ -83,8 +86,76 @@ enum WebhookEventBody {
     },
     #[serde(rename = "unfollow")]
     Unfollow,
+    #[serde(rename = "join")]
+    Join {
+        #[serde(rename = "replyToken")]
+        reply_token: String,
+    },
+    #[serde(rename = "leave")]
+    Leave,
+    #[serde(rename = "memberJoined")]
+    MemberJoined {
+        joined: Members,
+        #[serde(rename = "replyToken")]
+        reply_token: String,
+    },
+    #[serde(rename = "memberLeft")]
+    MemberLeft {
+        left: Members,
+        #[serde(rename = "replyToken")]
+        reply_token: String,
+    },
     #[serde(other)]
     Other,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum Message {
+    #[serde(rename = "text")]
+    Text {
+        id: String,
+        quoteToken: String,
+        text: String,
+        // emojis
+        mention: Option<Mention>,
+        quotedMessageId: Option<String>,
+    },
+    #[serde(other)]
+    Other,
+}
+
+#[derive(Debug, Deserialize)]
+struct Mention {
+    mentionees: Vec<Mentionee>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Mentionee {
+    index: usize,
+    length: usize,
+    #[serde(flatten)]
+    target: MentioneeTarget,
+    #[serde(rename = "quotedMessageId")]
+    quoted_message_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum MentioneeTarget {
+    #[serde(rename = "user")]
+    User {
+        #[serde(rename = "userId")]
+        user_id: Option<String>,
+    },
+    #[serde(rename = "all")]
+    All,
+}
+
+#[derive(Debug, Deserialize)]
+struct Members {
+    /// type = "user"
+    members: Vec<Source>,
 }
 
 #[actix_web::get("/line/")]
