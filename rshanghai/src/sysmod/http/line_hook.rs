@@ -3,7 +3,10 @@
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
 use super::{ActixError, WebResult};
-use crate::sys::taskserver::Control;
+use crate::{
+    sys::taskserver::Control,
+    sysmod::{line::Line, openai::ChatMessage},
+};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::Result;
 use log::{error, info};
@@ -214,15 +217,13 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
 }
 
 async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
-    // TODO
     let req = serde_json::from_str::<WebHookRequest>(json_body).map_err(|err| {
-        error!("Json parse error: {json_body}");
+        error!("[line] Json parse error: {json_body}");
         err
     })?;
     info!("{:?}", req);
 
     for ev in req.events.iter() {
-        let line = ctrl.sysmods().line.lock().await;
         match &ev.body {
             WebhookEventBody::Message {
                 reply_token,
@@ -236,8 +237,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     quoted_message_id: _,
                 } => {
                     info!("[line] Receive text message: {text}");
-                    // TODO: think reply
-                    line.reply(reply_token, text).await?;
+                    on_text_message(ctrl, &reply_token, &text).await?;
                 }
                 other => {
                     info!("[line] Ignore message type: {:?}", other);
@@ -247,6 +247,36 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                 info!("[line] Ignore event: {:?}", other);
             }
         }
+    }
+
+    Ok(())
+}
+
+async fn on_text_message(ctrl: &Control, reply_token: &str, text: &str) -> Result<()> {
+    let prompt = {
+        let line = ctrl.sysmods().line.lock().await;
+        line.config.prompt.clone()
+    };
+    let mut msgs = Vec::new();
+    // 先頭システムメッセージ
+    msgs.extend(prompt.pre.iter().map(|sysmsg| ChatMessage {
+        role: "system".to_string(),
+        content: sysmsg.to_string(),
+    }));
+    // 本文
+    msgs.push(ChatMessage {
+        role: "user".to_string(),
+        content: text.to_string(),
+    });
+
+    let reply = {
+        let ai = ctrl.sysmods().openai.lock().await;
+        ai.chat(msgs).await?
+    };
+
+    {
+        let line = ctrl.sysmods().line.lock().await;
+        line.reply(reply_token, &reply).await?;
     }
 
     Ok(())

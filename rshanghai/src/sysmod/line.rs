@@ -17,8 +17,8 @@ pub struct LineConfig {
     /// アクセストークン。Developer Portal で入手できる。
     token: String,
     // OpenAI プロンプト。
-    //#[serde(default)]
-    //prompt: LinePrompt,
+    #[serde(default)]
+    pub prompt: LinePrompt,
 }
 
 impl Default for LineConfig {
@@ -26,6 +26,7 @@ impl Default for LineConfig {
         Self {
             enabled: false,
             token: "".to_string(),
+            prompt: Default::default(),
         }
     }
 }
@@ -34,17 +35,12 @@ impl Default for LineConfig {
 pub struct LinePrompt {
     /// 最初に一度だけ与えられるシステムメッセージ。
     pub pre: Vec<String>,
-    /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
-    pub each: Vec<String>,
-    pub history_max: u32,
-    pub history_timeout_min: u32,
 }
 
-/// [DiscordPrompt] のデフォルト値。
+/// [LinePrompt] のデフォルト値。
 const DEFAULT_TOML: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    // TODO
-    "/src/res/openai_discord.toml"
+    "/src/res/openai_line.toml"
 ));
 impl Default for LinePrompt {
     fn default() -> Self {
@@ -52,19 +48,11 @@ impl Default for LinePrompt {
     }
 }
 
-/// Discord システムモジュール。
+/// LINE システムモジュール。
 pub struct Line {
     /// 設定データ。
-    config: LineConfig,
+    pub config: LineConfig,
     client: Client,
-}
-
-#[derive(Debug, Clone)]
-pub struct ChatElement {
-    timestamp: Instant,
-    // None の場合 assistant
-    user: Option<String>,
-    msg: String,
 }
 
 impl Line {
