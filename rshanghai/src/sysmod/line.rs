@@ -90,14 +90,14 @@ impl SystemModule for Line {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 struct ErrorResp {
     message: String,
     details: Option<Vec<Detail>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Detail {
     message: Option<String>,
     property: Option<String>,
@@ -114,13 +114,13 @@ struct ReplyReq {
     notification_disabled: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ReplyResp {
     #[serde(rename = "sentMessages")]
     sent_messages: Vec<SentMessage>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct SentMessage {
     id: String,
     #[serde(rename = "quoteToken")]
@@ -128,7 +128,7 @@ struct SentMessage {
 }
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum Message {
     #[serde(rename = "text")]

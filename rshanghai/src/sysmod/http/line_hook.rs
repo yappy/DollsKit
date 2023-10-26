@@ -7,16 +7,16 @@ use crate::sys::taskserver::Control;
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::Result;
 use log::{error, info};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct WebHookRequest {
     destination: String,
     // may be empty
     events: Vec<WebhookEvent>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct WebhookEvent {
     #[serde(flatten)]
     common: WebhookEventCommon,
@@ -24,7 +24,7 @@ struct WebhookEvent {
     body: WebhookEventBody,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct WebhookEventCommon {
     /// "active" or "standby"
     mode: String,
@@ -36,7 +36,7 @@ struct WebhookEventCommon {
     delivery_context: DeliveryContext,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum Source {
     #[serde(rename = "user")]
@@ -60,13 +60,13 @@ enum Source {
     },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct DeliveryContext {
     #[serde(rename = "isRedelivery")]
     is_redelivery: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum WebhookEventBody {
     #[serde(rename = "message")]
@@ -110,7 +110,7 @@ enum WebhookEventBody {
     Other,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum Message {
     #[serde(rename = "text")]
@@ -128,12 +128,12 @@ enum Message {
     Other,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Mention {
     mentionees: Vec<Mentionee>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Mentionee {
     index: usize,
     length: usize,
@@ -143,7 +143,7 @@ struct Mentionee {
     quoted_message_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum MentioneeTarget {
     #[serde(rename = "user")]
@@ -155,7 +155,7 @@ enum MentioneeTarget {
     All,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Members {
     /// type = "user"
     members: Vec<Source>,
