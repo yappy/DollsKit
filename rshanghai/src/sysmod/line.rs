@@ -7,7 +7,7 @@ use log::info;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use time::Instant;
+
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]

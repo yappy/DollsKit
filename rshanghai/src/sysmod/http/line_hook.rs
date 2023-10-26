@@ -5,7 +5,7 @@
 use super::{ActixError, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::{line::Line, openai::ChatMessage},
+    sysmod::{openai::ChatMessage},
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::Result;
@@ -237,7 +237,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     quoted_message_id: _,
                 } => {
                     info!("[line] Receive text message: {text}");
-                    on_text_message(ctrl, &reply_token, &text).await?;
+                    on_text_message(ctrl, reply_token, text).await?;
                 }
                 other => {
                     info!("[line] Ignore message type: {:?}", other);
