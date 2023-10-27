@@ -103,7 +103,7 @@ impl SystemModules {
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
-        let line = Arc::new(TokioMutex::new(Line::new()));
+        let line = Arc::new(TokioMutex::new(Line::new()?));
         let openai = Arc::new(TokioMutex::new(OpenAi::new()?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
 

@@ -4,9 +4,10 @@ use crate::sys::{config, taskserver::Control};
 
 use anyhow::{bail, Result};
 use log::info;
-use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, time::Duration};
+
+const TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,7 +52,7 @@ impl Default for LinePrompt {
 pub struct Line {
     /// 設定データ。
     pub config: LineConfig,
-    client: Client,
+    client: reqwest::Client,
 }
 
 impl Line {
@@ -59,13 +60,13 @@ impl Line {
     ///
     /// 設定データの読み込みのみ行い、実際の初期化は async が有効になる
     /// [discord_main] で行う。
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
-        let client = Client::new();
+        let client = reqwest::Client::builder().timeout(TIMEOUT).build()?;
 
-        Self { config, client }
+        Ok(Self { config, client })
     }
 }
 
@@ -76,8 +77,6 @@ impl SystemModule for Line {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-const TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -160,7 +159,7 @@ impl Line {
         Ok(())
     }
 
-    async fn check_resp<'a, T>(resp: Response) -> Result<T>
+    async fn check_resp<'a, T>(resp: reqwest::Response) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
     {
@@ -188,7 +187,6 @@ impl Line {
         let resp = self
             .client
             .post(url)
-            .timeout(TIMEOUT)
             .header("Authorization", format!("Bearer {token}"))
             .json(body)
             .send()
