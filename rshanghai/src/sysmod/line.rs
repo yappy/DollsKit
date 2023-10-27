@@ -5,17 +5,20 @@ use crate::sys::{config, taskserver::Control};
 use anyhow::{bail, Result};
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, time::Duration};
+use std::{collections::HashMap, fmt::Debug, time::Duration};
 
 const TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LineConfig {
+    // TODO
     /// 機能を有効化するなら true。
     enabled: bool,
     /// アクセストークン。Developer Portal で入手できる。
     token: String,
+    /// LINE ID から名前への固定マップ。
+    pub id_name_map: HashMap<String, String>,
     // OpenAI プロンプト。
     #[serde(default)]
     pub prompt: LinePrompt,
@@ -26,6 +29,7 @@ impl Default for LineConfig {
         Self {
             enabled: false,
             token: "".to_string(),
+            id_name_map: Default::default(),
             prompt: Default::default(),
         }
     }

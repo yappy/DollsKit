@@ -279,11 +279,23 @@ async fn on_text_message(
         // source フィールドからプロフィール情報を取得
         ensure!(src.is_some(), "Field 'source' is required");
         let src = src.as_ref().unwrap();
-        let profile = match src {
-            Source::User { user_id } => line.get_profile(user_id).await?,
+        let display_name = match src {
+            Source::User { user_id } => {
+                if let Some(name) = line.config.id_name_map.get(user_id) {
+                    name.to_string()
+                } else {
+                    line.get_profile(user_id).await?.display_name
+                }
+            }
             Source::Group { group_id, user_id } => {
                 if let Some(user_id) = user_id {
-                    line.get_group_profile(group_id, user_id).await?
+                    if let Some(name) = line.config.id_name_map.get(user_id) {
+                        name.to_string()
+                    } else {
+                        line.get_group_profile(group_id, user_id)
+                            .await?
+                            .display_name
+                    }
                 } else {
                     bail!("userId is null");
                 }
@@ -294,7 +306,7 @@ async fn on_text_message(
             } => bail!("Source::Room is not supported"),
         };
 
-        (prompt, profile.display_name)
+        (prompt, display_name)
     };
 
     let mut msgs = Vec::new();
