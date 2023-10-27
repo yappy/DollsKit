@@ -15,12 +15,14 @@ use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const LONG_TWEET_FONT_SIZE: u32 = 16;
 const LONG_TWEET_IMAGE_WIDTH: u32 = 640;
 const LONG_TWEET_FGCOLOR: (u8, u8, u8) = (255, 255, 255);
 const LONG_TWEET_BGCOLOR: (u8, u8, u8) = (0, 0, 0);
+
+const TIMEOUT: Duration = Duration::from_secs(20);
 
 // Twitter API v2
 pub const TWEET_LEN_MAX: usize = 140;
@@ -913,6 +915,7 @@ impl Twitter {
         let client = reqwest::Client::new();
         let req = client
             .get(base_url)
+            .timeout(TIMEOUT)
             .query(&query_param)
             .header(oauth_k, oauth_v);
         let res = req.send().await?;
@@ -977,6 +980,7 @@ impl Twitter {
 
         client
             .post(base_url)
+            .timeout(TIMEOUT)
             .query(query_param)
             .header(oauth_k, oauth_v)
     }

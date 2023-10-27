@@ -1,5 +1,7 @@
 //! OpenAI API.
 
+use std::time::Duration;
+
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::netutil;
@@ -9,6 +11,8 @@ use anyhow::{anyhow, bail, Result};
 use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
+
+const TIMEOUT: Duration = Duration::from_secs(20);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
@@ -107,6 +111,7 @@ impl OpenAi {
         let client = reqwest::Client::new();
         let resp = client
             .post(URL_CHAT)
+            .timeout(TIMEOUT)
             .header("Authorization", format!("Bearer {key}"))
             .json(&body)
             .send()

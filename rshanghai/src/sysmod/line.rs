@@ -6,8 +6,7 @@ use anyhow::{bail, Result};
 use log::info;
 use reqwest::{Client, Response};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
-
+use std::{fmt::Debug, time::Duration};
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +76,8 @@ impl SystemModule for Line {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+const TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -187,6 +188,7 @@ impl Line {
         let resp = self
             .client
             .post(url)
+            .timeout(TIMEOUT)
             .header("Authorization", format!("Bearer {token}"))
             .json(body)
             .send()
