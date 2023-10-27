@@ -101,6 +101,19 @@ impl OpenAi {
         Ok(OpenAi { config, client })
     }
 
+    /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
+    pub fn is_timeout(err: anyhow::Error) -> bool {
+        for cause in err.chain() {
+            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
+                if req_err.is_timeout() {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {

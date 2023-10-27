@@ -3,7 +3,10 @@
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
 use super::{ActixError, WebResult};
-use crate::{sys::taskserver::Control, sysmod::openai::ChatMessage};
+use crate::{
+    sys::taskserver::Control,
+    sysmod::openai::{ChatMessage, OpenAi},
+};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::Result;
 use log::{error, info};
@@ -268,7 +271,17 @@ async fn on_text_message(ctrl: &Control, reply_token: &str, text: &str) -> Resul
 
     let reply = {
         let ai = ctrl.sysmods().openai.lock().await;
-        ai.chat(msgs).await?
+        match ai.chat(msgs).await {
+            Ok(reply) => reply,
+            Err(err) => {
+                error!("{:#?}", err);
+                if OpenAi::is_timeout(err) {
+                    prompt.timeout_msg
+                } else {
+                    prompt.error_msg
+                }
+            }
+        }
     };
 
     {

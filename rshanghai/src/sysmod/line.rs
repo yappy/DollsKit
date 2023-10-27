@@ -35,6 +35,10 @@ impl Default for LineConfig {
 pub struct LinePrompt {
     /// 最初に一度だけ与えられるシステムメッセージ。
     pub pre: Vec<String>,
+    /// OpenAI API タイムアウト時のメッセージ。
+    pub timeout_msg: String,
+    /// OpenAI API エラー時のメッセージ。
+    pub error_msg: String,
 }
 
 /// [LinePrompt] のデフォルト値。
@@ -57,9 +61,6 @@ pub struct Line {
 
 impl Line {
     /// コンストラクタ。
-    ///
-    /// 設定データの読み込みのみ行い、実際の初期化は async が有効になる
-    /// [discord_main] で行う。
     pub fn new() -> Result<Self> {
         info!("[line] initialize");
 
@@ -143,11 +144,10 @@ const URL_REPLY: &str = "https://api.line.me/v2/bot/message/reply";
 impl Line {
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>
     pub async fn reply(&self, reply_token: &str, text: &str) -> Result<()> {
-        let mut messages = Vec::new();
         // TODO: check len and split
-        messages.push(Message::Text {
+        let messages = vec![Message::Text {
             text: text.to_string(),
-        });
+        }];
         let req = ReplyReq {
             reply_token: reply_token.to_string(),
             messages,
