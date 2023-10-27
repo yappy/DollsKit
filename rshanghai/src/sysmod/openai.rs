@@ -12,7 +12,8 @@ use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
 
-const TIMEOUT: Duration = Duration::from_secs(20);
+const CONN_TIMEOUT: Duration = Duration::from_secs(10);
+const TIMEOUT: Duration = Duration::from_secs(40);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
@@ -83,6 +84,7 @@ impl Default for OpenAiConfig {
 
 pub struct OpenAi {
     config: OpenAiConfig,
+    client: reqwest::Client,
 }
 
 impl OpenAi {
@@ -91,7 +93,12 @@ impl OpenAi {
 
         let config = config::get(|cfg| cfg.openai.clone());
 
-        Ok(OpenAi { config })
+        let client = reqwest::Client::builder()
+            .connect_timeout(CONN_TIMEOUT)
+            .timeout(TIMEOUT)
+            .build()?;
+
+        Ok(OpenAi { config, client })
     }
 
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
@@ -108,10 +115,9 @@ impl OpenAi {
             bail!("openai is disabled");
         }
 
-        let client = reqwest::Client::new();
-        let resp = client
+        let resp = self
+            .client
             .post(URL_CHAT)
-            .timeout(TIMEOUT)
             .header("Authorization", format!("Bearer {key}"))
             .json(&body)
             .send()
