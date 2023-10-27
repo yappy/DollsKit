@@ -4,11 +4,12 @@
 
 use super::{ActixError, WebResult};
 use crate::{
-    sys::taskserver::Control,
+    sys::{netutil, taskserver::Control},
     sysmod::openai::{ChatMessage, OpenAi},
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{bail, ensure, Result};
+use base64::{engine::general_purpose, Engine};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
@@ -190,22 +191,28 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
     let headers = req.headers();
     let signature = headers.get("x-line-signature");
     if signature.is_none() {
-        error!("400: x-line-signature required");
-        return Ok(HttpResponse::BadRequest()
-            .content_type(ContentType::plaintext())
-            .body("x-line-signature required"));
+        return Err(ActixError::new("x-line-signature required", 400));
     }
     let signature = signature.unwrap().to_str();
     if signature.is_err() {
-        error!("400: Bad x-line-signature header");
-        return Ok(HttpResponse::BadRequest()
-            .content_type(ContentType::plaintext())
-            .body("Bad x-line-signature header"));
+        return Err(ActixError::new("Bad x-line-signature header", 400));
     }
     let signature = signature.unwrap();
     info!("x-line-signature: {}", signature);
 
-    // TODO: verify signature
+    // verify signature
+    let channel_secret = {
+        let line = ctrl.sysmods().line.lock().await;
+        line.config.channel_secret.clone()
+    };
+    let key = channel_secret.as_bytes();
+    let data = body.as_bytes();
+    let expected = general_purpose::STANDARD_NO_PAD
+        .decode(signature)
+        .map_err(|e| ActixError::new(&e.to_string(), 400))?;
+    if netutil::hmac_sha256_verify(key, data, &expected).is_err() {
+        return Err(ActixError::new("Signature verification failed", 401));
+    }
 
     if let Err(e) = process_post(&ctrl, &body).await {
         Err(ActixError::new(&e.to_string(), 400))

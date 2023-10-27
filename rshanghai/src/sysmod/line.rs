@@ -17,6 +17,8 @@ pub struct LineConfig {
     enabled: bool,
     /// アクセストークン。Developer Portal で入手できる。
     token: String,
+    /// チャネルシークレット。
+    pub channel_secret: String,
     /// LINE ID から名前への固定マップ。
     pub id_name_map: HashMap<String, String>,
     // OpenAI プロンプト。
@@ -28,7 +30,8 @@ impl Default for LineConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            token: "".to_string(),
+            token: Default::default(),
+            channel_secret: Default::default(),
             id_name_map: Default::default(),
             prompt: Default::default(),
         }
