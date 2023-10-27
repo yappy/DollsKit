@@ -145,6 +145,7 @@ impl Drop for ConfigGuard {
     }
 }
 
+#[allow(dead_code)]
 #[must_use]
 pub fn set(cfg: Config) -> ConfigGuard {
     let mut config = CONFIG.write().unwrap();
