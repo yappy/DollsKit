@@ -205,13 +205,8 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         let line = ctrl.sysmods().line.lock().await;
         line.config.channel_secret.clone()
     };
-    let key = channel_secret.as_bytes();
-    let data = body.as_bytes();
-    let expected = general_purpose::STANDARD_NO_PAD
-        .decode(signature)
-        .map_err(|e| ActixError::new(&e.to_string(), 400))?;
-    if netutil::hmac_sha256_verify(key, data, &expected).is_err() {
-        return Err(ActixError::new("Signature verification failed", 401));
+    if let Err(err) = verify_signature(&signature, &channel_secret, &body) {
+        return Err(ActixError::new(&err.to_string(), 401));
     }
 
     if let Err(e) = process_post(&ctrl, &body).await {
@@ -221,6 +216,15 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
             .content_type(ContentType::plaintext())
             .body(""))
     }
+}
+
+/// 署名検証。
+fn verify_signature(signature: &str, channel_secret: &str, body: &str) -> Result<()> {
+    let key = channel_secret.as_bytes();
+    let data = body.as_bytes();
+    let expected = general_purpose::STANDARD.decode(signature)?;
+
+    netutil::hmac_sha256_verify(key, data, &expected)
 }
 
 /// 署名検証後の POST request 処理本体。
@@ -356,4 +360,19 @@ async fn on_text_message(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sha2::digest::MacError;
+    use super::*;
+
+    #[test]
+    fn base64_decode() {
+        let line_signature = "A+JCmhu7Tg6f4lwANmLGirCS2rY8kHBmSG18ctUtvjQ=";
+        let res = verify_signature(line_signature, "1234567890", "test");
+        assert!(res.is_err());
+        // base64 decode に成功し、MAC 検証に失敗する
+        assert!(res.unwrap_err().is::<MacError>());
+    }
 }
