@@ -35,6 +35,8 @@ impl Default for LineConfig {
 pub struct LinePrompt {
     /// 最初に一度だけ与えられるシステムメッセージ。
     pub pre: Vec<String>,
+    /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
+    pub each: Vec<String>,
     /// OpenAI API タイムアウト時のメッセージ。
     pub timeout_msg: String,
     /// OpenAI API エラー時のメッセージ。
@@ -92,8 +94,21 @@ struct Detail {
     property: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileResp {
+    #[serde(rename = "displayName")]
+    pub display_name: String,
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    pub language: Option<String>,
+    #[serde(rename = "pictureUrl")]
+    pub picture_url: Option<String>,
+    #[serde(rename = "statusMessage")]
+    pub status_message: Option<String>,
+}
+
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ReplyReq {
     #[serde(rename = "replyToken")]
     reply_token: String,
@@ -104,7 +119,7 @@ struct ReplyReq {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct ReplyResp {
+pub struct ReplyResp {
     #[serde(rename = "sentMessages")]
     sent_messages: Vec<SentMessage>,
 }
@@ -139,11 +154,27 @@ enum Message {
     },
 }
 
+fn url_profile(user_id: &str) -> String {
+    format!("https://api.line.me/v2/bot/profile/{user_id}")
+}
+fn url_group_profile(group_id: &str, user_id: &str) -> String {
+    format!("https://api.line.me/v2/bot/group/{group_id}/member/{user_id}")
+}
+
 const URL_REPLY: &str = "https://api.line.me/v2/bot/message/reply";
 
 impl Line {
+    pub async fn get_profile(&self, user_id: &str) -> Result<ProfileResp> {
+        self.get_auth_json(&url_profile(user_id)).await
+    }
+
+    pub async fn get_group_profile(&self, group_id: &str, user_id: &str) -> Result<ProfileResp> {
+        self.get_auth_json(&url_group_profile(group_id, user_id))
+            .await
+    }
+
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>
-    pub async fn reply(&self, reply_token: &str, text: &str) -> Result<()> {
+    pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
         // TODO: check len and split
         let messages = vec![Message::Text {
             text: text.to_string(),
@@ -156,15 +187,23 @@ impl Line {
         let resp = self.post_auth_json(URL_REPLY, &req).await?;
         info!("{:?}", resp);
 
-        Ok(())
+        Ok(resp)
     }
 
+    /// レスポンスの内容を確認しながら json に変換する。
+    ///
+    /// * HTTP Status が成功の場合
+    ///   * Response body JSON を T に変換できればそれを返す。
+    ///   * 変換に失敗したらエラー。
+    /// * HTTP Status が失敗の場合
+    ///   * Response body JSON を [ErrorResp] にパースできればその [Debug] を
+    ///     メッセージとしてエラーを返す。
+    ///   * 変換に失敗した場合、JSON ソースをメッセージとしてエラーを返す。
     async fn check_resp<'a, T>(resp: reqwest::Response) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
     {
         // https://qiita.com/kzee/items/d01e6f3e00dfadb9a00b
-
         let status = resp.status();
         let body = resp.text().await?;
 
@@ -178,11 +217,28 @@ impl Line {
         }
     }
 
-    async fn post_auth_json<T>(&self, url: &str, body: &T) -> Result<ReplyResp>
+    async fn get_auth_json<'a, T>(&self, url: &str) -> Result<T>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        info!("[line] GET {url}");
+        let token = &self.config.token;
+        let resp = self
+            .client
+            .get(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await?;
+
+        Self::check_resp(resp).await
+    }
+
+    async fn post_auth_json<T, R>(&self, url: &str, body: &T) -> Result<R>
     where
         T: Serialize + Debug,
+        R: for<'de> Deserialize<'de>,
     {
-        info!("[line] POST {:?}", body);
+        info!("[line] POST {url} {:?}", body);
         let token = &self.config.token;
         let resp = self
             .client

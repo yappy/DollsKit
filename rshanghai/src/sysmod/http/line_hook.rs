@@ -8,7 +8,7 @@ use crate::{
     sysmod::openai::{ChatMessage, OpenAi},
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
-use anyhow::Result;
+use anyhow::{bail, ensure, Result};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
@@ -216,14 +216,27 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
     }
 }
 
+/// 署名検証後の POST request 処理本体。
 async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
+    // JSON parse
     let req = serde_json::from_str::<WebHookRequest>(json_body).map_err(|err| {
         error!("[line] Json parse error: {json_body}");
         err
     })?;
     info!("{:?}", req);
 
+    // WebhookEvent が最大5個入っている
     for ev in req.events.iter() {
+        // mode == "active" の時のみ処理
+        if ev.common.mode != "active" {
+            info!(
+                "[line] Ignore event because mode is not active: {}",
+                ev.common.mode
+            );
+            continue;
+        }
+
+        // イベントタイプに応じた処理にディスパッチ
         match &ev.body {
             WebhookEventBody::Message {
                 reply_token,
@@ -237,7 +250,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     quoted_message_id: _,
                 } => {
                     info!("[line] Receive text message: {text}");
-                    on_text_message(ctrl, reply_token, text).await?;
+                    on_text_message(ctrl, &ev.common.source, reply_token, text).await?;
                 }
                 other => {
                     info!("[line] Ignore message type: {:?}", other);
@@ -252,18 +265,52 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
     Ok(())
 }
 
-async fn on_text_message(ctrl: &Control, reply_token: &str, text: &str) -> Result<()> {
-    let prompt = {
+async fn on_text_message(
+    ctrl: &Control,
+    src: &Option<Source>,
+    reply_token: &str,
+    text: &str,
+) -> Result<()> {
+    let (prompt, display_name) = {
         let line = ctrl.sysmods().line.lock().await;
-        line.config.prompt.clone()
+
+        let prompt = line.config.prompt.clone();
+
+        // source フィールドからプロフィール情報を取得
+        ensure!(src.is_some(), "Field 'source' is required");
+        let src = src.as_ref().unwrap();
+        let profile = match src {
+            Source::User { user_id } => line.get_profile(user_id).await?,
+            Source::Group { group_id, user_id } => {
+                if let Some(user_id) = user_id {
+                    line.get_group_profile(group_id, user_id).await?
+                } else {
+                    bail!("userId is null");
+                }
+            }
+            Source::Room {
+                room_id: _,
+                user_id: _,
+            } => bail!("Source::Room is not supported"),
+        };
+
+        (prompt, profile.display_name)
     };
+
     let mut msgs = Vec::new();
     // 先頭システムメッセージ
     msgs.extend(prompt.pre.iter().map(|sysmsg| ChatMessage {
         role: "system".to_string(),
         content: sysmsg.to_string(),
     }));
-    // 本文
+    // 今回の発言 (システムメッセージ + 本体)
+    msgs.extend(prompt.each.iter().map(|sysmsg| {
+        let sysmsg = sysmsg.replace("${user}", &display_name);
+        ChatMessage {
+            role: "system".to_string(),
+            content: sysmsg,
+        }
+    }));
     msgs.push(ChatMessage {
         role: "user".to_string(),
         content: text.to_string(),
