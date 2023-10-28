@@ -193,6 +193,37 @@ fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
+fn compact_html(src: &str) -> Result<String> {
+    use scraper::{Html, Selector};
+
+    let fragment = Html::parse_fragment(src);
+    // エラーが async を超えられないので文字列だけ取り出す
+    let selector = Selector::parse("html").map_err(|err| anyhow!(err.to_string()))?;
+    let html = fragment
+        .select(&selector)
+        .next()
+        .ok_or_else(|| anyhow!("parse error"))?;
+
+    // 空白文字をまとめる
+    let mut res = String::new();
+    let mut prev_space = false;
+    for text in html.text() {
+        for c in text.chars() {
+            if c.is_whitespace() {
+                if !prev_space {
+                    res.push(' ');
+                }
+                prev_space = true;
+            } else {
+                res.push(c);
+                prev_space = false;
+            }
+        }
+    }
+
+    Ok(res)
+}
+
 async fn request_url(args: &FuncArgs) -> Result<String> {
     use reqwest::Client;
     use std::time::Duration;
@@ -207,16 +238,17 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     let status = resp.status();
     if status.is_success() {
         let text = resp.text().await?;
-        let s = text.find("<body").or_else(|| text.find("<BODY"));
-        let e = text.find("</body").or_else(|| text.find("</BODY"));
 
-        if s.is_some() || e.is_some() {
-            let text = text[s.unwrap()..e.unwrap()].to_string();
-            let text = text.chars().take(SIZE_MAX).collect();
-            Ok(text)
-        } else {
-            bail!("");
+        let text = compact_html(&text)?;
+
+        let mut end = 0;
+        for (i, _c) in text.char_indices() {
+            if i < SIZE_MAX {
+                end = i;
+            }
         }
+
+        Ok(text[0..end].to_string())
     } else {
         bail!(
             "{}, {}",
@@ -248,5 +280,21 @@ impl FunctionTable {
         });
         self.call_table
             .insert("request_url", Box::new(request_url_sync));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_html() -> Result<()> {
+        const SRC: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res_test/top.htm"));
+
+        let res = compact_html(SRC)?;
+        println!("{res}");
+
+        Ok(())
     }
 }
