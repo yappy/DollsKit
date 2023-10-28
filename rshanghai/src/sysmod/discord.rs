@@ -24,6 +24,7 @@ use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
 use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::fmt::Display;
+use std::time::Duration;
 use time::Instant;
 
 /// Discord 設定データ。toml 設定に対応する。
@@ -201,6 +202,7 @@ impl Discord {
         if let Some(timeout) = self.chat_timeout {
             if now > timeout {
                 self.chat_history.clear();
+                self.chat_timeout = None;
             }
         }
         while self.chat_history.len() > self.config.prompt.history_max as usize {
@@ -701,7 +703,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         all_msgs.extend_from_slice(&msgs);
         // ChatGPT API
         let reply_msg = ai
-            .chat_with_function(&all_msgs, &discord.func_table.function_list())
+            .chat_with_function(&all_msgs, discord.func_table.function_list())
             .await;
         match &reply_msg {
             Ok(reply) => {
@@ -739,6 +741,9 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
             discord.chat_history.clear();
             discord.chat_history.extend(msgs);
             discord.update_chat_history();
+            discord.chat_timeout = Some(
+                Instant::now() + Duration::from_secs(config.prompt.history_timeout_min as u64 * 60),
+            );
         }
         Err(err) => {
             error!("[discord] openai error: {:#?}", err);
