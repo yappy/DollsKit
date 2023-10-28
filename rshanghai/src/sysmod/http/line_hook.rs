@@ -205,7 +205,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         let line = ctrl.sysmods().line.lock().await;
         line.config.channel_secret.clone()
     };
-    if let Err(err) = verify_signature(&signature, &channel_secret, &body) {
+    if let Err(err) = verify_signature(signature, &channel_secret, &body) {
         return Err(ActixError::new(&err.to_string(), 401));
     }
 

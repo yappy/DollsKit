@@ -202,14 +202,14 @@ impl OpenAi {
 
     pub async fn chat_with_function(
         &self,
-        msgs: &Vec<ChatMessage>,
-        funcs: &Vec<Function>,
+        msgs: &[ChatMessage],
+        funcs: &[Function],
     ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
             model: MODEL.to_string(),
-            messages: msgs.clone(),
-            functions: Some(funcs.clone()),
+            messages: msgs.to_vec(),
+            functions: Some(funcs.to_vec()),
             ..Default::default()
         };
 
@@ -312,7 +312,7 @@ mod tests {
 
         // function call が返ってくる
         println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, &funcs).await {
+        let reply = match ai.chat_with_function(&msgs, funcs).await {
             Ok(msgs) => msgs,
             Err(err) => {
                 println!("{err}");
@@ -337,7 +337,7 @@ mod tests {
 
         // function の結果を使った応答が返ってくる
         println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, &funcs).await {
+        let reply = match ai.chat_with_function(&msgs, funcs).await {
             Ok(msgs) => msgs,
             Err(err) => {
                 println!("{err}");
