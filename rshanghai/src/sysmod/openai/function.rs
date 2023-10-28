@@ -198,7 +198,7 @@ fn compact_html(src: &str) -> Result<String> {
 
     let fragment = Html::parse_fragment(src);
     // エラーが async を超えられないので文字列だけ取り出す
-    let selector = Selector::parse("html").map_err(|err| anyhow!(err.to_string()))?;
+    let selector = Selector::parse("body").map_err(|err| anyhow!(err.to_string()))?;
     let html = fragment
         .select(&selector)
         .next()
@@ -240,15 +240,18 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
         let text = resp.text().await?;
 
         let text = compact_html(&text)?;
-
-        let mut end = 0;
-        for (i, _c) in text.char_indices() {
-            if i < SIZE_MAX {
-                end = i;
+        // SIZE_MAX バイトまで抜き出す
+        if text.len() > SIZE_MAX {
+            let mut end = 0;
+            for (i, _c) in text.char_indices() {
+                if i < SIZE_MAX {
+                    end = i;
+                }
             }
+            Ok(text[0..end].to_string())
+        } else {
+            Ok(text.to_string())
         }
-
-        Ok(text[0..end].to_string())
     } else {
         bail!(
             "{}, {}",
