@@ -1,5 +1,7 @@
 //! OpenAI API.
 
+pub mod function;
+
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -200,9 +202,9 @@ impl OpenAi {
 
     pub async fn chat_with_function(
         &self,
-        mut msgs: Vec<ChatMessage>,
+        msgs: &Vec<ChatMessage>,
         funcs: &Vec<Function>,
-    ) -> Result<Vec<ChatMessage>> {
+    ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
             model: MODEL.to_string(),
@@ -235,8 +237,7 @@ impl OpenAi {
             .ok_or(anyhow!("choices is empty"))?
             .message;
 
-        msgs.push(msg.clone());
-        Ok(msgs)
+        Ok(msg.clone())
     }
 }
 
@@ -248,10 +249,13 @@ impl SystemModule for OpenAi {
 
 #[cfg(test)]
 mod tests {
+    use super::function::*;
     use super::*;
     use crate::sys::netutil::HttpStatusError;
+    use serial_test::serial;
 
     #[tokio::test]
+    #[serial(openai)]
     #[ignore]
     // cargo test openai -- --ignored --nocapture
     async fn openai() {
@@ -288,63 +292,27 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial(openai)]
     #[ignore]
     // cargo test chat_function -- --ignored --nocapture
     async fn chat_function() {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
+        let mut func_table = FunctionTable::new();
+        func_table.register_all_functions();
+
         let ai = OpenAi::new().unwrap();
-        let msgs = vec![
-            ChatMessage {
-                role: "system".to_string(),
-                content: Some(
-                    "あなたは Raspberry Pi 上で動作している管理プログラムです。".to_string(),
-                ),
-                ..Default::default()
-            },
-            ChatMessage {
-                role: "user".to_string(),
-                content: Some("こんにちは。現在の CPU 使用率を教えてください。".to_string()),
-                ..Default::default()
-            },
-        ];
-        let prop = HashMap::new();
-        let funcs = vec![Function {
-            name: "get_cpu_usage".to_string(),
-            description: Some("Get the current CPU utilization".to_string()),
-            parameters: Parameters {
-                type_: "object".to_string(),
-                properties: prop,
-                required: vec![],
-            },
-        }];
-
-        let mut msgs2 = match ai.chat_with_function(msgs, &funcs).await {
-            Ok(msgs) => msgs,
-            Err(err) => {
-                println!("{err}");
-                // HTTP status が得られるタイプのエラーのみ許容する
-                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
-                return;
-            }
-        };
-        println!("{:?}", msgs2);
-
-        let last = msgs2.last().unwrap();
-        assert!(last.role == "assistant");
-        assert!(last.content.is_none());
-        assert!(last.function_call.as_ref().unwrap().name == "get_cpu_usage");
-        assert!(last.function_call.as_ref().unwrap().arguments == "{}");
-
-        msgs2.push(ChatMessage {
-            role: "function".to_string(),
-            name: Some("get_cpu_usage".to_string()),
-            content: Some("32%".to_string()),
+        let mut msgs = vec![ChatMessage {
+            role: "user".to_string(),
+            content: Some("こんにちは。今は何時でしょうか？".to_string()),
             ..Default::default()
-        });
+        }];
+        let funcs = func_table.function_list();
 
-        let msgs3 = match ai.chat_with_function(msgs2, &funcs).await {
+        // function call が返ってくる
+        println!("{:?}\n", msgs);
+        let reply = match ai.chat_with_function(&msgs, &funcs).await {
             Ok(msgs) => msgs,
             Err(err) => {
                 println!("{err}");
@@ -353,11 +321,35 @@ mod tests {
                 return;
             }
         };
-        println!("{:?}", msgs3);
+        println!("{:?}\n", reply);
 
-        let last = msgs3.last().unwrap();
-        assert!(last.role == "assistant");
-        assert!(last.content.is_some());
-        assert!(last.function_call.is_none());
+        assert!(reply.role == "assistant");
+        assert!(reply.content.is_none());
+        assert!(reply.function_call.as_ref().unwrap().name == "get_current_datetime");
+
+        let func_name = &reply.function_call.as_ref().unwrap().name;
+        let func_args = &reply.function_call.as_ref().unwrap().arguments;
+        let func_res = func_table.call(func_name, func_args);
+
+        // function call と呼び出し結果を対話ログに追加
+        msgs.push(reply);
+        msgs.push(func_res);
+
+        // function の結果を使った応答が返ってくる
+        println!("{:?}\n", msgs);
+        let reply = match ai.chat_with_function(&msgs, &funcs).await {
+            Ok(msgs) => msgs,
+            Err(err) => {
+                println!("{err}");
+                // HTTP status が得られるタイプのエラーのみ許容する
+                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
+                return;
+            }
+        };
+        println!("{:?}", reply);
+
+        assert!(reply.role == "assistant");
+        assert!(reply.content.is_some());
+        assert!(reply.function_call.is_none());
     }
 }

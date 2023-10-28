@@ -10,7 +10,7 @@ use std::{collections::HashMap, fmt::Debug, time::Duration};
 const TIMEOUT: Duration = Duration::from_secs(15);
 
 /// Discord 設定データ。toml 設定に対応する。
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct LineConfig {
     // TODO
     /// 機能を有効化するなら true。
@@ -24,18 +24,6 @@ pub struct LineConfig {
     // OpenAI プロンプト。
     #[serde(default)]
     pub prompt: LinePrompt,
-}
-
-impl Default for LineConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            token: Default::default(),
-            channel_secret: Default::default(),
-            id_name_map: Default::default(),
-            prompt: Default::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
