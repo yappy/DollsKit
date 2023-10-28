@@ -22,18 +22,18 @@ struct JmaAreaDef {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct JmaOfficeInfo {
+pub struct JmaOfficeInfo {
     /// JSON 中には存在しない。後でキーを入れる。
     #[serde(default)]
-    code: String,
-    name: String,
-    en_name: String,
-    office_name: String,
+    pub code: String,
+    pub name: String,
+    pub en_name: String,
+    pub office_name: String,
 }
 
 static OFFICE_LIST: OnceLock<Vec<JmaOfficeInfo>> = OnceLock::new();
 
-fn offices() -> &'static Vec<JmaOfficeInfo> {
+pub fn offices() -> &'static Vec<JmaOfficeInfo> {
     OFFICE_LIST.get_or_init(|| {
         let root: JmaAreaDef = serde_json::from_str(JMA_AREA_JSON).unwrap();
 

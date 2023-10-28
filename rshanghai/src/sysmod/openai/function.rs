@@ -1,6 +1,6 @@
 //! OpenAI API - function.
 
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::{openai::ChatMessage, weather};
 
 use super::{Function, ParameterElement, Parameters};
 use anyhow::{anyhow, bail, Result};
@@ -100,6 +100,7 @@ impl FunctionTable {
         self.register_get_version();
         self.register_get_current_datetime();
         self.register_request_url();
+        self.register_get_wether_report();
     }
 }
 
@@ -228,9 +229,6 @@ fn compact_html(src: &str) -> Result<String> {
 }
 
 async fn request_url(args: &FuncArgs) -> Result<String> {
-    use reqwest::Client;
-    use std::time::Duration;
-
     const TIMEOUT: Duration = Duration::from_secs(10);
     const SIZE_MAX: usize = 10 * 1024;
     let url = get_arg(args, "url")?;
@@ -296,22 +294,53 @@ fn get_wether_report_sync(args: &FuncArgs) -> FuncBodyAsync {
 }
 
 async fn get_wether_report(args: &FuncArgs) -> Result<String> {
-    Ok("".to_string())
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    let area = get_arg(args, "area")?;
+
+    // name が一致するものを探して code を取得
+    let pos = weather::offices()
+        .iter()
+        .find(|&info| &info.name == area)
+        .ok_or_else(|| anyhow!("Invalid area: {}", area))?;
+    let code = &pos.code;
+
+    let url = format!(
+        "https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json",
+        code
+    );
+    let client = Client::builder().timeout(TIMEOUT).build()?;
+    let resp = client.get(url).send().await?;
+
+    let status = resp.status();
+    if status.is_success() {
+        Ok(resp.text().await?)
+    } else {
+        bail!(
+            "{}, {}",
+            status.as_str(),
+            status.canonical_reason().unwrap_or("")
+        );
+    }
 }
 
 impl FunctionTable {
     fn register_get_wether_report(&mut self) {
+        let area_list: Vec<_> = weather::offices()
+            .iter()
+            .map(|info| info.name.clone())
+            .collect();
+
         let mut properties = HashMap::new();
         properties.insert(
             "area".to_string(),
             ParameterElement {
                 type_: "string".to_string(),
                 description: Some("Area name (city name, etc.)".to_string()),
-                enum_: None, //TODO
+                enum_: Some(area_list),
             },
         );
         self.function_list.push(Function {
-            name: "get_wether_area".to_string(),
+            name: "get_wether_report".to_string(),
             description: Some("Get whether report data".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
@@ -320,7 +349,7 @@ impl FunctionTable {
             },
         });
         self.call_table
-            .insert("get_wether_area", Box::new(get_wether_report_sync));
+            .insert("get_wether_report", Box::new(get_wether_report_sync));
     }
 }
 
