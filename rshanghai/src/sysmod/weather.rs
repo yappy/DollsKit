@@ -52,6 +52,7 @@ pub fn offices() -> &'static Vec<JmaOfficeInfo> {
     })
 }
 
+#[allow(unused)]
 fn edit_distance_normalized(a: &str, b: &str) -> Result<f32> {
     let maxlen = a.len().max(b.len());
     if maxlen == 0 {
@@ -65,6 +66,7 @@ fn edit_distance_normalized(a: &str, b: &str) -> Result<f32> {
 /// <https://ja.wikipedia.org/wiki/%E3%83%AC%E3%83%BC%E3%83%99%E3%83%B3%E3%82%B7%E3%83%A5%E3%82%BF%E3%82%A4%E3%83%B3%E8%B7%9D%E9%9B%A2>
 ///
 /// O(mn)
+#[allow(unused)]
 fn edit_distance(a: &str, b: &str) -> Result<u32> {
     ensure!(a.len() < 1024);
     ensure!(b.len() < 1024);
