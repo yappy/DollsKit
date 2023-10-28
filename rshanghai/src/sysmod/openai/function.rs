@@ -5,8 +5,9 @@ use crate::sysmod::openai::ChatMessage;
 use super::{Function, ParameterElement, Parameters};
 use anyhow::{anyhow, bail, Result};
 use log::{info, warn};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, future::Future, pin::Pin};
+use std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
 
 // https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
@@ -109,7 +110,7 @@ fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
 }
 
-////////////////////////////////////////////////////////////////////////////////
+// =============================================================================
 
 fn get_version_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_version(args))
@@ -137,7 +138,7 @@ impl FunctionTable {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+// =============================================================================
 
 fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
@@ -187,7 +188,7 @@ impl FunctionTable {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+// =============================================================================
 
 fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(request_url(args))
@@ -287,6 +288,43 @@ impl FunctionTable {
             .insert("request_url", Box::new(request_url_sync));
     }
 }
+
+// =============================================================================
+
+fn get_wether_report_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_wether_report(args))
+}
+
+async fn get_wether_report(args: &FuncArgs) -> Result<String> {
+    Ok("".to_string())
+}
+
+impl FunctionTable {
+    fn register_get_wether_report(&mut self) {
+        let mut properties = HashMap::new();
+        properties.insert(
+            "area".to_string(),
+            ParameterElement {
+                type_: "string".to_string(),
+                description: Some("Area name (city name, etc.)".to_string()),
+                enum_: None, //TODO
+            },
+        );
+        self.function_list.push(Function {
+            name: "get_wether_area".to_string(),
+            description: Some("Get whether report data".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["area".to_string()],
+            },
+        });
+        self.call_table
+            .insert("get_wether_area", Box::new(get_wether_report_sync));
+    }
+}
+
+// =============================================================================
 
 #[cfg(test)]
 mod tests {
