@@ -43,11 +43,6 @@ impl FunctionTable {
         }
     }
 
-    pub fn register_all_functions(&mut self) {
-        self.register_get_version();
-        self.register_get_current_datetime();
-    }
-
     /// OpenAI API に渡すためのリストを取得する。
     pub fn function_list(&self) -> &Vec<Function> {
         &self.function_list
@@ -99,9 +94,13 @@ impl FunctionTable {
         // call body
         func(args).await.map_err(|err| anyhow!("Error: {err}"))
     }
-}
 
-////////////////////////////////////////////////////////////////////////////////
+    pub fn register_all_functions(&mut self) {
+        self.register_get_version();
+        self.register_get_current_datetime();
+        self.register_request_url();
+    }
+}
 
 /// args から引数名で検索し、値への参照を返す。
 /// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
@@ -109,6 +108,8 @@ fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     let value = args.get(&name.to_string());
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 fn get_version_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_version(args))
@@ -135,6 +136,8 @@ impl FunctionTable {
             .insert("get_version", Box::new(get_version_sync));
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
@@ -181,5 +184,69 @@ impl FunctionTable {
         });
         self.call_table
             .insert("get_current_datetime", Box::new(get_current_datetime_sync));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(request_url(args))
+}
+
+async fn request_url(args: &FuncArgs) -> Result<String> {
+    use reqwest::Client;
+    use std::time::Duration;
+
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    const SIZE_MAX: usize = 10 * 1024;
+    let url = get_arg(args, "url")?;
+
+    let client = Client::builder().timeout(TIMEOUT).build()?;
+    let resp = client.get(url).send().await?;
+
+    let status = resp.status();
+    if status.is_success() {
+        let text = resp.text().await?;
+        let s = text.find("<body").or_else(|| text.find("<BODY"));
+        let e = text.find("</body").or_else(|| text.find("</BODY"));
+
+        if s.is_some() || e.is_some() {
+            let text = text[s.unwrap()..e.unwrap()].to_string();
+            let text = text.chars().take(SIZE_MAX).collect();
+            Ok(text)
+        } else {
+            bail!("");
+        }
+    } else {
+        bail!(
+            "{}, {}",
+            status.as_str(),
+            status.canonical_reason().unwrap_or("")
+        );
+    }
+}
+
+impl FunctionTable {
+    fn register_request_url(&mut self) {
+        let mut properties = HashMap::new();
+        properties.insert(
+            "url".to_string(),
+            ParameterElement {
+                type_: "string".to_string(),
+                description: Some("URL to access".to_string()),
+                enum_: None,
+            },
+        );
+        self.function_list.push(Function {
+            name: "request_url".to_string(),
+            description: Some("Request HTTP GET".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["url".to_string()],
+            },
+        });
+        self.call_table
+            .insert("request_url", Box::new(request_url_sync));
     }
 }

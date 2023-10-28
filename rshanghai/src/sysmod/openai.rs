@@ -70,8 +70,10 @@ pub struct ParameterElement {
     /// e.g. "string"
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(rename = "enum")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub enum_: Option<Vec<String>>,
 }
 
