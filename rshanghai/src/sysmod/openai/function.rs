@@ -31,6 +31,7 @@ impl FunctionTable {
     }
 
     pub fn register_all_functions(&mut self) {
+        self.register_get_version();
         self.register_get_current_datetime();
     }
 
@@ -89,6 +90,27 @@ fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
 
 // TODO: get with default
 
+fn get_version(_args: &FuncArgs) -> Result<String> {
+    use crate::sys::version;
+
+    Ok(version::version_info().to_string())
+}
+
+impl FunctionTable {
+    fn register_get_version(&mut self) {
+        self.function_list.push(Function {
+            name: "get_version".to_string(),
+            description: Some("Get the version of the assistant program".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        });
+        self.call_table.insert("get_version", Box::new(get_version));
+    }
+}
+
 fn get_current_datetime(args: &FuncArgs) -> Result<String> {
     use chrono::{DateTime, Local, Utc};
 
@@ -110,7 +132,6 @@ fn get_current_datetime(args: &FuncArgs) -> Result<String> {
 
 impl FunctionTable {
     fn register_get_current_datetime(&mut self) {
-        // get_current_datetime
         let mut properties = HashMap::new();
         properties.insert(
             "tz".to_string(),
