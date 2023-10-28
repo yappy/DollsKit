@@ -18,7 +18,7 @@ async fn index_get() -> impl Responder {
   </head>
   <body>
     <h1>Github Webhook</h1>
-    <p></p>
+    <p>Your request is GET.</p>
   </body>
 </html>
 "#;

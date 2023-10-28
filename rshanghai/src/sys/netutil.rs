@@ -89,7 +89,7 @@ pub fn hmac_sha1(key: &[u8], data: &[u8]) -> CtOutput<HmacSha1> {
     mac.finalize()
 }
 
-/// HMAC SHA2 を計算して
+/// HMAC SHA2 を計算して検証する。
 pub fn hmac_sha256_verify(key: &[u8], data: &[u8], expected: &[u8]) -> Result<()> {
     let mut mac = HmacSha256::new_from_slice(key).unwrap();
     mac.update(data);

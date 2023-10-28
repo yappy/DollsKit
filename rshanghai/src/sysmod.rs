@@ -4,6 +4,7 @@ pub mod camera;
 pub mod discord;
 pub mod health;
 pub mod http;
+pub mod line;
 pub mod openai;
 pub mod sysinfo;
 pub mod twitter;
@@ -12,7 +13,7 @@ use self::{
     camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
     sysinfo::SystemInfo, twitter::Twitter,
 };
-use crate::sys::taskserver::Control;
+use crate::{sys::taskserver::Control, sysmod::line::Line};
 use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
@@ -43,6 +44,7 @@ pub struct SystemModules {
     pub camera: SysModArc<camera::Camera>,
     pub twitter: SysModArc<twitter::Twitter>,
     pub discord: SysModArc<discord::Discord>,
+    pub line: SysModArc<line::Line>,
     pub openai: SysModArc<openai::OpenAi>,
     pub http: SysModArc<http::HttpServer>,
 
@@ -101,6 +103,7 @@ impl SystemModules {
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
         let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
+        let line = Arc::new(TokioMutex::new(Line::new()?));
         let openai = Arc::new(TokioMutex::new(OpenAi::new()?));
         let http = Arc::new(TokioMutex::new(HttpServer::new()?));
 
@@ -109,6 +112,7 @@ impl SystemModules {
         event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
         event_target_list.push(discord.clone());
+        event_target_list.push(line.clone());
         event_target_list.push(openai.clone());
         event_target_list.push(http.clone());
 
@@ -119,6 +123,7 @@ impl SystemModules {
             camera,
             twitter,
             discord,
+            line,
             openai,
             http,
             event_target_list,
