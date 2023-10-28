@@ -14,6 +14,7 @@ use crate::sysmod::camera::CameraConfig;
 use crate::sysmod::discord::DiscordConfig;
 use crate::sysmod::health::HealthConfig;
 use crate::sysmod::http::HttpConfig;
+use crate::sysmod::line::LineConfig;
 use crate::sysmod::openai::OpenAiConfig;
 use crate::sysmod::twitter::TwitterConfig;
 
@@ -38,6 +39,8 @@ pub struct Config {
     pub twitter: TwitterConfig,
     #[serde(default)]
     pub discord: DiscordConfig,
+    #[serde(default)]
+    pub line: LineConfig,
     #[serde(default)]
     pub openai: OpenAiConfig,
     #[serde(default)]
@@ -142,6 +145,7 @@ impl Drop for ConfigGuard {
     }
 }
 
+#[allow(dead_code)]
 #[must_use]
 pub fn set(cfg: Config) -> ConfigGuard {
     let mut config = CONFIG.write().unwrap();
