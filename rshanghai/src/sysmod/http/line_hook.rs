@@ -356,7 +356,7 @@ async fn on_text_message(
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = line.func_table.call(func_name, func_args);
+                    let func_res = line.func_table.call(func_name, func_args).await;
                     msgs.push(func_res);
                     // continue
                 } else {
