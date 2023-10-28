@@ -4,6 +4,8 @@ use std::{collections::HashMap, sync::OnceLock};
 
 /// <https://www.jma.go.jp/bosai/common/const/area.json>
 ///
+/// 例: 東京都: 130000
+///
 /// 移転または何らかの理由で 404 のものがある。
 /// 復活するかもしれないので削除はしないものとする。
 ///

@@ -230,7 +230,7 @@ fn compact_html(src: &str) -> Result<String> {
 
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
-    const SIZE_MAX: usize = 10 * 1024;
+    const SIZE_MAX: usize = 5 * 1024;
     let url = get_arg(args, "url")?;
 
     let client = Client::builder().timeout(TIMEOUT).build()?;

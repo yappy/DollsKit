@@ -750,7 +750,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
             // HTTP status が得られるタイプのエラーのみ discord 返信する
             if let Some(err) = err.downcast_ref::<HttpStatusError>() {
                 warn!("openai reply: {} {}", err.status, err.body);
-                let reply_msg = format!("HTTP Status: {}", err.status);
+                let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
                 msg.reply(ctx, reply_msg.to_string()).await?;
             }
         }
