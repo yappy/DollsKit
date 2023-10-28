@@ -33,11 +33,11 @@ time = "0.3.30"
 # DateTime
 chrono = "0.4.31"
 # Json
-serde = { version = "1.0.189", features = ["derive"] }
+serde = { version = "1.0.190", features = ["derive"] }
 serde_json = "1.0.107"
 serde_with = { version = "3.4.0", features = ["json"] }
 # TOML
-toml = "0.8.4"
+toml = "0.8.6"
 
 # Async
 tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
@@ -62,7 +62,7 @@ image = "0.24.7"
 # Font
 rusttype="0.9.3"
 # Discord
-serenity = "0.11.6"
+serenity = "0.11.7"
 
 [dev-dependencies]
 # Concurrent test control
