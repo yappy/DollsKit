@@ -209,8 +209,13 @@
 <a href="#209" id="209">209</a>
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>github;
 <span class="kw">mod </span>index;
+<span class="kw">mod </span>line_hook;
 <span class="kw">mod </span>priv_camera;
 <span class="kw">mod </span>priv_index;
 <span class="kw">mod </span>upload;
@@ -246,6 +251,8 @@
     </span>ghhook_enabled: bool,
     <span class="doccomment">/// GitHub Hook の SHA256 検証に使うハッシュ。GitHub の設定ページから手に入る。
     </span>ghhook_secret: String,
+    <span class="doccomment">/// LINE webhook 機能を有効化する。パスは /_rootpath_/line/。
+    </span>line_hook_enabled: bool,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>HttpConfig {
@@ -260,6 +267,7 @@
             upload_dir: <span class="string">&quot;./upload&quot;</span>.to_string(),
             ghhook_enabled: <span class="bool-val">false</span>,
             ghhook_secret: <span class="string">&quot;&quot;</span>.to_string(),
+            line_hook_enabled: <span class="bool-val">false</span>,
         }
     }
 }

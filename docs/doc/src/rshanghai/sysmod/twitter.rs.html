@@ -1279,6 +1279,12 @@
 <a href="#1279" id="1279">1279</a>
 <a href="#1280" id="1280">1280</a>
 <a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::openai::ChatMessage;
 <span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
@@ -1296,12 +1302,14 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap};
 <span class="kw">use </span>std::fs;
-<span class="kw">use </span>std::time::{SystemTime, UNIX_EPOCH};
+<span class="kw">use </span>std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 <span class="kw">const </span>LONG_TWEET_FONT_SIZE: u32 = <span class="number">16</span>;
 <span class="kw">const </span>LONG_TWEET_IMAGE_WIDTH: u32 = <span class="number">640</span>;
 <span class="kw">const </span>LONG_TWEET_FGCOLOR: (u8, u8, u8) = (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>);
 <span class="kw">const </span>LONG_TWEET_BGCOLOR: (u8, u8, u8) = (<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);
+
+<span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">20</span>);
 
 <span class="comment">// Twitter API v2
 </span><span class="kw">pub const </span>TWEET_LEN_MAX: usize = <span class="number">140</span>;
@@ -1802,7 +1810,8 @@
                     <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>user.unwrap().name);
                     ChatMessage {
                         role: <span class="string">&quot;system&quot;</span>.to_string(),
-                        content: text,
+                        content: <span class="prelude-val">Some</span>(text),
+                        ..Default::default()
                     }
                 })
                 .collect();
@@ -1833,7 +1842,8 @@
             </span><span class="kw">let </span><span class="kw-2">mut </span>msgs = system_msgs.clone();
             msgs.push(ChatMessage {
                 role: <span class="string">&quot;user&quot;</span>.to_string(),
-                content: main_msg,
+                content: <span class="prelude-val">Some</span>(main_msg),
+                ..Default::default()
             });
 
             <span class="comment">// 結果に追加する
@@ -2194,6 +2204,7 @@
         <span class="kw">let </span>client = reqwest::Client::new();
         <span class="kw">let </span>req = client
             .get(base_url)
+            .timeout(TIMEOUT)
             .query(<span class="kw-2">&amp;</span>query_param)
             .header(oauth_k, oauth_v);
         <span class="kw">let </span>res = req.send().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -2258,6 +2269,7 @@
 
         client
             .post(base_url)
+            .timeout(TIMEOUT)
             .query(query_param)
             .header(oauth_k, oauth_v)
     }

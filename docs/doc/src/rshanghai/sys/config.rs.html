@@ -176,6 +176,10 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 設定データの管理。
 
 </span><span class="kw">use </span>anyhow::{ensure, Context, <span class="prelude-ty">Result</span>};
@@ -192,6 +196,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::discord::DiscordConfig;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::health::HealthConfig;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::http::HttpConfig;
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::line::LineConfig;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::OpenAiConfig;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::twitter::TwitterConfig;
 
@@ -216,6 +221,8 @@
     </span><span class="kw">pub </span>twitter: TwitterConfig,
     <span class="attr">#[serde(default)]
     </span><span class="kw">pub </span>discord: DiscordConfig,
+    <span class="attr">#[serde(default)]
+    </span><span class="kw">pub </span>line: LineConfig,
     <span class="attr">#[serde(default)]
     </span><span class="kw">pub </span>openai: OpenAiConfig,
     <span class="attr">#[serde(default)]
@@ -320,7 +327,8 @@
     }
 }
 
-<span class="attr">#[must_use]
+<span class="attr">#[allow(dead_code)]
+#[must_use]
 </span><span class="kw">pub fn </span>set(cfg: Config) -&gt; ConfigGuard {
     <span class="kw">let </span><span class="kw-2">mut </span>config = CONFIG.write().unwrap();
     <span class="macro">assert!</span>(config.is_none());

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MODEL","URL_CHAT"],"struct":["ChatMessage","ChatRequest","ChatResponse","Choice","OpenAi","OpenAiConfig","Usage"]};
+window.SIDEBAR_ITEMS = {"constant":["CONN_TIMEOUT","MODEL","TIMEOUT","URL_CHAT"],"mod":["function"],"struct":["ChatMessage","ChatRequest","ChatResponse","Choice","Function","FunctionCall","OpenAi","OpenAiConfig","ParameterElement","Parameters","Usage"]};

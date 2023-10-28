@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_TOML","TIMEOUT","URL_REPLY"],"enum":["Message"],"fn":["url_group_profile","url_profile"],"struct":["Detail","ErrorResp","Line","LineConfig","LinePrompt","ProfileResp","ReplyReq","ReplyResp","SentMessage"]};

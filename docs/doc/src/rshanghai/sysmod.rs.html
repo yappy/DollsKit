@@ -133,12 +133,18 @@
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! システムモジュール関連。
 
 </span><span class="kw">pub mod </span>camera;
 <span class="kw">pub mod </span>discord;
 <span class="kw">pub mod </span>health;
 <span class="kw">pub mod </span>http;
+<span class="kw">pub mod </span>line;
 <span class="kw">pub mod </span>openai;
 <span class="kw">pub mod </span>sysinfo;
 <span class="kw">pub mod </span>twitter;
@@ -147,7 +153,7 @@
     camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
     sysinfo::SystemInfo, twitter::Twitter,
 };
-<span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
+<span class="kw">use crate</span>::{sys::taskserver::Control, sysmod::line::Line};
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>chrono::NaiveTime;
 <span class="kw">use </span>log::info;
@@ -178,6 +184,7 @@
     <span class="kw">pub </span>camera: SysModArc&lt;camera::Camera&gt;,
     <span class="kw">pub </span>twitter: SysModArc&lt;twitter::Twitter&gt;,
     <span class="kw">pub </span>discord: SysModArc&lt;discord::Discord&gt;,
+    <span class="kw">pub </span>line: SysModArc&lt;line::Line&gt;,
     <span class="kw">pub </span>openai: SysModArc&lt;openai::OpenAi&gt;,
     <span class="kw">pub </span>http: SysModArc&lt;http::HttpServer&gt;,
 
@@ -236,6 +243,7 @@
         <span class="kw">let </span>camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)<span class="question-mark">?</span>));
         <span class="kw">let </span>twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)<span class="question-mark">?</span>));
         <span class="kw">let </span>discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)<span class="question-mark">?</span>));
+        <span class="kw">let </span>line = Arc::new(TokioMutex::new(Line::new()<span class="question-mark">?</span>));
         <span class="kw">let </span>openai = Arc::new(TokioMutex::new(OpenAi::new()<span class="question-mark">?</span>));
         <span class="kw">let </span>http = Arc::new(TokioMutex::new(HttpServer::new()<span class="question-mark">?</span>));
 
@@ -244,6 +252,7 @@
         event_target_list.push(camera.clone());
         event_target_list.push(twitter.clone());
         event_target_list.push(discord.clone());
+        event_target_list.push(line.clone());
         event_target_list.push(openai.clone());
         event_target_list.push(http.clone());
 
@@ -254,6 +263,7 @@
             camera,
             twitter,
             discord,
+            line,
             openai,
             http,
             event_target_list,

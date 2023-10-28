@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MentioneeTarget","Message","Source","WebhookEventBody"],"fn":["on_text_message","process_post","verify_signature"],"struct":["DeliveryContext","Members","Mention","Mentionee","WebHookRequest","WebhookEvent","WebhookEventCommon","index_get","index_post"]};

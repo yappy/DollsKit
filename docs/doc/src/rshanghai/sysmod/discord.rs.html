@@ -936,6 +936,12 @@
 <a href="#936" id="936">936</a>
 <a href="#937" id="937">937</a>
 <a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
@@ -1605,7 +1611,8 @@
     <span class="comment">// 先頭システムメッセージ
     </span>msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
         role: <span class="string">&quot;system&quot;</span>.to_string(),
-        content: text.to_string(),
+        content: <span class="prelude-val">Some</span>(text.to_string()),
+        ..Default::default()
     }));
     <span class="comment">// 履歴 (システムメッセージ + 本体)
     </span><span class="kw">for </span>elem <span class="kw">in </span>discord.chat_history.iter() {
@@ -1614,17 +1621,20 @@
                 <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, user);
                 ChatMessage {
                     role: <span class="string">&quot;system&quot;</span>.to_string(),
-                    content: text,
+                    content: <span class="prelude-val">Some</span>(text),
+                    ..Default::default()
                 }
             }));
             msgs.push(ChatMessage {
                 role: <span class="string">&quot;user&quot;</span>.to_string(),
-                content: elem.msg.to_string(),
+                content: <span class="prelude-val">Some</span>(elem.msg.to_string()),
+                ..Default::default()
             });
         } <span class="kw">else </span>{
             msgs.push(ChatMessage {
                 role: <span class="string">&quot;assistant&quot;</span>.to_string(),
-                content: elem.msg.to_string(),
+                content: <span class="prelude-val">Some</span>(elem.msg.to_string()),
+                ..Default::default()
             });
         }
     }
@@ -1633,12 +1643,14 @@
         <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>msg.author.name);
         ChatMessage {
             role: <span class="string">&quot;system&quot;</span>.to_string(),
-            content: text,
+            content: <span class="prelude-val">Some</span>(text),
+            ..Default::default()
         }
     }));
     msgs.push(ChatMessage {
         role: <span class="string">&quot;user&quot;</span>.to_string(),
-        content: chat_msg.to_string(),
+        content: <span class="prelude-val">Some</span>(chat_msg.to_string()),
+        ..Default::default()
     });
 
     <span class="comment">// ChatGPT API

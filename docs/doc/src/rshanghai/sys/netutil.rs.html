@@ -302,7 +302,7 @@
     mac.finalize()
 }
 
-<span class="doccomment">/// HMAC SHA2 を計算して
+<span class="doccomment">/// HMAC SHA2 を計算して検証する。
 </span><span class="kw">pub fn </span>hmac_sha256_verify(key: <span class="kw-2">&amp;</span>[u8], data: <span class="kw-2">&amp;</span>[u8], expected: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>mac = HmacSha256::new_from_slice(key).unwrap();
     mac.update(data);

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_arg","get_current_datetime","get_version"],"struct":["Args","FunctionTable"],"type":["FuncArgs","FuncBody"]};
