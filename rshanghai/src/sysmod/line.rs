@@ -1,5 +1,5 @@
 //! LINE API。
-use super::SystemModule;
+use super::{openai::function::FunctionTable, SystemModule};
 use crate::sys::{config, taskserver::Control};
 
 use anyhow::{bail, Result};
@@ -53,6 +53,7 @@ impl Default for LinePrompt {
 pub struct Line {
     /// 設定データ。
     pub config: LineConfig,
+    pub func_table: FunctionTable,
     client: reqwest::Client,
 }
 
@@ -62,9 +63,15 @@ impl Line {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
+        let mut func_table = FunctionTable::new();
+        func_table.register_all_functions();
         let client = reqwest::Client::builder().timeout(TIMEOUT).build()?;
 
-        Ok(Self { config, client })
+        Ok(Self {
+            config,
+            func_table,
+            client,
+        })
     }
 }
 

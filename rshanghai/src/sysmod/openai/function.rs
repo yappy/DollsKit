@@ -8,7 +8,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-type FuncBody = Box<dyn Fn(&FuncArgs) -> Result<String>>;
+type FuncBody = Box<dyn Fn(&FuncArgs) -> Result<String> + Sync + Send>;
 type FuncArgs = HashMap<String, String>;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
