@@ -196,18 +196,20 @@ fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
 fn compact_html(src: &str) -> Result<String> {
     use scraper::{Html, Selector};
 
-    let fragment = Html::parse_fragment(src);
-    // エラーが async を超えられないので文字列だけ取り出す
-    let selector = Selector::parse("body").map_err(|err| anyhow!(err.to_string()))?;
-    let html = fragment
+    let fragment = Html::parse_document(src);
+    // CSS セレクタで body タグを選択
+    let selector = Selector::parse("body").unwrap();
+    // イテレータを返すが最初の1つだけを対象とする
+    let body = fragment
         .select(&selector)
         .next()
-        .ok_or_else(|| anyhow!("parse error"))?;
+        .ok_or_else(|| anyhow!("body not found"))?;
 
     // 空白文字をまとめる
     let mut res = String::new();
     let mut prev_space = false;
-    for text in html.text() {
+    // body 内のテキストノードを巡る
+    for text in body.text() {
         for c in text.chars() {
             if c.is_whitespace() {
                 if !prev_space {
