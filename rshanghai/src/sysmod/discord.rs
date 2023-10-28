@@ -667,7 +667,8 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     // 先頭システムメッセージ
     msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
         role: "system".to_string(),
-        content: text.to_string(),
+        content: Some(text.to_string()),
+        ..Default::default()
     }));
     // 履歴 (システムメッセージ + 本体)
     for elem in discord.chat_history.iter() {
@@ -676,17 +677,20 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                 let text = text.replace("${user}", user);
                 ChatMessage {
                     role: "system".to_string(),
-                    content: text,
+                    content: Some(text),
+                    ..Default::default()
                 }
             }));
             msgs.push(ChatMessage {
                 role: "user".to_string(),
-                content: elem.msg.to_string(),
+                content: Some(elem.msg.to_string()),
+                ..Default::default()
             });
         } else {
             msgs.push(ChatMessage {
                 role: "assistant".to_string(),
-                content: elem.msg.to_string(),
+                content: Some(elem.msg.to_string()),
+                ..Default::default()
             });
         }
     }
@@ -695,12 +699,14 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         let text = text.replace("${user}", &msg.author.name);
         ChatMessage {
             role: "system".to_string(),
-            content: text,
+            content: Some(text),
+            ..Default::default()
         }
     }));
     msgs.push(ChatMessage {
         role: "user".to_string(),
-        content: chat_msg.to_string(),
+        content: Some(chat_msg.to_string()),
+        ..Default::default()
     });
 
     // ChatGPT API

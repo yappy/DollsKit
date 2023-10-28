@@ -324,19 +324,22 @@ async fn on_text_message(
     // 先頭システムメッセージ
     msgs.extend(prompt.pre.iter().map(|sysmsg| ChatMessage {
         role: "system".to_string(),
-        content: sysmsg.to_string(),
+        content: Some(sysmsg.to_string()),
+        ..Default::default()
     }));
     // 今回の発言 (システムメッセージ + 本体)
     msgs.extend(prompt.each.iter().map(|sysmsg| {
         let sysmsg = sysmsg.replace("${user}", &display_name);
         ChatMessage {
             role: "system".to_string(),
-            content: sysmsg,
+            content: Some(sysmsg),
+            ..Default::default()
         }
     }));
     msgs.push(ChatMessage {
         role: "user".to_string(),
-        content: text.to_string(),
+        content: Some(text.to_string()),
+        ..Default::default()
     });
 
     let reply = {
@@ -364,8 +367,8 @@ async fn on_text_message(
 
 #[cfg(test)]
 mod tests {
-    use sha2::digest::MacError;
     use super::*;
+    use sha2::digest::MacError;
 
     #[test]
     fn base64_decode() {

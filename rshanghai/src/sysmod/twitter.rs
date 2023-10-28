@@ -523,7 +523,8 @@ impl Twitter {
                     let text = text.replace("${user}", &user.unwrap().name);
                     ChatMessage {
                         role: "system".to_string(),
-                        content: text,
+                        content: Some(text),
+                        ..Default::default()
                     }
                 })
                 .collect();
@@ -554,7 +555,8 @@ impl Twitter {
             let mut msgs = system_msgs.clone();
             msgs.push(ChatMessage {
                 role: "user".to_string(),
-                content: main_msg,
+                content: Some(main_msg),
+                ..Default::default()
             });
 
             // 結果に追加する
