@@ -20,7 +20,14 @@ const TIMEOUT: Duration = Duration::from_secs(40);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
-const MODEL: &str = "gpt-3.5-turbo-0613";
+
+/// <https://platform.openai.com/docs/models>
+///
+/// <https://openai.com/pricing>
+///
+/// (name, max_tokens)
+//pub const MODEL: (&str, usize) = ("gpt-3.5-turbo", 4097);
+pub const MODEL: (&str, usize) = ("gpt-3.5-turbo-16k", 16385);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FunctionCall {
@@ -168,7 +175,7 @@ impl OpenAi {
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.to_string(),
+            model: MODEL.0.to_string(),
             messages: msgs,
             ..Default::default()
         };
@@ -209,7 +216,7 @@ impl OpenAi {
     ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.to_string(),
+            model: MODEL.0.to_string(),
             messages: msgs.to_vec(),
             functions: Some(funcs.to_vec()),
             ..Default::default()
