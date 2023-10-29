@@ -1,6 +1,7 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
+use super::openai::function::FunctionTable;
 use super::SystemModule;
 use crate::sys::netutil::HttpStatusError;
 use crate::sys::version;
@@ -101,7 +102,11 @@ pub struct Discord {
     /// 自動削除機能の設定データ。
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
     /// ai コマンドの会話履歴。
-    chat_history: VecDeque<ChatElement>,
+    chat_history: VecDeque<ChatMessage>,
+    /// [Self::chat_history] の有効期限。
+    chat_timeout: Option<Instant>,
+    /// OpenAI function 機能テーブル
+    func_table: FunctionTable,
 }
 
 /// 自動削除設定。チャネルごとに保持される。
@@ -111,14 +116,6 @@ pub struct AutoDeleteConfig {
     keep_count: u32,
     /// 残す時間 (単位は分)。0 は無効。
     keep_dur_min: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct ChatElement {
-    timestamp: Instant,
-    // None の場合 assistant
-    user: Option<String>,
-    msg: String,
 }
 
 impl Display for AutoDeleteConfig {
@@ -160,13 +157,18 @@ impl Discord {
             );
         }
 
+        let mut func_table = FunctionTable::new();
+        func_table.register_all_functions();
+
         Ok(Self {
             config,
             wakeup_list,
             ctx: None,
-            postponed_msgs: Vec::new(),
+            postponed_msgs: Default::default(),
             auto_del_config: auto_del_congig,
-            chat_history: VecDeque::new(),
+            chat_history: Default::default(),
+            chat_timeout: None,
+            func_table,
         })
     }
 
@@ -193,17 +195,18 @@ impl Discord {
         Ok(())
     }
 
-    pub fn process_timeout(&mut self) {
-        let history = &mut self.chat_history;
+    /// [Self::chat_history] にタイムアウトと個数制限を適用する。
+    fn update_chat_history(&mut self) {
         let now = Instant::now();
 
-        while !history.is_empty() {
-            let dur = now - history[0].timestamp;
-            if dur > Duration::from_secs(self.config.prompt.history_timeout_min as u64 * 60) {
-                history.pop_front();
-            } else {
-                break;
+        if let Some(timeout) = self.chat_timeout {
+            if now > timeout {
+                self.chat_history.clear();
+                self.chat_timeout = None;
             }
+        }
+        while self.chat_history.len() > self.config.prompt.history_max as usize {
+            self.chat_history.pop_front();
         }
     }
 }
@@ -656,95 +659,100 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
 
     let data = ctx.data.read().await;
     let ctrl = data.get::<ControlData>().unwrap();
-    let ai = ctrl.sysmods().openai.lock().await;
     let mut discord = ctrl.sysmods().discord.lock().await;
     let config = data.get::<ConfigData>().unwrap();
 
-    // 履歴からタイムアウトしたものを削除
-    discord.process_timeout();
+    // タイムアウト処理
+    discord.update_chat_history();
 
     let mut msgs = Vec::new();
-    // 先頭システムメッセージ
-    msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
-        role: "system".to_string(),
-        content: Some(text.to_string()),
-        ..Default::default()
-    }));
-    // 履歴 (システムメッセージ + 本体)
-    for elem in discord.chat_history.iter() {
-        if let Some(user) = &elem.user {
-            msgs.extend(config.prompt.each.iter().map(|text| {
-                let text = text.replace("${user}", user);
-                ChatMessage {
-                    role: "system".to_string(),
-                    content: Some(text),
-                    ..Default::default()
-                }
-            }));
-            msgs.push(ChatMessage {
-                role: "user".to_string(),
-                content: Some(elem.msg.to_string()),
-                ..Default::default()
-            });
-        } else {
-            msgs.push(ChatMessage {
-                role: "assistant".to_string(),
-                content: Some(elem.msg.to_string()),
-                ..Default::default()
-            });
-        }
-    }
+    // 履歴
+    msgs.extend_from_slice(discord.chat_history.as_slices().0);
+    msgs.extend_from_slice(discord.chat_history.as_slices().1);
     // 今回の発言 (システムメッセージ + 本体)
-    msgs.extend(config.prompt.each.iter().map(|text| {
-        let text = text.replace("${user}", &msg.author.name);
+    let sysmsg = config
+        .prompt
+        .each
+        .join("")
+        .replace("${user}", &msg.author.name);
+    msgs.push({
         ChatMessage {
             role: "system".to_string(),
-            content: Some(text),
+            content: Some(sysmsg),
             ..Default::default()
         }
-    }));
+    });
     msgs.push(ChatMessage {
         role: "user".to_string(),
         content: Some(chat_msg.to_string()),
         ..Default::default()
     });
 
-    // ChatGPT API
-    let reply_msg = ai.chat(msgs).await;
-    if let Err(err) = &reply_msg {
-        // HTTP status が得られるタイプのエラーのみ discord 返信する
-        if let Some(err) = err.downcast_ref::<HttpStatusError>() {
-            warn!("openai reply: {} {}", err.status, err.body);
-            let reply_msg = format!("HTTP Status: {}", err.status);
-            msg.reply(ctx, reply_msg.to_string()).await?;
+    let reply_msg = loop {
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        // 送信用リスト
+        let mut all_msgs = Vec::new();
+        // 先頭システムメッセージ
+        all_msgs.push(ChatMessage {
+            role: "system".to_string(),
+            content: Some(config.prompt.pre.join("")),
+            ..Default::default()
+        });
+        // それ以降を追加
+        all_msgs.extend_from_slice(&msgs);
+        // ChatGPT API
+        let reply_msg = ai
+            .chat_with_function(&all_msgs, discord.func_table.function_list())
+            .await;
+        match &reply_msg {
+            Ok(reply) => {
+                msgs.push(reply.clone());
+                if reply.function_call.is_some() {
+                    // function call が返ってきた
+                    let func_name = &reply.function_call.as_ref().unwrap().name;
+                    let func_args = &reply.function_call.as_ref().unwrap().arguments;
+                    let func_res = discord.func_table.call(func_name, func_args).await;
+                    msgs.push(func_res);
+                    // continue
+                } else {
+                    // 通常の応答が返ってきた
+                    break reply_msg;
+                }
+            }
+            Err(err) => {
+                // エラーが発生した
+                error!("{:#?}", err);
+                break reply_msg;
+            }
         }
-    }
-    // エラーの場合はここで終了
-    let reply_msg = reply_msg?;
+    };
 
     // discord 返信
-    info!("openai reply: {reply_msg}");
-    msg.reply(ctx, reply_msg.to_string()).await?;
+    match reply_msg {
+        Ok(reply_msg) => {
+            let text = reply_msg
+                .content
+                .ok_or_else(|| anyhow!("content required"))?;
+            info!("[discord] openai reply: {text}");
+            msg.reply(ctx, text).await?;
 
-    // ここまで成功したら履歴に追加する
-    {
-        let history = &mut discord.chat_history;
-        let ts = Instant::now();
-
-        history.push_back(ChatElement {
-            timestamp: ts,
-            user: Some(msg.author.name.to_string()),
-            msg: chat_msg.to_string(),
-        });
-        history.push_back(ChatElement {
-            timestamp: ts,
-            user: None,
-            msg: reply_msg.to_string(),
-        });
-
-        // 個数制限を適用
-        while history.len() > config.prompt.history_max as usize {
-            history.pop_front();
+            // ここまで成功したら履歴を差し替える
+            discord.chat_history.clear();
+            discord.chat_history.extend(msgs);
+            discord.update_chat_history();
+            discord.chat_timeout = Some(
+                Instant::now() + Duration::from_secs(config.prompt.history_timeout_min as u64 * 60),
+            );
+        }
+        Err(err) => {
+            error!("[discord] openai error: {:#?}", err);
+            // HTTP status が得られるタイプのエラーのみ discord 返信する
+            if let Some(err) = err.downcast_ref::<HttpStatusError>() {
+                warn!("openai reply: {} {}", err.status, err.body);
+                let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
+                msg.reply(ctx, reply_msg.to_string()).await?;
+            }
         }
     }
 
@@ -762,7 +770,7 @@ async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
         let mut discord = ctrl.sysmods().discord.lock().await;
         let config = data.get::<ConfigData>().unwrap();
 
-        discord.process_timeout();
+        discord.update_chat_history();
         format!(
             "History: {}/{}\nTimeout: {} min",
             discord.chat_history.len(),

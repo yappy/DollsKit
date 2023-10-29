@@ -8,6 +8,7 @@ pub mod line;
 pub mod openai;
 pub mod sysinfo;
 pub mod twitter;
+pub mod weather;
 
 use self::{
     camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
