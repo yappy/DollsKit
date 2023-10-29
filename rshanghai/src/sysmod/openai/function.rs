@@ -1,7 +1,7 @@
 //! OpenAI API - function.
 
 use super::{Function, ParameterElement, Parameters};
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::openai::{ChatMessage, Role};
 use crate::utils::weather;
 
 use anyhow::{anyhow, bail, Result};
@@ -79,7 +79,7 @@ impl FunctionTable {
         };
 
         ChatMessage {
-            role: "function".to_string(),
+            role: Role::Function,
             name: Some(func_name.to_string()),
             content: Some(content),
             ..Default::default()

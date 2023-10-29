@@ -29,16 +29,10 @@ const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 //pub const MODEL: (&str, usize) = ("gpt-3.5-turbo", 4097);
 pub const MODEL: (&str, usize) = ("gpt-3.5-turbo-16k", 16385);
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FunctionCall {
-    pub name: String,
-    pub arguments: String,
-}
-
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
     /// "system", "user", "assistant", or "function"
-    pub role: String,
+    pub role: Role,
     /// Required if role is "function"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -46,6 +40,22 @@ pub struct ChatMessage {
     pub content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<FunctionCall>,
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    #[default]
+    System,
+    User,
+    Assistant,
+    Function,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FunctionCall {
+    pub name: String,
+    pub arguments: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -274,17 +284,17 @@ mod tests {
         let ai = OpenAi::new().unwrap();
         let msgs = vec![
             ChatMessage {
-                role: "system".to_string(),
+                role: Role::System,
                 content: Some("あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string()),
                 ..Default::default()
             },
             ChatMessage {
-                role: "system".to_string(),
+                role: Role::System,
                 content: Some("やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string()),
                 ..Default::default()
             },
             ChatMessage {
-                role: "user".to_string(),
+                role: Role::User,
                 content: Some("こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。".to_string()),
                 ..Default::default()
             },
@@ -313,7 +323,7 @@ mod tests {
 
         let ai = OpenAi::new().unwrap();
         let mut msgs = vec![ChatMessage {
-            role: "user".to_string(),
+            role: Role::User,
             content: Some("こんにちは。今は何時でしょうか？".to_string()),
             ..Default::default()
         }];
@@ -332,7 +342,7 @@ mod tests {
         };
         println!("{:?}\n", reply);
 
-        assert!(reply.role == "assistant");
+        assert!(reply.role == Role::Assistant);
         assert!(reply.content.is_none());
         assert!(reply.function_call.as_ref().unwrap().name == "get_current_datetime");
 
@@ -357,7 +367,7 @@ mod tests {
         };
         println!("{:?}", reply);
 
-        assert!(reply.role == "assistant");
+        assert!(reply.role == Role::Assistant);
         assert!(reply.content.is_some());
         assert!(reply.function_call.is_none());
     }

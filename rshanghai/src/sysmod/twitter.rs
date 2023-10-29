@@ -2,6 +2,7 @@ use super::openai::ChatMessage;
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
+use crate::sysmod::openai::Role;
 use crate::utils::graphics::FontRenderer;
 use crate::utils::netutil;
 
@@ -522,7 +523,7 @@ impl Twitter {
                 .map(|text| {
                     let text = text.replace("${user}", &user.unwrap().name);
                     ChatMessage {
-                        role: "system".to_string(),
+                        role: Role::System,
                         content: Some(text),
                         ..Default::default()
                     }
@@ -554,7 +555,7 @@ impl Twitter {
             // 最後にツイートの本文を追加
             let mut msgs = system_msgs.clone();
             msgs.push(ChatMessage {
-                role: "user".to_string(),
+                role: Role::User,
                 content: Some(main_msg),
                 ..Default::default()
             });

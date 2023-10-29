@@ -5,7 +5,7 @@
 use super::{ActixError, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::openai::{ChatMessage, OpenAi},
+    sysmod::openai::{ChatMessage, OpenAi, Role},
     utils::netutil,
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
@@ -323,7 +323,7 @@ async fn on_text_message(
     let mut msgs = Vec::new();
     // 先頭システムメッセージ
     msgs.push(ChatMessage {
-        role: "system".to_string(),
+        role: Role::System,
         content: Some(prompt.pre.join("")),
         ..Default::default()
     });
@@ -331,13 +331,13 @@ async fn on_text_message(
     let sysmsg = prompt.each.join("").replace("${user}", &display_name);
     msgs.push({
         ChatMessage {
-            role: "system".to_string(),
+            role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
     msgs.push(ChatMessage {
-        role: "user".to_string(),
+        role: Role::User,
         content: Some(text.to_string()),
         ..Default::default()
     });

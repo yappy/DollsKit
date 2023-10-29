@@ -1,7 +1,7 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
-use super::openai::function::FunctionTable;
+use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
@@ -99,8 +99,10 @@ pub struct Discord {
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
+
     /// 自動削除機能の設定データ。
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
+
     /// ai コマンドの会話履歴。
     chat_history: VecDeque<ChatMessage>,
     /// [Self::chat_history] の有効期限。
@@ -677,13 +679,13 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         .replace("${user}", &msg.author.name);
     msgs.push({
         ChatMessage {
-            role: "system".to_string(),
+            role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
     msgs.push(ChatMessage {
-        role: "user".to_string(),
+        role: Role::User,
         content: Some(chat_msg.to_string()),
         ..Default::default()
     });
@@ -695,7 +697,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         let mut all_msgs = Vec::new();
         // 先頭システムメッセージ
         all_msgs.push(ChatMessage {
-            role: "system".to_string(),
+            role: Role::System,
             content: Some(config.prompt.pre.join("")),
             ..Default::default()
         });
