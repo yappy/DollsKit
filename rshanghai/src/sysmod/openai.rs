@@ -70,8 +70,10 @@ pub struct ParameterElement {
     /// e.g. "string"
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(rename = "enum")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub enum_: Option<Vec<String>>,
 }
 
@@ -329,7 +331,7 @@ mod tests {
 
         let func_name = &reply.function_call.as_ref().unwrap().name;
         let func_args = &reply.function_call.as_ref().unwrap().arguments;
-        let func_res = func_table.call(func_name, func_args);
+        let func_res = func_table.call(func_name, func_args).await;
 
         // function call と呼び出し結果を対話ログに追加
         msgs.push(reply);

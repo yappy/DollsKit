@@ -1,24 +1,38 @@
 //! OpenAI API - function.
 
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::{openai::ChatMessage, weather};
 
 use super::{Function, ParameterElement, Parameters};
 use anyhow::{anyhow, bail, Result};
 use log::{info, warn};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
 
-type FuncBody = Box<dyn Fn(&FuncArgs) -> Result<String> + Sync + Send>;
+// https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
+
+/// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
+type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
+/// 関数の Rust 上での定義。
+///
+/// 引数は [FuncArgs] で、返り値は文字列の async fn。
+type FuncBody = Box<dyn Fn(&FuncArgs) -> FuncBodyAsync + Sync + Send>;
+/// 引数。文字列から文字列へのマップ。
 type FuncArgs = HashMap<String, String>;
 
+/// 引数は JSON ソース文字列で与えられる。
+/// デシリアライズでパースするための構造体。
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Args {
     #[serde(flatten)]
     args: FuncArgs,
 }
 
+/// 関数群の管理。
 pub struct FunctionTable {
+    /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
+    /// 関数名から Rust 関数へのマップ。
     call_table: HashMap<&'static str, FuncBody>,
 }
 
@@ -30,23 +44,24 @@ impl FunctionTable {
         }
     }
 
-    pub fn register_all_functions(&mut self) {
-        self.register_get_version();
-        self.register_get_current_datetime();
-    }
-
+    /// OpenAI API に渡すためのリストを取得する。
     pub fn function_list(&self) -> &Vec<Function> {
         &self.function_list
     }
 
-    pub fn call(&self, func_name: &str, args_json_str: &str) -> ChatMessage {
+    /// 関数を呼び出す。
+    ///
+    /// OpenAI API からのデータをそのまま渡せ、
+    /// 結果も API にそのまま渡せる [ChatMessage] で返す。
+    /// エラーも適切なメッセージとして返す。
+    pub async fn call(&self, func_name: &str, args_json_str: &str) -> ChatMessage {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
             let args = serde_json::from_str::<Args>(args_json_str)
                 .map_err(|err| anyhow!("Arguments parse error: {err}"));
             match args {
-                Ok(args) => self.call_internal(func_name, &args.args),
+                Ok(args) => self.call_internal(func_name, &args.args).await,
                 Err(err) => Err(err),
             }
         };
@@ -70,14 +85,22 @@ impl FunctionTable {
         }
     }
 
-    fn call_internal(&self, func_name: &str, args: &FuncArgs) -> Result<String> {
+    /// [Self::call] の内部メイン処理。
+    async fn call_internal(&self, func_name: &str, args: &FuncArgs) -> Result<String> {
         let func = self
             .call_table
             .get(func_name)
             .ok_or_else(|| anyhow!("Error: Function {func_name} not found"))?;
 
         // call body
-        func(args).map_err(|err| anyhow!("Error: {err}"))
+        func(args).await.map_err(|err| anyhow!("Error: {err}"))
+    }
+
+    pub fn register_all_functions(&mut self) {
+        self.register_get_version();
+        self.register_get_current_datetime();
+        self.register_request_url();
+        self.register_get_wether_report();
     }
 }
 
@@ -88,9 +111,13 @@ fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
 }
 
-// TODO: get with default
+// =============================================================================
 
-fn get_version(_args: &FuncArgs) -> Result<String> {
+fn get_version_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_version(args))
+}
+
+async fn get_version(_args: &FuncArgs) -> Result<String> {
     use crate::sys::version;
 
     Ok(version::version_info().to_string())
@@ -107,11 +134,18 @@ impl FunctionTable {
                 required: Default::default(),
             },
         });
-        self.call_table.insert("get_version", Box::new(get_version));
+        self.call_table
+            .insert("get_version", Box::new(get_version_sync));
     }
 }
 
-fn get_current_datetime(args: &FuncArgs) -> Result<String> {
+// =============================================================================
+
+fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_current_datetime(args))
+}
+
+async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
     use chrono::{DateTime, Local, Utc};
 
     let tz = get_arg(args, "tz")?;
@@ -151,6 +185,188 @@ impl FunctionTable {
             },
         });
         self.call_table
-            .insert("get_current_datetime", Box::new(get_current_datetime));
+            .insert("get_current_datetime", Box::new(get_current_datetime_sync));
+    }
+}
+
+// =============================================================================
+
+fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(request_url(args))
+}
+
+fn compact_html(src: &str) -> Result<String> {
+    use scraper::{Html, Selector};
+
+    let fragment = Html::parse_document(src);
+    // CSS セレクタで body タグを選択
+    let selector = Selector::parse("body").unwrap();
+    // イテレータを返すが最初の1つだけを対象とする
+    let body = fragment
+        .select(&selector)
+        .next()
+        .ok_or_else(|| anyhow!("body not found"))?;
+
+    // 空白文字をまとめる
+    let mut res = String::new();
+    let mut prev_space = false;
+    // body 内のテキストノードを巡る
+    for text in body.text() {
+        for c in text.chars() {
+            if c.is_whitespace() {
+                if !prev_space {
+                    res.push(' ');
+                }
+                prev_space = true;
+            } else {
+                res.push(c);
+                prev_space = false;
+            }
+        }
+    }
+
+    Ok(res)
+}
+
+async fn request_url(args: &FuncArgs) -> Result<String> {
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    const SIZE_MAX: usize = 5 * 1024;
+    let url = get_arg(args, "url")?;
+
+    let client = Client::builder().timeout(TIMEOUT).build()?;
+    let resp = client.get(url).send().await?;
+
+    let status = resp.status();
+    if status.is_success() {
+        let text = resp.text().await?;
+
+        let text = compact_html(&text)?;
+        // SIZE_MAX バイトまで抜き出す
+        if text.len() > SIZE_MAX {
+            let mut end = 0;
+            for (i, _c) in text.char_indices() {
+                if i < SIZE_MAX {
+                    end = i;
+                }
+            }
+            Ok(text[0..end].to_string())
+        } else {
+            Ok(text.to_string())
+        }
+    } else {
+        bail!(
+            "{}, {}",
+            status.as_str(),
+            status.canonical_reason().unwrap_or("")
+        );
+    }
+}
+
+impl FunctionTable {
+    fn register_request_url(&mut self) {
+        let mut properties = HashMap::new();
+        properties.insert(
+            "url".to_string(),
+            ParameterElement {
+                type_: "string".to_string(),
+                description: Some("URL to access".to_string()),
+                enum_: None,
+            },
+        );
+        self.function_list.push(Function {
+            name: "request_url".to_string(),
+            description: Some("Request HTTP GET".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["url".to_string()],
+            },
+        });
+        self.call_table
+            .insert("request_url", Box::new(request_url_sync));
+    }
+}
+
+// =============================================================================
+
+fn get_wether_report_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_wether_report(args))
+}
+
+async fn get_wether_report(args: &FuncArgs) -> Result<String> {
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    let area = get_arg(args, "area")?;
+
+    // name が一致するものを探して code を取得
+    let pos = weather::offices()
+        .iter()
+        .find(|&info| &info.name == area)
+        .ok_or_else(|| anyhow!("Invalid area: {}", area))?;
+    let code = &pos.code;
+
+    let url = format!(
+        "https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json",
+        code
+    );
+    let client = Client::builder().timeout(TIMEOUT).build()?;
+    let resp = client.get(url).send().await?;
+
+    let status = resp.status();
+    if status.is_success() {
+        Ok(resp.text().await?)
+    } else {
+        bail!(
+            "{}, {}",
+            status.as_str(),
+            status.canonical_reason().unwrap_or("")
+        );
+    }
+}
+
+impl FunctionTable {
+    fn register_get_wether_report(&mut self) {
+        let area_list: Vec<_> = weather::offices()
+            .iter()
+            .map(|info| info.name.clone())
+            .collect();
+
+        let mut properties = HashMap::new();
+        properties.insert(
+            "area".to_string(),
+            ParameterElement {
+                type_: "string".to_string(),
+                description: Some("Area name (city name, etc.)".to_string()),
+                enum_: Some(area_list),
+            },
+        );
+        self.function_list.push(Function {
+            name: "get_wether_report".to_string(),
+            description: Some("Get whether report data".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["area".to_string()],
+            },
+        });
+        self.call_table
+            .insert("get_wether_report", Box::new(get_wether_report_sync));
+    }
+}
+
+// =============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_html() -> Result<()> {
+        const SRC: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res_test/top.htm"));
+
+        let res = compact_html(SRC)?;
+        println!("{res}");
+
+        Ok(())
     }
 }
