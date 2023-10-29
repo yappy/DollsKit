@@ -1,8 +1,9 @@
 //! OpenAI API - function.
 
-use crate::sysmod::{openai::ChatMessage, weather};
-
 use super::{Function, ParameterElement, Parameters};
+use crate::sysmod::openai::ChatMessage;
+use crate::utils::weather;
+
 use anyhow::{anyhow, bail, Result};
 use log::{info, warn};
 use reqwest::Client;
@@ -361,8 +362,7 @@ mod tests {
 
     #[test]
     fn parse_html() -> Result<()> {
-        const SRC: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res_test/top.htm"));
+        const SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/test/top.htm"));
 
         let res = compact_html(SRC)?;
         println!("{res}");

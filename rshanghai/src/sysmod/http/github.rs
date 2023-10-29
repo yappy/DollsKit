@@ -3,7 +3,7 @@
 //! <https://docs.github.com/ja/developers/webhooks-and-events/webhooks>
 
 use super::WebResult;
-use crate::sys::{netutil::hmac_sha256_verify, taskserver::Control};
+use crate::{sys::taskserver::Control, utils::netutil};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::{error, info};
@@ -100,7 +100,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         .config
         .ghhook_secret
         .clone();
-    if hmac_sha256_verify(secret.as_bytes(), body.as_bytes(), &hash).is_err() {
+    if netutil::hmac_sha256_verify(secret.as_bytes(), body.as_bytes(), &hash).is_err() {
         error!("SHA256 verify error (see github webhook settings)");
         return Ok(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
@@ -160,7 +160,10 @@ mod tests {
 
     #[test]
     fn webhook_simple_push() {
-        let jsonstr = include_str!("../../res_test/simplepush.json");
+        let jsonstr = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/simplepush.json"
+        ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
         assert_eq!(msg, "Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6");
@@ -168,7 +171,10 @@ mod tests {
 
     #[test]
     fn webhook_empty_branch() {
-        let jsonstr = include_str!("../../res_test/emptybranch.json");
+        let jsonstr = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/emptybranch.json"
+        ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
         assert_eq!(
@@ -179,7 +185,10 @@ mod tests {
 
     #[test]
     fn webhook_delete_branch() {
-        let jsonstr = include_str!("../../res_test/deletebranch.json");
+        let jsonstr = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/deletebranch.json"
+        ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
         assert_eq!(msg, "Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000");

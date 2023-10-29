@@ -3,10 +3,10 @@
 use super::camera::{take_a_pic, TakePicOption};
 use super::openai::function::FunctionTable;
 use super::SystemModule;
-use crate::sys::netutil::HttpStatusError;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
 use crate::sysmod::openai::ChatMessage;
+use crate::utils::netutil::HttpStatusError;
 use anyhow::{anyhow, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -77,7 +77,7 @@ pub struct DiscordPrompt {
 /// [DiscordPrompt] のデフォルト値。
 const DEFAULT_TOML: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/src/res/openai_discord.toml"
+    "/res/openai_discord.toml"
 ));
 impl Default for DiscordPrompt {
     fn default() -> Self {

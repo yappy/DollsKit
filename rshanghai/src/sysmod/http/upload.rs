@@ -26,7 +26,10 @@ static FS_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 #[actix_web::get("/upload/")]
 async fn index_get() -> impl Responder {
     info!("GET /upload/");
-    let body = include_str!("../../res/http/upload/index.html");
+    let body = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/res/http/upload/index.html"
+    ));
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

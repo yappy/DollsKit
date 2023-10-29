@@ -1,9 +1,9 @@
 use super::openai::ChatMessage;
 use super::SystemModule;
 use crate::sys::config;
-use crate::sys::graphics::FontRenderer;
-use crate::sys::netutil;
 use crate::sys::taskserver::Control;
+use crate::utils::graphics::FontRenderer;
+use crate::utils::netutil;
 
 use anyhow::Result;
 use base64::{engine::general_purpose, Engine as _};
@@ -250,7 +250,7 @@ pub struct TimelineCheck {
 
 /// [TimelineCheck] のデフォルト値。
 const DEFAULT_TLCHECK_TOML: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res/tlcheck.toml"));
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/tlcheck.toml"));
 impl Default for TimelineCheck {
     fn default() -> Self {
         toml::from_str(DEFAULT_TLCHECK_TOML).unwrap()
@@ -266,7 +266,7 @@ pub struct TwitterPrompt {
 /// [TwitterPrompt] のデフォルト値。
 const DEFAULT_PROMPT_TOML: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/src/res/openai_twitter.toml"
+    "/res/openai_twitter.toml"
 ));
 impl Default for TwitterPrompt {
     fn default() -> Self {

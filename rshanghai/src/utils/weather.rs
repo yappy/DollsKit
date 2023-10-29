@@ -15,7 +15,7 @@ use std::{collections::HashMap, sync::OnceLock};
 /// Not found: JmaOfficeInfo { code: "014030", name: "十勝地方", en_name: "Tokachi", office_name: "帯広測候所" }
 /// Not found: JmaOfficeInfo { code: "460040", name: "奄美地方", en_name: "Amami", office_name: "名瀬測候所" }
 /// ```
-const JMA_AREA_JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res/area.json"));
+const JMA_AREA_JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/area.json"));
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct JmaAreaDef {

@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use super::SystemModule;
 use crate::sys::config;
-use crate::sys::netutil;
 use crate::sys::taskserver::Control;
+use crate::utils::netutil;
 
 use anyhow::{anyhow, bail, Result};
 use log::info;
@@ -253,7 +253,7 @@ impl SystemModule for OpenAi {
 mod tests {
     use super::function::*;
     use super::*;
-    use crate::sys::netutil::HttpStatusError;
+    use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
 
     #[tokio::test]

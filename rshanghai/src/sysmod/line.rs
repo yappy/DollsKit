@@ -39,10 +39,8 @@ pub struct LinePrompt {
 }
 
 /// [LinePrompt] のデフォルト値。
-const DEFAULT_TOML: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/src/res/openai_line.toml"
-));
+const DEFAULT_TOML: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/openai_line.toml"));
 impl Default for LinePrompt {
     fn default() -> Self {
         toml::from_str(DEFAULT_TOML).unwrap()

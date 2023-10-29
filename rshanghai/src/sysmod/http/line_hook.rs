@@ -4,8 +4,9 @@
 
 use super::{ActixError, WebResult};
 use crate::{
-    sys::{netutil, taskserver::Control},
+    sys::taskserver::Control,
     sysmod::openai::{ChatMessage, OpenAi},
+    utils::netutil,
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, bail, ensure, Result};
