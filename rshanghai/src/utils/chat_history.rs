@@ -8,18 +8,18 @@ use tiktoken_rs::{cl100k_base, CoreBPE};
 static CORE: OnceLock<CoreBPE> = OnceLock::new();
 
 pub struct ChatHistory {
-    token_limit: u32,
-    token_count: u32,
+    token_limit: usize,
+    token_count: usize,
     history: VecDeque<Element>,
 }
 
 struct Element {
     msg: ChatMessage,
-    token_count: u32,
+    token_count: usize,
 }
 
 impl ChatHistory {
-    pub fn new(token_limit: u32) -> Self {
+    pub fn new(token_limit: usize) -> Self {
         Self {
             token_limit,
             token_count: 0,
@@ -34,9 +34,9 @@ impl ChatHistory {
     pub fn push(&mut self, mut msg: ChatMessage) {
         let count = if let Some(text) = &msg.content {
             let tokens = tokenize(text);
-            let count = tokens.len() as u32;
+            let count = tokens.len();
             if count > self.token_limit {
-                let trimmed = decode(&tokens[0..self.token_limit as usize]);
+                let trimmed = decode(&tokens[0..self.token_limit]);
                 msg.content = Some(trimmed);
 
                 self.token_limit
@@ -59,8 +59,22 @@ impl ChatHistory {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.history.clear();
+        self.token_count = 0;
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &ChatMessage> {
         self.history.iter().map(|elem| &elem.msg)
+    }
+
+    pub fn len(&self) -> usize {
+        self.history.len()
+    }
+
+    /// The current token count. (usage / total)
+    pub fn usage(&self) -> (usize, usize) {
+        (self.token_count, self.token_limit)
     }
 }
 
@@ -74,8 +88,8 @@ fn tokenize(text: &str) -> Vec<usize> {
     bpe.encode_with_special_tokens(text)
 }
 
-pub fn token_count(text: &str) -> u32 {
-    tokenize(text).len() as u32
+pub fn token_count(text: &str) -> usize {
+    tokenize(text).len()
 }
 
 fn decode(tokens: &[usize]) -> String {

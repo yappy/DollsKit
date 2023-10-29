@@ -5,7 +5,8 @@ use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::openai::{self, ChatMessage};
+use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
 use anyhow::{anyhow, Result};
 use chrono::{NaiveTime, Utc};
@@ -22,10 +23,15 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::time::Duration;
 use time::Instant;
+
+/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
+/// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
+/// それより大きめに確保する。
+const FUNCTION_TOKEN: usize = 800;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,7 +76,7 @@ pub struct DiscordPrompt {
     pub pre: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
-    pub history_max: u32,
+    /// 会話履歴をクリアするまでの時間。
     pub history_timeout_min: u32,
 }
 
@@ -104,7 +110,7 @@ pub struct Discord {
     auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
 
     /// ai コマンドの会話履歴。
-    chat_history: VecDeque<ChatMessage>,
+    chat_history: ChatHistory,
     /// [Self::chat_history] の有効期限。
     chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
@@ -159,6 +165,17 @@ impl Discord {
             );
         }
 
+        // トークン上限を算出
+        let total_limit = openai::MODEL.1;
+        let pre_token: usize = config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history::token_count(text))
+            .sum();
+        assert!(pre_token + FUNCTION_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(total_limit - pre_token - FUNCTION_TOKEN);
+
         let mut func_table = FunctionTable::new();
         func_table.register_all_functions();
 
@@ -168,7 +185,7 @@ impl Discord {
             ctx: None,
             postponed_msgs: Default::default(),
             auto_del_config: auto_del_congig,
-            chat_history: Default::default(),
+            chat_history,
             chat_timeout: None,
             func_table,
         })
@@ -197,8 +214,8 @@ impl Discord {
         Ok(())
     }
 
-    /// [Self::chat_history] にタイムアウトと個数制限を適用する。
-    fn update_chat_history(&mut self) {
+    /// [Self::chat_history] にタイムアウトを適用する。
+    fn check_history_timeout(&mut self) {
         let now = Instant::now();
 
         if let Some(timeout) = self.chat_timeout {
@@ -206,9 +223,6 @@ impl Discord {
                 self.chat_history.clear();
                 self.chat_timeout = None;
             }
-        }
-        while self.chat_history.len() > self.config.prompt.history_max as usize {
-            self.chat_history.pop_front();
         }
     }
 }
@@ -665,26 +679,22 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     let config = data.get::<ConfigData>().unwrap();
 
     // タイムアウト処理
-    discord.update_chat_history();
+    discord.check_history_timeout();
 
-    let mut msgs = Vec::new();
-    // 履歴
-    msgs.extend_from_slice(discord.chat_history.as_slices().0);
-    msgs.extend_from_slice(discord.chat_history.as_slices().1);
     // 今回の発言 (システムメッセージ + 本体)
     let sysmsg = config
         .prompt
         .each
         .join("")
         .replace("${user}", &msg.author.name);
-    msgs.push({
+    discord.chat_history.push({
         ChatMessage {
             role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
-    msgs.push(ChatMessage {
+    discord.chat_history.push(ChatMessage {
         role: Role::User,
         content: Some(chat_msg.to_string()),
         ..Default::default()
@@ -701,21 +711,25 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
             content: Some(config.prompt.pre.join("")),
             ..Default::default()
         });
-        // それ以降を追加
-        all_msgs.extend_from_slice(&msgs);
+        // それ以降 (ヒストリの中身全部) を追加
+        for m in discord.chat_history.iter() {
+            all_msgs.push(m.clone());
+        }
         // ChatGPT API
         let reply_msg = ai
             .chat_with_function(&all_msgs, discord.func_table.function_list())
             .await;
         match &reply_msg {
             Ok(reply) => {
-                msgs.push(reply.clone());
+                // 応答を履歴に追加
+                discord.chat_history.push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = discord.func_table.call(func_name, func_args).await;
-                    msgs.push(func_res);
+                    // function 応答を履歴に追加
+                    discord.chat_history.push(func_res);
                     // continue
                 } else {
                     // 通常の応答が返ってきた
@@ -739,10 +753,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
             info!("[discord] openai reply: {text}");
             msg.reply(ctx, text).await?;
 
-            // ここまで成功したら履歴を差し替える
-            discord.chat_history.clear();
-            discord.chat_history.extend(msgs);
-            discord.update_chat_history();
+            // タイムアウト延長
             discord.chat_timeout = Some(
                 Instant::now() + Duration::from_secs(config.prompt.history_timeout_min as u64 * 60),
             );
@@ -772,11 +783,12 @@ async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
         let mut discord = ctrl.sysmods().discord.lock().await;
         let config = data.get::<ConfigData>().unwrap();
 
-        discord.update_chat_history();
+        discord.check_history_timeout();
         format!(
-            "History: {}/{}\nTimeout: {} min",
+            "History: {}\nToken: {} / {}, Timeout: {} min",
             discord.chat_history.len(),
-            config.prompt.history_max,
+            discord.chat_history.usage().0,
+            discord.chat_history.usage().1,
             config.prompt.history_timeout_min
         )
     };
