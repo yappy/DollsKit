@@ -942,9 +942,18 @@
 <a href="#942" id="942">942</a>
 <a href="#943" id="943">943</a>
 <a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
+<span class="kw">use </span><span class="kw">super</span>::openai::function::FunctionTable;
 <span class="kw">use </span><span class="kw">super</span>::SystemModule;
 <span class="kw">use </span><span class="kw">crate</span>::sys::netutil::HttpStatusError;
 <span class="kw">use </span><span class="kw">crate</span>::sys::version;
@@ -1045,7 +1054,11 @@
     <span class="doccomment">/// 自動削除機能の設定データ。
     </span>auto_del_config: BTreeMap&lt;u64, AutoDeleteConfig&gt;,
     <span class="doccomment">/// ai コマンドの会話履歴。
-    </span>chat_history: VecDeque&lt;ChatElement&gt;,
+    </span>chat_history: VecDeque&lt;ChatMessage&gt;,
+    <span class="doccomment">/// [Self::chat_history] の有効期限。
+    </span>chat_timeout: <span class="prelude-ty">Option</span>&lt;Instant&gt;,
+    <span class="doccomment">/// OpenAI function 機能テーブル
+    </span>func_table: FunctionTable,
 }
 
 <span class="doccomment">/// 自動削除設定。チャネルごとに保持される。
@@ -1055,14 +1068,6 @@
     </span>keep_count: u32,
     <span class="doccomment">/// 残す時間 (単位は分)。0 は無効。
     </span>keep_dur_min: u32,
-}
-
-<span class="attr">#[derive(Debug, Clone)]
-</span><span class="kw">pub struct </span>ChatElement {
-    timestamp: Instant,
-    <span class="comment">// None の場合 assistant
-    </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    msg: String,
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>AutoDeleteConfig {
@@ -1104,13 +1109,18 @@
             );
         }
 
+        <span class="kw">let </span><span class="kw-2">mut </span>func_table = FunctionTable::new();
+        func_table.register_all_functions();
+
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             config,
             wakeup_list,
             ctx: <span class="prelude-val">None</span>,
-            postponed_msgs: Vec::new(),
+            postponed_msgs: Default::default(),
             auto_del_config: auto_del_congig,
-            chat_history: VecDeque::new(),
+            chat_history: Default::default(),
+            chat_timeout: <span class="prelude-val">None</span>,
+            func_table,
         })
     }
 
@@ -1137,17 +1147,18 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>process_timeout(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>history = <span class="kw-2">&amp;mut </span><span class="self">self</span>.chat_history;
+    <span class="doccomment">/// [Self::chat_history] にタイムアウトと個数制限を適用する。
+    </span><span class="kw">fn </span>update_chat_history(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>now = Instant::now();
 
-        <span class="kw">while </span>!history.is_empty() {
-            <span class="kw">let </span>dur = now - history[<span class="number">0</span>].timestamp;
-            <span class="kw">if </span>dur &gt; Duration::from_secs(<span class="self">self</span>.config.prompt.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>) {
-                history.pop_front();
-            } <span class="kw">else </span>{
-                <span class="kw">break</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(timeout) = <span class="self">self</span>.chat_timeout {
+            <span class="kw">if </span>now &gt; timeout {
+                <span class="self">self</span>.chat_history.clear();
+                <span class="self">self</span>.chat_timeout = <span class="prelude-val">None</span>;
             }
+        }
+        <span class="kw">while </span><span class="self">self</span>.chat_history.len() &gt; <span class="self">self</span>.config.prompt.history_max <span class="kw">as </span>usize {
+            <span class="self">self</span>.chat_history.pop_front();
         }
     }
 }
@@ -1600,95 +1611,100 @@
 
     <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
     <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
-    <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
     <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
 
-    <span class="comment">// 履歴からタイムアウトしたものを削除
-    </span>discord.process_timeout();
+    <span class="comment">// タイムアウト処理
+    </span>discord.update_chat_history();
 
     <span class="kw">let </span><span class="kw-2">mut </span>msgs = Vec::new();
-    <span class="comment">// 先頭システムメッセージ
-    </span>msgs.extend(config.prompt.pre.iter().map(|text| ChatMessage {
-        role: <span class="string">&quot;system&quot;</span>.to_string(),
-        content: <span class="prelude-val">Some</span>(text.to_string()),
-        ..Default::default()
-    }));
-    <span class="comment">// 履歴 (システムメッセージ + 本体)
-    </span><span class="kw">for </span>elem <span class="kw">in </span>discord.chat_history.iter() {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(user) = <span class="kw-2">&amp;</span>elem.user {
-            msgs.extend(config.prompt.each.iter().map(|text| {
-                <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, user);
-                ChatMessage {
-                    role: <span class="string">&quot;system&quot;</span>.to_string(),
-                    content: <span class="prelude-val">Some</span>(text),
-                    ..Default::default()
-                }
-            }));
-            msgs.push(ChatMessage {
-                role: <span class="string">&quot;user&quot;</span>.to_string(),
-                content: <span class="prelude-val">Some</span>(elem.msg.to_string()),
-                ..Default::default()
-            });
-        } <span class="kw">else </span>{
-            msgs.push(ChatMessage {
-                role: <span class="string">&quot;assistant&quot;</span>.to_string(),
-                content: <span class="prelude-val">Some</span>(elem.msg.to_string()),
-                ..Default::default()
-            });
-        }
-    }
+    <span class="comment">// 履歴
+    </span>msgs.extend_from_slice(discord.chat_history.as_slices().<span class="number">0</span>);
+    msgs.extend_from_slice(discord.chat_history.as_slices().<span class="number">1</span>);
     <span class="comment">// 今回の発言 (システムメッセージ + 本体)
-    </span>msgs.extend(config.prompt.each.iter().map(|text| {
-        <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>msg.author.name);
+    </span><span class="kw">let </span>sysmsg = config
+        .prompt
+        .each
+        .join(<span class="string">&quot;&quot;</span>)
+        .replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>msg.author.name);
+    msgs.push({
         ChatMessage {
             role: <span class="string">&quot;system&quot;</span>.to_string(),
-            content: <span class="prelude-val">Some</span>(text),
+            content: <span class="prelude-val">Some</span>(sysmsg),
             ..Default::default()
         }
-    }));
+    });
     msgs.push(ChatMessage {
         role: <span class="string">&quot;user&quot;</span>.to_string(),
         content: <span class="prelude-val">Some</span>(chat_msg.to_string()),
         ..Default::default()
     });
 
-    <span class="comment">// ChatGPT API
-    </span><span class="kw">let </span>reply_msg = ai.chat(msgs).<span class="kw">await</span>;
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw-2">&amp;</span>reply_msg {
-        <span class="comment">// HTTP status が得られるタイプのエラーのみ discord 返信する
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.downcast_ref::&lt;HttpStatusError&gt;() {
-            <span class="macro">warn!</span>(<span class="string">&quot;openai reply: {} {}&quot;</span>, err.status, err.body);
-            <span class="kw">let </span>reply_msg = <span class="macro">format!</span>(<span class="string">&quot;HTTP Status: {}&quot;</span>, err.status);
-            msg.reply(ctx, reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>reply_msg = <span class="kw">loop </span>{
+        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+
+        <span class="comment">// 送信用リスト
+        </span><span class="kw">let </span><span class="kw-2">mut </span>all_msgs = Vec::new();
+        <span class="comment">// 先頭システムメッセージ
+        </span>all_msgs.push(ChatMessage {
+            role: <span class="string">&quot;system&quot;</span>.to_string(),
+            content: <span class="prelude-val">Some</span>(config.prompt.pre.join(<span class="string">&quot;&quot;</span>)),
+            ..Default::default()
+        });
+        <span class="comment">// それ以降を追加
+        </span>all_msgs.extend_from_slice(<span class="kw-2">&amp;</span>msgs);
+        <span class="comment">// ChatGPT API
+        </span><span class="kw">let </span>reply_msg = ai
+            .chat_with_function(<span class="kw-2">&amp;</span>all_msgs, discord.func_table.function_list())
+            .<span class="kw">await</span>;
+        <span class="kw">match </span><span class="kw-2">&amp;</span>reply_msg {
+            <span class="prelude-val">Ok</span>(reply) =&gt; {
+                msgs.push(reply.clone());
+                <span class="kw">if </span>reply.function_call.is_some() {
+                    <span class="comment">// function call が返ってきた
+                    </span><span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
+                    <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
+                    <span class="kw">let </span>func_res = discord.func_table.call(func_name, func_args).<span class="kw">await</span>;
+                    msgs.push(func_res);
+                    <span class="comment">// continue
+                </span>} <span class="kw">else </span>{
+                    <span class="comment">// 通常の応答が返ってきた
+                    </span><span class="kw">break </span>reply_msg;
+                }
+            }
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="comment">// エラーが発生した
+                </span><span class="macro">error!</span>(<span class="string">&quot;{:#?}&quot;</span>, err);
+                <span class="kw">break </span>reply_msg;
+            }
         }
-    }
-    <span class="comment">// エラーの場合はここで終了
-    </span><span class="kw">let </span>reply_msg = reply_msg<span class="question-mark">?</span>;
+    };
 
     <span class="comment">// discord 返信
-    </span><span class="macro">info!</span>(<span class="string">&quot;openai reply: {reply_msg}&quot;</span>);
-    msg.reply(ctx, reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">match </span>reply_msg {
+        <span class="prelude-val">Ok</span>(reply_msg) =&gt; {
+            <span class="kw">let </span>text = reply_msg
+                .content
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;content required&quot;</span>))<span class="question-mark">?</span>;
+            <span class="macro">info!</span>(<span class="string">&quot;[discord] openai reply: {text}&quot;</span>);
+            msg.reply(ctx, text).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// ここまで成功したら履歴に追加する
-    </span>{
-        <span class="kw">let </span>history = <span class="kw-2">&amp;mut </span>discord.chat_history;
-        <span class="kw">let </span>ts = Instant::now();
-
-        history.push_back(ChatElement {
-            timestamp: ts,
-            user: <span class="prelude-val">Some</span>(msg.author.name.to_string()),
-            msg: chat_msg.to_string(),
-        });
-        history.push_back(ChatElement {
-            timestamp: ts,
-            user: <span class="prelude-val">None</span>,
-            msg: reply_msg.to_string(),
-        });
-
-        <span class="comment">// 個数制限を適用
-        </span><span class="kw">while </span>history.len() &gt; config.prompt.history_max <span class="kw">as </span>usize {
-            history.pop_front();
+            <span class="comment">// ここまで成功したら履歴を差し替える
+            </span>discord.chat_history.clear();
+            discord.chat_history.extend(msgs);
+            discord.update_chat_history();
+            discord.chat_timeout = <span class="prelude-val">Some</span>(
+                Instant::now() + Duration::from_secs(config.prompt.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>),
+            );
+        }
+        <span class="prelude-val">Err</span>(err) =&gt; {
+            <span class="macro">error!</span>(<span class="string">&quot;[discord] openai error: {:#?}&quot;</span>, err);
+            <span class="comment">// HTTP status が得られるタイプのエラーのみ discord 返信する
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.downcast_ref::&lt;HttpStatusError&gt;() {
+                <span class="macro">warn!</span>(<span class="string">&quot;openai reply: {} {}&quot;</span>, err.status, err.body);
+                <span class="kw">let </span>reply_msg = <span class="macro">format!</span>(<span class="string">&quot;OpenAI API Error, HTTP Status: {}&quot;</span>, err.status);
+                msg.reply(ctx, reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+            }
         }
     }
 
@@ -1706,7 +1722,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
         <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
 
-        discord.process_timeout();
+        discord.update_chat_history();
         <span class="macro">format!</span>(
             <span class="string">&quot;History: {}/{}\nTimeout: {} min&quot;</span>,
             discord.chat_history.len(),

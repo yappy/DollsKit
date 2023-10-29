@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_arg","get_current_datetime","get_version"],"struct":["Args","FunctionTable"],"type":["FuncArgs","FuncBody"]};
+window.SIDEBAR_ITEMS = {"fn":["compact_html","get_arg","get_current_datetime","get_current_datetime_sync","get_version","get_version_sync","get_wether_report","get_wether_report_sync","request_url","request_url_sync"],"struct":["Args","FunctionTable"],"type":["FuncArgs","FuncBody","FuncBodyAsync"]};

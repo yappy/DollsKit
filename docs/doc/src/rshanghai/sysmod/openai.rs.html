@@ -353,6 +353,8 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API.
 
 </span><span class="kw">pub mod </span>function;
@@ -425,8 +427,10 @@
     <span class="doccomment">/// e.g. &quot;string&quot;
     </span><span class="attr">#[serde(rename = <span class="string">&quot;type&quot;</span>)]
     </span><span class="kw">pub </span>type_: String,
-    <span class="kw">pub </span>description: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="kw">pub </span>description: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="attr">#[serde(rename = <span class="string">&quot;enum&quot;</span>)]
+    #[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
     </span><span class="kw">pub </span>enum_: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 }
 
@@ -684,7 +688,7 @@
 
         <span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
         <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
-        <span class="kw">let </span>func_res = func_table.call(func_name, func_args);
+        <span class="kw">let </span>func_res = func_table.call(func_name, func_args).<span class="kw">await</span>;
 
         <span class="comment">// function call と呼び出し結果を対話ログに追加
         </span>msgs.push(reply);

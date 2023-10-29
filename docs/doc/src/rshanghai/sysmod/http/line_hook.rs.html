@@ -760,7 +760,7 @@
                     <span class="comment">// function call が返ってきた
                     </span><span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
                     <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
-                    <span class="kw">let </span>func_res = line.func_table.call(func_name, func_args);
+                    <span class="kw">let </span>func_res = line.func_table.call(func_name, func_args).<span class="kw">await</span>;
                     msgs.push(func_res);
                     <span class="comment">// continue
                 </span>} <span class="kw">else </span>{
