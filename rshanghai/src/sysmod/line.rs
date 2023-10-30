@@ -1,11 +1,19 @@
 //! LINE API。
 use super::{openai::function::FunctionTable, SystemModule};
-use crate::sys::{config, taskserver::Control};
+use crate::{
+    sys::{config, taskserver::Control},
+    sysmod::openai::{self, function::FUNCTION_TOKEN},
+    utils::chat_history::{self, ChatHistory},
+};
 
 use anyhow::{bail, Result};
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, time::Duration};
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    time::{Duration, Instant},
+};
 
 const TIMEOUT: Duration = Duration::from_secs(15);
 
@@ -32,6 +40,8 @@ pub struct LinePrompt {
     pub pre: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
+    /// 会話履歴をクリアするまでの時間。
+    pub history_timeout_min: u32,
     /// OpenAI API タイムアウト時のメッセージ。
     pub timeout_msg: String,
     /// OpenAI API エラー時のメッセージ。
@@ -51,8 +61,15 @@ impl Default for LinePrompt {
 pub struct Line {
     /// 設定データ。
     pub config: LineConfig,
-    pub func_table: FunctionTable,
+    /// HTTP クライアント。
     client: reqwest::Client,
+
+    /// ai コマンドの会話履歴。
+    pub chat_history: ChatHistory,
+    /// [Self::chat_history] の有効期限。
+    pub chat_timeout: Option<Instant>,
+    /// OpenAI function 機能テーブル
+    pub func_table: FunctionTable,
 }
 
 impl Line {
@@ -61,14 +78,28 @@ impl Line {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
+
+        // トークン上限を算出
+        let total_limit = openai::MODEL.1;
+        let pre_token: usize = config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history::token_count(text))
+            .sum();
+        assert!(pre_token + FUNCTION_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(total_limit - pre_token - FUNCTION_TOKEN);
+
         let mut func_table = FunctionTable::new();
         func_table.register_all_functions();
         let client = reqwest::Client::builder().timeout(TIMEOUT).build()?;
 
         Ok(Self {
             config,
-            func_table,
             client,
+            chat_history,
+            chat_timeout: None,
+            func_table,
         })
     }
 }
@@ -171,6 +202,18 @@ impl Line {
     pub async fn get_group_profile(&self, group_id: &str, user_id: &str) -> Result<ProfileResp> {
         self.get_auth_json(&url_group_profile(group_id, user_id))
             .await
+    }
+
+    /// [Self::chat_history] にタイムアウトを適用する。
+    pub fn check_history_timeout(&mut self) {
+        let now = Instant::now();
+
+        if let Some(timeout) = self.chat_timeout {
+            if now > timeout {
+                self.chat_history.clear();
+                self.chat_timeout = None;
+            }
+        }
     }
 
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>

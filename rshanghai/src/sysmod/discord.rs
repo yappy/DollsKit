@@ -5,6 +5,7 @@ use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
+use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
@@ -27,11 +28,6 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::time::Duration;
 use time::Instant;
-
-/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
-/// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
-/// それより大きめに確保する。
-const FUNCTION_TOKEN: usize = 800;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -681,7 +677,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     // タイムアウト処理
     discord.check_history_timeout();
 
-    // 今回の発言 (システムメッセージ + 本体)
+    // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
     let sysmsg = config
         .prompt
         .each

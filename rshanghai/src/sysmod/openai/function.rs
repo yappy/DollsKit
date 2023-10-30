@@ -11,6 +11,11 @@ use serde::{Deserialize, Serialize};
 
 use std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
 
+/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
+/// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
+/// それより大きめに確保する。
+pub const FUNCTION_TOKEN: usize = 800;
+
 // https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
 /// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
