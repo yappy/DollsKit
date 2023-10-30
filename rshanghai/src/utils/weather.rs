@@ -11,10 +11,7 @@
 
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap},
-    sync::OnceLock,
-};
+use std::{collections::BTreeMap, sync::OnceLock};
 
 /// <https://www.jma.go.jp/bosai/common/const/area.json>
 ///
