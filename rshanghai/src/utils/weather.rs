@@ -11,7 +11,10 @@
 
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::OnceLock};
+use std::{
+    collections::{BTreeMap},
+    sync::OnceLock,
+};
 
 /// <https://www.jma.go.jp/bosai/common/const/area.json>
 ///
@@ -30,7 +33,7 @@ const JMA_AREA_JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/r
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct JmaAreaDef {
-    offices: HashMap<String, JmaOfficeInfo>,
+    offices: BTreeMap<String, JmaOfficeInfo>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,23 +49,40 @@ pub struct JmaOfficeInfo {
 
 static OFFICE_LIST: OnceLock<Vec<JmaOfficeInfo>> = OnceLock::new();
 
+fn office_list() -> Vec<JmaOfficeInfo> {
+    let root: JmaAreaDef = serde_json::from_str(JMA_AREA_JSON).unwrap();
+
+    let list: Vec<_> = root
+        .offices
+        .iter()
+        .map(|(code, info)| {
+            let mut modified = info.clone();
+            modified.code = code.to_string();
+            modified
+        })
+        .collect();
+
+    list
+}
+
 pub fn offices() -> &'static Vec<JmaOfficeInfo> {
-    OFFICE_LIST.get_or_init(|| {
-        let root: JmaAreaDef = serde_json::from_str(JMA_AREA_JSON).unwrap();
+    OFFICE_LIST.get_or_init(office_list)
+}
 
-        let mut list: Vec<_> = root
-            .offices
-            .iter()
-            .map(|(code, info)| {
-                let mut modified = info.clone();
-                modified.code = code.to_string();
-                modified
-            })
-            .collect();
-        list.sort_by(|a, b| a.code.cmp(&b.code));
+pub fn office_name_to_code(name: &str) -> Option<String> {
+    let list = OFFICE_LIST.get_or_init(office_list);
 
-        list
-    })
+    list.iter()
+        .find(|&info| info.name == name)
+        .map(|info| info.code.to_string())
+}
+
+pub fn url_forecast(office_code: &str) -> String {
+    format!("https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json")
+}
+
+pub fn url_overview_forecast(office_code: &str) -> String {
+    format!("https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{office_code}.json")
 }
 
 #[allow(unused)]

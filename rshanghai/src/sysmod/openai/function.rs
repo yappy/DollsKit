@@ -8,6 +8,7 @@ use anyhow::{anyhow, bail, Result};
 use log::{info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+
 use std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
 
 // https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
@@ -101,7 +102,7 @@ impl FunctionTable {
         self.register_get_version();
         self.register_get_current_datetime();
         self.register_request_url();
-        self.register_get_wether_report();
+        self.register_get_weather_report();
     }
 }
 
@@ -290,26 +291,11 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn get_wether_report_sync(args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_wether_report(args))
+fn get_weather_report_sync(args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_weather_report(args))
 }
 
-async fn get_wether_report(args: &FuncArgs) -> Result<String> {
-    const TIMEOUT: Duration = Duration::from_secs(10);
-    let area = get_arg(args, "area")?;
-
-    // name が一致するものを探して code を取得
-    let pos = weather::offices()
-        .iter()
-        .find(|&info| &info.name == area)
-        .ok_or_else(|| anyhow!("Invalid area: {}", area))?;
-    let code = &pos.code;
-
-    let url = format!(
-        "https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json",
-        code
-    );
-    let client = Client::builder().timeout(TIMEOUT).build()?;
+async fn get_url(client: &Client, url: &str) -> Result<String> {
     let resp = client.get(url).send().await?;
 
     let status = resp.status();
@@ -324,8 +310,29 @@ async fn get_wether_report(args: &FuncArgs) -> Result<String> {
     }
 }
 
+async fn get_weather_report(args: &FuncArgs) -> Result<String> {
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    let area = get_arg(args, "area")?;
+
+    // 引数の都市名をコードに変換
+    let code =
+        weather::office_name_to_code(area).ok_or_else(|| anyhow!("Invalid area: {}", area))?;
+
+    let url1 = weather::url_overview_forecast(&code);
+    let url2 = weather::url_forecast(&code);
+    let client = Client::builder().timeout(TIMEOUT).build()?;
+
+    let fut1 = get_url(&client, &url1);
+    let fut2 = get_url(&client, &url2);
+    let (resp1, resp2) = tokio::join!(fut1, fut2);
+    let (mut s1, s2) = (resp1?, resp2?);
+    s1 += &s2;
+
+    Ok(s1)
+}
+
 impl FunctionTable {
-    fn register_get_wether_report(&mut self) {
+    fn register_get_weather_report(&mut self) {
         let area_list: Vec<_> = weather::offices()
             .iter()
             .map(|info| info.name.clone())
@@ -341,7 +348,7 @@ impl FunctionTable {
             },
         );
         self.function_list.push(Function {
-            name: "get_wether_report".to_string(),
+            name: "get_weather_report".to_string(),
             description: Some("Get whether report data".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
@@ -350,7 +357,7 @@ impl FunctionTable {
             },
         });
         self.call_table
-            .insert("get_wether_report", Box::new(get_wether_report_sync));
+            .insert("get_weather_report", Box::new(get_weather_report_sync));
     }
 }
 
