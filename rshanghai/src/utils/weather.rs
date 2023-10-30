@@ -1,3 +1,14 @@
+//!
+//!
+//! * office-code: 気象台のコード。北海道以外は概ね都道府県ごと。
+//! * class10-code: 一次細分区域。天気予報を行う区分。
+//! * class20-code: 二次細分区域。天気予報を行う区分。
+//!
+//! <https://www.jma.go.jp/jma/kishou/know/saibun/>
+//!
+//! 参考
+//! <https://github.com/misohena/el-jma/blob/main/docs/how-to-get-jma-forecast.org>
+
 use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::OnceLock};
@@ -132,6 +143,17 @@ mod tests {
                 //println!("{}", resp.text().await?);
             } else {
                 println!("forecast not found: {:?}", info);
+            }
+
+            let url = format!(
+                "https://www.jma.go.jp/bosai/forecast/data/overview_week/{}.json",
+                info.code
+            );
+            let resp = client.get(url).send().await?;
+            if resp.status().is_success() {
+                //println!("{}", resp.text().await?);
+            } else {
+                println!("overview_week not found: {:?}", info);
             }
         }
 
