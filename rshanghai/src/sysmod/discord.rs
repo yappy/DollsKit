@@ -306,17 +306,23 @@ async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
 
     let mut remain = content;
     loop {
-        let text = match remain.char_indices().nth(LEN) {
+        let (chunk, fin) = match remain.char_indices().nth(LEN) {
             Some((ind, _c)) => {
                 let (a, b) = remain.split_at(ind);
                 remain = b;
 
-                a
+                (a, false)
             }
-            None => remain,
+            None => (remain, true),
         };
-        msg.reply(ctx, text).await?;
+        if !chunk.is_empty() {
+            msg.reply(ctx, chunk).await?;
+        }
+        if fin {
+            break;
+        }
     }
+    Ok(())
 }
 
 /// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
