@@ -74,12 +74,100 @@ pub fn office_name_to_code(name: &str) -> Option<String> {
         .map(|info| info.code.to_string())
 }
 
-pub fn url_forecast(office_code: &str) -> String {
-    format!("https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json")
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverviewForecast {
+    pub publishing_office: String,
+    pub report_datetime: String,
+    pub target_area: String,
+    pub headline_text: String,
+    pub text: String,
 }
 
+type ForecastRoot = Vec<Forecast>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Forecast {
+    pub publishing_office: String,
+    pub report_datetime: String,
+    pub time_series: Vec<TimeSeries>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimeSeries {
+    pub time_defines: Vec<String>,
+    pub areas: Vec<AreaArrayElement>,
+    pub temp_average: Option<TempPrecipAverage>,
+    pub precip_average: Option<TempPrecipAverage>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AreaArrayElement {
+    pub area: Area,
+    #[serde(flatten)]
+    pub data: AreaData,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Area {
+    pub name: String,
+    pub code: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AreaData {
+    // [0]
+    #[serde(rename_all = "camelCase")]
+    WheatherPop {
+        weather_codes: Vec<String>,
+        pops: Vec<String>,
+        reliabilities: Vec<String>,
+    },
+    #[serde(rename_all = "camelCase")]
+    DetailedTempreture {
+        temps_min: Vec<String>,
+        temps_min_upper: Vec<String>,
+        temps_min_lower: Vec<String>,
+        temps_max: Vec<String>,
+        temps_max_upper: Vec<String>,
+        temps_max_lower: Vec<String>,
+    },
+
+    // [1]
+    #[serde(rename_all = "camelCase")]
+    Wheather {
+        weather_codes: Vec<String>,
+        weathers: Vec<String>,
+        winds: Vec<String>,
+        waves: Vec<String>,
+    },
+    #[serde(rename_all = "camelCase")]
+    Pop { pops: Vec<String> },
+    #[serde(rename_all = "camelCase")]
+    Tempreture { temps: Vec<String> },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TempPrecipAverage{
+    area:Area,
+    min:String,
+    max:String,
+}
+
+/// office_code から overview_forecast URL を得る。
 pub fn url_overview_forecast(office_code: &str) -> String {
     format!("https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{office_code}.json")
+}
+
+/// office_code から forecast URL を得る。
+pub fn url_forecast(office_code: &str) -> String {
+    format!("https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json")
 }
 
 #[allow(unused)]
@@ -173,6 +261,31 @@ mod tests {
                 println!("overview_week not found: {:?}", info);
             }
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn parse_overview_forecast() -> Result<()> {
+        const SRC: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/overview_forecast.json"
+        ));
+        let obj: OverviewForecast = serde_json::from_str(SRC)?;
+        assert_eq!("気象庁", obj.publishing_office);
+        assert_eq!("東京都", obj.target_area);
+
+        Ok(())
+    }
+
+    #[test]
+    fn parse_forecast() -> Result<()> {
+        const SRC: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/forecast.json"
+        ));
+        let obj: ForecastRoot = serde_json::from_str(SRC)?;
+        assert_eq!("気象庁", obj[0].publishing_office);
 
         Ok(())
     }

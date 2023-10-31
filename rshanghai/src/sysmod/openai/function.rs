@@ -374,7 +374,10 @@ mod tests {
 
     #[test]
     fn parse_html() -> Result<()> {
-        const SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/test/top.htm"));
+        const SRC: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/scraping/top.htm"
+        ));
 
         let res = compact_html(SRC)?;
         println!("{res}");

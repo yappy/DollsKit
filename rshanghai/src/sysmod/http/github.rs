@@ -162,7 +162,7 @@ mod tests {
     fn webhook_simple_push() {
         let jsonstr = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/simplepush.json"
+            "/res/test/github/simplepush.json"
         ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
@@ -173,7 +173,7 @@ mod tests {
     fn webhook_empty_branch() {
         let jsonstr = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/emptybranch.json"
+            "/res/test/github/emptybranch.json"
         ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
@@ -187,7 +187,7 @@ mod tests {
     fn webhook_delete_branch() {
         let jsonstr = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/deletebranch.json"
+            "/res/test/github/deletebranch.json"
         ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
