@@ -16,7 +16,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 
 const CONN_TIMEOUT: Duration = Duration::from_secs(10);
-const TIMEOUT: Duration = Duration::from_secs(40);
+const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
@@ -28,6 +28,10 @@ const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 /// (name, max_tokens)
 //pub const MODEL: (&str, usize) = ("gpt-3.5-turbo", 4097);
 pub const MODEL: (&str, usize) = ("gpt-3.5-turbo-16k", 16385);
+/// トークン数制限のうち出力用に予約する割合。
+const OUTPUT_RESERVED_RATIO: f32 = 0.2;
+/// トークン数制限のうち出力用に予約する数。
+pub const OUTPUT_RESERVED_TOKEN: usize = (MODEL.1 as f32 * OUTPUT_RESERVED_RATIO) as usize;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {

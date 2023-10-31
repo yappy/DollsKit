@@ -172,8 +172,10 @@ impl Discord {
             .iter()
             .map(|text| chat_history::token_count(text))
             .sum();
-        assert!(pre_token + FUNCTION_TOKEN < total_limit);
-        let chat_history = ChatHistory::new(total_limit - pre_token - FUNCTION_TOKEN);
+        assert!(FUNCTION_TOKEN + pre_token + openai::OUTPUT_RESERVED_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(
+            total_limit - FUNCTION_TOKEN - pre_token - openai::OUTPUT_RESERVED_TOKEN,
+        );
 
         let mut func_table = FunctionTable::new();
         func_table.register_all_functions();

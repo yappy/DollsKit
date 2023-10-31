@@ -15,9 +15,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// LINE API タイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(15);
 /// [Message::Text] の最大文字数。
-/// mention 関連でのずれが少し怖いので余裕を持たせる
+/// mention 関連でのずれが少し怖いので余裕を持たせる。
 const MSG_SPLIT_LEN: usize = 5000 - 128;
 
 /// Discord 設定データ。toml 設定に対応する。
@@ -90,8 +91,10 @@ impl Line {
             .iter()
             .map(|text| chat_history::token_count(text))
             .sum();
-        assert!(pre_token + FUNCTION_TOKEN < total_limit);
-        let chat_history = ChatHistory::new(total_limit - pre_token - FUNCTION_TOKEN);
+        assert!(FUNCTION_TOKEN + pre_token + openai::OUTPUT_RESERVED_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(
+            total_limit - FUNCTION_TOKEN - pre_token - openai::OUTPUT_RESERVED_TOKEN,
+        );
 
         let mut func_table = FunctionTable::new();
         func_table.register_all_functions();
