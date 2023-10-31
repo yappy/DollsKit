@@ -2,7 +2,6 @@
 
 use super::camera::{take_a_pic, TakePicOption};
 use super::openai::{function::FunctionTable, Role};
-use super::twitter::TWEET_LEN_MAX;
 use super::SystemModule;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
