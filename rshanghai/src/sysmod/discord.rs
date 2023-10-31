@@ -2,6 +2,7 @@
 
 use super::camera::{take_a_pic, TakePicOption};
 use super::openai::{function::FunctionTable, Role};
+use super::twitter::TWEET_LEN_MAX;
 use super::SystemModule;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
@@ -28,6 +29,9 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::time::Duration;
 use time::Instant;
+
+/// メッセージの最大文字数。 (Unicode codepoint)
+const MSG_MAX_LEN: usize = 2000;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -296,6 +300,26 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
+/// 文字数制限に気を付けつつ分割して送信する。
+async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
+    // mention 関連でのずれが少し怖いので余裕を持たせる
+    const LEN: usize = MSG_MAX_LEN - 128;
+
+    let mut remain = content;
+    loop {
+        let text = match remain.char_indices().nth(LEN) {
+            Some((ind, _c)) => {
+                let (a, b) = remain.split_at(ind);
+                remain = b;
+
+                a
+            }
+            None => remain,
+        };
+        msg.reply(ctx, text).await?;
+    }
+}
+
 /// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
 /// すべて削除する。
 ///
@@ -483,7 +507,7 @@ impl EventHandler for Handler {
         for msg in &discord.postponed_msgs {
             let ch = discord.config.notif_channel;
             // notif_channel が有効の場合しかキューされない
-            assert_ne!(ch, 0);
+            assert_ne!(0, ch);
 
             info!("[discord] say msg: {}", msg);
             let ch = ChannelId(ch);
@@ -747,7 +771,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                 .content
                 .ok_or_else(|| anyhow!("content required"))?;
             info!("[discord] openai reply: {text}");
-            msg.reply(ctx, text).await?;
+            reply_long(msg, ctx, &text).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(
