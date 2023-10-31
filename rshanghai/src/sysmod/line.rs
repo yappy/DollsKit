@@ -6,7 +6,7 @@ use crate::{
     utils::chat_history::{self, ChatHistory},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -16,6 +16,9 @@ use std::{
 };
 
 const TIMEOUT: Duration = Duration::from_secs(15);
+/// [Message::Text] の最大文字数。
+/// mention 関連でのずれが少し怖いので余裕を持たせる
+const MSG_SPLIT_LEN: usize = 5000 - 128;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -217,11 +220,19 @@ impl Line {
     }
 
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>
+    ///
+    /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
     pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
-        // TODO: check len and split
-        let messages = vec![Message::Text {
-            text: text.to_string(),
-        }];
+        ensure!(!text.is_empty(), "text must not be empty");
+
+        let messages: Vec<_> = split_message(text)
+            .iter()
+            .map(|&chunk| Message::Text {
+                text: chunk.to_string(),
+            })
+            .collect();
+        ensure!(messages.len() <= 5, "text too long: {}", text.len());
+
         let req = ReplyReq {
             reply_token: reply_token.to_string(),
             messages,
@@ -292,5 +303,63 @@ impl Line {
             .await?;
 
         Self::check_resp(resp).await
+    }
+}
+
+fn split_message(text: &str) -> Vec<&str> {
+    // UTF-16 5000 文字で分割
+    let mut result = Vec::new();
+    // 左端
+    let mut s = 0;
+    // utf-16 文字数
+    let mut len = 0;
+    for (ind, c) in text.char_indices() {
+        // 1 or 2
+        let clen = c.len_utf16();
+        // 超えそうなら [s, ind) の部分文字列を出力
+        if len + clen > MSG_SPLIT_LEN {
+            result.push(&text[s..ind]);
+            s = ind;
+            len = 0;
+        }
+        len += clen;
+    }
+    if len > 0 {
+        result.push(&text[s..]);
+    }
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn split_long_message() {
+        let mut src = String::new();
+        assert!(split_message(&src).is_empty());
+
+        for i in 0..MSG_SPLIT_LEN {
+            let a = 'A' as u32;
+            src.push(char::from_u32(a + (i as u32 % 26)).unwrap());
+        }
+        let res = split_message(&src);
+        assert_eq!(1, res.len());
+        assert_eq!(src, res[0]);
+
+        src.push('0');
+        let res = split_message(&src);
+        assert_eq!(2, res.len());
+        assert_eq!(&src[..MSG_SPLIT_LEN], res[0]);
+        assert_eq!(&src[MSG_SPLIT_LEN..], res[1]);
+
+        src.pop();
+        src.pop();
+        src.push('😀');
+        let res = split_message(&src);
+        assert_eq!(2, res.len());
+        assert_eq!(&src[..MSG_SPLIT_LEN - 1], res[0]);
+        assert_eq!(&src[MSG_SPLIT_LEN - 1..], res[1]);
     }
 }
