@@ -262,7 +262,7 @@ pub fn weather_to_ai_readable(
                     // 日時文字列で検索、なければデフォルトで新規作成する
                     let v = date_data
                         .entry(key.to_string())
-                        .or_insert(Default::default());
+                        .or_default();
                     ensure!(td.len() == weather_codes.len());
                     ensure!(td.len() == pops.len());
                     v.weather_pop_area = Some(area.area.name.to_string());
@@ -284,7 +284,7 @@ pub fn weather_to_ai_readable(
                     // 日時文字列で検索、なければデフォルトで新規作成する
                     let v = date_data
                         .entry(key.to_string())
-                        .or_insert(Default::default());
+                        .or_default();
                     ensure!(td.len() == temps_min.len());
                     ensure!(td.len() == temps_max.len());
                     v.tempreture_area = Some(area.area.name.to_string());
