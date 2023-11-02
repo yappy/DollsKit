@@ -158,12 +158,14 @@ pub struct Area {
 #[serde(untagged)]
 pub enum AreaData {
     // [1]
+    /// 明日から7日間
     #[serde(rename_all = "camelCase")]
     WheatherPop {
         weather_codes: Vec<String>,
         pops: Vec<String>,
         reliabilities: Vec<String>,
     },
+    /// 明日から7日間
     #[serde(rename_all = "camelCase")]
     DetailedTempreture {
         temps_min: Vec<String>,
@@ -175,6 +177,7 @@ pub enum AreaData {
     },
 
     // [0]
+    // 今日から3日分
     #[serde(rename_all = "camelCase")]
     Wheather {
         weather_codes: Vec<String>,
@@ -182,8 +185,10 @@ pub enum AreaData {
         winds: Vec<String>,
         waves: Vec<String>,
     },
+    /// 今日から6時間ごと、5回分
     #[serde(rename_all = "camelCase")]
     Pop { pops: Vec<String> },
+    /// 明日の 0:00+9:00 と 9:00+9:00 (最低気温と最高気温)
     #[serde(rename_all = "camelCase")]
     Tempreture { temps: Vec<String> },
 }
@@ -208,16 +213,18 @@ pub fn url_forecast(office_code: &str) -> String {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AiReadableWeather {
+    url_for_more_info: String,
     now: String,
 
     publishing_office: String,
     report_datetime: String,
-    target_area: String,
-    headline: String,
-    overview: String,
 
     /// DateStr => DateDataElem
     date_data: BTreeMap<String, DateDataElem>,
+
+    target_area: String,
+    headline: String,
+    overview: String,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -238,6 +245,7 @@ struct DateDataElem {
 
 /// AI にも読みやすい JSON に整形する。
 pub fn weather_to_ai_readable(
+    office_code: &str,
     ov: &OverviewForecast,
     fcr: &ForecastRoot,
 ) -> Result<AiReadableWeather> {
@@ -252,65 +260,110 @@ pub fn weather_to_ai_readable(
             }
             // "areas" データの中で最初のものを代表して使う
             let area = &areas[0];
-            for (i, key) in td.iter().enumerate() {
-                if let AreaData::WheatherPop {
-                    weather_codes,
-                    pops,
-                    reliabilities: _,
-                } = &area.data
-                {
-                    // 日時文字列で検索、なければデフォルトで新規作成する
-                    let v = date_data
-                        .entry(key.to_string())
-                        .or_default();
-                    ensure!(td.len() == weather_codes.len());
-                    ensure!(td.len() == pops.len());
-                    v.weather_pop_area = Some(area.area.name.to_string());
-                    if !weather_codes[i].is_empty() {
-                        v.weather = Some(weather_code_to_string(&weather_codes[i])?.to_string());
-                    }
-                    if !pops[i].is_empty() {
-                        v.pop = Some(format!("{}%", &pops[i]));
-                    }
-                } else if let AreaData::DetailedTempreture {
-                    temps_min,
-                    temps_min_upper: _,
-                    temps_min_lower: _,
-                    temps_max,
-                    temps_max_upper: _,
-                    temps_max_lower: _,
-                } = &area.data
-                {
-                    // 日時文字列で検索、なければデフォルトで新規作成する
-                    let v = date_data
-                        .entry(key.to_string())
-                        .or_default();
-                    ensure!(td.len() == temps_min.len());
-                    ensure!(td.len() == temps_max.len());
-                    v.tempreture_area = Some(area.area.name.to_string());
-                    if !temps_max[i].is_empty() {
-                        v.temp_min = Some(temps_max[i].to_string());
-                    }
-                    if !temps_min[i].is_empty() {
-                        v.temp_max = Some(temps_min[i].to_string());
-                    }
-                }
+            for (i, dt_str) in td.iter().enumerate() {
+                fill_by_element(&mut date_data, i, dt_str, area)?;
             }
         }
     }
 
     let now: DateTime<Local> = Local::now();
     Ok(AiReadableWeather {
+        url_for_more_info: format!(
+            "https://www.jma.go.jp/bosai/forecast/#area_type=offices&area_code={office_code}"
+        ),
         now: now.to_string(),
 
         publishing_office: ov.publishing_office.to_string(),
         report_datetime: ov.report_datetime.to_string(),
+
+        date_data,
+
         target_area: ov.target_area.to_string(),
         headline: ov.headline_text.to_string(),
         overview: ov.text.to_string(),
-
-        date_data,
     })
+}
+
+fn fill_by_element(
+    result: &mut BTreeMap<String, DateDataElem>,
+    idx: usize,
+    dt_str: &str,
+    area: &AreaArrayElement,
+) -> Result<()> {
+    match &area.data {
+        AreaData::WheatherPop {
+            weather_codes,
+            pops,
+            reliabilities: _,
+        } => {
+            // 日時文字列で検索、なければデフォルトで新規作成する
+            let v = result.entry(dt_str.to_string()).or_default();
+            let weather_code = weather_codes
+                .get(idx)
+                .ok_or_else(|| anyhow!("Parse error"))?;
+            let pop = pops.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+
+            v.weather_pop_area = Some(area.area.name.to_string());
+            if v.weather.is_none() && !weather_code.is_empty() {
+                v.weather = Some(weather_code_to_string(weather_code)?.to_string());
+            }
+            if v.pop.is_none() && !pop.is_empty() {
+                v.pop = Some(format!("{}%", &pop));
+            }
+        }
+        AreaData::DetailedTempreture {
+            temps_min,
+            temps_min_upper: _,
+            temps_min_lower: _,
+            temps_max,
+            temps_max_upper: _,
+            temps_max_lower: _,
+        } => {
+            let v = result.entry(dt_str.to_string()).or_default();
+            let min = temps_min.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+            let max = temps_max.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+
+            v.tempreture_area = Some(area.area.name.to_string());
+            if !min.is_empty() {
+                v.temp_min = Some(min.to_string());
+            }
+            if !max.is_empty() {
+                v.temp_max = Some(max.to_string());
+            }
+        }
+        AreaData::Wheather {
+            weather_codes: _,
+            weathers,
+            winds: _,
+            waves: _,
+        } => {
+            let v = result.entry(dt_str.to_string()).or_default();
+            let weather = weathers.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+
+            v.weather_pop_area = Some(area.area.name.to_string());
+            v.weather = Some(weather.to_string());
+        }
+        AreaData::Pop { pops } => {
+            let pop = pops.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+
+            // 既にキーがあるときのみ
+            result.entry(dt_str.to_string()).and_modify(|v| {
+                v.pop = Some(pop.to_string());
+            });
+        }
+        AreaData::Tempreture { temps } => {
+            let dt = format!("{}T00:00:00+09:00", &dt_str[0..10]);
+            let temp = temps.get(idx).ok_or_else(|| anyhow!("Parse error"))?;
+            result.entry(dt).and_modify(|v| {
+                if idx == 0 {
+                    v.temp_min = Some(temp.to_string());
+                } else if idx == 1 {
+                    v.temp_max = Some(temp.to_string());
+                }
+            });
+        }
+    }
+    Ok(())
 }
 
 #[allow(unused)]
@@ -471,7 +524,7 @@ mod tests {
         ));
         let fcr: ForecastRoot = serde_json::from_str(src)?;
 
-        let obj = weather_to_ai_readable(&ov, &fcr)?;
+        let obj = weather_to_ai_readable("130000", &ov, &fcr)?;
         println!("{}", serde_json::to_string_pretty(&obj).unwrap());
 
         Ok(())

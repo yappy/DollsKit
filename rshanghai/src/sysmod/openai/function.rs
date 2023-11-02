@@ -321,7 +321,7 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
 
     let ov: OverviewForecast = serde_json::from_str(&s1)?;
     let fc: ForecastRoot = serde_json::from_str(&s2)?;
-    let obj = weather::weather_to_ai_readable(&ov, &fc)?;
+    let obj = weather::weather_to_ai_readable(&code, &ov, &fc)?;
 
     Ok(serde_json::to_string(&obj).unwrap())
 }
