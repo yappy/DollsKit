@@ -1,10 +1,14 @@
 //! OpenAI API - function.
 
 use super::{Function, ParameterElement, Parameters};
-use crate::sysmod::openai::{ChatMessage, Role};
-use crate::utils::weather;
+use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
+use crate::{
+    sysmod::openai::{ChatMessage, Role},
+    utils::netutil,
+};
 
 use anyhow::{anyhow, bail, Result};
+use chrono::{DateTime, Local, Utc};
 use log::{info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -153,8 +157,6 @@ fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
 }
 
 async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
-    use chrono::{DateTime, Local, Utc};
-
     let tz = get_arg(args, "tz")?;
     match tz.as_str() {
         "JST" => {
@@ -300,21 +302,6 @@ fn get_weather_report_sync(args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_weather_report(args))
 }
 
-async fn get_url(client: &Client, url: &str) -> Result<String> {
-    let resp = client.get(url).send().await?;
-
-    let status = resp.status();
-    if status.is_success() {
-        Ok(resp.text().await?)
-    } else {
-        bail!(
-            "{}, {}",
-            status.as_str(),
-            status.canonical_reason().unwrap_or("")
-        );
-    }
-}
-
 async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     let area = get_arg(args, "area")?;
@@ -327,13 +314,16 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     let url2 = weather::url_forecast(&code);
     let client = Client::builder().timeout(TIMEOUT).build()?;
 
-    let fut1 = get_url(&client, &url1);
-    let fut2 = get_url(&client, &url2);
+    let fut1 = netutil::checked_get_url(&client, &url1);
+    let fut2 = netutil::checked_get_url(&client, &url2);
     let (resp1, resp2) = tokio::join!(fut1, fut2);
-    let (mut s1, s2) = (resp1?, resp2?);
-    s1 += &s2;
+    let (s1, s2) = (resp1?, resp2?);
 
-    Ok(s1)
+    let ov: OverviewForecast = serde_json::from_str(&s1)?;
+    let fc: ForecastRoot = serde_json::from_str(&s2)?;
+    let obj = weather::weather_to_ai_readable(&ov, &fc)?;
+
+    Ok(serde_json::to_string(&obj).unwrap())
 }
 
 impl FunctionTable {

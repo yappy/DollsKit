@@ -3,6 +3,7 @@
 use anyhow::{anyhow, Context, Result};
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
+use reqwest::Client;
 use serde::Deserialize;
 use sha1::Sha1;
 use sha2::Sha256;
@@ -30,6 +31,13 @@ pub async fn check_http_resp(resp: reqwest::Response) -> Result<String> {
             body: text
         }))
     }
+}
+
+/// [check_http_resp] 付きの GET。
+pub async fn checked_get_url(client: &Client, url: &str) -> Result<String> {
+    let resp = client.get(url).send().await?;
+
+    check_http_resp(resp).await
 }
 
 /// 文字列を JSON としてパースし、T 型に変換する。

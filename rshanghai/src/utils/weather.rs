@@ -9,9 +9,13 @@
 //! 参考
 //! <https://github.com/misohena/el-jma/blob/main/docs/how-to-get-jma-forecast.org>
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Result};
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, sync::OnceLock};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::OnceLock,
+};
 
 /// <https://www.jma.go.jp/bosai/common/const/area.json>
 ///
@@ -27,6 +31,17 @@ use std::{collections::BTreeMap, sync::OnceLock};
 /// Not found: JmaOfficeInfo { code: "460040", name: "奄美地方", en_name: "Amami", office_name: "名瀬測候所" }
 /// ```
 const JMA_AREA_JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/area.json"));
+
+/// <https://www.jma.go.jp/bosai/forecast/>
+///
+/// JavaScript 上の定数データ。
+/// ブラウザのコンソールで Forecast.Const.TELOPS を JSON.stringify() して入手。
+///
+/// `[昼画像,夜画像,?,日本語,英語]`
+const JMA_TELOPLS_JSON: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/res/forecast_telops.json"
+));
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct JmaAreaDef {
@@ -45,6 +60,7 @@ pub struct JmaOfficeInfo {
 }
 
 static OFFICE_LIST: OnceLock<Vec<JmaOfficeInfo>> = OnceLock::new();
+static WEATHER_CODE_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
 
 fn office_list() -> Vec<JmaOfficeInfo> {
     let root: JmaAreaDef = serde_json::from_str(JMA_AREA_JSON).unwrap();
@@ -74,6 +90,26 @@ pub fn office_name_to_code(name: &str) -> Option<String> {
         .map(|info| info.code.to_string())
 }
 
+fn weather_code_map() -> HashMap<String, String> {
+    let mut result = HashMap::new();
+
+    type RawObj = HashMap<String, [String; 5]>;
+    let obj: RawObj = serde_json::from_str(JMA_TELOPLS_JSON).unwrap();
+    for (k, v) in obj.iter() {
+        // 日本語名称
+        result.insert(k.to_string(), v[3].to_string());
+    }
+
+    result
+}
+
+pub fn weather_code_to_string(code: &str) -> Result<&str> {
+    let map = WEATHER_CODE_MAP.get_or_init(weather_code_map);
+    map.get(code)
+        .map(String::as_str)
+        .ok_or_else(|| anyhow!("Weather code not found: {code}"))
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OverviewForecast {
@@ -84,7 +120,7 @@ pub struct OverviewForecast {
     pub text: String,
 }
 
-type ForecastRoot = Vec<Forecast>;
+pub type ForecastRoot = Vec<Forecast>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -121,7 +157,7 @@ pub struct Area {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AreaData {
-    // [0]
+    // [1]
     #[serde(rename_all = "camelCase")]
     WheatherPop {
         weather_codes: Vec<String>,
@@ -138,7 +174,7 @@ pub enum AreaData {
         temps_max_lower: Vec<String>,
     },
 
-    // [1]
+    // [0]
     #[serde(rename_all = "camelCase")]
     Wheather {
         weather_codes: Vec<String>,
@@ -154,10 +190,10 @@ pub enum AreaData {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TempPrecipAverage{
-    area:Area,
-    min:String,
-    max:String,
+pub struct TempPrecipAverage {
+    area: Area,
+    min: String,
+    max: String,
 }
 
 /// office_code から overview_forecast URL を得る。
@@ -168,6 +204,113 @@ pub fn url_overview_forecast(office_code: &str) -> String {
 /// office_code から forecast URL を得る。
 pub fn url_forecast(office_code: &str) -> String {
     format!("https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json")
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AiReadableWeather {
+    now: String,
+
+    publishing_office: String,
+    report_datetime: String,
+    target_area: String,
+    headline: String,
+    overview: String,
+
+    /// DateStr => DateDataElem
+    date_data: BTreeMap<String, DateDataElem>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct DateDataElem {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    weather_pop_area: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    weather: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pop: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tempreture_area: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temp_min: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temp_max: Option<String>,
+}
+
+/// AI にも読みやすい JSON に整形する。
+pub fn weather_to_ai_readable(
+    ov: &OverviewForecast,
+    fcr: &ForecastRoot,
+) -> Result<AiReadableWeather> {
+    let mut date_data: BTreeMap<String, DateDataElem> = BTreeMap::new();
+
+    for fc in fcr.iter() {
+        for ts in fc.time_series.iter() {
+            let td = &ts.time_defines;
+            let areas = &ts.areas;
+            if areas.is_empty() {
+                continue;
+            }
+            // "areas" データの中で最初のものを代表して使う
+            let area = &areas[0];
+            for (i, key) in td.iter().enumerate() {
+                if let AreaData::WheatherPop {
+                    weather_codes,
+                    pops,
+                    reliabilities: _,
+                } = &area.data
+                {
+                    // 日時文字列で検索、なければデフォルトで新規作成する
+                    let v = date_data
+                        .entry(key.to_string())
+                        .or_insert(Default::default());
+                    ensure!(td.len() == weather_codes.len());
+                    ensure!(td.len() == pops.len());
+                    v.weather_pop_area = Some(area.area.name.to_string());
+                    if !weather_codes[i].is_empty() {
+                        v.weather = Some(weather_code_to_string(&weather_codes[i])?.to_string());
+                    }
+                    if !pops[i].is_empty() {
+                        v.pop = Some(format!("{}%", &pops[i]));
+                    }
+                } else if let AreaData::DetailedTempreture {
+                    temps_min,
+                    temps_min_upper: _,
+                    temps_min_lower: _,
+                    temps_max,
+                    temps_max_upper: _,
+                    temps_max_lower: _,
+                } = &area.data
+                {
+                    // 日時文字列で検索、なければデフォルトで新規作成する
+                    let v = date_data
+                        .entry(key.to_string())
+                        .or_insert(Default::default());
+                    ensure!(td.len() == temps_min.len());
+                    ensure!(td.len() == temps_max.len());
+                    v.tempreture_area = Some(area.area.name.to_string());
+                    if !temps_max[i].is_empty() {
+                        v.temp_min = Some(temps_max[i].to_string());
+                    }
+                    if !temps_min[i].is_empty() {
+                        v.temp_max = Some(temps_min[i].to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    let now: DateTime<Local> = Local::now();
+    Ok(AiReadableWeather {
+        now: now.to_string(),
+
+        publishing_office: ov.publishing_office.to_string(),
+        report_datetime: ov.report_datetime.to_string(),
+        target_area: ov.target_area.to_string(),
+        headline: ov.headline_text.to_string(),
+        overview: ov.text.to_string(),
+
+        date_data,
+    })
 }
 
 #[allow(unused)]
@@ -267,25 +410,69 @@ mod tests {
 
     #[test]
     fn parse_overview_forecast() -> Result<()> {
-        const SRC: &str = include_str!(concat!(
+        let src = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/overview_forecast.json"
+            "/res/test/weather/overview_forecast_130000.json"
         ));
-        let obj: OverviewForecast = serde_json::from_str(SRC)?;
+        let obj: OverviewForecast = serde_json::from_str(src)?;
         assert_eq!("気象庁", obj.publishing_office);
         assert_eq!("東京都", obj.target_area);
+
+        let src = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/overview_forecast_140000.json"
+        ));
+        let obj: OverviewForecast = serde_json::from_str(src)?;
+        assert_eq!("横浜地方気象台", obj.publishing_office);
+        assert_eq!("神奈川県", obj.target_area);
 
         Ok(())
     }
 
     #[test]
     fn parse_forecast() -> Result<()> {
-        const SRC: &str = include_str!(concat!(
+        let src = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/forecast.json"
+            "/res/test/weather/forecast_130000.json"
         ));
-        let obj: ForecastRoot = serde_json::from_str(SRC)?;
+        let obj: ForecastRoot = serde_json::from_str(src)?;
         assert_eq!("気象庁", obj[0].publishing_office);
+
+        let src = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/forecast_140000.json"
+        ));
+        let obj: ForecastRoot = serde_json::from_str(src)?;
+        assert_eq!("横浜地方気象台", obj[0].publishing_office);
+
+        Ok(())
+    }
+
+    #[test]
+    fn weather_code() -> Result<()> {
+        assert_eq!("晴", weather_code_to_string("100")?);
+        assert_eq!("晴時々曇", weather_code_to_string("101")?);
+        assert_eq!("雪で雷を伴う", weather_code_to_string("450")?);
+
+        Ok(())
+    }
+
+    #[test]
+    // cargo test ai_readable -- --nocapture
+    fn ai_readable() -> Result<()> {
+        let src = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/overview_forecast_130000.json"
+        ));
+        let ov: OverviewForecast = serde_json::from_str(src)?;
+        let src = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/forecast_130000.json"
+        ));
+        let fcr: ForecastRoot = serde_json::from_str(src)?;
+
+        let obj = weather_to_ai_readable(&ov, &fcr)?;
+        println!("{}", serde_json::to_string_pretty(&obj).unwrap());
 
         Ok(())
     }
