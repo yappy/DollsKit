@@ -20,6 +20,7 @@ const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
+const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 
 /// <https://platform.openai.com/docs/models>
 ///
@@ -134,6 +135,60 @@ struct ChatRequest {
     stop: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     user: Option<String>,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct ImageGenRequest {
+    /// A text description of the desired image(s).
+    /// The maximum length is 1000 characters.
+    prompt: String,
+    /// The number of images to generate. Must be between 1 and 10.
+    /// Defaults to 1
+    #[serde(skip_serializing_if = "Option::is_none")]
+    n: Option<u8>,
+    /// The format in which the generated images are returned.
+    /// Must be one of url or b64_json.
+    /// Defaults to url
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<String>,
+    /// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
+    /// Defaults to 1024x1024
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<ImageSize>,
+    /// A unique identifier representing your end-user,
+    /// which can help OpenAI to monitor and detect abuse. Learn more.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    user: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ResponseFormat {
+    Url,
+    B64Json,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ImageSize {
+    #[serde(rename = "256x256")]
+    X256,
+    #[serde(rename = "512x512")]
+    X512,
+    #[serde(rename = "1024x1024")]
+    X1024,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct ImageGenResponse {
+    created: u64,
+    data: Vec<Image>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Image {
+    b64_json: Option<String>,
+    url: Option<String>,
 }
 
 /// OpenAI 設定データ。
@@ -262,6 +317,43 @@ impl OpenAi {
 
         Ok(msg.clone())
     }
+
+    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<Vec<u8>>> {
+        let key = &self.config.api_key;
+        let body = ImageGenRequest {
+            prompt: prompt.to_string(),
+            n: Some(n),
+            size: Some(ImageSize::X256),
+            ..Default::default()
+        };
+
+        info!("[openai] image gen request: {:?}", body);
+        if !self.config.enabled {
+            warn!("[openai] skip because openai feature is disabled");
+            bail!("openai is disabled");
+        }
+
+        let resp = self
+            .client
+            .post(URL_IMAGE_GEN)
+            .header("Authorization", format!("Bearer {key}"))
+            .json(&body)
+            .send()
+            .await?;
+
+        let json_str = netutil::check_http_resp(resp).await?;
+        let resp: ImageGenResponse = netutil::convert_from_json(&json_str)?;
+
+        let mut result = Vec::new();
+        for img in resp.data.iter() {
+            let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
+            let resp = self.client.get(url).send().await?;
+            let bin = netutil::check_http_resp_bin(resp).await?;
+            result.push(bin);
+        }
+
+        Ok(result)
+    }
 }
 
 impl SystemModule for OpenAi {
@@ -374,5 +466,22 @@ mod tests {
         assert!(reply.role == Role::Assistant);
         assert!(reply.content.is_some());
         assert!(reply.function_call.is_none());
+    }
+
+    #[tokio::test]
+    #[serial(openai)]
+    #[ignore]
+    // cargo test image_gen -- --ignored --nocapture
+    async fn image_gen() -> Result<()> {
+        let src = std::fs::read_to_string("config.toml").unwrap();
+        let _unset = config::set(toml::from_str(&src).unwrap());
+
+        let ai = OpenAi::new().unwrap();
+        let res = ai
+            .generate_image("Rasberry Pi の上に乗っている管理人形", 1)
+            .await?;
+        assert_eq!(1, res.len());
+
+        Ok(())
     }
 }
