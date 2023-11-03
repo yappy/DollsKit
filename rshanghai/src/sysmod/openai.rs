@@ -318,7 +318,7 @@ impl OpenAi {
         Ok(msg.clone())
     }
 
-    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<Vec<u8>>> {
+    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
         let key = &self.config.api_key;
         let body = ImageGenRequest {
             prompt: prompt.to_string(),
@@ -347,9 +347,7 @@ impl OpenAi {
         let mut result = Vec::new();
         for img in resp.data.iter() {
             let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
-            let resp = self.client.get(url).send().await?;
-            let bin = netutil::check_http_resp_bin(resp).await?;
-            result.push(bin);
+            result.push(url.to_string());
         }
 
         Ok(result)

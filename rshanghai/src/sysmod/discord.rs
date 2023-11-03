@@ -564,7 +564,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[group]
 #[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset)]
+#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset, aiimg)]
 struct General;
 
 #[command]
@@ -837,6 +837,28 @@ async fn aireset(ctx: &Context, msg: &Message) -> CommandResult {
         discord.chat_history.clear();
     }
     msg.reply(ctx, "OK").await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("OpenAI image generation.")]
+#[usage("<prompt>")]
+#[example("A person who are returning home early from their office.")]
+#[min_args(1)]
+async fn aiimg(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
+    let prompt = arg.rest();
+
+    let img_url = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        let mut resp = ai.generate_image(prompt, 1).await?;
+        resp.pop().ok_or_else(|| anyhow!("image array too short"))?
+    };
+
+    msg.reply(ctx, img_url).await?;
 
     Ok(())
 }
