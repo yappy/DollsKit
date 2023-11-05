@@ -1,6 +1,9 @@
 //! LINE API。
 use super::{
-    openai::function::{FuncArgs, FuncBodyAsync, FunctionTable},
+    openai::{
+        function::{FuncArgs, FuncBodyAsync, FunctionTable},
+        ParameterElement,
+    },
     SystemModule,
 };
 use crate::{
@@ -108,18 +111,7 @@ impl Line {
 
         let mut func_table = FunctionTable::new();
         func_table.register_basic_functions();
-        func_table.register_function(
-            Function {
-                name: "draw".to_string(),
-                description: Some("Draw a picture".to_string()),
-                parameters: Parameters {
-                    type_: "object".to_string(),
-                    ..Default::default()
-                },
-            },
-            "draw",
-            Box::new(draw_picture_sync),
-        );
+        register_draw_picture(&mut func_table);
 
         let client = Client::builder().timeout(TIMEOUT).build()?;
 
@@ -286,6 +278,7 @@ impl Line {
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
     ///
     /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
+    #[allow(unused)]
     pub async fn push_message(&self, to: &str, text: &str) -> Result<ReplyResp> {
         ensure!(!text.is_empty(), "text must not be empty");
 
@@ -296,6 +289,25 @@ impl Line {
             })
             .collect();
         ensure!(messages.len() <= 5, "text too long: {}", text.len());
+
+        let req = PushReq {
+            to: to.to_string(),
+            messages,
+            notification_disabled: None,
+            custom_aggregation_units: None,
+        };
+        let resp = self.post_auth_json(URL_PUSH, &req).await?;
+        info!("{:?}", resp);
+
+        Ok(resp)
+    }
+
+    /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
+    pub async fn push_image_message(&self, to: &str, url: &str) -> Result<ReplyResp> {
+        let messages = vec![Message::Image {
+            original_content_url: url.to_string(),
+            preview_image_url: url.to_string(),
+        }];
 
         let req = PushReq {
             to: to.to_string(),
@@ -396,6 +408,31 @@ fn split_message(text: &str) -> Vec<&str> {
     result
 }
 
+fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
+    let mut properties = HashMap::new();
+    properties.insert(
+        "prompt".to_string(),
+        ParameterElement {
+            type_: "string".to_string(),
+            description: Some("Prompt string that will be used for drawing".to_string()),
+            ..Default::default()
+        },
+    );
+    func_table.register_function(
+        Function {
+            name: "draw".to_string(),
+            description: Some("Draw a picture".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["prompt".to_string()],
+            },
+        },
+        "draw",
+        Box::new(draw_picture_sync),
+    );
+}
+
 fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(draw_picture(ctx, args))
 }
@@ -413,13 +450,12 @@ async fn draw_picture(ctx: FunctionContext, _args: &FuncArgs) -> Result<String> 
         };
         {
             let line = ctx.ctrl.sysmods().line.lock().await;
-            // TODO:
-            line.push_message(&ctx.reply_to, &url).await?;
+            line.push_image_message(&ctx.reply_to, &url).await?;
         }
         Ok(())
     });
 
-    Ok("Accepted. Will be posted later.".to_string())
+    Ok("Accepted. Will be posted later. Wait a moment.".to_string())
 }
 
 #[cfg(test)]
