@@ -7,7 +7,10 @@ use std::time::{Duration, Instant};
 use super::{ActixError, WebResult};
 use crate::{
     sys::taskserver::Control,
-    sysmod::openai::{ChatMessage, OpenAi, Role},
+    sysmod::{
+        line::FunctionContext,
+        openai::{ChatMessage, OpenAi, Role},
+    },
     utils::netutil,
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
@@ -285,13 +288,14 @@ async fn on_text_message(
     reply_token: &str,
     text: &str,
 ) -> Result<()> {
+    ensure!(src.is_some(), "Field 'source' is required");
+    let src = src.as_ref().unwrap();
+
     let prompt = {
         let mut line = ctrl.sysmods().line.lock().await;
         let prompt = line.config.prompt.clone();
 
         // source フィールドからプロフィール情報を取得
-        ensure!(src.is_some(), "Field 'source' is required");
-        let src = src.as_ref().unwrap();
         let display_name = match src {
             Source::User { user_id } => {
                 if let Some(name) = line.config.id_name_map.get(user_id) {
@@ -366,9 +370,24 @@ async fn on_text_message(
                 line.chat_history.push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
+                    let reply_to = match src {
+                        Source::User { user_id } => user_id,
+                        Source::Group {
+                            group_id,
+                            user_id: _,
+                        } => group_id,
+                        Source::Room {
+                            room_id: _,
+                            user_id: _,
+                        } => bail!("Source::Room is not supported"),
+                    };
+                    let ctx = FunctionContext {
+                        ctrl: ctrl.clone(),
+                        reply_to: reply_to.to_string(),
+                    };
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = line.func_table.call(func_name, func_args).await;
+                    let func_res = line.func_table.call(ctx, func_name, func_args).await;
                     // function 応答を履歴に追加
                     line.chat_history.push(func_res);
                     // continue

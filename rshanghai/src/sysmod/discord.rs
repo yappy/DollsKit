@@ -113,7 +113,7 @@ pub struct Discord {
     /// [Self::chat_history] の有効期限。
     chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
-    func_table: FunctionTable,
+    func_table: FunctionTable<()>,
 }
 
 /// 自動削除設定。チャネルごとに保持される。
@@ -178,7 +178,7 @@ impl Discord {
         );
 
         let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
+        func_table.register_basic_functions();
 
         Ok(Self {
             config,
@@ -754,7 +754,7 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = discord.func_table.call(func_name, func_args).await;
+                    let func_res = discord.func_table.call((), func_name, func_args).await;
                     // function 応答を履歴に追加
                     discord.chat_history.push(func_res);
                     // continue

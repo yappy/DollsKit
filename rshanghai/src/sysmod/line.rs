@@ -1,13 +1,17 @@
 //! LINE API。
-use super::{openai::function::FunctionTable, SystemModule};
+use super::{
+    openai::function::{FuncArgs, FuncBodyAsync, FunctionTable},
+    SystemModule,
+};
 use crate::{
     sys::{config, taskserver::Control},
-    sysmod::openai::{self, function::FUNCTION_TOKEN},
+    sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
     utils::chat_history::{self, ChatHistory},
 };
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use log::info;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -61,6 +65,12 @@ impl Default for LinePrompt {
     }
 }
 
+pub struct FunctionContext {
+    pub ctrl: Control,
+    /// userId, groupIdm or roomId
+    pub reply_to: String,
+}
+
 /// LINE システムモジュール。
 pub struct Line {
     /// 設定データ。
@@ -73,7 +83,7 @@ pub struct Line {
     /// [Self::chat_history] の有効期限。
     pub chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
-    pub func_table: FunctionTable,
+    pub func_table: FunctionTable<FunctionContext>,
 }
 
 impl Line {
@@ -97,8 +107,21 @@ impl Line {
         );
 
         let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
-        let client = reqwest::Client::builder().timeout(TIMEOUT).build()?;
+        func_table.register_basic_functions();
+        func_table.register_function(
+            Function {
+                name: "draw".to_string(),
+                description: Some("Draw a picture".to_string()),
+                parameters: Parameters {
+                    type_: "object".to_string(),
+                    ..Default::default()
+                },
+            },
+            "draw",
+            Box::new(draw_picture_sync),
+        );
+
+        let client = Client::builder().timeout(TIMEOUT).build()?;
 
         Ok(Self {
             config,
@@ -132,61 +155,73 @@ struct Detail {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProfileResp {
-    #[serde(rename = "displayName")]
     pub display_name: String,
-    #[serde(rename = "userId")]
     pub user_id: String,
     pub language: Option<String>,
-    #[serde(rename = "pictureUrl")]
     pub picture_url: Option<String>,
-    #[serde(rename = "statusMessage")]
     pub status_message: Option<String>,
 }
 
-#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde_with::skip_serializing_none]
 struct ReplyReq {
-    #[serde(rename = "replyToken")]
     reply_token: String,
     /// len = 1..=5
     messages: Vec<Message>,
-    #[serde(rename = "notificationDisabled")]
     notification_disabled: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReplyResp {
-    #[serde(rename = "sentMessages")]
     sent_messages: Vec<SentMessage>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde_with::skip_serializing_none]
+struct PushReq {
+    to: String,
+    /// len = 1..=5
+    messages: Vec<Message>,
+    notification_disabled: Option<bool>,
+    custom_aggregation_units: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushResp {
+    sent_messages: Vec<SentMessage>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SentMessage {
     id: String,
-    #[serde(rename = "quoteToken")]
     quote_token: Option<String>,
 }
 
-#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
+#[serde_with::skip_serializing_none]
 enum Message {
-    #[serde(rename = "text")]
+    #[serde(rename_all = "camelCase")]
     Text { text: String },
-    #[serde(rename = "image")]
+    #[serde(rename_all = "camelCase")]
     Image {
         /// url len <= 5000
         /// protocol = https (>= TLS 1.2)
         /// format = jpeg | png
         /// size <= 10 MB
-        #[serde(rename = "originalContentUrl")]
         original_content_url: String,
         /// url len <= 5000
         /// protocol = https (>= TLS 1.2)
         /// format = jpeg | png
         /// size <= 1 MB
-        #[serde(rename = "previewImageUrl")]
         preview_image_url: String,
     },
 }
@@ -226,6 +261,31 @@ impl Line {
     ///
     /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
     pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
+        ensure!(!text.is_empty(), "text must not be empty");
+
+        let messages: Vec<_> = split_message(text)
+            .iter()
+            .map(|&chunk| Message::Text {
+                text: chunk.to_string(),
+            })
+            .collect();
+        ensure!(messages.len() <= 5, "text too long: {}", text.len());
+
+        let req = ReplyReq {
+            reply_token: reply_token.to_string(),
+            messages,
+            notification_disabled: None,
+        };
+        let resp = self.post_auth_json(URL_REPLY, &req).await?;
+        info!("{:?}", resp);
+
+        Ok(resp)
+    }
+
+    /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
+    ///
+    /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
+    pub async fn push_message(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
         ensure!(!text.is_empty(), "text must not be empty");
 
         let messages: Vec<_> = split_message(text)
@@ -332,6 +392,32 @@ fn split_message(text: &str) -> Vec<&str> {
     }
 
     result
+}
+
+fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(draw_picture(ctx, args))
+}
+
+async fn draw_picture(ctx: FunctionContext, _args: &FuncArgs) -> Result<String> {
+    let ctrl = ctx.ctrl.clone();
+    ctrl.spawn_oneshot_fn("line_draw_picture", async move {
+        let url = {
+            let ai = ctx.ctrl.sysmods().openai.lock().await;
+
+            ai.generate_image("test", 1)
+                .await?
+                .pop()
+                .ok_or_else(|| anyhow!("parse error"))?
+        };
+        {
+            let line = ctx.ctrl.sysmods().line.lock().await;
+            // TODO:
+            line.push_message(&ctx.reply_to, &url).await?;
+        }
+        Ok(())
+    });
+
+    Ok("Accepted. Will be posted later.".to_string())
 }
 
 #[cfg(test)]

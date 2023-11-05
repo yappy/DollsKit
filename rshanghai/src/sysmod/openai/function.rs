@@ -1,6 +1,7 @@
 //! OpenAI API - function.
 
 use super::{Function, ParameterElement, Parameters};
+
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
 use crate::{
     sysmod::openai::{ChatMessage, Role},
@@ -23,13 +24,13 @@ pub const FUNCTION_TOKEN: usize = 800;
 // https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
 /// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
-type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
+pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
 /// 関数の Rust 上での定義。
 ///
-/// 引数は [FuncArgs] で、返り値は文字列の async fn。
-type FuncBody = Box<dyn Fn(&FuncArgs) -> FuncBodyAsync + Sync + Send>;
+/// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
+pub type FuncBody<T> = Box<dyn Fn(T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
 /// 引数。文字列から文字列へのマップ。
-type FuncArgs = HashMap<String, String>;
+pub type FuncArgs = HashMap<String, String>;
 
 /// 引数は JSON ソース文字列で与えられる。
 /// デシリアライズでパースするための構造体。
@@ -40,14 +41,14 @@ pub struct Args {
 }
 
 /// 関数群の管理。
-pub struct FunctionTable {
+pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
-    call_table: HashMap<&'static str, FuncBody>,
+    call_table: HashMap<&'static str, FuncBody<T>>,
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     pub fn new() -> Self {
         Self {
             function_list: Default::default(),
@@ -65,14 +66,14 @@ impl FunctionTable {
     /// OpenAI API からのデータをそのまま渡せ、
     /// 結果も API にそのまま渡せる [ChatMessage] で返す。
     /// エラーも適切なメッセージとして返す。
-    pub async fn call(&self, func_name: &str, args_json_str: &str) -> ChatMessage {
+    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> ChatMessage {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
             let args = serde_json::from_str::<Args>(args_json_str)
                 .map_err(|err| anyhow!("Arguments parse error: {err}"));
             match args {
-                Ok(args) => self.call_internal(func_name, &args.args).await,
+                Ok(args) => self.call_internal(ctx, func_name, &args.args).await,
                 Err(err) => Err(err),
             }
         };
@@ -97,17 +98,22 @@ impl FunctionTable {
     }
 
     /// [Self::call] の内部メイン処理。
-    async fn call_internal(&self, func_name: &str, args: &FuncArgs) -> Result<String> {
+    async fn call_internal(&self, ctx: T, func_name: &str, args: &FuncArgs) -> Result<String> {
         let func = self
             .call_table
             .get(func_name)
             .ok_or_else(|| anyhow!("Error: Function {func_name} not found"))?;
 
         // call body
-        func(args).await.map_err(|err| anyhow!("Error: {err}"))
+        func(ctx, args).await.map_err(|err| anyhow!("Error: {err}"))
     }
 
-    pub fn register_all_functions(&mut self) {
+    pub fn register_function(&mut self, function: Function, name: &'static str, body: FuncBody<T>) {
+        self.function_list.push(function);
+        self.call_table.insert(name, Box::new(body));
+    }
+
+    pub fn register_basic_functions(&mut self) {
         self.register_get_version();
         self.register_get_current_datetime();
         self.register_request_url();
@@ -124,7 +130,7 @@ fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
 
 // =============================================================================
 
-fn get_version_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn get_version_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_version(args))
 }
 
@@ -134,7 +140,7 @@ async fn get_version(_args: &FuncArgs) -> Result<String> {
     Ok(version::version_info().to_string())
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_get_version(&mut self) {
         self.function_list.push(Function {
             name: "get_version".to_string(),
@@ -152,7 +158,7 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn get_current_datetime_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
 }
 
@@ -173,7 +179,7 @@ async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
     }
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_get_current_datetime(&mut self) {
         let mut properties = HashMap::new();
         properties.insert(
@@ -200,7 +206,7 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn request_url_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
@@ -271,7 +277,7 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     }
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_request_url(&mut self) {
         let mut properties = HashMap::new();
         properties.insert(
@@ -298,7 +304,7 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn get_weather_report_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn get_weather_report_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_weather_report(args))
 }
 
@@ -326,7 +332,7 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&obj).unwrap())
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_get_weather_report(&mut self) {
         let area_list: Vec<_> = weather::offices()
             .iter()

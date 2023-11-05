@@ -362,7 +362,6 @@ impl SystemModule for OpenAi {
 
 #[cfg(test)]
 mod tests {
-    use super::function::*;
     use super::*;
     use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
@@ -402,68 +401,6 @@ mod tests {
             }
         };
         println!("{resp}");
-    }
-
-    #[tokio::test]
-    #[serial(openai)]
-    #[ignore]
-    // cargo test chat_function -- --ignored --nocapture
-    async fn chat_function() {
-        let src = std::fs::read_to_string("config.toml").unwrap();
-        let _unset = config::set(toml::from_str(&src).unwrap());
-
-        let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
-
-        let ai = OpenAi::new().unwrap();
-        let mut msgs = vec![ChatMessage {
-            role: Role::User,
-            content: Some("こんにちは。今は何時でしょうか？".to_string()),
-            ..Default::default()
-        }];
-        let funcs = func_table.function_list();
-
-        // function call が返ってくる
-        println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, funcs).await {
-            Ok(msgs) => msgs,
-            Err(err) => {
-                println!("{err}");
-                // HTTP status が得られるタイプのエラーのみ許容する
-                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
-                return;
-            }
-        };
-        println!("{:?}\n", reply);
-
-        assert!(reply.role == Role::Assistant);
-        assert!(reply.content.is_none());
-        assert!(reply.function_call.as_ref().unwrap().name == "get_current_datetime");
-
-        let func_name = &reply.function_call.as_ref().unwrap().name;
-        let func_args = &reply.function_call.as_ref().unwrap().arguments;
-        let func_res = func_table.call(func_name, func_args).await;
-
-        // function call と呼び出し結果を対話ログに追加
-        msgs.push(reply);
-        msgs.push(func_res);
-
-        // function の結果を使った応答が返ってくる
-        println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, funcs).await {
-            Ok(msgs) => msgs,
-            Err(err) => {
-                println!("{err}");
-                // HTTP status が得られるタイプのエラーのみ許容する
-                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
-                return;
-            }
-        };
-        println!("{:?}", reply);
-
-        assert!(reply.role == Role::Assistant);
-        assert!(reply.content.is_some());
-        assert!(reply.function_call.is_none());
     }
 
     #[tokio::test]
