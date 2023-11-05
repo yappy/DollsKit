@@ -123,7 +123,7 @@ impl<T: 'static> FunctionTable<T> {
 
 /// args から引数名で検索し、値への参照を返す。
 /// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
+pub fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     let value = args.get(&name.to_string());
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
 }

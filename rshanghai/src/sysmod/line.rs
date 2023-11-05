@@ -1,7 +1,7 @@
 //! LINE API。
 use super::{
     openai::{
-        function::{FuncArgs, FuncBodyAsync, FunctionTable},
+        function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
         ParameterElement,
     },
     SystemModule,
@@ -411,10 +411,10 @@ fn split_message(text: &str) -> Vec<&str> {
 fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
     let mut properties = HashMap::new();
     properties.insert(
-        "prompt".to_string(),
+        "keywords".to_string(),
         ParameterElement {
             type_: "string".to_string(),
-            description: Some("Prompt string that will be used for drawing".to_string()),
+            description: Some("Keywords for drawing. They must be in English.".to_string()),
             ..Default::default()
         },
     );
@@ -425,7 +425,7 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties,
-                required: vec!["prompt".to_string()],
+                required: vec!["keywords".to_string()],
             },
         },
         "draw",
@@ -437,13 +437,15 @@ fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(draw_picture(ctx, args))
 }
 
-async fn draw_picture(ctx: FunctionContext, _args: &FuncArgs) -> Result<String> {
+async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
+    let keywords = function::get_arg(args, "keywords")?.to_string();
+
     let ctrl = ctx.ctrl.clone();
     ctrl.spawn_oneshot_fn("line_draw_picture", async move {
         let url = {
             let ai = ctx.ctrl.sysmods().openai.lock().await;
 
-            ai.generate_image("test", 1)
+            ai.generate_image(&keywords, 1)
                 .await?
                 .pop()
                 .ok_or_else(|| anyhow!("parse error"))?
@@ -455,7 +457,7 @@ async fn draw_picture(ctx: FunctionContext, _args: &FuncArgs) -> Result<String> 
         Ok(())
     });
 
-    Ok("Accepted. Will be posted later. Wait a moment.".to_string())
+    Ok("Accepted. The result will be automatially posted later. Assistant should not draw for now.".to_string())
 }
 
 #[cfg(test)]
