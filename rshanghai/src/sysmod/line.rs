@@ -234,6 +234,7 @@ fn url_group_profile(group_id: &str, user_id: &str) -> String {
 }
 
 const URL_REPLY: &str = "https://api.line.me/v2/bot/message/reply";
+const URL_PUSH: &str = "https://api.line.me/v2/bot/message/push";
 
 impl Line {
     pub async fn get_profile(&self, user_id: &str) -> Result<ProfileResp> {
@@ -285,7 +286,7 @@ impl Line {
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
     ///
     /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
-    pub async fn push_message(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
+    pub async fn push_message(&self, to: &str, text: &str) -> Result<ReplyResp> {
         ensure!(!text.is_empty(), "text must not be empty");
 
         let messages: Vec<_> = split_message(text)
@@ -296,12 +297,13 @@ impl Line {
             .collect();
         ensure!(messages.len() <= 5, "text too long: {}", text.len());
 
-        let req = ReplyReq {
-            reply_token: reply_token.to_string(),
+        let req = PushReq {
+            to: to.to_string(),
             messages,
             notification_disabled: None,
+            custom_aggregation_units: None,
         };
-        let resp = self.post_auth_json(URL_REPLY, &req).await?;
+        let resp = self.post_auth_json(URL_PUSH, &req).await?;
         info!("{:?}", resp);
 
         Ok(resp)
