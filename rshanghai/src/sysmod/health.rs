@@ -498,13 +498,13 @@ bitflags! {
         /// 3: Soft temperature limit active
         const SOFT_TEMP_LIMIT = 0x8;
         /// 16: Under-voltage has occurred
-        const IN_UNDER_VOLTAGE = 0x10000;
+        const PAST_UNDER_VOLTAGE = 0x10000;
         /// 17: Arm frequency capping has occurred
-        const IN_ARM_FREQ_CAPPED = 0x20000;
+        const PAST_ARM_FREQ_CAPPED = 0x20000;
         /// 18: Throttling has occurred
-        const IN_THROTTLED = 0x40000;
+        const PAST_THROTTLED = 0x40000;
         /// 19: Soft temperature limit has occurred
-        const IN_SOFT_TEMP_LIMIT = 0x80000;
+        const PAST_SOFT_TEMP_LIMIT = 0x80000;
     }
 }
 
