@@ -414,6 +414,75 @@ async fn get_cpu_temp() -> Result<CpuTemp> {
     }
 }
 
+async fn get_cpu_cores() -> Result<u32> {
+    let output = Command::new("nproc").output().await?;
+    ensure!(output.status.success(), "nproc command failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    Ok(stdout.trim().parse()?)
+}
+
+async fn get_current_freq() -> Result<Option<u32>> {
+    let result = Command::new("vcgencmd")
+        .arg("measure_clock ")
+        .arg("arm")
+        .output()
+        .await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd measure_clock failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let actual: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        ri.parse()?
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+
+    Ok(Some(actual))
+}
+
+async fn get_freq_conf() -> Result<Option<u32>> {
+    let result = Command::new("vcgencmd")
+        .arg("get_config")
+        .arg("arm_freq")
+        .output()
+        .await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd get_config failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let conf: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        ri.parse()?
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+
+    Ok(Some(conf))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -441,12 +510,37 @@ mod tests {
 
     #[tokio::test]
     async fn cpu_temp() {
-        let result = get_cpu_temp().await.unwrap();
-        if let Some(temp) = result.temp {
+        let temp = get_cpu_temp().await.unwrap().temp;
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            let temp = temp.unwrap();
             assert!(
                 (30.0..=100.0).contains(&temp),
                 "strange temperature: {temp}"
             );
+        } else {
+            assert!(temp.is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn cpu_cores() {
+        let cores = get_cpu_cores().await.unwrap();
+        assert!((1..=256).contains(&cores), "CPU cores: {cores}");
+    }
+
+    #[tokio::test]
+    async fn cpu_freq() {
+        let cur = get_current_freq().await.unwrap();
+        let conf = get_freq_conf().await.unwrap();
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            let cur = cur.unwrap();
+            let conf = conf.unwrap();
+            // 100MHz - 10GHz
+            assert!((100..10_000).contains(&cur), "CPU frequency: {cur} MHz");
+            assert!((100..10_000).contains(&conf), "CPU frequency: {conf} MHz");
+        } else {
+            assert!(cur.is_none());
+            assert!(conf.is_none());
         }
     }
 }
