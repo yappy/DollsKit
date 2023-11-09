@@ -525,8 +525,8 @@ async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
     ensure!(output.status.success(), "vcgencmd get_throttled failed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let bits: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
-        ri.parse()?
+    let bits = if let Some((_le, ri)) = stdout.trim().split_once("=0x") {
+        u32::from_str_radix(ri, 16)?
     } else {
         return Err(anyhow!("Parse error"));
     };
