@@ -4,6 +4,7 @@ use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 use anyhow::{anyhow, ensure, Result};
+use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -484,6 +485,56 @@ async fn get_freq_conf() -> Result<Option<u64>> {
     Ok(Some(conf))
 }
 
+bitflags! {
+    /// vcgencmd get_throttled bit flags
+    #[derive(Default)]
+    struct ThrottleFlags: u32 {
+        /// 0: Under-voltage detected
+        const UNDER_VOLTAGE = 0x1;
+        /// 1: Arm frequency capped
+        const ARM_FREQ_CAPPED = 0x2;
+        /// 2: Currently throttled
+        const THROTTLED = 0x4;
+        /// 3: Soft temperature limit active
+        const SOFT_TEMP_LIMIT = 0x8;
+        /// 16: Under-voltage has occurred
+        const IN_UNDER_VOLTAGE = 0x10000;
+        /// 17: Arm frequency capping has occurred
+        const IN_ARM_FREQ_CAPPED = 0x20000;
+        /// 18: Throttling has occurred
+        const IN_THROTTLED = 0x40000;
+        /// 19: Soft temperature limit has occurred
+        const IN_SOFT_TEMP_LIMIT = 0x80000;
+    }
+}
+
+async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
+    let result = Command::new("vcgencmd").arg("get_throttled").output().await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd get_throttled failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let bits: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        ri.parse()?
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+    let status = ThrottleFlags::from_bits(bits).ok_or_else(|| anyhow!("Invalid bitflags"))?;
+
+    Ok(Some(status))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -542,6 +593,17 @@ mod tests {
         } else {
             assert!(cur.is_none());
             assert!(conf.is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn throttle_status() {
+        let flags = get_throttle_status().await.unwrap();
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            // enum に変換できれば OK
+            assert!(flags.is_some());
+        } else {
+            assert!(flags.is_none());
         }
     }
 }

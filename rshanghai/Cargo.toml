@@ -19,6 +19,8 @@ thiserror = "1.0.50"
 static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.3.0"
+# Bit flags
+bitflags = "2.4.1"
 
 # Command line parser
 getopts = "0.2.21"
