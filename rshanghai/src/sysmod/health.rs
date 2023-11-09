@@ -423,7 +423,7 @@ async fn get_cpu_cores() -> Result<u32> {
     Ok(stdout.trim().parse()?)
 }
 
-async fn get_current_freq() -> Result<Option<u32>> {
+async fn get_current_freq() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("measure_clock ")
         .arg("arm")
@@ -444,8 +444,8 @@ async fn get_current_freq() -> Result<Option<u32>> {
     ensure!(output.status.success(), "vcgencmd measure_clock failed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let actual: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
-        ri.parse()?
+    let actual = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        ri.parse::<u64>()?
     } else {
         return Err(anyhow!("Parse error"));
     };
@@ -453,7 +453,7 @@ async fn get_current_freq() -> Result<Option<u32>> {
     Ok(Some(actual))
 }
 
-async fn get_freq_conf() -> Result<Option<u32>> {
+async fn get_freq_conf() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("get_config")
         .arg("arm_freq")
@@ -474,8 +474,9 @@ async fn get_freq_conf() -> Result<Option<u32>> {
     ensure!(output.status.success(), "vcgencmd get_config failed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let conf: u32 = if let Some((_le, ri)) = stdout.trim().split_once('=') {
-        ri.parse()?
+    let conf = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        // MHz => Hz
+        ri.parse::<u64>()? * 1000 * 1000
     } else {
         return Err(anyhow!("Parse error"));
     };
@@ -536,8 +537,8 @@ mod tests {
             let cur = cur.unwrap();
             let conf = conf.unwrap();
             // 100MHz - 10GHz
-            assert!((100..10_000).contains(&cur), "CPU frequency: {cur} MHz");
-            assert!((100..10_000).contains(&conf), "CPU frequency: {conf} MHz");
+            assert!((100_000_000..10_000_000_000).contains(&cur), "CPU frequency: {cur} MHz");
+            assert!((100_000_000..10_000_000_000).contains(&conf), "CPU frequency: {conf} MHz");
         } else {
             assert!(cur.is_none());
             assert!(conf.is_none());
