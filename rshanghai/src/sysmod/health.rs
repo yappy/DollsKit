@@ -415,7 +415,7 @@ async fn get_cpu_temp() -> Result<CpuTemp> {
     }
 }
 
-async fn get_cpu_cores() -> Result<u32> {
+pub async fn get_cpu_cores() -> Result<u32> {
     let output = Command::new("nproc").output().await?;
     ensure!(output.status.success(), "nproc command failed");
 
@@ -424,7 +424,7 @@ async fn get_cpu_cores() -> Result<u32> {
     Ok(stdout.trim().parse()?)
 }
 
-async fn get_current_freq() -> Result<Option<u64>> {
+pub async fn get_current_freq() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("measure_clock ")
         .arg("arm")
@@ -454,7 +454,7 @@ async fn get_current_freq() -> Result<Option<u64>> {
     Ok(Some(actual))
 }
 
-async fn get_freq_conf() -> Result<Option<u64>> {
+pub async fn get_freq_conf() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("get_config")
         .arg("arm_freq")
@@ -488,7 +488,7 @@ async fn get_freq_conf() -> Result<Option<u64>> {
 bitflags! {
     /// vcgencmd get_throttled bit flags
     #[derive(Default)]
-    struct ThrottleFlags: u32 {
+    pub struct ThrottleFlags: u32 {
         /// 0: Under-voltage detected
         const UNDER_VOLTAGE = 0x1;
         /// 1: Arm frequency capped
@@ -508,7 +508,7 @@ bitflags! {
     }
 }
 
-async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
+pub async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
     let result = Command::new("vcgencmd").arg("get_throttled").output().await;
     let output = match result {
         Ok(output) => output,
@@ -588,8 +588,14 @@ mod tests {
             let cur = cur.unwrap();
             let conf = conf.unwrap();
             // 100MHz - 10GHz
-            assert!((100_000_000..10_000_000_000).contains(&cur), "CPU frequency: {cur} MHz");
-            assert!((100_000_000..10_000_000_000).contains(&conf), "CPU frequency: {conf} MHz");
+            assert!(
+                (100_000_000..10_000_000_000).contains(&cur),
+                "CPU frequency: {cur} Hz"
+            );
+            assert!(
+                (100_000_000..10_000_000_000).contains(&conf),
+                "CPU frequency: {conf} Hz"
+            );
         } else {
             assert!(cur.is_none());
             assert!(conf.is_none());

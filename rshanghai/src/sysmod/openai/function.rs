@@ -2,6 +2,9 @@
 
 use super::{Function, ParameterElement, Parameters};
 
+use crate::sysmod::health::{
+    get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
+};
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
 use crate::{
     sysmod::openai::{ChatMessage, Role},
@@ -115,6 +118,7 @@ impl<T: 'static> FunctionTable<T> {
 
     pub fn register_basic_functions(&mut self) {
         self.register_get_version();
+        self.register_get_cpu_status();
         self.register_get_current_datetime();
         self.register_request_url();
         self.register_get_weather_report();
@@ -157,7 +161,70 @@ impl<T: 'static> FunctionTable<T> {
 }
 
 // =============================================================================
+fn get_cpu_status_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_cpu_status(args))
+}
 
+#[derive(Serialize, Deserialize)]
+struct CpuStatus {
+    number_of_cores: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    current_frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    throttle_status: Option<Vec<String>>,
+}
+
+async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
+    let number_of_cores = get_cpu_cores().await?;
+    let current_frequency = get_current_freq()
+        .await?
+        .map(|hz| format!("{} MHz", hz / 1000_000));
+    let config_frequency = get_freq_conf()
+        .await?
+        .map(|hz| format!("{} MHz", hz / 1000_000));
+    let throttle_status = get_throttle_status().await?.map(|st| {
+        let mut v = vec![];
+        if st.contains(ThrottleFlags::UNDER_VOLTAGE) {
+            v.push("Under Voltage".to_string());
+        }
+        if st.contains(ThrottleFlags::SOFT_TEMP_LIMIT) {
+            v.push("Soft Throttled".to_string());
+        }
+        if st.contains(ThrottleFlags::THROTTLED) {
+            v.push("Hard Throttled".to_string());
+        }
+        v
+    });
+
+    let obj = CpuStatus {
+        number_of_cores,
+        current_frequency,
+        config_frequency,
+        throttle_status,
+    };
+
+    Ok(serde_json::to_string(&obj)?)
+}
+
+impl<T: 'static> FunctionTable<T> {
+    fn register_get_cpu_status(&mut self) {
+        self.function_list.push(Function {
+            name: "get_cpu_status".to_string(),
+            description: Some("Get the current status of assistant's CPU".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        });
+        self.call_table
+            .insert("get_cpu_status", Box::new(get_cpu_status_sync));
+    }
+}
+
+// =============================================================================
 fn get_current_datetime_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
 }
