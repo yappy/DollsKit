@@ -63,7 +63,6 @@ impl Health {
         let cpu_info = get_cpu_info().await?;
         let mem_info = get_mem_info().await?;
         let disk_info = get_disk_info().await?;
-        let cpu_temp = get_cpu_temp().await?;
 
         let timestamp = Local::now();
         let enrty = HistoryEntry {
@@ -71,7 +70,6 @@ impl Health {
             cpu_info,
             mem_info,
             disk_info,
-            cpu_temp,
         };
 
         debug_assert!(self.history.len() <= HISTORY_QUEUE_SIZE);
@@ -93,7 +91,6 @@ impl Health {
                 cpu_info,
                 mem_info,
                 disk_info,
-                cpu_temp,
                 ..
             } = entry;
 
@@ -101,7 +98,7 @@ impl Health {
 
             text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
 
-            if let Some(temp) = cpu_temp.temp {
+            if let Some(temp) = cpu_info.temp {
                 text.push_str(&format!("\nCPU Temp: {temp:.1}'C"));
             }
 
@@ -189,15 +186,16 @@ struct HistoryEntry {
     mem_info: MemInfo,
     /// ディスク使用率。
     disk_info: DiskInfo,
-    /// CPU 温度。
-    cpu_temp: CpuTemp,
 }
 
-/// CPU 使用率。
-#[derive(Debug, Clone)]
+/// CPU 情報。
+#[derive(Debug, Clone, Copy)]
 struct CpuInfo {
     /// 全コア合計の使用率。
     cpu_percent_total: f64,
+    /// CPU 温度 (℃)。
+    /// 取得できなかった場合は [None]。
+    temp: Option<f64>,
 }
 
 /// メモリ使用率。
@@ -216,14 +214,6 @@ struct DiskInfo {
     total_gib: f64,
     /// 利用可能ディスクサイズ (GiB)。
     avail_gib: f64,
-}
-
-/// CPU 温度。
-#[derive(Debug, Clone, Copy)]
-struct CpuTemp {
-    /// CPU 温度 (℃)。
-    /// 取得できなかった場合は [None]。
-    temp: Option<f64>,
 }
 
 /// [CpuInfo] を計測する。
@@ -290,7 +280,13 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     ensure!(cpu_percent_total.is_some());
     ensure!(!cpu_percent_list.is_empty());
     let cpu_percent_total = cpu_percent_total.unwrap();
-    Ok(CpuInfo { cpu_percent_total })
+
+    let temp = get_cpu_temp().await?;
+
+    Ok(CpuInfo {
+        cpu_percent_total,
+        temp,
+    })
 }
 
 /// [MemInfo] を計測する。
@@ -391,22 +387,20 @@ async fn get_disk_info() -> Result<DiskInfo> {
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
-async fn get_cpu_temp() -> Result<CpuTemp> {
+async fn get_cpu_temp() -> Result<Option<f64>> {
     let result = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await;
     match result {
         Ok(buf) => {
             let text = String::from_utf8_lossy(&buf);
-
             // 'C を 1000 倍した整数が得られるので変換する
             let temp = text.trim().parse::<f64>()? / 1000.0;
-            let temp = Some(temp);
 
-            Ok(CpuTemp { temp })
+            Ok(Some(temp))
         }
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 // NotFound は None を返して成功扱い
-                Ok(CpuTemp { temp: None })
+                Ok(None)
             } else {
                 // その他のエラーはそのまま返す
                 Err(anyhow::Error::from(e))
