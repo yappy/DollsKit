@@ -180,10 +180,10 @@ async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
     let number_of_cores = get_cpu_cores().await?;
     let current_frequency = get_current_freq()
         .await?
-        .map(|hz| format!("{} MHz", hz / 1000_000));
+        .map(|hz| format!("{} MHz", hz / 1_000_000));
     let config_frequency = get_freq_conf()
         .await?
-        .map(|hz| format!("{} MHz", hz / 1000_000));
+        .map(|hz| format!("{} MHz", hz / 1_000_000));
     let throttle_status = get_throttle_status().await?.map(|st| {
         let mut v = vec![];
         if st.contains(ThrottleFlags::UNDER_VOLTAGE) {
