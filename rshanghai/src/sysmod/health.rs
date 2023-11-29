@@ -538,6 +538,17 @@ mod tests {
         let info = get_cpu_info().await.unwrap();
 
         assert!((0.0..=100.0).contains(&info.cpu_percent_total));
+
+        let temp = info.temp;
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            let temp = temp.unwrap();
+            assert!(
+                (30.0..=100.0).contains(&temp),
+                "strange temperature: {temp}"
+            );
+        } else {
+            assert!(temp.is_none());
+        }
     }
 
     #[tokio::test]
@@ -552,20 +563,6 @@ mod tests {
         let info = get_disk_info().await.unwrap();
 
         assert!(info.avail_gib <= info.total_gib);
-    }
-
-    #[tokio::test]
-    async fn cpu_temp() {
-        let temp = get_cpu_temp().await.unwrap().temp;
-        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
-            let temp = temp.unwrap();
-            assert!(
-                (30.0..=100.0).contains(&temp),
-                "strange temperature: {temp}"
-            );
-        } else {
-            assert!(temp.is_none());
-        }
     }
 
     #[tokio::test]
