@@ -34,7 +34,7 @@ daemonize = "0.5.0"
 time = "0.3.30"
 chrono = { version = "0.4.31", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.192", features = ["derive"] }
+serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 serde_with = { version = "3.4.0", features = ["json"] }
 # TOML
@@ -46,7 +46,7 @@ tokio-stream = "0.1.14"
 # HTTP
 reqwest = "0.11.22"
 # URL encode
-percent-encoding = "2.3.0"
+percent-encoding = "2.3.1"
 # BASE64
 base64 = "0.21.5"
 # RNG
@@ -63,7 +63,7 @@ image = "0.24.7"
 # Font
 rusttype="0.9.3"
 # Discord
-serenity = "0.11.7"
+serenity = "0.12.0"
 scraper = "0.18.1"
 tiktoken-rs = "0.5.7"
 
