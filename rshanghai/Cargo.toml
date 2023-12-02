@@ -44,7 +44,7 @@ toml = "0.8.8"
 tokio = { version = "1.34.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.14"
 # HTTP
-reqwest = "0.11.22"
+reqwest = { version = "0.11.22", features = ["json"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64

@@ -9,17 +9,18 @@ use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serenity::async_trait;
+use serenity::builder::{CreateAttachment, CreateMessage};
 use serenity::framework::standard::macros::{command, group, help, hook};
 use serenity::framework::standard::{
-    help_commands, Args, CommandError, CommandGroup, CommandResult, HelpOptions,
+    help_commands, Args, CommandError, CommandGroup, CommandResult, Configuration, HelpOptions,
 };
-use serenity::http::Http;
+use serenity::http::{Http, MessagePagination};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
@@ -106,7 +107,7 @@ pub struct Discord {
     postponed_msgs: Vec<String>,
 
     /// 自動削除機能の設定データ。
-    auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
+    auto_del_config: BTreeMap<ChannelId, AutoDeleteConfig>,
 
     /// ai コマンドの会話履歴。
     chat_history: ChatHistory,
@@ -154,9 +155,10 @@ impl Discord {
         let config = config::get(|cfg| cfg.discord.clone());
 
         let mut auto_del_congig = BTreeMap::new();
-        for ch in &config.auto_del_chs {
+        for &ch in &config.auto_del_chs {
+            ensure!(ch != 0);
             auto_del_congig.insert(
-                *ch,
+                ChannelId::new(ch),
                 AutoDeleteConfig {
                     keep_count: 0,
                     keep_dur_min: 0,
@@ -208,7 +210,7 @@ impl Discord {
         }
 
         info!("[discord] say msg: {}", msg);
-        let ch = ChannelId(self.config.notif_channel);
+        let ch = ChannelId::new(self.config.notif_channel);
         let ctx = self.ctx.as_ref().unwrap();
         ch.say(ctx, msg).await?;
 
@@ -240,13 +242,10 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
     let http = Http::new(&config.token);
     let info = http.get_current_application_info().await?;
-    let myid = UserId(info.id.0);
-    let ownerids = HashSet::from([info.owner.id]);
+    let myid = UserId::new(info.id.get());
+    let ownerids = HashSet::from([info.owner.ok_or_else(|| anyhow!("No owner"))?.id]);
 
     let framework = StandardFramework::new()
-        // コマンドのプレフィクスはなし
-        // bot へのメンションをトリガとする
-        .configure(|c| c.prefix("").on_mention(Some(myid)).owners(ownerids.clone()))
         // コマンド前後でのフック (ロギング用)
         .before(before_hook)
         .after(after_hook)
@@ -254,6 +253,14 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         // コマンドとヘルプの登録
         .group(&GENERAL_GROUP)
         .help(&MY_HELP);
+    // コマンドのプレフィクスはなし
+    // bot へのメンションをトリガとする
+    framework.configure(
+        Configuration::new()
+            .prefix("")
+            .on_mention(Some(myid))
+            .owners(ownerids.clone()),
+    );
 
     // クライアントの初期化
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
@@ -278,7 +285,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     ctrl.spawn_oneshot_fn("discord-exit", async move {
         ctrl_for_cancel.cancel_rx().changed().await.unwrap();
         info!("[discord-exit] recv cancel");
-        shard_manager.lock().await.shutdown_all().await;
+        shard_manager.shutdown_all().await;
         info!("[discord-exit] shutdown_all ok");
         // shutdown_all が完了した後は ready は呼ばれないはずなので
         // ここで ctx を処分する
@@ -341,26 +348,29 @@ async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
 /// (消した数, 総メッセージ数) を返す。
 async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     ctx: &Context,
-    ch: u64,
+    ch: ChannelId,
     filter: F,
 ) -> Result<(usize, usize)> {
     // id=0 から 100 件ずつすべてのメッセージを取得する
-    let mut allmsgs = BTreeMap::<u64, Message>::new();
-    const GET_MSG_LIMIT: usize = 100;
-    let mut after = 0u64;
+    let mut allmsgs = BTreeMap::<MessageId, Message>::new();
+    const GET_MSG_LIMIT: u8 = 100;
+    let mut after = None;
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        let query = format!("?after={after}&limit={GET_MSG_LIMIT}");
-        info!("get_messages: {}", query);
-        let msgs = ctx.http.get_messages(ch, &query).await?;
+        info!("get_messages: after={:?}", after);
+        let target = after.map(|id| MessagePagination::After(id));
+        let msgs = ctx
+            .http
+            .get_messages(ch, target, Some(GET_MSG_LIMIT))
+            .await?;
         // 空配列ならば完了
         if msgs.is_empty() {
             break;
         }
         // 降順で送られてくるので ID でソートし直す
-        allmsgs.extend(msgs.iter().map(|m| (m.id.0, m.clone())));
+        allmsgs.extend(msgs.iter().map(|m| (m.id, m.clone())));
         // 最後の message id を次回の after に設定する
-        after = *allmsgs.keys().next_back().unwrap();
+        after = Some(*allmsgs.keys().next_back().unwrap());
     }
     info!("obtained {} messages", allmsgs.len());
 
@@ -372,7 +382,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
         // ch, msg ID はログに残す
         info!("Delete: ch={}, msg={}", ch, mid);
         // https://discord.com/developers/docs/resources/channel#delete-message
-        ctx.http.delete_message(ch, mid).await?;
+        ctx.http.delete_message(ch, mid, None).await?;
         delcount += 1;
     }
     info!("deleted {} messages", delcount);
@@ -517,7 +527,7 @@ impl EventHandler for Handler {
             assert_ne!(0, ch);
 
             info!("[discord] say msg: {}", msg);
-            let ch = ChannelId(ch);
+            let ch = ChannelId::new(ch);
             if let Err(why) = ch.say(&ctx, msg).await {
                 error!("{:#?}", why);
             }
@@ -643,7 +653,7 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
     // id 昇順で後ろ n 個を残して他を消す
     let (delcount, total) =
-        delete_msgs_in_channel(ctx, msg.channel_id.0, |_m, i, len| i + n < len).await?;
+        delete_msgs_in_channel(ctx, msg.channel_id, |_m, i, len| i + n < len).await?;
 
     msg.reply(ctx, format!("{delcount}/{total} messages deleted"))
         .await?;
@@ -659,9 +669,9 @@ async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
     owner_check(ctx, msg).await?;
 
     let pic = take_a_pic(TakePicOption::new()).await?;
-    msg.channel_id
-        .send_message(ctx, |m| m.add_file((&pic[..], "camera.jpg")))
-        .await?;
+    let attachment = CreateAttachment::bytes(&pic[..], "camera.jpg");
+    let cm = CreateMessage::new().add_file(attachment);
+    msg.channel_id.send_message(ctx, cm).await?;
 
     Ok(())
 }
@@ -679,15 +689,13 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let ch = if chstr == "here" {
         msg.channel_id
     } else {
-        ChannelId(chstr.parse::<u64>()?)
+        ChannelId::new(chstr.parse::<u64>()?)
     };
-    let user = UserId(arg.single::<u64>()?);
+    let user = UserId::new(arg.single::<u64>()?);
     let text: String = arg.single_quoted()?;
 
-    ch.send_message(ctx, |m| {
-        m.content(format_args!("{} {}", user.mention(), text))
-    })
-    .await?;
+    let cm = CreateMessage::new().content(format!("{} {}", user.mention(), text));
+    ch.send_message(ctx, cm).await?;
 
     Ok(())
 }
@@ -906,7 +914,7 @@ fn parse_duration(src: &str) -> Result<u32> {
 #[usage("")]
 #[example("")]
 async fn status(ctx: &Context, msg: &Message) -> CommandResult {
-    let ch = msg.channel_id.0;
+    let ch = msg.channel_id;
     let config = {
         let data = ctx.data.read().await;
         let ctrl = data.get::<ControlData>().unwrap();
@@ -941,7 +949,7 @@ async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let keep_count: u32 = arg.single()?;
     let keep_duration: String = arg.single()?;
     let keep_duration: u32 = parse_duration(&keep_duration)?;
-    let ch = msg.channel_id.0;
+    let ch = msg.channel_id;
 
     {
         let data = ctx.data.read().await;
