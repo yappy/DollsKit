@@ -1,31 +1,37 @@
 //! Discord クライアント (bot) 機能。
 
 use super::camera::{take_a_pic, TakePicOption};
-use super::openai::function::FunctionTable;
+use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
-use crate::sys::netutil::HttpStatusError;
 use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
-use crate::sysmod::openai::ChatMessage;
-use anyhow::{anyhow, Result};
+use crate::sysmod::openai::function::FUNCTION_TOKEN;
+use crate::sysmod::openai::{self, ChatMessage};
+use crate::utils::chat_history::{self, ChatHistory};
+use crate::utils::netutil::HttpStatusError;
+use anyhow::{anyhow, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serenity::async_trait;
+use serenity::builder::{CreateAttachment, CreateMessage};
 use serenity::framework::standard::macros::{command, group, help, hook};
 use serenity::framework::standard::{
-    help_commands, Args, CommandError, CommandGroup, CommandResult, HelpOptions,
+    help_commands, Args, CommandError, CommandGroup, CommandResult, Configuration, HelpOptions,
 };
-use serenity::http::Http;
+use serenity::http::{Http, MessagePagination};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::{framework::StandardFramework, Client};
 use static_assertions::const_assert;
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::time::Duration;
 use time::Instant;
+
+/// メッセージの最大文字数。 (Unicode codepoint)
+const MSG_MAX_LEN: usize = 2000;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,14 +76,14 @@ pub struct DiscordPrompt {
     pub pre: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
-    pub history_max: u32,
+    /// 会話履歴をクリアするまでの時間。
     pub history_timeout_min: u32,
 }
 
 /// [DiscordPrompt] のデフォルト値。
 const DEFAULT_TOML: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/src/res/openai_discord.toml"
+    "/res/openai_discord.toml"
 ));
 impl Default for DiscordPrompt {
     fn default() -> Self {
@@ -99,14 +105,16 @@ pub struct Discord {
     ///
     /// Some になるタイミングで全て送信する。
     postponed_msgs: Vec<String>,
+
     /// 自動削除機能の設定データ。
-    auto_del_config: BTreeMap<u64, AutoDeleteConfig>,
+    auto_del_config: BTreeMap<ChannelId, AutoDeleteConfig>,
+
     /// ai コマンドの会話履歴。
-    chat_history: VecDeque<ChatMessage>,
+    chat_history: ChatHistory,
     /// [Self::chat_history] の有効期限。
     chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
-    func_table: FunctionTable,
+    func_table: FunctionTable<()>,
 }
 
 /// 自動削除設定。チャネルごとに保持される。
@@ -147,9 +155,10 @@ impl Discord {
         let config = config::get(|cfg| cfg.discord.clone());
 
         let mut auto_del_congig = BTreeMap::new();
-        for ch in &config.auto_del_chs {
+        for &ch in &config.auto_del_chs {
+            ensure!(ch != 0);
             auto_del_congig.insert(
-                *ch,
+                ChannelId::new(ch),
                 AutoDeleteConfig {
                     keep_count: 0,
                     keep_dur_min: 0,
@@ -157,8 +166,21 @@ impl Discord {
             );
         }
 
+        // トークン上限を算出
+        let total_limit = openai::MODEL.1;
+        let pre_token: usize = config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history::token_count(text))
+            .sum();
+        assert!(FUNCTION_TOKEN + pre_token + openai::OUTPUT_RESERVED_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(
+            total_limit - FUNCTION_TOKEN - pre_token - openai::OUTPUT_RESERVED_TOKEN,
+        );
+
         let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
+        func_table.register_basic_functions();
 
         Ok(Self {
             config,
@@ -166,7 +188,7 @@ impl Discord {
             ctx: None,
             postponed_msgs: Default::default(),
             auto_del_config: auto_del_congig,
-            chat_history: Default::default(),
+            chat_history,
             chat_timeout: None,
             func_table,
         })
@@ -188,15 +210,15 @@ impl Discord {
         }
 
         info!("[discord] say msg: {}", msg);
-        let ch = ChannelId(self.config.notif_channel);
+        let ch = ChannelId::new(self.config.notif_channel);
         let ctx = self.ctx.as_ref().unwrap();
         ch.say(ctx, msg).await?;
 
         Ok(())
     }
 
-    /// [Self::chat_history] にタイムアウトと個数制限を適用する。
-    fn update_chat_history(&mut self) {
+    /// [Self::chat_history] にタイムアウトを適用する。
+    fn check_history_timeout(&mut self) {
         let now = Instant::now();
 
         if let Some(timeout) = self.chat_timeout {
@@ -204,9 +226,6 @@ impl Discord {
                 self.chat_history.clear();
                 self.chat_timeout = None;
             }
-        }
-        while self.chat_history.len() > self.config.prompt.history_max as usize {
-            self.chat_history.pop_front();
         }
     }
 }
@@ -223,13 +242,10 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     // 自身の ID が on_mention 設定に必要なので別口で取得しておく
     let http = Http::new(&config.token);
     let info = http.get_current_application_info().await?;
-    let myid = UserId(info.id.0);
-    let ownerids = HashSet::from([info.owner.id]);
+    let myid = UserId::new(info.id.get());
+    let ownerids = HashSet::from([info.owner.ok_or_else(|| anyhow!("No owner"))?.id]);
 
     let framework = StandardFramework::new()
-        // コマンドのプレフィクスはなし
-        // bot へのメンションをトリガとする
-        .configure(|c| c.prefix("").on_mention(Some(myid)).owners(ownerids.clone()))
         // コマンド前後でのフック (ロギング用)
         .before(before_hook)
         .after(after_hook)
@@ -237,6 +253,14 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         // コマンドとヘルプの登録
         .group(&GENERAL_GROUP)
         .help(&MY_HELP);
+    // コマンドのプレフィクスはなし
+    // bot へのメンションをトリガとする
+    framework.configure(
+        Configuration::new()
+            .prefix("")
+            .on_mention(Some(myid))
+            .owners(ownerids.clone()),
+    );
 
     // クライアントの初期化
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
@@ -261,7 +285,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     ctrl.spawn_oneshot_fn("discord-exit", async move {
         ctrl_for_cancel.cancel_rx().changed().await.unwrap();
         info!("[discord-exit] recv cancel");
-        shard_manager.lock().await.shutdown_all().await;
+        shard_manager.shutdown_all().await;
         info!("[discord-exit] shutdown_all ok");
         // shutdown_all が完了した後は ready は呼ばれないはずなので
         // ここで ctx を処分する
@@ -284,6 +308,32 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
+/// 文字数制限に気を付けつつ分割して送信する。
+async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
+    // mention 関連でのずれが少し怖いので余裕を持たせる
+    const LEN: usize = MSG_MAX_LEN - 128;
+
+    let mut remain = content;
+    loop {
+        let (chunk, fin) = match remain.char_indices().nth(LEN) {
+            Some((ind, _c)) => {
+                let (a, b) = remain.split_at(ind);
+                remain = b;
+
+                (a, false)
+            }
+            None => (remain, true),
+        };
+        if !chunk.is_empty() {
+            msg.reply(ctx, chunk).await?;
+        }
+        if fin {
+            break;
+        }
+    }
+    Ok(())
+}
+
 /// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
 /// すべて削除する。
 ///
@@ -298,26 +348,29 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 /// (消した数, 総メッセージ数) を返す。
 async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     ctx: &Context,
-    ch: u64,
+    ch: ChannelId,
     filter: F,
 ) -> Result<(usize, usize)> {
     // id=0 から 100 件ずつすべてのメッセージを取得する
-    let mut allmsgs = BTreeMap::<u64, Message>::new();
-    const GET_MSG_LIMIT: usize = 100;
-    let mut after = 0u64;
+    let mut allmsgs = BTreeMap::<MessageId, Message>::new();
+    const GET_MSG_LIMIT: u8 = 100;
+    let mut after = None;
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        let query = format!("?after={after}&limit={GET_MSG_LIMIT}");
-        info!("get_messages: {}", query);
-        let msgs = ctx.http.get_messages(ch, &query).await?;
+        info!("get_messages: after={:?}", after);
+        let target = after.map(|id| MessagePagination::After(id));
+        let msgs = ctx
+            .http
+            .get_messages(ch, target, Some(GET_MSG_LIMIT))
+            .await?;
         // 空配列ならば完了
         if msgs.is_empty() {
             break;
         }
         // 降順で送られてくるので ID でソートし直す
-        allmsgs.extend(msgs.iter().map(|m| (m.id.0, m.clone())));
+        allmsgs.extend(msgs.iter().map(|m| (m.id, m.clone())));
         // 最後の message id を次回の after に設定する
-        after = *allmsgs.keys().next_back().unwrap();
+        after = Some(*allmsgs.keys().next_back().unwrap());
     }
     info!("obtained {} messages", allmsgs.len());
 
@@ -329,7 +382,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
         // ch, msg ID はログに残す
         info!("Delete: ch={}, msg={}", ch, mid);
         // https://discord.com/developers/docs/resources/channel#delete-message
-        ctx.http.delete_message(ch, mid).await?;
+        ctx.http.delete_message(ch, mid, None).await?;
         delcount += 1;
     }
     info!("deleted {} messages", delcount);
@@ -471,10 +524,10 @@ impl EventHandler for Handler {
         for msg in &discord.postponed_msgs {
             let ch = discord.config.notif_channel;
             // notif_channel が有効の場合しかキューされない
-            assert_ne!(ch, 0);
+            assert_ne!(0, ch);
 
             info!("[discord] say msg: {}", msg);
-            let ch = ChannelId(ch);
+            let ch = ChannelId::new(ch);
             if let Err(why) = ch.say(&ctx, msg).await {
                 error!("{:#?}", why);
             }
@@ -521,7 +574,7 @@ async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[group]
 #[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset)]
+#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset, aiimg)]
 struct General;
 
 #[command]
@@ -600,7 +653,7 @@ async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
 
     // id 昇順で後ろ n 個を残して他を消す
     let (delcount, total) =
-        delete_msgs_in_channel(ctx, msg.channel_id.0, |_m, i, len| i + n < len).await?;
+        delete_msgs_in_channel(ctx, msg.channel_id, |_m, i, len| i + n < len).await?;
 
     msg.reply(ctx, format!("{delcount}/{total} messages deleted"))
         .await?;
@@ -616,9 +669,9 @@ async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
     owner_check(ctx, msg).await?;
 
     let pic = take_a_pic(TakePicOption::new()).await?;
-    msg.channel_id
-        .send_message(ctx, |m| m.add_file((&pic[..], "camera.jpg")))
-        .await?;
+    let attachment = CreateAttachment::bytes(&pic[..], "camera.jpg");
+    let cm = CreateMessage::new().add_file(attachment);
+    msg.channel_id.send_message(ctx, cm).await?;
 
     Ok(())
 }
@@ -636,15 +689,13 @@ async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let ch = if chstr == "here" {
         msg.channel_id
     } else {
-        ChannelId(chstr.parse::<u64>()?)
+        ChannelId::new(chstr.parse::<u64>()?)
     };
-    let user = UserId(arg.single::<u64>()?);
+    let user = UserId::new(arg.single::<u64>()?);
     let text: String = arg.single_quoted()?;
 
-    ch.send_message(ctx, |m| {
-        m.content(format_args!("{} {}", user.mention(), text))
-    })
-    .await?;
+    let cm = CreateMessage::new().content(format!("{} {}", user.mention(), text));
+    ch.send_message(ctx, cm).await?;
 
     Ok(())
 }
@@ -663,27 +714,23 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     let config = data.get::<ConfigData>().unwrap();
 
     // タイムアウト処理
-    discord.update_chat_history();
+    discord.check_history_timeout();
 
-    let mut msgs = Vec::new();
-    // 履歴
-    msgs.extend_from_slice(discord.chat_history.as_slices().0);
-    msgs.extend_from_slice(discord.chat_history.as_slices().1);
-    // 今回の発言 (システムメッセージ + 本体)
+    // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
     let sysmsg = config
         .prompt
         .each
         .join("")
         .replace("${user}", &msg.author.name);
-    msgs.push({
+    discord.chat_history.push({
         ChatMessage {
-            role: "system".to_string(),
+            role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
-    msgs.push(ChatMessage {
-        role: "user".to_string(),
+    discord.chat_history.push(ChatMessage {
+        role: Role::User,
         content: Some(chat_msg.to_string()),
         ..Default::default()
     });
@@ -695,25 +742,29 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
         let mut all_msgs = Vec::new();
         // 先頭システムメッセージ
         all_msgs.push(ChatMessage {
-            role: "system".to_string(),
+            role: Role::System,
             content: Some(config.prompt.pre.join("")),
             ..Default::default()
         });
-        // それ以降を追加
-        all_msgs.extend_from_slice(&msgs);
+        // それ以降 (ヒストリの中身全部) を追加
+        for m in discord.chat_history.iter() {
+            all_msgs.push(m.clone());
+        }
         // ChatGPT API
         let reply_msg = ai
             .chat_with_function(&all_msgs, discord.func_table.function_list())
             .await;
         match &reply_msg {
             Ok(reply) => {
-                msgs.push(reply.clone());
+                // 応答を履歴に追加
+                discord.chat_history.push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = discord.func_table.call(func_name, func_args).await;
-                    msgs.push(func_res);
+                    let func_res = discord.func_table.call((), func_name, func_args).await;
+                    // function 応答を履歴に追加
+                    discord.chat_history.push(func_res);
                     // continue
                 } else {
                     // 通常の応答が返ってきた
@@ -735,12 +786,9 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                 .content
                 .ok_or_else(|| anyhow!("content required"))?;
             info!("[discord] openai reply: {text}");
-            msg.reply(ctx, text).await?;
+            reply_long(msg, ctx, &text).await?;
 
-            // ここまで成功したら履歴を差し替える
-            discord.chat_history.clear();
-            discord.chat_history.extend(msgs);
-            discord.update_chat_history();
+            // タイムアウト延長
             discord.chat_timeout = Some(
                 Instant::now() + Duration::from_secs(config.prompt.history_timeout_min as u64 * 60),
             );
@@ -770,11 +818,12 @@ async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
         let mut discord = ctrl.sysmods().discord.lock().await;
         let config = data.get::<ConfigData>().unwrap();
 
-        discord.update_chat_history();
+        discord.check_history_timeout();
         format!(
-            "History: {}/{}\nTimeout: {} min",
+            "History: {}\nToken: {} / {}, Timeout: {} min",
             discord.chat_history.len(),
-            config.prompt.history_max,
+            discord.chat_history.usage().0,
+            discord.chat_history.usage().1,
             config.prompt.history_timeout_min
         )
     };
@@ -796,6 +845,28 @@ async fn aireset(ctx: &Context, msg: &Message) -> CommandResult {
         discord.chat_history.clear();
     }
     msg.reply(ctx, "OK").await?;
+
+    Ok(())
+}
+
+#[command]
+#[description("OpenAI image generation.")]
+#[usage("<prompt>")]
+#[example("A person who are returning home early from their office.")]
+#[min_args(1)]
+async fn aiimg(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
+    let prompt = arg.rest();
+
+    let img_url = {
+        let data = ctx.data.read().await;
+        let ctrl = data.get::<ControlData>().unwrap();
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        let mut resp = ai.generate_image(prompt, 1).await?;
+        resp.pop().ok_or_else(|| anyhow!("image array too short"))?
+    };
+
+    msg.reply(ctx, img_url).await?;
 
     Ok(())
 }
@@ -843,7 +914,7 @@ fn parse_duration(src: &str) -> Result<u32> {
 #[usage("")]
 #[example("")]
 async fn status(ctx: &Context, msg: &Message) -> CommandResult {
-    let ch = msg.channel_id.0;
+    let ch = msg.channel_id;
     let config = {
         let data = ctx.data.read().await;
         let ctrl = data.get::<ControlData>().unwrap();
@@ -878,7 +949,7 @@ async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
     let keep_count: u32 = arg.single()?;
     let keep_duration: String = arg.single()?;
     let keep_duration: u32 = parse_duration(&keep_duration)?;
-    let ch = msg.channel_id.0;
+    let ch = msg.channel_id;
 
     {
         let data = ctx.data.read().await;

@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use super::SystemModule;
 use crate::sys::config;
-use crate::sys::netutil;
 use crate::sys::taskserver::Control;
+use crate::utils::netutil;
 
 use anyhow::{anyhow, bail, Result};
 use log::info;
@@ -16,22 +16,28 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 
 const CONN_TIMEOUT: Duration = Duration::from_secs(10);
-const TIMEOUT: Duration = Duration::from_secs(40);
+const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
-const MODEL: &str = "gpt-3.5-turbo-0613";
+const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FunctionCall {
-    pub name: String,
-    pub arguments: String,
-}
+/// <https://platform.openai.com/docs/models>
+///
+/// <https://openai.com/pricing>
+///
+/// (name, max_tokens)
+//pub const MODEL: (&str, usize) = ("gpt-3.5-turbo", 4097);
+pub const MODEL: (&str, usize) = ("gpt-3.5-turbo-16k", 16385);
+/// トークン数制限のうち出力用に予約する割合。
+const OUTPUT_RESERVED_RATIO: f32 = 0.2;
+/// トークン数制限のうち出力用に予約する数。
+pub const OUTPUT_RESERVED_TOKEN: usize = (MODEL.1 as f32 * OUTPUT_RESERVED_RATIO) as usize;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
     /// "system", "user", "assistant", or "function"
-    pub role: String,
+    pub role: Role,
     /// Required if role is "function"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -39,6 +45,22 @@ pub struct ChatMessage {
     pub content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<FunctionCall>,
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    #[default]
+    System,
+    User,
+    Assistant,
+    Function,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FunctionCall {
+    pub name: String,
+    pub arguments: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -115,6 +137,60 @@ struct ChatRequest {
     user: Option<String>,
 }
 
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct ImageGenRequest {
+    /// A text description of the desired image(s).
+    /// The maximum length is 1000 characters.
+    prompt: String,
+    /// The number of images to generate. Must be between 1 and 10.
+    /// Defaults to 1
+    #[serde(skip_serializing_if = "Option::is_none")]
+    n: Option<u8>,
+    /// The format in which the generated images are returned.
+    /// Must be one of url or b64_json.
+    /// Defaults to url
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<String>,
+    /// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
+    /// Defaults to 1024x1024
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<ImageSize>,
+    /// A unique identifier representing your end-user,
+    /// which can help OpenAI to monitor and detect abuse. Learn more.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    user: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ResponseFormat {
+    Url,
+    B64Json,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ImageSize {
+    #[serde(rename = "256x256")]
+    X256,
+    #[serde(rename = "512x512")]
+    X512,
+    #[serde(rename = "1024x1024")]
+    X1024,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct ImageGenResponse {
+    created: u64,
+    data: Vec<Image>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct Image {
+    b64_json: Option<String>,
+    url: Option<String>,
+}
+
 /// OpenAI 設定データ。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiConfig {
@@ -168,7 +244,7 @@ impl OpenAi {
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.to_string(),
+            model: MODEL.0.to_string(),
             messages: msgs,
             ..Default::default()
         };
@@ -209,7 +285,7 @@ impl OpenAi {
     ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.to_string(),
+            model: MODEL.0.to_string(),
             messages: msgs.to_vec(),
             functions: Some(funcs.to_vec()),
             ..Default::default()
@@ -241,6 +317,41 @@ impl OpenAi {
 
         Ok(msg.clone())
     }
+
+    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
+        let key = &self.config.api_key;
+        let body = ImageGenRequest {
+            prompt: prompt.to_string(),
+            n: Some(n),
+            size: Some(ImageSize::X256),
+            ..Default::default()
+        };
+
+        info!("[openai] image gen request: {:?}", body);
+        if !self.config.enabled {
+            warn!("[openai] skip because openai feature is disabled");
+            bail!("openai is disabled");
+        }
+
+        let resp = self
+            .client
+            .post(URL_IMAGE_GEN)
+            .header("Authorization", format!("Bearer {key}"))
+            .json(&body)
+            .send()
+            .await?;
+
+        let json_str = netutil::check_http_resp(resp).await?;
+        let resp: ImageGenResponse = netutil::convert_from_json(&json_str)?;
+
+        let mut result = Vec::new();
+        for img in resp.data.iter() {
+            let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
+            result.push(url.to_string());
+        }
+
+        Ok(result)
+    }
 }
 
 impl SystemModule for OpenAi {
@@ -251,9 +362,8 @@ impl SystemModule for OpenAi {
 
 #[cfg(test)]
 mod tests {
-    use super::function::*;
     use super::*;
-    use crate::sys::netutil::HttpStatusError;
+    use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
 
     #[tokio::test]
@@ -267,17 +377,17 @@ mod tests {
         let ai = OpenAi::new().unwrap();
         let msgs = vec![
             ChatMessage {
-                role: "system".to_string(),
+                role: Role::System,
                 content: Some("あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string()),
                 ..Default::default()
             },
             ChatMessage {
-                role: "system".to_string(),
+                role: Role::System,
                 content: Some("やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string()),
                 ..Default::default()
             },
             ChatMessage {
-                role: "user".to_string(),
+                role: Role::User,
                 content: Some("こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。".to_string()),
                 ..Default::default()
             },
@@ -296,62 +406,17 @@ mod tests {
     #[tokio::test]
     #[serial(openai)]
     #[ignore]
-    // cargo test chat_function -- --ignored --nocapture
-    async fn chat_function() {
+    // cargo test image_gen -- --ignored --nocapture
+    async fn image_gen() -> Result<()> {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
-
         let ai = OpenAi::new().unwrap();
-        let mut msgs = vec![ChatMessage {
-            role: "user".to_string(),
-            content: Some("こんにちは。今は何時でしょうか？".to_string()),
-            ..Default::default()
-        }];
-        let funcs = func_table.function_list();
+        let res = ai
+            .generate_image("Rasberry Pi の上に乗っている管理人形", 1)
+            .await?;
+        assert_eq!(1, res.len());
 
-        // function call が返ってくる
-        println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, funcs).await {
-            Ok(msgs) => msgs,
-            Err(err) => {
-                println!("{err}");
-                // HTTP status が得られるタイプのエラーのみ許容する
-                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
-                return;
-            }
-        };
-        println!("{:?}\n", reply);
-
-        assert!(reply.role == "assistant");
-        assert!(reply.content.is_none());
-        assert!(reply.function_call.as_ref().unwrap().name == "get_current_datetime");
-
-        let func_name = &reply.function_call.as_ref().unwrap().name;
-        let func_args = &reply.function_call.as_ref().unwrap().arguments;
-        let func_res = func_table.call(func_name, func_args).await;
-
-        // function call と呼び出し結果を対話ログに追加
-        msgs.push(reply);
-        msgs.push(func_res);
-
-        // function の結果を使った応答が返ってくる
-        println!("{:?}\n", msgs);
-        let reply = match ai.chat_with_function(&msgs, funcs).await {
-            Ok(msgs) => msgs,
-            Err(err) => {
-                println!("{err}");
-                // HTTP status が得られるタイプのエラーのみ許容する
-                let _err = err.downcast_ref::<HttpStatusError>().unwrap();
-                return;
-            }
-        };
-        println!("{:?}", reply);
-
-        assert!(reply.role == "assistant");
-        assert!(reply.content.is_some());
-        assert!(reply.function_call.is_none());
+        Ok(())
     }
 }

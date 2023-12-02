@@ -1,13 +1,32 @@
 //! LINE API。
-use super::{openai::function::FunctionTable, SystemModule};
-use crate::sys::{config, taskserver::Control};
+use super::{
+    openai::{
+        function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
+        ParameterElement,
+    },
+    SystemModule,
+};
+use crate::{
+    sys::{config, taskserver::Control},
+    sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
+    utils::chat_history::{self, ChatHistory},
+};
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use log::info;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, time::Duration};
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    time::{Duration, Instant},
+};
 
+/// LINE API タイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(15);
+/// [Message::Text] の最大文字数。
+/// mention 関連でのずれが少し怖いので余裕を持たせる。
+const MSG_SPLIT_LEN: usize = 5000 - 128;
 
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +51,8 @@ pub struct LinePrompt {
     pub pre: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
+    /// 会話履歴をクリアするまでの時間。
+    pub history_timeout_min: u32,
     /// OpenAI API タイムアウト時のメッセージ。
     pub timeout_msg: String,
     /// OpenAI API エラー時のメッセージ。
@@ -39,22 +60,33 @@ pub struct LinePrompt {
 }
 
 /// [LinePrompt] のデフォルト値。
-const DEFAULT_TOML: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/src/res/openai_line.toml"
-));
+const DEFAULT_TOML: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/openai_line.toml"));
 impl Default for LinePrompt {
     fn default() -> Self {
         toml::from_str(DEFAULT_TOML).unwrap()
     }
 }
 
+pub struct FunctionContext {
+    pub ctrl: Control,
+    /// userId, groupIdm or roomId
+    pub reply_to: String,
+}
+
 /// LINE システムモジュール。
 pub struct Line {
     /// 設定データ。
     pub config: LineConfig,
-    pub func_table: FunctionTable,
+    /// HTTP クライアント。
     client: reqwest::Client,
+
+    /// ai コマンドの会話履歴。
+    pub chat_history: ChatHistory,
+    /// [Self::chat_history] の有効期限。
+    pub chat_timeout: Option<Instant>,
+    /// OpenAI function 機能テーブル
+    pub func_table: FunctionTable<FunctionContext>,
 }
 
 impl Line {
@@ -63,14 +95,32 @@ impl Line {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
+
+        // トークン上限を算出
+        let total_limit = openai::MODEL.1;
+        let pre_token: usize = config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history::token_count(text))
+            .sum();
+        assert!(FUNCTION_TOKEN + pre_token + openai::OUTPUT_RESERVED_TOKEN < total_limit);
+        let chat_history = ChatHistory::new(
+            total_limit - FUNCTION_TOKEN - pre_token - openai::OUTPUT_RESERVED_TOKEN,
+        );
+
         let mut func_table = FunctionTable::new();
-        func_table.register_all_functions();
-        let client = reqwest::Client::builder().timeout(TIMEOUT).build()?;
+        func_table.register_basic_functions();
+        register_draw_picture(&mut func_table);
+
+        let client = Client::builder().timeout(TIMEOUT).build()?;
 
         Ok(Self {
             config,
-            func_table,
             client,
+            chat_history,
+            chat_timeout: None,
+            func_table,
         })
     }
 }
@@ -97,61 +147,73 @@ struct Detail {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProfileResp {
-    #[serde(rename = "displayName")]
     pub display_name: String,
-    #[serde(rename = "userId")]
     pub user_id: String,
     pub language: Option<String>,
-    #[serde(rename = "pictureUrl")]
     pub picture_url: Option<String>,
-    #[serde(rename = "statusMessage")]
     pub status_message: Option<String>,
 }
 
-#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde_with::skip_serializing_none]
 struct ReplyReq {
-    #[serde(rename = "replyToken")]
     reply_token: String,
     /// len = 1..=5
     messages: Vec<Message>,
-    #[serde(rename = "notificationDisabled")]
     notification_disabled: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReplyResp {
-    #[serde(rename = "sentMessages")]
     sent_messages: Vec<SentMessage>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde_with::skip_serializing_none]
+struct PushReq {
+    to: String,
+    /// len = 1..=5
+    messages: Vec<Message>,
+    notification_disabled: Option<bool>,
+    custom_aggregation_units: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushResp {
+    sent_messages: Vec<SentMessage>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SentMessage {
     id: String,
-    #[serde(rename = "quoteToken")]
     quote_token: Option<String>,
 }
 
-#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
+#[serde_with::skip_serializing_none]
 enum Message {
-    #[serde(rename = "text")]
+    #[serde(rename_all = "camelCase")]
     Text { text: String },
-    #[serde(rename = "image")]
+    #[serde(rename_all = "camelCase")]
     Image {
         /// url len <= 5000
         /// protocol = https (>= TLS 1.2)
         /// format = jpeg | png
         /// size <= 10 MB
-        #[serde(rename = "originalContentUrl")]
         original_content_url: String,
         /// url len <= 5000
         /// protocol = https (>= TLS 1.2)
         /// format = jpeg | png
         /// size <= 1 MB
-        #[serde(rename = "previewImageUrl")]
         preview_image_url: String,
     },
 }
@@ -164,6 +226,7 @@ fn url_group_profile(group_id: &str, user_id: &str) -> String {
 }
 
 const URL_REPLY: &str = "https://api.line.me/v2/bot/message/reply";
+const URL_PUSH: &str = "https://api.line.me/v2/bot/message/push";
 
 impl Line {
     pub async fn get_profile(&self, user_id: &str) -> Result<ProfileResp> {
@@ -175,18 +238,84 @@ impl Line {
             .await
     }
 
+    /// [Self::chat_history] にタイムアウトを適用する。
+    pub fn check_history_timeout(&mut self) {
+        let now = Instant::now();
+
+        if let Some(timeout) = self.chat_timeout {
+            if now > timeout {
+                self.chat_history.clear();
+                self.chat_timeout = None;
+            }
+        }
+    }
+
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>
+    ///
+    /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
     pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
-        // TODO: check len and split
-        let messages = vec![Message::Text {
-            text: text.to_string(),
-        }];
+        ensure!(!text.is_empty(), "text must not be empty");
+
+        let messages: Vec<_> = split_message(text)
+            .iter()
+            .map(|&chunk| Message::Text {
+                text: chunk.to_string(),
+            })
+            .collect();
+        ensure!(messages.len() <= 5, "text too long: {}", text.len());
+
         let req = ReplyReq {
             reply_token: reply_token.to_string(),
             messages,
             notification_disabled: None,
         };
         let resp = self.post_auth_json(URL_REPLY, &req).await?;
+        info!("{:?}", resp);
+
+        Ok(resp)
+    }
+
+    /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
+    ///
+    /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
+    #[allow(unused)]
+    pub async fn push_message(&self, to: &str, text: &str) -> Result<ReplyResp> {
+        ensure!(!text.is_empty(), "text must not be empty");
+
+        let messages: Vec<_> = split_message(text)
+            .iter()
+            .map(|&chunk| Message::Text {
+                text: chunk.to_string(),
+            })
+            .collect();
+        ensure!(messages.len() <= 5, "text too long: {}", text.len());
+
+        let req = PushReq {
+            to: to.to_string(),
+            messages,
+            notification_disabled: None,
+            custom_aggregation_units: None,
+        };
+        let resp = self.post_auth_json(URL_PUSH, &req).await?;
+        info!("{:?}", resp);
+
+        Ok(resp)
+    }
+
+    /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
+    pub async fn push_image_message(&self, to: &str, url: &str) -> Result<ReplyResp> {
+        let messages = vec![Message::Image {
+            original_content_url: url.to_string(),
+            preview_image_url: url.to_string(),
+        }];
+
+        let req = PushReq {
+            to: to.to_string(),
+            messages,
+            notification_disabled: None,
+            custom_aggregation_units: None,
+        };
+        let resp = self.post_auth_json(URL_PUSH, &req).await?;
         info!("{:?}", resp);
 
         Ok(resp)
@@ -251,5 +380,115 @@ impl Line {
             .await?;
 
         Self::check_resp(resp).await
+    }
+}
+
+fn split_message(text: &str) -> Vec<&str> {
+    // UTF-16 5000 文字で分割
+    let mut result = Vec::new();
+    // 左端
+    let mut s = 0;
+    // utf-16 文字数
+    let mut len = 0;
+    for (ind, c) in text.char_indices() {
+        // 1 or 2
+        let clen = c.len_utf16();
+        // 超えそうなら [s, ind) の部分文字列を出力
+        if len + clen > MSG_SPLIT_LEN {
+            result.push(&text[s..ind]);
+            s = ind;
+            len = 0;
+        }
+        len += clen;
+    }
+    if len > 0 {
+        result.push(&text[s..]);
+    }
+
+    result
+}
+
+fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
+    let mut properties = HashMap::new();
+    properties.insert(
+        "keywords".to_string(),
+        ParameterElement {
+            type_: "string".to_string(),
+            description: Some("Keywords for drawing. They must be in English.".to_string()),
+            ..Default::default()
+        },
+    );
+    func_table.register_function(
+        Function {
+            name: "draw".to_string(),
+            description: Some("Draw a picture".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["keywords".to_string()],
+            },
+        },
+        "draw",
+        Box::new(draw_picture_sync),
+    );
+}
+
+fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(draw_picture(ctx, args))
+}
+
+async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
+    let keywords = function::get_arg(args, "keywords")?.to_string();
+
+    let ctrl = ctx.ctrl.clone();
+    ctrl.spawn_oneshot_fn("line_draw_picture", async move {
+        let url = {
+            let ai = ctx.ctrl.sysmods().openai.lock().await;
+
+            ai.generate_image(&keywords, 1)
+                .await?
+                .pop()
+                .ok_or_else(|| anyhow!("parse error"))?
+        };
+        {
+            let line = ctx.ctrl.sysmods().line.lock().await;
+            line.push_image_message(&ctx.reply_to, &url).await?;
+        }
+        Ok(())
+    });
+
+    Ok("Accepted. The result will be automatially posted later. Assistant should not draw for now.".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn split_long_message() {
+        let mut src = String::new();
+        assert!(split_message(&src).is_empty());
+
+        for i in 0..MSG_SPLIT_LEN {
+            let a = 'A' as u32;
+            src.push(char::from_u32(a + (i as u32 % 26)).unwrap());
+        }
+        let res = split_message(&src);
+        assert_eq!(1, res.len());
+        assert_eq!(src, res[0]);
+
+        src.push('0');
+        let res = split_message(&src);
+        assert_eq!(2, res.len());
+        assert_eq!(&src[..MSG_SPLIT_LEN], res[0]);
+        assert_eq!(&src[MSG_SPLIT_LEN..], res[1]);
+
+        src.pop();
+        src.pop();
+        src.push('😀');
+        let res = split_message(&src);
+        assert_eq!(2, res.len());
+        assert_eq!(&src[..MSG_SPLIT_LEN - 1], res[0]);
+        assert_eq!(&src[MSG_SPLIT_LEN - 1..], res[1]);
     }
 }

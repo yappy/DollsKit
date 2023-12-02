@@ -1,24 +1,39 @@
 //! OpenAI API - function.
 
-use crate::sysmod::{openai::ChatMessage, weather};
-
 use super::{Function, ParameterElement, Parameters};
+
+use crate::sysmod::health::{
+    get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
+};
+use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
+use crate::{
+    sysmod::openai::{ChatMessage, Role},
+    utils::netutil,
+};
+
 use anyhow::{anyhow, bail, Result};
+use chrono::{DateTime, Local, Utc};
 use log::{info, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+
 use std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
+
+/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
+/// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
+/// それより大きめに確保する。
+pub const FUNCTION_TOKEN: usize = 800;
 
 // https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
 /// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
-type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
+pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
 /// 関数の Rust 上での定義。
 ///
-/// 引数は [FuncArgs] で、返り値は文字列の async fn。
-type FuncBody = Box<dyn Fn(&FuncArgs) -> FuncBodyAsync + Sync + Send>;
+/// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
+pub type FuncBody<T> = Box<dyn Fn(T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
 /// 引数。文字列から文字列へのマップ。
-type FuncArgs = HashMap<String, String>;
+pub type FuncArgs = HashMap<String, String>;
 
 /// 引数は JSON ソース文字列で与えられる。
 /// デシリアライズでパースするための構造体。
@@ -29,14 +44,14 @@ pub struct Args {
 }
 
 /// 関数群の管理。
-pub struct FunctionTable {
+pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
-    call_table: HashMap<&'static str, FuncBody>,
+    call_table: HashMap<&'static str, FuncBody<T>>,
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     pub fn new() -> Self {
         Self {
             function_list: Default::default(),
@@ -54,14 +69,14 @@ impl FunctionTable {
     /// OpenAI API からのデータをそのまま渡せ、
     /// 結果も API にそのまま渡せる [ChatMessage] で返す。
     /// エラーも適切なメッセージとして返す。
-    pub async fn call(&self, func_name: &str, args_json_str: &str) -> ChatMessage {
+    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> ChatMessage {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
             let args = serde_json::from_str::<Args>(args_json_str)
                 .map_err(|err| anyhow!("Arguments parse error: {err}"));
             match args {
-                Ok(args) => self.call_internal(func_name, &args.args).await,
+                Ok(args) => self.call_internal(ctx, func_name, &args.args).await,
                 Err(err) => Err(err),
             }
         };
@@ -78,7 +93,7 @@ impl FunctionTable {
         };
 
         ChatMessage {
-            role: "function".to_string(),
+            role: Role::Function,
             name: Some(func_name.to_string()),
             content: Some(content),
             ..Default::default()
@@ -86,34 +101,40 @@ impl FunctionTable {
     }
 
     /// [Self::call] の内部メイン処理。
-    async fn call_internal(&self, func_name: &str, args: &FuncArgs) -> Result<String> {
+    async fn call_internal(&self, ctx: T, func_name: &str, args: &FuncArgs) -> Result<String> {
         let func = self
             .call_table
             .get(func_name)
             .ok_or_else(|| anyhow!("Error: Function {func_name} not found"))?;
 
         // call body
-        func(args).await.map_err(|err| anyhow!("Error: {err}"))
+        func(ctx, args).await.map_err(|err| anyhow!("Error: {err}"))
     }
 
-    pub fn register_all_functions(&mut self) {
+    pub fn register_function(&mut self, function: Function, name: &'static str, body: FuncBody<T>) {
+        self.function_list.push(function);
+        self.call_table.insert(name, Box::new(body));
+    }
+
+    pub fn register_basic_functions(&mut self) {
         self.register_get_version();
+        self.register_get_cpu_status();
         self.register_get_current_datetime();
         self.register_request_url();
-        self.register_get_wether_report();
+        self.register_get_weather_report();
     }
 }
 
 /// args から引数名で検索し、値への参照を返す。
 /// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
+pub fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     let value = args.get(&name.to_string());
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
 }
 
 // =============================================================================
 
-fn get_version_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn get_version_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_version(args))
 }
 
@@ -123,7 +144,7 @@ async fn get_version(_args: &FuncArgs) -> Result<String> {
     Ok(version::version_info().to_string())
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_get_version(&mut self) {
         self.function_list.push(Function {
             name: "get_version".to_string(),
@@ -140,14 +161,75 @@ impl FunctionTable {
 }
 
 // =============================================================================
+fn get_cpu_status_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_cpu_status(args))
+}
 
-fn get_current_datetime_sync(args: &FuncArgs) -> FuncBodyAsync {
+#[derive(Serialize, Deserialize)]
+struct CpuStatus {
+    number_of_cores: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    current_frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    throttle_status: Option<Vec<String>>,
+}
+
+async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
+    let number_of_cores = get_cpu_cores().await?;
+    let current_frequency = get_current_freq()
+        .await?
+        .map(|hz| format!("{} MHz", hz / 1_000_000));
+    let config_frequency = get_freq_conf()
+        .await?
+        .map(|hz| format!("{} MHz", hz / 1_000_000));
+    let throttle_status = get_throttle_status().await?.map(|st| {
+        let mut v = vec![];
+        if st.contains(ThrottleFlags::UNDER_VOLTAGE) {
+            v.push("Under Voltage".to_string());
+        }
+        if st.contains(ThrottleFlags::SOFT_TEMP_LIMIT) {
+            v.push("Soft Throttled".to_string());
+        }
+        if st.contains(ThrottleFlags::THROTTLED) {
+            v.push("Hard Throttled".to_string());
+        }
+        v
+    });
+
+    let obj = CpuStatus {
+        number_of_cores,
+        current_frequency,
+        config_frequency,
+        throttle_status,
+    };
+
+    Ok(serde_json::to_string(&obj)?)
+}
+
+impl<T: 'static> FunctionTable<T> {
+    fn register_get_cpu_status(&mut self) {
+        self.function_list.push(Function {
+            name: "get_cpu_status".to_string(),
+            description: Some("Get the current status of assistant's CPU".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        });
+        self.call_table
+            .insert("get_cpu_status", Box::new(get_cpu_status_sync));
+    }
+}
+
+// =============================================================================
+fn get_current_datetime_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
 }
 
 async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
-    use chrono::{DateTime, Local, Utc};
-
     let tz = get_arg(args, "tz")?;
     match tz.as_str() {
         "JST" => {
@@ -164,7 +246,7 @@ async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
     }
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_get_current_datetime(&mut self) {
         let mut properties = HashMap::new();
         properties.insert(
@@ -191,7 +273,7 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn request_url_sync(args: &FuncArgs) -> FuncBodyAsync {
+fn request_url_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
@@ -262,7 +344,7 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     }
 }
 
-impl FunctionTable {
+impl<T: 'static> FunctionTable<T> {
     fn register_request_url(&mut self) {
         let mut properties = HashMap::new();
         properties.insert(
@@ -289,42 +371,36 @@ impl FunctionTable {
 
 // =============================================================================
 
-fn get_wether_report_sync(args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_wether_report(args))
+fn get_weather_report_sync<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_weather_report(args))
 }
 
-async fn get_wether_report(args: &FuncArgs) -> Result<String> {
+async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     let area = get_arg(args, "area")?;
 
-    // name が一致するものを探して code を取得
-    let pos = weather::offices()
-        .iter()
-        .find(|&info| &info.name == area)
-        .ok_or_else(|| anyhow!("Invalid area: {}", area))?;
-    let code = &pos.code;
+    // 引数の都市名をコードに変換
+    let code =
+        weather::office_name_to_code(area).ok_or_else(|| anyhow!("Invalid area: {}", area))?;
 
-    let url = format!(
-        "https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json",
-        code
-    );
+    let url1 = weather::url_overview_forecast(&code);
+    let url2 = weather::url_forecast(&code);
     let client = Client::builder().timeout(TIMEOUT).build()?;
-    let resp = client.get(url).send().await?;
 
-    let status = resp.status();
-    if status.is_success() {
-        Ok(resp.text().await?)
-    } else {
-        bail!(
-            "{}, {}",
-            status.as_str(),
-            status.canonical_reason().unwrap_or("")
-        );
-    }
+    let fut1 = netutil::checked_get_url(&client, &url1);
+    let fut2 = netutil::checked_get_url(&client, &url2);
+    let (resp1, resp2) = tokio::join!(fut1, fut2);
+    let (s1, s2) = (resp1?, resp2?);
+
+    let ov: OverviewForecast = serde_json::from_str(&s1)?;
+    let fc: ForecastRoot = serde_json::from_str(&s2)?;
+    let obj = weather::weather_to_ai_readable(&code, &ov, &fc)?;
+
+    Ok(serde_json::to_string(&obj).unwrap())
 }
 
-impl FunctionTable {
-    fn register_get_wether_report(&mut self) {
+impl<T: 'static> FunctionTable<T> {
+    fn register_get_weather_report(&mut self) {
         let area_list: Vec<_> = weather::offices()
             .iter()
             .map(|info| info.name.clone())
@@ -340,7 +416,7 @@ impl FunctionTable {
             },
         );
         self.function_list.push(Function {
-            name: "get_wether_report".to_string(),
+            name: "get_weather_report".to_string(),
             description: Some("Get whether report data".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
@@ -349,7 +425,7 @@ impl FunctionTable {
             },
         });
         self.call_table
-            .insert("get_wether_report", Box::new(get_wether_report_sync));
+            .insert("get_weather_report", Box::new(get_weather_report_sync));
     }
 }
 
@@ -361,8 +437,10 @@ mod tests {
 
     #[test]
     fn parse_html() -> Result<()> {
-        const SRC: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/res_test/top.htm"));
+        const SRC: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/scraping/top.htm"
+        ));
 
         let res = compact_html(SRC)?;
         println!("{res}");

@@ -491,7 +491,8 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
         // unlock
     } else {
         // バイナリ同梱のデフォルト画像が撮れたことにする
-        let buf = include_bytes!("../res/camera_def.jpg").to_vec();
+        let buf =
+            include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/res/camera_def.jpg")).to_vec();
 
         // オプションの w, h にリサイズする
         let src = image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg)?;
