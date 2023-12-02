@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["config","graphics","netutil","taskserver","version"]};
+window.SIDEBAR_ITEMS = {"mod":["config","taskserver","version"]};

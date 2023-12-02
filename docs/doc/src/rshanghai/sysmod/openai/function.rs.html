@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0 (cc66ad468 2023-10-03)" data-channel="1.73.0" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-1596385f77d47ef2.css" data-theme-dark-css="dark-0a43001d3fc2282c.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-1596385f77d47ef2.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-0a43001d3fc2282c.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../rshanghai/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../rshanghai/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -370,27 +370,120 @@
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
 <a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API - function.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::sysmod::{openai::ChatMessage, weather};
+</span><span class="kw">use super</span>::{Function, ParameterElement, Parameters};
 
-<span class="kw">use super</span>::{Function, ParameterElement, Parameters};
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::health::{
+    get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
+};
+<span class="kw">use </span><span class="kw">crate</span>::utils::weather::{<span class="self">self</span>, ForecastRoot, OverviewForecast};
+<span class="kw">use crate</span>::{
+    sysmod::openai::{ChatMessage, Role},
+    utils::netutil,
+};
+
 <span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>chrono::{DateTime, Local, Utc};
 <span class="kw">use </span>log::{info, warn};
 <span class="kw">use </span>reqwest::Client;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+
 <span class="kw">use </span>std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
+
+<span class="doccomment">/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
+/// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
+/// それより大きめに確保する。
+</span><span class="kw">pub const </span>FUNCTION_TOKEN: usize = <span class="number">800</span>;
 
 <span class="comment">// https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
 </span><span class="doccomment">/// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
-</span><span class="kw">type </span>FuncBodyAsync&lt;<span class="lifetime">&#39;a</span>&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;String&gt;&gt; + Sync + Send + <span class="lifetime">&#39;a</span>&gt;&gt;;
+</span><span class="kw">pub type </span>FuncBodyAsync&lt;<span class="lifetime">&#39;a</span>&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;String&gt;&gt; + Sync + Send + <span class="lifetime">&#39;a</span>&gt;&gt;;
 <span class="doccomment">/// 関数の Rust 上での定義。
 ///
-/// 引数は [FuncArgs] で、返り値は文字列の async fn。
-</span><span class="kw">type </span>FuncBody = Box&lt;<span class="kw">dyn </span>Fn(<span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Sync + Send&gt;;
+/// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
+</span><span class="kw">pub type </span>FuncBody&lt;T&gt; = Box&lt;<span class="kw">dyn </span>Fn(T, <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Sync + Send&gt;;
 <span class="doccomment">/// 引数。文字列から文字列へのマップ。
-</span><span class="kw">type </span>FuncArgs = HashMap&lt;String, String&gt;;
+</span><span class="kw">pub type </span>FuncArgs = HashMap&lt;String, String&gt;;
 
 <span class="doccomment">/// 引数は JSON ソース文字列で与えられる。
 /// デシリアライズでパースするための構造体。
@@ -401,14 +494,14 @@
 }
 
 <span class="doccomment">/// 関数群の管理。
-</span><span class="kw">pub struct </span>FunctionTable {
+</span><span class="kw">pub struct </span>FunctionTable&lt;T&gt; {
     <span class="doccomment">/// OpenAI API に渡すためのリスト。
     </span>function_list: Vec&lt;Function&gt;,
     <span class="doccomment">/// 関数名から Rust 関数へのマップ。
-    </span>call_table: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, FuncBody&gt;,
+    </span>call_table: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, FuncBody&lt;T&gt;&gt;,
 }
 
-<span class="kw">impl </span>FunctionTable {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             function_list: Default::default(),
@@ -426,14 +519,14 @@
     /// OpenAI API からのデータをそのまま渡せ、
     /// 結果も API にそのまま渡せる [ChatMessage] で返す。
     /// エラーも適切なメッセージとして返す。
-    </span><span class="kw">pub async fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, func_name: <span class="kw-2">&amp;</span>str, args_json_str: <span class="kw-2">&amp;</span>str) -&gt; ChatMessage {
+    </span><span class="kw">pub async fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: T, func_name: <span class="kw-2">&amp;</span>str, args_json_str: <span class="kw-2">&amp;</span>str) -&gt; ChatMessage {
         <span class="macro">info!</span>(<span class="string">&quot;[openai-func] Call {func_name} {args_json_str}&quot;</span>);
 
         <span class="kw">let </span>res = {
             <span class="kw">let </span>args = serde_json::from_str::&lt;Args&gt;(args_json_str)
                 .map_err(|err| <span class="macro">anyhow!</span>(<span class="string">&quot;Arguments parse error: {err}&quot;</span>));
             <span class="kw">match </span>args {
-                <span class="prelude-val">Ok</span>(args) =&gt; <span class="self">self</span>.call_internal(func_name, <span class="kw-2">&amp;</span>args.args).<span class="kw">await</span>,
+                <span class="prelude-val">Ok</span>(args) =&gt; <span class="self">self</span>.call_internal(ctx, func_name, <span class="kw-2">&amp;</span>args.args).<span class="kw">await</span>,
                 <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err),
             }
         };
@@ -450,7 +543,7 @@
         };
 
         ChatMessage {
-            role: <span class="string">&quot;function&quot;</span>.to_string(),
+            role: Role::Function,
             name: <span class="prelude-val">Some</span>(func_name.to_string()),
             content: <span class="prelude-val">Some</span>(content),
             ..Default::default()
@@ -458,34 +551,40 @@
     }
 
     <span class="doccomment">/// [Self::call] の内部メイン処理。
-    </span><span class="kw">async fn </span>call_internal(<span class="kw-2">&amp;</span><span class="self">self</span>, func_name: <span class="kw-2">&amp;</span>str, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+    </span><span class="kw">async fn </span>call_internal(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: T, func_name: <span class="kw-2">&amp;</span>str, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
         <span class="kw">let </span>func = <span class="self">self
             </span>.call_table
             .get(func_name)
             .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: Function {func_name} not found&quot;</span>))<span class="question-mark">?</span>;
 
         <span class="comment">// call body
-        </span>func(args).<span class="kw">await</span>.map_err(|err| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: {err}&quot;</span>))
+        </span>func(ctx, args).<span class="kw">await</span>.map_err(|err| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: {err}&quot;</span>))
     }
 
-    <span class="kw">pub fn </span>register_all_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, body: FuncBody&lt;T&gt;) {
+        <span class="self">self</span>.function_list.push(function);
+        <span class="self">self</span>.call_table.insert(name, Box::new(body));
+    }
+
+    <span class="kw">pub fn </span>register_basic_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.register_get_version();
+        <span class="self">self</span>.register_get_cpu_status();
         <span class="self">self</span>.register_get_current_datetime();
         <span class="self">self</span>.register_request_url();
-        <span class="self">self</span>.register_get_wether_report();
+        <span class="self">self</span>.register_get_weather_report();
     }
 }
 
 <span class="doccomment">/// args から引数名で検索し、値への参照を返す。
 /// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-</span><span class="kw">fn </span>get_arg&lt;<span class="lifetime">&#39;a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>String&gt; {
+</span><span class="kw">pub fn </span>get_arg&lt;<span class="lifetime">&#39;a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>String&gt; {
     <span class="kw">let </span>value = args.get(<span class="kw-2">&amp;</span>name.to_string());
     value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: Argument {name} is required&quot;</span>))
 }
 
 <span class="comment">// =============================================================================
 
-</span><span class="kw">fn </span>get_version_sync(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+</span><span class="kw">fn </span>get_version_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
     Box::pin(get_version(args))
 }
 
@@ -495,7 +594,7 @@
     <span class="prelude-val">Ok</span>(version::version_info().to_string())
 }
 
-<span class="kw">impl </span>FunctionTable {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_version(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.function_list.push(Function {
             name: <span class="string">&quot;get_version&quot;</span>.to_string(),
@@ -512,14 +611,75 @@
 }
 
 <span class="comment">// =============================================================================
+</span><span class="kw">fn </span>get_cpu_status_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+    Box::pin(get_cpu_status(args))
+}
 
-</span><span class="kw">fn </span>get_current_datetime_sync(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+<span class="attr">#[derive(Serialize, Deserialize)]
+</span><span class="kw">struct </span>CpuStatus {
+    number_of_cores: u32,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>current_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>config_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span>throttle_status: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+}
+
+<span class="kw">async fn </span>get_cpu_status(_args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+    <span class="kw">let </span>number_of_cores = get_cpu_cores().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>current_frequency = get_current_freq()
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">&quot;{} MHz&quot;</span>, hz / <span class="number">1_000_000</span>));
+    <span class="kw">let </span>config_frequency = get_freq_conf()
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">&quot;{} MHz&quot;</span>, hz / <span class="number">1_000_000</span>));
+    <span class="kw">let </span>throttle_status = get_throttle_status().<span class="kw">await</span><span class="question-mark">?</span>.map(|st| {
+        <span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[];
+        <span class="kw">if </span>st.contains(ThrottleFlags::UNDER_VOLTAGE) {
+            v.push(<span class="string">&quot;Under Voltage&quot;</span>.to_string());
+        }
+        <span class="kw">if </span>st.contains(ThrottleFlags::SOFT_TEMP_LIMIT) {
+            v.push(<span class="string">&quot;Soft Throttled&quot;</span>.to_string());
+        }
+        <span class="kw">if </span>st.contains(ThrottleFlags::THROTTLED) {
+            v.push(<span class="string">&quot;Hard Throttled&quot;</span>.to_string());
+        }
+        v
+    });
+
+    <span class="kw">let </span>obj = CpuStatus {
+        number_of_cores,
+        current_frequency,
+        config_frequency,
+        throttle_status,
+    };
+
+    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj)<span class="question-mark">?</span>)
+}
+
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+    <span class="kw">fn </span>register_get_cpu_status(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.function_list.push(Function {
+            name: <span class="string">&quot;get_cpu_status&quot;</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get the current status of assistant&#39;s CPU&quot;</span>.to_string()),
+            parameters: Parameters {
+                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        });
+        <span class="self">self</span>.call_table
+            .insert(<span class="string">&quot;get_cpu_status&quot;</span>, Box::new(get_cpu_status_sync));
+    }
+}
+
+<span class="comment">// =============================================================================
+</span><span class="kw">fn </span>get_current_datetime_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
     Box::pin(get_current_datetime(args))
 }
 
 <span class="kw">async fn </span>get_current_datetime(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">use </span>chrono::{DateTime, Local, Utc};
-
     <span class="kw">let </span>tz = get_arg(args, <span class="string">&quot;tz&quot;</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>tz.as_str() {
         <span class="string">&quot;JST&quot; </span>=&gt; {
@@ -536,7 +696,7 @@
     }
 }
 
-<span class="kw">impl </span>FunctionTable {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_current_datetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
         properties.insert(
@@ -563,7 +723,7 @@
 
 <span class="comment">// =============================================================================
 
-</span><span class="kw">fn </span>request_url_sync(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+</span><span class="kw">fn </span>request_url_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
@@ -634,7 +794,7 @@
     }
 }
 
-<span class="kw">impl </span>FunctionTable {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_request_url(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
         properties.insert(
@@ -661,42 +821,36 @@
 
 <span class="comment">// =============================================================================
 
-</span><span class="kw">fn </span>get_wether_report_sync(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_wether_report(args))
+</span><span class="kw">fn </span>get_weather_report_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+    Box::pin(get_weather_report(args))
 }
 
-<span class="kw">async fn </span>get_wether_report(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<span class="kw">async fn </span>get_weather_report(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
     <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
     <span class="kw">let </span>area = get_arg(args, <span class="string">&quot;area&quot;</span>)<span class="question-mark">?</span>;
 
-    <span class="comment">// name が一致するものを探して code を取得
-    </span><span class="kw">let </span>pos = weather::offices()
-        .iter()
-        .find(|<span class="kw-2">&amp;</span>info| <span class="kw-2">&amp;</span>info.name == area)
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Invalid area: {}&quot;</span>, area))<span class="question-mark">?</span>;
-    <span class="kw">let </span>code = <span class="kw-2">&amp;</span>pos.code;
+    <span class="comment">// 引数の都市名をコードに変換
+    </span><span class="kw">let </span>code =
+        weather::office_name_to_code(area).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Invalid area: {}&quot;</span>, area))<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>url = <span class="macro">format!</span>(
-        <span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json&quot;</span>,
-        code
-    );
+    <span class="kw">let </span>url1 = weather::url_overview_forecast(<span class="kw-2">&amp;</span>code);
+    <span class="kw">let </span>url2 = weather::url_forecast(<span class="kw-2">&amp;</span>code);
     <span class="kw">let </span>client = Client::builder().timeout(TIMEOUT).build()<span class="question-mark">?</span>;
-    <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>status = resp.status();
-    <span class="kw">if </span>status.is_success() {
-        <span class="prelude-val">Ok</span>(resp.text().<span class="kw">await</span><span class="question-mark">?</span>)
-    } <span class="kw">else </span>{
-        <span class="macro">bail!</span>(
-            <span class="string">&quot;{}, {}&quot;</span>,
-            status.as_str(),
-            status.canonical_reason().unwrap_or(<span class="string">&quot;&quot;</span>)
-        );
-    }
+    <span class="kw">let </span>fut1 = netutil::checked_get_url(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>url1);
+    <span class="kw">let </span>fut2 = netutil::checked_get_url(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>url2);
+    <span class="kw">let </span>(resp1, resp2) = <span class="macro">tokio::join!</span>(fut1, fut2);
+    <span class="kw">let </span>(s1, s2) = (resp1<span class="question-mark">?</span>, resp2<span class="question-mark">?</span>);
+
+    <span class="kw">let </span>ov: OverviewForecast = serde_json::from_str(<span class="kw-2">&amp;</span>s1)<span class="question-mark">?</span>;
+    <span class="kw">let </span>fc: ForecastRoot = serde_json::from_str(<span class="kw-2">&amp;</span>s2)<span class="question-mark">?</span>;
+    <span class="kw">let </span>obj = weather::weather_to_ai_readable(<span class="kw-2">&amp;</span>code, <span class="kw-2">&amp;</span>ov, <span class="kw-2">&amp;</span>fc)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj).unwrap())
 }
 
-<span class="kw">impl </span>FunctionTable {
-    <span class="kw">fn </span>register_get_wether_report(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+    <span class="kw">fn </span>register_get_weather_report(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>area_list: Vec&lt;<span class="kw">_</span>&gt; = weather::offices()
             .iter()
             .map(|info| info.name.clone())
@@ -712,7 +866,7 @@
             },
         );
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;get_wether_report&quot;</span>.to_string(),
+            name: <span class="string">&quot;get_weather_report&quot;</span>.to_string(),
             description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get whether report data&quot;</span>.to_string()),
             parameters: Parameters {
                 type_: <span class="string">&quot;object&quot;</span>.to_string(),
@@ -721,7 +875,7 @@
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;get_wether_report&quot;</span>, Box::new(get_wether_report_sync));
+            .insert(<span class="string">&quot;get_weather_report&quot;</span>, Box::new(get_weather_report_sync));
     }
 }
 
@@ -733,8 +887,10 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>parse_html() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">const </span>SRC: <span class="kw-2">&amp;</span>str =
-            <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>), <span class="string">&quot;/src/res_test/top.htm&quot;</span>));
+        <span class="kw">const </span>SRC: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
+            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
+            <span class="string">&quot;/res/test/scraping/top.htm&quot;
+        </span>));
 
         <span class="kw">let </span>res = compact_html(SRC)<span class="question-mark">?</span>;
         <span class="macro">println!</span>(<span class="string">&quot;{res}&quot;</span>);

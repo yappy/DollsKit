@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["camera","discord","health","http","line","openai","sysinfo","twitter","weather"],"struct":["SystemModules"],"trait":["SystemModule"],"type":["SysModArc"]};
+window.SIDEBAR_ITEMS = {"mod":["camera","discord","health","http","line","openai","sysinfo","twitter"],"struct":["SystemModules"],"trait":["SystemModule"],"type":["SysModArc"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["HISTORY_QUEUE_SIZE"],"fn":["get_cpu_info","get_cpu_temp","get_disk_info","get_mem_info"],"struct":["CpuInfo","CpuTemp","DiskInfo","Health","HealthConfig","HistoryEntry","MemInfo"]};
+window.SIDEBAR_ITEMS = {"constant":["HISTORY_QUEUE_SIZE"],"fn":["get_cpu_cores","get_cpu_info","get_cpu_temp","get_current_freq","get_disk_info","get_freq_conf","get_mem_info","get_throttle_status"],"struct":["CpuInfo","DiskInfo","Health","HealthConfig","HistoryEntry","MemInfo","ThrottleFlags"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["JMA_AREA_JSON"],"fn":["edit_distance","edit_distance_normalized","offices"],"static":["OFFICE_LIST"],"struct":["JmaAreaDef","JmaOfficeInfo"]};
