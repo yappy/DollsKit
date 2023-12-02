@@ -4,6 +4,7 @@
 
 mod sys;
 mod sysmod;
+mod utils;
 
 use anyhow::Result;
 use daemonize::Daemonize;

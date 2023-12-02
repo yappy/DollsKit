@@ -4,6 +4,7 @@ use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 use anyhow::{anyhow, ensure, Result};
+use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -62,7 +63,6 @@ impl Health {
         let cpu_info = get_cpu_info().await?;
         let mem_info = get_mem_info().await?;
         let disk_info = get_disk_info().await?;
-        let cpu_temp = get_cpu_temp().await?;
 
         let timestamp = Local::now();
         let enrty = HistoryEntry {
@@ -70,7 +70,6 @@ impl Health {
             cpu_info,
             mem_info,
             disk_info,
-            cpu_temp,
         };
 
         debug_assert!(self.history.len() <= HISTORY_QUEUE_SIZE);
@@ -92,7 +91,6 @@ impl Health {
                 cpu_info,
                 mem_info,
                 disk_info,
-                cpu_temp,
                 ..
             } = entry;
 
@@ -100,7 +98,7 @@ impl Health {
 
             text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
 
-            if let Some(temp) = cpu_temp.temp {
+            if let Some(temp) = cpu_info.temp {
                 text.push_str(&format!("\nCPU Temp: {temp:.1}'C"));
             }
 
@@ -188,15 +186,16 @@ struct HistoryEntry {
     mem_info: MemInfo,
     /// ディスク使用率。
     disk_info: DiskInfo,
-    /// CPU 温度。
-    cpu_temp: CpuTemp,
 }
 
-/// CPU 使用率。
-#[derive(Debug, Clone)]
+/// CPU 情報。
+#[derive(Debug, Clone, Copy)]
 struct CpuInfo {
     /// 全コア合計の使用率。
     cpu_percent_total: f64,
+    /// CPU 温度 (℃)。
+    /// 取得できなかった場合は [None]。
+    temp: Option<f64>,
 }
 
 /// メモリ使用率。
@@ -215,14 +214,6 @@ struct DiskInfo {
     total_gib: f64,
     /// 利用可能ディスクサイズ (GiB)。
     avail_gib: f64,
-}
-
-/// CPU 温度。
-#[derive(Debug, Clone, Copy)]
-struct CpuTemp {
-    /// CPU 温度 (℃)。
-    /// 取得できなかった場合は [None]。
-    temp: Option<f64>,
 }
 
 /// [CpuInfo] を計測する。
@@ -289,7 +280,13 @@ async fn get_cpu_info() -> Result<CpuInfo> {
     ensure!(cpu_percent_total.is_some());
     ensure!(!cpu_percent_list.is_empty());
     let cpu_percent_total = cpu_percent_total.unwrap();
-    Ok(CpuInfo { cpu_percent_total })
+
+    let temp = get_cpu_temp().await?;
+
+    Ok(CpuInfo {
+        cpu_percent_total,
+        temp,
+    })
 }
 
 /// [MemInfo] を計測する。
@@ -390,28 +387,146 @@ async fn get_disk_info() -> Result<DiskInfo> {
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
-async fn get_cpu_temp() -> Result<CpuTemp> {
+async fn get_cpu_temp() -> Result<Option<f64>> {
     let result = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await;
     match result {
         Ok(buf) => {
             let text = String::from_utf8_lossy(&buf);
-
             // 'C を 1000 倍した整数が得られるので変換する
             let temp = text.trim().parse::<f64>()? / 1000.0;
-            let temp = Some(temp);
 
-            Ok(CpuTemp { temp })
+            Ok(Some(temp))
         }
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 // NotFound は None を返して成功扱い
-                Ok(CpuTemp { temp: None })
+                Ok(None)
             } else {
                 // その他のエラーはそのまま返す
                 Err(anyhow::Error::from(e))
             }
         }
     }
+}
+
+pub async fn get_cpu_cores() -> Result<u32> {
+    let output = Command::new("nproc").output().await?;
+    ensure!(output.status.success(), "nproc command failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    Ok(stdout.trim().parse()?)
+}
+
+pub async fn get_current_freq() -> Result<Option<u64>> {
+    let result = Command::new("vcgencmd")
+        .arg("measure_clock ")
+        .arg("arm")
+        .output()
+        .await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd measure_clock failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let actual = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        ri.parse::<u64>()?
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+
+    Ok(Some(actual))
+}
+
+pub async fn get_freq_conf() -> Result<Option<u64>> {
+    let result = Command::new("vcgencmd")
+        .arg("get_config")
+        .arg("arm_freq")
+        .output()
+        .await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd get_config failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let conf = if let Some((_le, ri)) = stdout.trim().split_once('=') {
+        // MHz => Hz
+        ri.parse::<u64>()? * 1000 * 1000
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+
+    Ok(Some(conf))
+}
+
+bitflags! {
+    /// vcgencmd get_throttled bit flags
+    #[derive(Default)]
+    pub struct ThrottleFlags: u32 {
+        /// 0: Under-voltage detected
+        const UNDER_VOLTAGE = 0x1;
+        /// 1: Arm frequency capped
+        const ARM_FREQ_CAPPED = 0x2;
+        /// 2: Currently throttled
+        const THROTTLED = 0x4;
+        /// 3: Soft temperature limit active
+        const SOFT_TEMP_LIMIT = 0x8;
+        /// 16: Under-voltage has occurred
+        const PAST_UNDER_VOLTAGE = 0x10000;
+        /// 17: Arm frequency capping has occurred
+        const PAST_ARM_FREQ_CAPPED = 0x20000;
+        /// 18: Throttling has occurred
+        const PAST_THROTTLED = 0x40000;
+        /// 19: Soft temperature limit has occurred
+        const PAST_SOFT_TEMP_LIMIT = 0x80000;
+    }
+}
+
+pub async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
+    let result = Command::new("vcgencmd").arg("get_throttled").output().await;
+    let output = match result {
+        Ok(output) => output,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                // NotFound は None を返して成功扱い
+                return Ok(None);
+            } else {
+                // その他のエラーはそのまま返す
+                return Err(anyhow::Error::from(e));
+            }
+        }
+    };
+    ensure!(output.status.success(), "vcgencmd get_throttled failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let bits = if let Some((_le, ri)) = stdout.trim().split_once("=0x") {
+        u32::from_str_radix(ri, 16)?
+    } else {
+        return Err(anyhow!("Parse error"));
+    };
+    let status = ThrottleFlags::from_bits(bits).ok_or_else(|| anyhow!("Invalid bitflags"))?;
+
+    Ok(Some(status))
 }
 
 #[cfg(test)]
@@ -423,6 +538,17 @@ mod tests {
         let info = get_cpu_info().await.unwrap();
 
         assert!((0.0..=100.0).contains(&info.cpu_percent_total));
+
+        let temp = info.temp;
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            let temp = temp.unwrap();
+            assert!(
+                (30.0..=100.0).contains(&temp),
+                "strange temperature: {temp}"
+            );
+        } else {
+            assert!(temp.is_none());
+        }
     }
 
     #[tokio::test]
@@ -440,13 +566,41 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn cpu_temp() {
-        let result = get_cpu_temp().await.unwrap();
-        if let Some(temp) = result.temp {
+    async fn cpu_cores() {
+        let cores = get_cpu_cores().await.unwrap();
+        assert!((1..=256).contains(&cores), "CPU cores: {cores}");
+    }
+
+    #[tokio::test]
+    async fn cpu_freq() {
+        let cur = get_current_freq().await.unwrap();
+        let conf = get_freq_conf().await.unwrap();
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            let cur = cur.unwrap();
+            let conf = conf.unwrap();
+            // 100MHz - 10GHz
             assert!(
-                (30.0..=100.0).contains(&temp),
-                "strange temperature: {temp}"
+                (100_000_000..10_000_000_000).contains(&cur),
+                "CPU frequency: {cur} Hz"
             );
+            assert!(
+                (100_000_000..10_000_000_000).contains(&conf),
+                "CPU frequency: {conf} Hz"
+            );
+        } else {
+            assert!(cur.is_none());
+            assert!(conf.is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn throttle_status() {
+        let flags = get_throttle_status().await.unwrap();
+        if cfg!(any(target_arch = "arm", target_arch = "aarch64")) {
+            // enum に変換できれば OK
+            assert!(flags.is_some());
+        } else {
+            assert!(flags.is_none());
         }
     }
 }

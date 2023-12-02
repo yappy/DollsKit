@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::{priv_camera, HttpConfig};
-use crate::sys::netutil::html_escape;
+use crate::utils::netutil;
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 
 pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {
@@ -30,8 +30,8 @@ async fn index_get(req: HttpRequest) -> impl Responder {
 
     let mut header_str = String::new();
     for (k, v) in sorted {
-        let k = html_escape(k);
-        let v = html_escape(v);
+        let k = netutil::html_escape(k);
+        let v = netutil::html_escape(v);
         header_str.push_str(&format!("      <li>{k}: {v}</li>\n"));
     }
 

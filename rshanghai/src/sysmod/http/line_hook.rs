@@ -2,10 +2,16 @@
 //!
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
+use std::time::{Duration, Instant};
+
 use super::{ActixError, WebResult};
 use crate::{
-    sys::{netutil, taskserver::Control},
-    sysmod::openai::{ChatMessage, OpenAi},
+    sys::taskserver::Control,
+    sysmod::{
+        line::FunctionContext,
+        openai::{ChatMessage, OpenAi, Role},
+    },
+    utils::netutil,
 };
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, bail, ensure, Result};
@@ -282,13 +288,14 @@ async fn on_text_message(
     reply_token: &str,
     text: &str,
 ) -> Result<()> {
-    let (prompt, display_name) = {
-        let line = ctrl.sysmods().line.lock().await;
+    ensure!(src.is_some(), "Field 'source' is required");
+    let src = src.as_ref().unwrap();
+
+    let prompt = {
+        let mut line = ctrl.sysmods().line.lock().await;
         let prompt = line.config.prompt.clone();
 
         // source フィールドからプロフィール情報を取得
-        ensure!(src.is_some(), "Field 'source' is required");
-        let src = src.as_ref().unwrap();
         let display_name = match src {
             Source::User { user_id } => {
                 if let Some(name) = line.config.id_name_map.get(user_id) {
@@ -316,71 +323,112 @@ async fn on_text_message(
             } => bail!("Source::Room is not supported"),
         };
 
-        (prompt, display_name)
+        // タイムアウト処理
+        line.check_history_timeout();
+
+        // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
+        let sysmsg = prompt.each.join("").replace("${user}", &display_name);
+        line.chat_history.push({
+            ChatMessage {
+                role: Role::System,
+                content: Some(sysmsg),
+                ..Default::default()
+            }
+        });
+        line.chat_history.push(ChatMessage {
+            role: Role::User,
+            content: Some(text.to_string()),
+            ..Default::default()
+        });
+
+        prompt
     };
 
-    let mut msgs = Vec::new();
-    // 先頭システムメッセージ
-    msgs.push(ChatMessage {
-        role: "system".to_string(),
-        content: Some(prompt.pre.join("")),
-        ..Default::default()
-    });
-    // 今回の発言 (システムメッセージ + 本体)
-    let sysmsg = prompt.each.join("").replace("${user}", &display_name);
-    msgs.push({
-        ChatMessage {
-            role: "system".to_string(),
-            content: Some(sysmsg),
-            ..Default::default()
-        }
-    });
-    msgs.push(ChatMessage {
-        role: "user".to_string(),
-        content: Some(text.to_string()),
-        ..Default::default()
-    });
-
-    loop {
-        let line = ctrl.sysmods().line.lock().await;
+    let reply_msg = loop {
+        let mut line = ctrl.sysmods().line.lock().await;
         let ai = ctrl.sysmods().openai.lock().await;
 
-        // msgs から応答を取得
-        let reply = ai
-            .chat_with_function(&msgs, line.func_table.function_list())
+        // 送信用リスト
+        let mut all_msgs = Vec::new();
+        // 先頭システムメッセージ
+        all_msgs.push(ChatMessage {
+            role: Role::System,
+            content: Some(prompt.pre.join("")),
+            ..Default::default()
+        });
+        // それ以降 (ヒストリの中身全部) を追加
+        for m in line.chat_history.iter() {
+            all_msgs.push(m.clone());
+        }
+        // ChatGPT API
+        let reply_msg = ai
+            .chat_with_function(&all_msgs, line.func_table.function_list())
             .await;
-        match &reply {
+        match &reply_msg {
             Ok(reply) => {
-                msgs.push(reply.clone());
+                // 応答を履歴に追加
+                line.chat_history.push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
+                    let reply_to = match src {
+                        Source::User { user_id } => user_id,
+                        Source::Group {
+                            group_id,
+                            user_id: _,
+                        } => group_id,
+                        Source::Room {
+                            room_id: _,
+                            user_id: _,
+                        } => bail!("Source::Room is not supported"),
+                    };
+                    let ctx = FunctionContext {
+                        ctrl: ctrl.clone(),
+                        reply_to: reply_to.to_string(),
+                    };
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = line.func_table.call(func_name, func_args).await;
-                    msgs.push(func_res);
+                    let func_res = line.func_table.call(ctx, func_name, func_args).await;
+                    // function 応答を履歴に追加
+                    line.chat_history.push(func_res);
                     // continue
                 } else {
                     // 通常の応答が返ってきた
-                    // LINE へ返信
-                    let msg = reply
-                        .content
-                        .clone()
-                        .ok_or_else(|| anyhow!("content is required"))?;
-                    line.reply(reply_token, &msg).await?;
-                    break;
+                    break reply_msg;
                 }
             }
             Err(err) => {
                 // エラーが発生した
-                // LINE へ返信
                 error!("{:#?}", err);
-                let errmsg = if OpenAi::is_timeout(err) {
+                break reply_msg;
+            }
+        }
+    };
+
+    // LINE へ返信
+    {
+        let mut line = ctrl.sysmods().line.lock().await;
+
+        match reply_msg {
+            Ok(reply_msg) => {
+                let text = reply_msg
+                    .content
+                    .ok_or_else(|| anyhow!("content required"))?;
+                info!("[line] openai reply: {text}");
+                line.reply(reply_token, &text).await?;
+
+                // タイムアウト延長
+                line.chat_timeout = Some(
+                    Instant::now() + Duration::from_secs(prompt.history_timeout_min as u64 * 60),
+                );
+            }
+            Err(err) => {
+                error!("[line] openai error: {:#?}", err);
+                let errmsg = if OpenAi::is_timeout(&err) {
                     prompt.timeout_msg
                 } else {
                     prompt.error_msg
                 };
                 line.reply(reply_token, &errmsg).await?;
-                break;
             }
         }
     }

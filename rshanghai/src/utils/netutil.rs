@@ -3,6 +3,7 @@
 use anyhow::{anyhow, Context, Result};
 use hmac::{digest::CtOutput, Mac, SimpleHmac};
 use percent_encoding::{utf8_percent_encode, AsciiSet};
+use reqwest::Client;
 use serde::Deserialize;
 use sha1::Sha1;
 use sha2::Sha256;
@@ -30,6 +31,32 @@ pub async fn check_http_resp(resp: reqwest::Response) -> Result<String> {
             body: text
         }))
     }
+}
+
+/// HTTP status が成功 (200 台) でなければ Err に変換する。
+///
+/// 成功ならば response body を文字列に変換して返す。
+#[allow(unused)]
+pub async fn check_http_resp_bin(resp: reqwest::Response) -> Result<Vec<u8>> {
+    let status = resp.status();
+
+    if status.is_success() {
+        let bin = resp.bytes().await?.to_vec();
+        Ok(bin)
+    } else {
+        let text = resp.text().await?;
+        Err(anyhow!(HttpStatusError {
+            status: status.as_u16(),
+            body: text
+        }))
+    }
+}
+
+/// [check_http_resp] 付きの GET。
+pub async fn checked_get_url(client: &Client, url: &str) -> Result<String> {
+    let resp = client.get(url).send().await?;
+
+    check_http_resp(resp).await
 }
 
 /// 文字列を JSON としてパースし、T 型に変換する。
