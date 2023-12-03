@@ -358,7 +358,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
         info!("get_messages: after={:?}", after);
-        let target = after.map(|id| MessagePagination::After(id));
+        let target = after.map(MessagePagination::After);
         let msgs = ctx
             .http
             .get_messages(ch, target, Some(GET_MSG_LIMIT))
