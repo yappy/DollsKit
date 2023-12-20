@@ -14,7 +14,7 @@ panic = 'abort'
 [dependencies]
 # Error handling
 anyhow = "1.0.75"
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
@@ -31,7 +31,7 @@ simplelog = "0.12.1"
 # Daemon util
 daemonize = "0.5.0"
 # Time for log
-time = "0.3.30"
+time = "0.3.31"
 chrono = { version = "0.4.31", features = ["clock", "iana-time-zone", "std"] }
 # Json
 serde = { version = "1.0.193", features = ["derive"] }
@@ -41,10 +41,10 @@ serde_with = { version = "3.4.0", features = ["json"] }
 toml = "0.8.8"
 
 # Async
-tokio = { version = "1.34.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.35.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.14"
 # HTTP
-reqwest = { version = "0.11.22", features = ["json"] }
+reqwest = { version = "0.11.23", features = ["json"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
