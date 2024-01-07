@@ -69,7 +69,7 @@ tiktoken-rs = "0.5.8"
 
 [dev-dependencies]
 # Concurrent test control
-serial_test = "2.0.0"
+serial_test = "3.0.0"
 hex-literal = "0.4.1"
 
 [build-dependencies]
