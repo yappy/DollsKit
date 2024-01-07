@@ -267,7 +267,10 @@ impl OpenAi {
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
-        let choice0 = resp_msg.choices.get(0).ok_or(anyhow!("choices is empty"))?;
+        let choice0 = resp_msg
+            .choices
+            .first()
+            .ok_or(anyhow!("choices is empty"))?;
         let text = choice0
             .message
             .content
@@ -311,7 +314,7 @@ impl OpenAi {
         // 最初のを選ぶ
         let msg = &resp_msg
             .choices
-            .get(0)
+            .first()
             .ok_or(anyhow!("choices is empty"))?
             .message;
 
