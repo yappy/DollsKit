@@ -95,19 +95,20 @@ impl Line {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
+        let ai_config = config::get(|cfg| cfg.openai.clone());
 
         // トークン上限を算出
-        let total_limit = openai::MODEL.1;
+        // Function 定義 + 前文 + (使用可能上限) + 出力
+        let model_info = openai::get_model_info(&ai_config.model)?;
         let pre_token: usize = config
             .prompt
             .pre
             .iter()
             .map(|text| chat_history::token_count(text))
             .sum();
-        assert!(FUNCTION_TOKEN + pre_token + openai::OUTPUT_RESERVED_TOKEN < total_limit);
-        let chat_history = ChatHistory::new(
-            total_limit - FUNCTION_TOKEN - pre_token - openai::OUTPUT_RESERVED_TOKEN,
-        );
+        let reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
+        assert!(reserved < model_info.token_limit);
+        let chat_history = ChatHistory::new(model_info.token_limit - reserved);
 
         let mut func_table = FunctionTable::new();
         func_table.register_basic_functions();
