@@ -48,7 +48,7 @@ reqwest = { version = "0.11.23", features = ["json"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
-base64 = "0.21.5"
+base64 = "0.21.7"
 # RNG
 rand = "0.8.5"
 # HMAC
@@ -59,7 +59,7 @@ sha2 = "0.10.8"
 actix-web = "4.4.1"
 actix-multipart = "0.6.1"
 # Image convert
-image = "0.24.7"
+image = "0.24.8"
 # Font
 rusttype="0.9.3"
 # Discord
@@ -74,4 +74,4 @@ hex-literal = "0.4.1"
 
 [build-dependencies]
 # Version info
-vergen = { version = "8.2.6", features = ["git", "gitcl", "cargo"] }
+vergen = { version = "8.2.8", features = ["git", "gitcl", "cargo"] }
