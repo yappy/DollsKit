@@ -281,7 +281,10 @@ impl OpenAi {
 
         info!("[openai] OpenAI model list START");
         for info in MODEL_LIST.iter() {
-            info!("[openai] name: \"{}\", token_limit: {}", info.name, info.token_limit);
+            info!(
+                "[openai] name: \"{}\", token_limit: {}",
+                info.name, info.token_limit
+            );
         }
         info!("[openai] OpenAI model list END");
 
