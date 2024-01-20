@@ -20,7 +20,7 @@ static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.3.0"
 # Bit flags
-bitflags = "2.4.1"
+bitflags = "2.4.2"
 
 # Command line parser
 getopts = "0.2.21"
@@ -74,4 +74,4 @@ hex-literal = "0.4.1"
 
 [build-dependencies]
 # Version info
-vergen = { version = "8.2.8", features = ["git", "gitcl", "cargo"] }
+vergen = { version = "8.3.1", features = ["git", "gitcl", "cargo"] }
