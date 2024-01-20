@@ -78,20 +78,24 @@ impl ChatHistory {
     }
 }
 
+/// トークン化ライブラリを初期化する。
 fn init_core() -> CoreBPE {
     cl100k_base().unwrap()
 }
 
+/// 文章をトークン化する。
 fn tokenize(text: &str) -> Vec<usize> {
     let bpe = CORE.get_or_init(init_core);
 
     bpe.encode_with_special_tokens(text)
 }
 
+/// 文章のトークン数を数える。
 pub fn token_count(text: &str) -> usize {
     tokenize(text).len()
 }
 
+/// トークン列から文字列に復元する。
 fn decode(tokens: &[usize]) -> String {
     let bpe = CORE.get_or_init(init_core);
 

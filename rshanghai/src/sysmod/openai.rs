@@ -3,6 +3,7 @@
 pub mod function;
 
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use super::SystemModule;
@@ -22,17 +23,70 @@ const TIMEOUT: Duration = Duration::from_secs(60);
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 
+/// モデル情報。
+pub struct ModelInfo {
+    pub name: &'static str,
+    /// トークン数制限。入力と出力を全て合わせた値。
+    pub token_limit: usize,
+    pub year: u16,
+    pub month: u16,
+}
+
+/// モデル情報。一番上がデフォルト。
+///
 /// <https://platform.openai.com/docs/models>
 ///
 /// <https://openai.com/pricing>
-///
-/// (name, max_tokens)
-//pub const MODEL: (&str, usize) = ("gpt-3.5-turbo", 4097);
-pub const MODEL: (&str, usize) = ("gpt-3.5-turbo-16k", 16385);
+const MODEL_LIST: &[ModelInfo] = &[
+    ModelInfo {
+        name: "gpt-3.5-turbo",
+        token_limit: 4096,
+        year: 2021,
+        month: 9,
+    },
+    ModelInfo {
+        name: "gpt-3.5-turbo-16k",
+        token_limit: 16385,
+        year: 2021,
+        month: 9,
+    },
+    ModelInfo {
+        name: "gpt-4",
+        token_limit: 8192,
+        year: 2021,
+        month: 9,
+    },
+    ModelInfo {
+        name: "gpt-4-32k",
+        token_limit: 32768,
+        year: 2021,
+        month: 9,
+    },
+];
+
 /// トークン数制限のうち出力用に予約する割合。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
-/// トークン数制限のうち出力用に予約する数。
-pub const OUTPUT_RESERVED_TOKEN: usize = (MODEL.1 as f32 * OUTPUT_RESERVED_RATIO) as usize;
+
+pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
+    static MAP: OnceLock<HashMap<&str, &ModelInfo>> = OnceLock::new();
+
+    let map = MAP.get_or_init(|| {
+        let mut map = HashMap::new();
+        for info in MODEL_LIST.iter() {
+            map.insert(info.name, info);
+        }
+
+        map
+    });
+
+    map.get(model)
+        .copied()
+        .ok_or_else(|| anyhow!("Model not found: {model}"))
+}
+
+pub fn get_output_reserved_token(info: &ModelInfo) -> usize {
+    (info.token_limit as f32 * OUTPUT_RESERVED_RATIO) as usize
+}
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
@@ -198,6 +252,9 @@ pub struct OpenAiConfig {
     enabled: bool,
     /// OpenAI API のキー。
     api_key: String,
+    /// 使用するモデル名。
+    /// [MODEL_LIST] から選択。
+    pub model: String,
 }
 
 impl Default for OpenAiConfig {
@@ -205,12 +262,14 @@ impl Default for OpenAiConfig {
         Self {
             enabled: false,
             api_key: "".to_string(),
+            model: MODEL_LIST.first().unwrap().name.to_string(),
         }
     }
 }
 
 pub struct OpenAi {
     config: OpenAiConfig,
+    model: String,
     client: reqwest::Client,
 }
 
@@ -220,12 +279,31 @@ impl OpenAi {
 
         let config = config::get(|cfg| cfg.openai.clone());
 
+        info!("[openai] OpenAI model list START");
+        for info in MODEL_LIST.iter() {
+            info!(
+                "[openai] name: \"{}\", token_limit: {}",
+                info.name, info.token_limit
+            );
+        }
+        info!("[openai] OpenAI model list END");
+
+        let info = get_model_info(&config.model)?;
+        info!(
+            "[openai] selected: model: {}, token_limit: {}",
+            info.name, info.token_limit
+        );
+
         let client = reqwest::Client::builder()
             .connect_timeout(CONN_TIMEOUT)
             .timeout(TIMEOUT)
             .build()?;
 
-        Ok(OpenAi { config, client })
+        Ok(OpenAi {
+            config: config.clone(),
+            model: info.name.to_string(),
+            client,
+        })
     }
 
     /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
@@ -244,7 +322,7 @@ impl OpenAi {
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.0.to_string(),
+            model: self.model.clone(),
             messages: msgs,
             ..Default::default()
         };
@@ -267,7 +345,10 @@ impl OpenAi {
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
-        let choice0 = resp_msg.choices.get(0).ok_or(anyhow!("choices is empty"))?;
+        let choice0 = resp_msg
+            .choices
+            .first()
+            .ok_or(anyhow!("choices is empty"))?;
         let text = choice0
             .message
             .content
@@ -285,7 +366,7 @@ impl OpenAi {
     ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: MODEL.0.to_string(),
+            model: self.model.clone(),
             messages: msgs.to_vec(),
             functions: Some(funcs.to_vec()),
             ..Default::default()
@@ -311,7 +392,7 @@ impl OpenAi {
         // 最初のを選ぶ
         let msg = &resp_msg
             .choices
-            .get(0)
+            .first()
             .ok_or(anyhow!("choices is empty"))?
             .message;
 
