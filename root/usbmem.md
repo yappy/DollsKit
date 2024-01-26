@@ -49,7 +49,7 @@ mkdir /media/usbbkup
 バックアップしたい / (ext4) のマウント設定に合わせるとよいと思う。
 抜けている状態でブート失敗になるとよくないので nofail を付けた方がよいと思う。
 
-```txt
+```text
 PARTUUID=6c586e13-01  /boot           vfat    defaults          0       2
 PARTUUID=6c586e13-02  /               ext4    defaults,noatime  0       1
 UUID=<uuid>           /media/usbbkup  ext4    defaults,noatime,nofail 0 0
