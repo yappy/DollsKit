@@ -451,6 +451,17 @@ ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 * Reload privilege tables now? \[Y/n]
   * はい。
 
+```sh
+# root ログイン確認
+sudo mysql
+
+sudo mysql [-u USER] [-p]
+```
+
+-u は省略すると `'現在のログインユーザ'@'localhost'` が使われる。
+パスワードを入力したい場合は -p を指定するが、管理が大変なのであまり使いたくないことも
+多いかもしれない。
+
 ## WordPress
 
 Prerequirements
@@ -490,8 +501,85 @@ apt に wordpress というのがあるが、apache に依存があり、イン�
 ```sql
 -- パスワードなしで誰でも入れる。危険。
 CREATE USER 'www-data'@'localhost';
--- パスワードなしで誰でも入れる。危険。
-CREATE USER 'www-data'@'';
+-- パスワードを指定して作成。コマンドログに残るし色々と何とも言えないところがある。
+CREATE USER 'www-data'@'localhost' IDENTIFIED BY 'password';
 -- unix_socket による認証。www-data ユーザならパスワードなしでログインできる。
 CREATE USER 'www-data'@'localhost' IDENTIFIED VIA unix_socket;
+```
+
+```sh
+# sudo は実は root で実行する、ではなく switch user して実行する、なので
+# www-data ユーザとして実行できる
+# 'www-data'@'localhost' としてログイン確認
+sudo -u www-data mysql
+```
+
+ここまで確認できたら WordPress からユーザ名: www-data, パスワード: 空で
+データベースログインまで通ることを確認する。
+
+### 文字コードデフォルト設定
+
+```sql
+SHOW VARIABLES LIKE 'char%';
+SHOW VARIABLES LIKE "col%";
+```
+
+`/etc/mysql/my.cnf` がルート設定ファイルだが、ディレクトリの中身を全部
+インクルードしているだけなので、`/conf.d/mysql.cnf` を編集する。
+
+```text
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_bin
+
+[client]
+default-character-set=utf8mb4
+```
+
+```text
++--------------------------+----------------------------+
+| Variable_name            | Value                      |
++--------------------------+----------------------------+
+| character_set_client     | utf8mb4                    |
+| character_set_connection | utf8mb4                    |
+| character_set_database   | utf8mb4                    |
+| character_set_filesystem | binary                     |
+| character_set_results    | utf8mb4                    |
+| character_set_server     | utf8mb4                    |
+| character_set_system     | utf8mb3                    |
+| character_sets_dir       | /usr/share/mysql/charsets/ |
++--------------------------+----------------------------+
+
++----------------------------------+--------------------+
+| Variable_name                    | Value              |
++----------------------------------+--------------------+
+| collation_connection             | utf8mb4_general_ci |
+| collation_database               | utf8mb4_general_ci |
+| collation_server                 | utf8mb4_general_ci |
+| column_compression_threshold     | 100                |
+| column_compression_zlib_level    | 6                  |
+| column_compression_zlib_strategy | DEFAULT_STRATEGY   |
+| column_compression_zlib_wrap     | OFF                |
++----------------------------------+--------------------+
+```
+
+character_set_system は utf8(mb3) のままで OK。
+
+なぜか collation-server のデフォルト設定が効かない気がする。
+とはいえデフォルト設定に頼るのは移行時の事故の元なので、
+`CREATE DATABASE` 時に明示的に設定するようにする。
+
+```sql
+-- データベース設定情報の取得
+SELECT * FROM INFORMATION_SCHEMA.SCHEMATA;
+```
+
+```text
+*************************** 5. row ***************************
+              CATALOG_NAME: def
+               SCHEMA_NAME: wordpress
+DEFAULT_CHARACTER_SET_NAME: utf8mb4
+    DEFAULT_COLLATION_NAME: utf8mb4_bin
+                  SQL_PATH: NULL
+            SCHEMA_COMMENT:
 ```
