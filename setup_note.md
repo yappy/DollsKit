@@ -1,8 +1,11 @@
 # 一日でなれる人形遣い
+
 ## 用意(購入)するもの
+
 Optional でないものは必須です。
 
 本体
+
 * Raspberry Pi 4 Model B
   * Memory 1/2/4/8 GB
     * 基本的にその時点で調べて一番新しく一番メモリの多いモデルを選べば OK。(要審議)
@@ -17,41 +20,43 @@ Optional でないものは必須です。
 * 専用カメラモジュール (Optional)
 
 その他
+
 * SD カードリーダ/ライタ
   * PC から SD カードを読み書きする環境。
     PC に最初からついているならいいが、ないなら外付けを購入する。
+    ノート PC だとついていがち。
 * 有線/無線ルータ
-  * 有線の場合は LAN ケーブルも
+  * 有線の場合は LAN ケーブルも。
 * モニタ + Micro HDMI ケーブル (Optional)
   * 片方が小さいケーブルでないとディスプレイにつながらないので注意。
-  * これ及び以降は初心者向け (本文書では取り扱わないため罠があるかもしれない注意)
+  * これ及び以降は初心者向け (本文書では取り扱わないため罠があるかもしれないので注意)
 * マウス (Optional)
 * キーボード (Optional)
 
-
 ## 参考資料
+
 Raspberry Pi Documentation:
-https://www.raspberrypi.org/documentation/
+<https://www.raspberrypi.org/documentation/>
 
 Getting Started
-https://www.raspberrypi.com/documentation/computers/getting-started.html
+<https://www.raspberrypi.com/documentation/computers/getting-started.html>
 
 Headless Setup (GUI なしセットアップ)
-https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-headless-raspberry-pi
+<https://www.raspberrypi.com/documentation/computers/configuration.html#set-up-a-headless-raspberry-pi>
 
 ドキュメントが一新され、Raspberry Pi Imager を使ったセットアップ方法となった。
 SD card に焼くイメージのセレクタ/ダウンローダとイメージライタが一緒になって
 いい感じになったセットアップ用ソフト。
 
-
 ## 最新確認環境
+
 Raspberry Pi OS Lite (32-bit)
 2021-05-07
 (Buster)
 
+## 準備
 
-# 準備
-https://www.raspberrypi.com/documentation/computers/getting-started.html
+<https://www.raspberrypi.com/documentation/computers/getting-started.html>
 
 * Using Raspberry Pi Imager から Raspberry Pi Imager を落とす。
 * Micro SD を挿入し、イメージと書き込み先を選択する。
@@ -69,11 +74,12 @@ https://www.raspberrypi.com/documentation/computers/getting-started.html
     ping, ssh して試す。ssh TCP 22 番ポートが開いているはず。
   * `ssh <user>@<IP addr>` から設定したパスワードで入れたら当たり。
 
+## 初期設定
 
-# 初期設定
 `$sudo raspi-config`
 
 バージョンアップで少しずつパワーアップしている気がする。
+
 * (1) System Options
   * wifi 設定
   * initial user のパスワード設定
@@ -94,54 +100,60 @@ https://www.raspberrypi.com/documentation/computers/getting-started.html
 (そのような機能がある場合)
 または普通の Linux のやり方で固定アドレスを設定する。
 Windows で `ipconfig.exe /all` を実行した結果を参考にするとよい。
-````
+
+```text
 # /etc/dhcpcd.conf
 interface <eth0|wlan0>
 static ip_address=192.168.XXX.YYY/NN
 static routers=192.168.0.1
 static domain_name_servers=XXX.YYY.ZZZ.WWW
-````
+```
 
+## アップデート
 
-# アップデート
-## 日本のミラーサイト
+### 日本のミラーサイト
+
 ※これをやらなくても tsukuba.wide.ad.jp につながった。
 謎の力で近くのミラーが使われるようになったのかもしれない。
 
 `/etc/apt/sources.list` に書かれているサーバは遠くて遅いので
 以下のうちどれかに差し替える。
 
-http://raspbian.org/RaspbianMirrors
-* http://ftp.jaist.ac.jp/raspbian/
-* http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/
-* http://ftp.yz.yamagata-u.ac.jp/pub/linux/raspbian/raspbian/
+<http://raspbian.org/RaspbianMirrors>
 
+* <http://ftp.jaist.ac.jp/raspbian/>
+* <http://ftp.tsukuba.wide.ad.jp/Linux/raspbian/raspbian/>
+* <http://ftp.yz.yamagata-u.ac.jp/pub/linux/raspbian/raspbian/>
 
-## パッケージの更新
+### パッケージの更新
+
 * `sudo apt update`
 * `sudo apt upgrade`
 
+### パッケージの削除
 
-## パッケージの削除
 `sudo apt remove --purge <PKGNAME>` or `sudo apt purge <PKGNAME>`
 
+### 設定ファイルを後から消す
 
-## 設定ファイルを後から消す
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
+## Debian-Backports
 
-# Debian-Backports
 主にgit や cmake が古い場合。
 最新を追いかけるなら公式のリポジトリを sources.list に登録するのが確実だが、
 こちらで十分なら設定は一回で済む。
 
 以下を `/etc/apt/sources.list` に追加。
-```
+
+```text
 deb http://ftp.jp.debian.org/debian buster-backports main contrib non-free
 ```
+
 その後 `sudo apt update`。
 おそらく鍵エラーが出るので、NO_PUBKEY と言われた鍵(16進)を控えて、
-```
+
+```text
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys <PUBKEY>
 ...
 ```
@@ -149,12 +161,14 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys <PUBKEY>
 `apt show` で backports に別バージョンがあるなら
 `-a` ですべて表示できると注意が出る。
 backports は `-t` で明示的に指定しなければ使われることはない。
-```
+
+```sh
 apt show -a <pkg>
 apt install -t <version>-backports <pkg>
 ```
 
-# 自動アップデート
+## 自動アップデート
+
 1. `sudo apt install unattended-upgrades`
 1. `sudo dpkg-reconfigure -plow unattended-upgrades`
 1. `/etc/apt/apt.conf.d/50unattended-upgrades` を編集
@@ -162,7 +176,8 @@ apt install -t <version>-backports <pkg>
 初期設定は以下のようになっているが、Raspberry Pi では origin が
 "Raspbian" や "Raspberry Pi Foundation" になっているのでこのままではマッチせず
 何もアップデートされない。
-```
+
+```text
 "origin=Debian,codename=${distro_codename},label=Debian";
 "origin=Debian,codename=${distro_codename},label=Debian-Security";
 ```
@@ -170,12 +185,14 @@ apt install -t <version>-backports <pkg>
 origin, label, suite 等の情報は `/var/lib/apt/lists/` 以下にあるファイルに
 書かれているが、いつも `apt update` `apt upgrade` だけしているなら
 以下のようにすればとりあえず全部アップデートできる。
-```
+
+```text
 "o=*";
 ```
 
 このあたりを運用に合わせて設定する。
-```
+
+```text
 // Do automatic removal of new unused dependencies after the upgrade
 // (equivalent to apt-get autoremove)
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
@@ -186,24 +203,27 @@ Unattended-Upgrade::Automatic-Reboot "true";
 ```
 
 以下で空実行できる。
-```
+
+```sh
 sudo unattended-upgrade --debug --dry-run
 ```
 
-# 自動補完の Beep 音がうるさい
-```
+## 自動補完の Beep 音がうるさい
+
+```sh
 $ sudo nano /etc/inputrc
 # uncomment
 set bell-style none
 ```
 
-# screen
+## screen
+
 * nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
 * `sudo apt install screen`
   * デタッチ: C-a d
 
+## ssh をまともにする
 
-# ssh をまともにする
 * `sudo vi /etc/ssh/sshd_config`
 * `sshd_config.d/` 以下にファイルを置いて include する方式に変わった気もする。
   * 放置していると接続が切れる
@@ -211,8 +231,8 @@ set bell-style none
       * `ClientAliveInterval 60`
       * `ClientAliveCountMax 3`
   * Change ssh port
-    * `Port 22` <-変える
-  * disable root login
+    * `Port 22` <- 変える
+  * Disable root login
     * `PermitRootLogin no`
   * パスワード認証の無効化
     * `PasswordAuthentication no`
@@ -221,12 +241,12 @@ set bell-style none
   * sshd 再起動
     * `service ssh restart`
 
+## VNC (remote desktop)
 
-# VNC (remote desktop)
-https://www.raspberrypi.org/documentation/remote-access/vnc/
+<https://www.raspberrypi.com/documentation/computers/remote-access.html#virtual-network-computing-vnc>
 
+## カメラモジュール
 
-# カメラモジュール
 * カメラモジュールの有効化
   * 従来のカメラ関連コマンドはレガシー扱いとなり非推奨となった。
   * sudo raspi-config
@@ -242,7 +262,7 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 * 静止画撮影(要 video グループ) (旧)
   * `raspistill -t 1 -o pic.jpg`
   * -t 指定すると真っ黒になってしまうことがあるらしい？
-    https://mizukama.sakura.ne.jp/blog/archives/4022
+    <https://mizukama.sakura.ne.jp/blog/archives/4022>
 
 * サイズ
   * 3280x2464
@@ -252,8 +272,8 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
 * C# からサムネイルの取り出し
   * GetThumbnailImage()
 
+## I2C
 
-# I2C
 * I2C の有効化
   * `sudo raspi-config`
   * Interfacing Options
@@ -275,8 +295,8 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
     * 応答のある I2C アドレスを表示
     * 警告が出る通り、変な状態になる可能性は否定できないのでその場合はリセット
 
+## HTTP Server
 
-# HTTP Server
 * lighttpd
   * `sudo apt install lighttpd`
 * php
@@ -288,9 +308,9 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
   * `service lighttpd force-reload`
   * 以下などを必要に応じて変更しながら enable する
     * accesslog
-	* userdir
-	* fastcgi
-	* fastcgi-php
+  * userdir
+  * fastcgi
+  * fastcgi-php
   * CGI の stderr
     * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
 
@@ -301,19 +321,22 @@ https://www.raspberrypi.org/documentation/remote-access/vnc/
     * post_max_size
     * upload_max_filesize
 
+## SSL (Let's Encrypt)
 
-# SSL (Let's Encrypt)
 * `sudo apt install certbot`
 * http サーバ稼働状態でドメインと webroot (/var/www/html/ 的な位置) を
   入力するだけで自動的にドメイン証明書を作ってくれる。
   cron で自動更新設定もしてくれる。
 
 `sudo certbot`
-```
+
+```text
 Certbot doesn't know how to automatically configure the web server on this system. However, it can still get a certificate for you. Please run "certbot certonly" to do so. You'll need to manually configure your web server to use the resulting certificate.
 ```
+
 `sudo certbot certonly`
-```
+
+```text
 How would you like to authenticate with the ACME CA?
 -------------------------------------------------------------------------------
 1: Place files in webroot directory (webroot)
@@ -370,7 +393,7 @@ IMPORTANT NOTES:
   * `sudo service lighttpd force-reload`
   * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
 
-```
+```text
 ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 ```
@@ -378,7 +401,185 @@ ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。
 
+## MySQL (MariaDB)
 
-# MySQL (not used now)
-* `apt-get install mysql-server`
-* Debian 9 では中身は MariaDB になっている。
+* `sudo apt install mariadb-server mariadb-client`
+* `sudo apt install php-mysqlnd`
+  * PHP (WordPress) から呼び出す場合
+
+### セキュリティ初期設定
+
+以下 `10.11.4-MariaDB` の情報。
+
+`sudo mariadb-secure-installation` (`mysql_secure_installation`)
+
+推奨やデフォルトが変わってトラブルを起こしている気がする。。
+
+* Enter current password for root
+  * sudo しておくこと。最初は設定されていないので空で OK。
+* Switch to unix_socket authentication \[Y/n]
+  * <https://mariadb.com/kb/en/authentication-from-mariadb-10-4/>
+  * どうやら DB 側で Linux とは別の root や各ユーザの管理を行うのではなく、
+    UNIX domain socket (同一マシン内接続) の際にパスワード認証をスキップすることで
+    Linux ユーザの方にアカウント管理を一元化して権限管理をシンプルにしようという
+    方針らしい。
+  * root に関しては最初からこれがデフォルトになったという記述もあり、
+    なんだかよく分からない。
+    クリーンインストール直後に試してみると、Linux root からなら確かに
+    パスワードなしで入れる。
+  * root パスワードを空のままにされて、誰でも最大権限でデータベースの全操作が
+    行われる状態のまま放置されるのを、Linux root 認証と同一化するのが主目的らしい。
+  * ユーザとパスワードによる認証もパスワード強度やパスワードの置き場所問題から
+    いろいろと限界が近いように感じる。かといって他の認証も作るのも正しく運用するのも
+    大変で、Linux のアカウント管理+認証システムに一体化してしまうのは
+    良い方向性なのかなと思う。
+  * しかし結局、現在運用中のシステムが移行トラブルを起こすんだが…。
+  * web server (+ web app) は www-data ユーザで動いているので、
+    www-data ユーザに適切な権限を付与して動かすのがこれからはよいのかもしれない。
+    ただ、テスト用のデータベースとユーザ (dev, staging) みたいなのはちょっと困るかも。
+* Change the root password? \[Y/n]
+  * Yes がデフォルトになっているが、上のおかげで n でも問題なくなっている。
+* Remove anonymous users? \[Y/n]
+  * はい。匿名ユーザは削除で。
+* Disallow root login remotely? \[Y/n]
+  * はい。リモートからの root ログインは禁止。
+  * リモートの口は ssh を使い (ここでも Linux root login は非推奨だが)、
+    sudo で Linux root になって db root ログインする。これで OK のはず。
+* Remove test database and access to it? \[Y/n]
+  * はい。誰でも読み書きできる設定のデータベースがあるが、消す。
+  * 消す前に遊ぶか、適切なユーザと権限を設定したデータベースを作って遊ぶ。
+* Reload privilege tables now? \[Y/n]
+  * はい。
+
+```sh
+# root ログイン確認
+sudo mysql
+
+sudo mysql [-u USER] [-p]
+```
+
+-u は省略すると `'現在のログインユーザ'@'localhost'` が使われる。
+パスワードを入力したい場合は -p を指定するが、管理が大変なのであまり使いたくないことも
+多いかもしれない。
+
+## WordPress
+
+Prerequirements
+
+* web server - lighttpd のインストール
+* php, php-cgi のインストールと lighttpd からの設定
+* MariaDB のインストールと root のセキュリティ(パスワードなしで入れるのだけはやめる)
+
+apt に wordpress というのがあるが、apache に依存があり、インストールすると
+そちらも同時にインストールされてしまう(一敗)。
+それとちょっと古い。
+
+以下から最新版をダウンロードする。
+
+<https://ja.wordpress.org/support/article/how-to-install-wordpress/>
+
+1. zip をダウンロードして展開する。そのまま web から見えるどこかに配置する。
+1. index.php にアクセスしてみる。
+1. 動かない→シンプルな PHP ファイルで動作を再確認。
+1. 画面が出たがデータベースライブラリがないと言われる→php-mysql(nd) をインストール
+  してサーバを再起動。
+1. 画面が出た→データベース名とユーザ/パスワードを入力。\
+  データベース名: wordpress とかにする。\
+  ユーザー名: サーバの動作ユーザ (www-data) と同じにすると unix_socket 認証が効く。\
+  パスワード: unix_socket 認証ならば空で OK。\
+  データベースのホスト名: localhost で。\
+  テーブル接頭辞: データベースの root がないけど wp を複数動かしたい人向け。
+  デフォルトで。
+  
+これでとりあえずボタンを押すとデータベース接続エラーになるので、
+必要なユーザや権限をエラーが出なくなるまで作っていく。
+
+### ユーザの作成
+
+まずログインエラーを直せるか確認しつつ行う。
+
+```sql
+-- パスワードなしで誰でも入れる。危険。
+CREATE USER 'www-data'@'localhost';
+-- パスワードを指定して作成。コマンドログに残るし色々と何とも言えないところがある。
+CREATE USER 'www-data'@'localhost' IDENTIFIED BY 'password';
+-- unix_socket による認証。www-data ユーザならパスワードなしでログインできる。
+CREATE USER 'www-data'@'localhost' IDENTIFIED VIA unix_socket;
+```
+
+```sh
+# sudo は実は root で実行する、ではなく switch user して実行する、なので
+# www-data ユーザとして実行できる
+# 'www-data'@'localhost' としてログイン確認
+sudo -u www-data mysql
+```
+
+ここまで確認できたら WordPress からユーザ名: www-data, パスワード: 空で
+データベースログインまで通ることを確認する。
+
+### 文字コードデフォルト設定
+
+```sql
+SHOW VARIABLES LIKE 'char%';
+SHOW VARIABLES LIKE "col%";
+```
+
+`/etc/mysql/my.cnf` がルート設定ファイルだが、ディレクトリの中身を全部
+インクルードしているだけなので、`/conf.d/mysql.cnf` を編集する。
+
+```text
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_bin
+
+[client]
+default-character-set=utf8mb4
+```
+
+```text
++--------------------------+----------------------------+
+| Variable_name            | Value                      |
++--------------------------+----------------------------+
+| character_set_client     | utf8mb4                    |
+| character_set_connection | utf8mb4                    |
+| character_set_database   | utf8mb4                    |
+| character_set_filesystem | binary                     |
+| character_set_results    | utf8mb4                    |
+| character_set_server     | utf8mb4                    |
+| character_set_system     | utf8mb3                    |
+| character_sets_dir       | /usr/share/mysql/charsets/ |
++--------------------------+----------------------------+
+
++----------------------------------+--------------------+
+| Variable_name                    | Value              |
++----------------------------------+--------------------+
+| collation_connection             | utf8mb4_general_ci |
+| collation_database               | utf8mb4_general_ci |
+| collation_server                 | utf8mb4_general_ci |
+| column_compression_threshold     | 100                |
+| column_compression_zlib_level    | 6                  |
+| column_compression_zlib_strategy | DEFAULT_STRATEGY   |
+| column_compression_zlib_wrap     | OFF                |
++----------------------------------+--------------------+
+```
+
+character_set_system は utf8(mb3) のままで OK。
+
+なぜか collation-server のデフォルト設定が効かない気がする。
+とはいえデフォルト設定に頼るのは移行時の事故の元なので、
+`CREATE DATABASE` 時に明示的に設定するようにする。
+
+```sql
+-- データベース設定情報の取得
+SELECT * FROM INFORMATION_SCHEMA.SCHEMATA;
+```
+
+```text
+*************************** 5. row ***************************
+              CATALOG_NAME: def
+               SCHEMA_NAME: wordpress
+DEFAULT_CHARACTER_SET_NAME: utf8mb4
+    DEFAULT_COLLATION_NAME: utf8mb4_bin
+                  SQL_PATH: NULL
+            SCHEMA_COMMENT:
+```
