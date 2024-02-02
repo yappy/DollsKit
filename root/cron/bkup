@@ -1,12 +1,13 @@
 #!/bin/sh
 
 # Automatic backup script
+#
 # Copy to:
 # /etc/cron.weekly/
 # Clone this repository to:
 # /root/DollsKit
 
-ROOT=/root/DollsKit/root
+ROOT=/root/DollsKit/root/backup
 LOG=/root/bkup.log
 
 echo -------------------------------------------------------------------------------- >> ${LOG}
