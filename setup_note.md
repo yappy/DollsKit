@@ -308,11 +308,11 @@ set bell-style none
   * `service lighttpd force-reload`
   * 以下などを必要に応じて変更しながら enable する
     * accesslog
-  * userdir
-  * fastcgi
-  * fastcgi-php
-  * CGI の stderr
-    * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
+    * userdir
+    * fastcgi
+    * fastcgi-php
+    * CGI の stderr
+      * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
 
 * php
   * `/etc/php/.../php.ini`
@@ -462,7 +462,7 @@ sudo mysql [-u USER] [-p]
 パスワードを入力したい場合は -p を指定するが、管理が大変なのであまり使いたくないことも
 多いかもしれない。
 
-## WordPress
+## WordPress - MariaDB
 
 Prerequirements
 
@@ -490,11 +490,14 @@ apt に wordpress というのがあるが、apache に依存があり、イン�
   データベースのホスト名: localhost で。\
   テーブル接頭辞: データベースの root がないけど wp を複数動かしたい人向け。
   デフォルトで。
-  
+1. wp-config.php を作ろうとするが、パーミッションエラーとなった場合は
+  表示された内容を自前でコピペして作成する。
+  wp-config.php は最終的には **400 (r--/---/---) 推奨**。
+
 これでとりあえずボタンを押すとデータベース接続エラーになるので、
 必要なユーザや権限をエラーが出なくなるまで作っていく。
 
-### ユーザの作成
+### MariaDB ユーザの作成
 
 まずログインエラーを直せるか確認しつつ行う。
 
@@ -583,3 +586,128 @@ DEFAULT_CHARACTER_SET_NAME: utf8mb4
                   SQL_PATH: NULL
             SCHEMA_COMMENT:
 ```
+
+### スロークエリ
+
+WordPress 運用ではそこまで要らないかもしれないけど、一応。
+
+```text
+[mariadb]
+slow_query_log
+long_query_time=1.0
+# default=/var/lib/mysql/{host}-slow.log
+slow_query_log_file=slow.log
+```
+
+## WordPress - 本体
+
+### パーミッションと自動更新
+
+データベースだけでなく、WordPress のインストール先自体を書き換えることがある。
+とりあえず読み取りさえできれば動きはするが、FTP の設定を求められたりする。
+
+* 自動更新 (wp-config.php 以外のメインファイル全体)
+* .htaccess
+* wp-content/ 以下
+  * アップロード
+  * テーマ
+  * プラグイン
+
+本体の自動更新をするには PHP プログラム (= web サーバ = www-data ユーザ) から
+自分自身を書き換えられるようにする必要がある。
+
+理想
+
+* プログラムメインファイル
+  * owner = root 等、other からは read only
+  * 手動で更新する
+* wp-content/
+  * ここだけ writable
+
+しかし、更新作業が面倒とか、忘れているとかでセキュリティパッチの適用なしで
+インターネット上に放置されるのはあまりにも危険。
+
+現実的には
+
+* wordpress ディレクトリ以下すべて
+  * owner = www-data:www-data
+  * rw-r--r--: ファイル
+  * rwxr-xr-x: ディレクトリ
+  * r--------: wp-config.php
+
+こんなところかもしれない。
+自分自身を任意のプログラムに置き換えられる可能性は頭にちらつくが、
+セキュリティアップデートなしで放置するよりはマシな気がする。
+(S)FTP or SSH を設定するというのも、もっと権限の高い権限へのログイン情報を
+WordPress に持たせる感があって何とも言えない。
+
+```sh
+chown -R www-data:www-data .
+find . -type f | xargs chmod 644
+find . -type d | xargs chmod 755
+chmod 400 wp-config.php
+```
+
+### 自動更新設定
+
+初期設定ではなかなか激しいことになっている。。(ver 6.4.3)
+
+```text
+このサイトは WordPress の新しいバージョンごとに自動的に最新の状態に保たれます。
+メンテナンスリリースとセキュリティリリースのみの自動更新に切り替えます。
+```
+
+プラグインを入れたりしていると、普通に破壊されると思われる。
+そういうまともな使い方を始めるまでは常時最新アップデート設定で、
+というメッセージなのかもしれないけど。。
+
+下のリンクをクリックするとマイナー/セキュリティリリースのみの自動更新になる。
+
+```text
+このサイトは WordPress のメンテナンスリリースとセキュリティリリースのみで自動的に最新の状態に保たれます。
+```
+
+ただ、固定したバージョンも永久に使い続けられる訳ではないので、
+データベースも含めたバックアップ/リストア手順と共に、
+メジャーバージョンアップの手順確立と習慣化も考えるべきだと思われる。
+また、PHP や MySQL (MariaDB) も数年でサポートが切れる。
+
+一応 10 年前までのリリースにもセキュリティパッチは出ているようだけど、
+10 年分の全部のリリースブランチにパッチを当ててリリース作業を行う担当者の
+悲痛な叫び声が聞こえる。。
+
+<https://ja.wordpress.org/download/releases/>
+
+```text
+積極的に保守されている6.4系統の最新版以外の以下のバージョンは、安全に使用することはできません。
+```
+
+### サイトヘルス
+
+```text
+警告 オプションのモジュール curl がインストールされていないか、無効化されています。
+警告 オプションのモジュール dom がインストールされていないか、無効化されています。
+警告 オプションのモジュール imagick がインストールされていないか、無効化されています。
+警告 オプションのモジュール zip がインストールされていないか、無効化されています。
+エラー 必須モジュール gd がインストールされていないか、無効化されています。
+警告 オプションのモジュール intl がインストールされていないか、無効化されています。
+```
+
+```sh
+apt install php-gd
+apt install php-curl php-dom php-imagick php-zip php-intl
+service lighttpd restart
+```
+
+```text
+REST API で予期しない結果が発生しました
+```
+
+パーマリンク設定のところが %postname% を含むもの (デフォルトもそう) になっていると
+REST API が 404 になるらしい。
+
+```text
+サイトのパーマリンク構造を選択してください。%postname% タグを含めるとリンクが理解しやすくなり、投稿が検索エンジンで上位に表示されるのに役立つ可能性があります。
+```
+
+バグのような気もするし、そのうち直るのかもしれない…。
