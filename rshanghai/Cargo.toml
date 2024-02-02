@@ -31,20 +31,20 @@ simplelog = "0.12.1"
 # Daemon util
 daemonize = "0.5.0"
 # Time for log
-time = "0.3.31"
-chrono = { version = "0.4.31", features = ["clock", "iana-time-zone", "std"] }
+time = "0.3.32"
+chrono = { version = "0.4.33", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.195", features = ["derive"] }
-serde_json = "1.0.111"
-serde_with = { version = "3.4.0", features = ["json"] }
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
+serde_with = { version = "3.6.0", features = ["json"] }
 # TOML
-toml = "0.8.8"
+toml = "0.8.9"
 
 # Async
-tokio = { version = "1.35.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.36.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.14"
 # HTTP
-reqwest = { version = "0.11.23", features = ["json"] }
+reqwest = { version = "0.11.24", features = ["json"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
