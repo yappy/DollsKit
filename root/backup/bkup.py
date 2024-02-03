@@ -1,8 +1,9 @@
+#! /usr/bin/env python3
+
 import argparse
 import datetime
 import pathlib
 import subprocess
-import tempfile
 import shutil
 import glob
 
@@ -15,7 +16,19 @@ def mount_check(dst):
 	exec(["mountpoint", str(dst)])
 	print()
 
-def remove_old_files(dst, reserved_size):
+def delete_old_files(dst, keep_count):
+	files = glob.glob(str(dst) + "/*.tar.bz2")
+	files.sort()
+	files = list(map(pathlib.Path, files))
+
+	print(f"Delete old files: keep={keep_count}, files={files}")
+	while len(files) > keep_count:
+		file = files.pop(0)
+		print(f"Delete {file}")
+		file.unlink()
+	print("Deleting old files completed")
+
+def allocate_size(dst, reserved_size):
 	files = glob.glob(str(dst) + "/*.tar.bz2")
 	files.sort()
 	files = list(map(pathlib.Path, files))
@@ -31,7 +44,7 @@ def remove_old_files(dst, reserved_size):
 		file = files.pop(0)
 		print(f"Delete {file}")
 		file.unlink()
-	print("Deleting old files completed")
+	print("Allocating free area completed")
 
 def rsync(src, rsync_dst, ex_list, dry_run):
 	print ("rsync...")
@@ -50,27 +63,21 @@ def archive(rsync_dst, ar_dst, dry_run):
 		print("skip by dry-run")
 		return
 
-	with tempfile.NamedTemporaryFile() as tf:
-		print(f"Temp file created: {tf.name}")
-		# -a: Use archive suffix to determine the compression program.
-		# -c: Create new.
-		# -f: Specify file name.
-		cmd = ["tar", "-C", str(rsync_dst), "-acf", tf.name, "."]
-		exec(cmd)
-
-		print(f"Copy {tf.name} -> {ar_dst}")
-		shutil.copyfile(tf.name, str(ar_dst))
-		print(f"Delete temp file: {tf.name}")
-		# close and delete
+	# -a: Use archive suffix to determine the compression program.
+	# -c: Create new.
+	# -f: Specify file name.
+	cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
+	exec(cmd)
 	print()
 
 def main():
 	parser = argparse.ArgumentParser(description="Auto backup script")
 	parser.add_argument("src", help="backup source root")
 	parser.add_argument("dst", help="backup destination root")
-	parser.add_argument("--mount-check", action="store_true", help="check if dst is a mountpoint")
-	parser.add_argument("--reserved-size", type=int, default=10, help="delete old files to allocate free area (GiB) (default=10)")
-	parser.add_argument("--exclude-from", action="append", help="check if dst is a mountpoint")
+	parser.add_argument("--mount-check", action="store", help="check if the specified path is a mountpoint")
+	parser.add_argument("--keep-count", type=int, help="keep compressed files and delete the others")
+	parser.add_argument("--reserved-size", type=int, help="delete old compressed files to allocate free area (GiB)")
+	parser.add_argument("--exclude-from", action="append", default=[], help="check if dst is a mountpoint")
 	parser.add_argument("-n", "--dry-run", action="store_true", help="rsync dry-run")
 	args = parser.parse_args()
 
@@ -79,7 +86,7 @@ def main():
 
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
-	rsync_dst = dst / "backup"
+	rsync_dst = dst / "latest"
 	ar_dst = dst / f"{dt_str}.tar.bz2"
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
@@ -88,13 +95,19 @@ def main():
 	print(f"RSYNC DST: {rsync_dst}")
 	print(f"AR DST: {ar_dst}")
 	print(f"Mount Check: {args.mount_check}")
+	print(f"Keep Count: {args.keep_count}")
+	print(f"Reserved Size: {args.reserved_size}")
 	print(f"Exclude From: {list(map(str, ex_list))}")
 	print(f"Dry Run: {args.dry_run}")
 	print()
 
-	if args.mount_check:
-		mount_check(dst)
-	remove_old_files(dst, args.reserved_size << 30)
+	if args.mount_check is not None:
+		mount_check(args.mount_check)
+	rsync_dst.mkdir(parents=True, exist_ok=True)
+	if args.keep_count is not None:
+		delete_old_files(dst, args.keep_count)
+	if args.reserved_size is not None:
+		allocate_size(dst, args.reserved_size << 30)
 	rsync(src, rsync_dst, ex_list, args.dry_run)
 	archive(rsync_dst, ar_dst, args.dry_run)
 
