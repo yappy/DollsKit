@@ -9,13 +9,17 @@
 
 ROOT=/root/DollsKit/root/backup
 LOG=/root/wpbkup.log
+DB=wordpress
 
 echo -------------------------------------------------------------------------------- >> ${LOG}
 date -R >> ${LOG}
 echo -------------------------------------------------------------------------------- >> ${LOG}
 
+# web files
 python3 ${ROOT}/bkup.py \
+--tag wpbkup \
 --mount-check /media/usbbkup \
 --keep-count 30 \
+--db wordpress \
 /var/www/html/wp/ /media/usbbkup/wp \
 >> ${LOG} 2>&1

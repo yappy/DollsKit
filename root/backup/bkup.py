@@ -7,9 +7,11 @@ import subprocess
 import shutil
 import glob
 
-def exec(cmd):
+def exec(cmd, stdout=None):
 	print(f"EXEC: {cmd}")
-	subprocess.run(cmd, check=True)
+	if stdout is None:
+		print("(stdout is redirected)")
+	subprocess.run(cmd, check=True, stdout=stdout)
 
 def mount_check(dst):
 	print("Destination mount check...")
@@ -46,6 +48,18 @@ def allocate_size(dst, reserved_size):
 		file.unlink()
 	print("Allocating free area completed")
 
+def dump_db(dst, dump_command, db, dry_run):
+	print("DB dump...")
+	if dry_run:
+		print("skip by dry-run")
+		return
+
+	cmd = [dump_command, "--databases", db]
+	dst_sql = dst / "db.sql"
+	with dst_sql.open(mode="w") as fout:
+		exec(cmd, fout)
+	print()
+
 def rsync(src, rsync_dst, ex_list, dry_run):
 	print ("rsync...")
 	cmd = ["rsync", "-aur", "--stats", "--delete"]
@@ -74,10 +88,13 @@ def main():
 	parser = argparse.ArgumentParser(description="Auto backup script")
 	parser.add_argument("src", help="backup source root")
 	parser.add_argument("dst", help="backup destination root")
+	parser.add_argument("--tag", action="store", default="bkup", help="prefix for archive file")
 	parser.add_argument("--mount-check", action="store", help="check if the specified path is a mountpoint")
 	parser.add_argument("--keep-count", type=int, help="keep compressed files and delete the others")
 	parser.add_argument("--reserved-size", type=int, help="delete old compressed files to allocate free area (GiB)")
 	parser.add_argument("--exclude-from", action="append", default=[], help="check if dst is a mountpoint")
+	parser.add_argument("--dump-command", action="store", default="mariadb-dump", help="DB dump command (default=mariadb-dump)")
+	parser.add_argument("--db", action="store", help="database name (backup if specified)")
 	parser.add_argument("-n", "--dry-run", action="store_true", help="rsync dry-run")
 	args = parser.parse_args()
 
@@ -87,7 +104,7 @@ def main():
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
 	rsync_dst = dst / "latest"
-	ar_dst = dst / f"{dt_str}.tar.bz2"
+	ar_dst = dst / f"{args.tag}_{dt_str}.tar.bz2"
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
 	print(f"SRC: {src}")
@@ -98,17 +115,25 @@ def main():
 	print(f"Keep Count: {args.keep_count}")
 	print(f"Reserved Size: {args.reserved_size}")
 	print(f"Exclude From: {list(map(str, ex_list))}")
+	print(f"Dump Command: {args.dump_command}")
+	print(f"DB: {args.db}")
 	print(f"Dry Run: {args.dry_run}")
 	print()
 
+	# mountpoint check
 	if args.mount_check is not None:
 		mount_check(args.mount_check)
 	rsync_dst.mkdir(parents=True, exist_ok=True)
+	# delete old files
 	if args.keep_count is not None:
 		delete_old_files(dst, args.keep_count)
 	if args.reserved_size is not None:
 		allocate_size(dst, args.reserved_size << 30)
+	# DB dump
+	dump_db(dst, args.dump_command, args.db, args.dry_run)
+	# rsync latest/
 	rsync(src, rsync_dst, ex_list, args.dry_run)
+	# tar
 	archive(rsync_dst, ar_dst, args.dry_run)
 
 	print("OK!")
