@@ -6,6 +6,7 @@ import pathlib
 import subprocess
 import shutil
 import glob
+import os
 
 def exec(cmd, stdout=None):
 	print(f"EXEC: {cmd}")
@@ -80,8 +81,13 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -a: Use archive suffix to determine the compression program.
 	# -c: Create new.
 	# -f: Specify file name.
-	cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
-	exec(cmd)
+	# --preserve-permissions(-p) and --same-owner are default for superuser
+	old_umask = os.umask(0o077)
+	try:
+		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
+		exec(cmd)
+	finally:
+		os.umask(old_umask)
 	print()
 
 def main():
