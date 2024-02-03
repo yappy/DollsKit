@@ -48,14 +48,14 @@ def allocate_size(dst, reserved_size):
 		file.unlink()
 	print("Allocating free area completed")
 
-def dump_db(dst, dump_command, db, dry_run):
+def dump_db(rsync_dst, dump_command, db, dry_run):
 	print("DB dump...")
 	if dry_run:
 		print("skip by dry-run")
 		return
 
 	cmd = [dump_command, "--databases", db]
-	dst_sql = dst / "db.sql"
+	dst_sql = rsync_dst / "db.sql"
 	with dst_sql.open(mode="w") as fout:
 		exec(cmd, fout)
 	print()
@@ -129,10 +129,10 @@ def main():
 		delete_old_files(dst, args.keep_count)
 	if args.reserved_size is not None:
 		allocate_size(dst, args.reserved_size << 30)
-	# DB dump
-	dump_db(dst, args.dump_command, args.db, args.dry_run)
 	# rsync latest/
 	rsync(src, rsync_dst, ex_list, args.dry_run)
+	# DB dump (removed by rsync. should do after rsync.)
+	dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
 	# tar
 	archive(rsync_dst, ar_dst, args.dry_run)
 
