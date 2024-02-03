@@ -17,5 +17,5 @@ echo ---------------------------------------------------------------------------
 python3 ${ROOT}/bkup.py \
 --mount-check /media/usbbkup \
 --keep-count 30 \
-/var/www/html/ /media/usbbkup/wp \
+/var/www/html/wp/ /media/usbbkup/wp \
 >> ${LOG} 2>&1
