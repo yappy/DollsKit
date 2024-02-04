@@ -8,11 +8,11 @@ import shutil
 import glob
 import os
 
-def exec(cmd, stdout=None):
+def exec(cmd, fout=None):
 	print(f"EXEC: {cmd}")
-	if stdout is None:
+	if fout is not None:
 		print("(stdout is redirected)")
-	subprocess.run(cmd, check=True, stdout=stdout)
+	subprocess.run(cmd, check=True, stdout=fout)
 
 def mount_check(dst):
 	print("Destination mount check...")
