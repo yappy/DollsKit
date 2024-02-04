@@ -57,7 +57,7 @@ def dump_db(rsync_dst, dump_command, db, dry_run):
 
 	cmd = [dump_command, "--databases", db]
 	dst_sql = rsync_dst / "db.sql"
-	with dst_sql.open(mode="w") as fout:
+	with dst_sql.open(mode="wb") as fout:
 		exec(cmd, fout)
 	print()
 
@@ -138,7 +138,8 @@ def main():
 	# rsync latest/
 	rsync(src, rsync_dst, ex_list, args.dry_run)
 	# DB dump (removed by rsync. should do after rsync.)
-	dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
+	if args.db is not None:
+		dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
 	# tar
 	archive(rsync_dst, ar_dst, args.dry_run)
 
