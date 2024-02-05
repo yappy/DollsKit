@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Reload the updated certificate file
+#
 # Copy to:
 # /etc/cron.weekly/
 

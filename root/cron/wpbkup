@@ -1,21 +1,25 @@
 #!/bin/sh
 
 # Automatic backup script
+#
 # Copy to:
-# /etc/cron.weekly/
+# /etc/cron.daily/
 # Clone this repository to:
 # /root/DollsKit
 
-ROOT=/root/DollsKit/root
-LOG=/root/bkup.log
+ROOT=/root/DollsKit/root/backup
+LOG=/root/wpbkup.log
+DB=wordpress
 
 echo -------------------------------------------------------------------------------- >> ${LOG}
 date -R >> ${LOG}
 echo -------------------------------------------------------------------------------- >> ${LOG}
 
+# web files
 python3 ${ROOT}/bkup.py \
---mount-check \
---reserved-size 10 \
---exclude-from ${ROOT}/bkup_exclude.txt \
-/ /media/usbbkup \
+--tag wpbkup \
+--mount-check /media/usbbkup \
+--keep-count 30 \
+--db wordpress \
+/var/www/html/wp/ /media/usbbkup/wp \
 >> ${LOG} 2>&1
