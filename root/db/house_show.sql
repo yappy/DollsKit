@@ -1,1 +1,4 @@
-SELECT * from system_logs;
+SELECT
+  *
+from
+  system_logs;
