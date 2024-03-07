@@ -13,8 +13,8 @@ panic = 'abort'
 
 [dependencies]
 # Error handling
-anyhow = "1.0.79"
-thiserror = "1.0.56"
+anyhow = "1.0.80"
+thiserror = "1.0.57"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
@@ -25,17 +25,17 @@ bitflags = "2.4.2"
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
-log = "0.4.20"
+log = "0.4.21"
 # Logging (concrete layer)
-simplelog = "0.12.1"
+simplelog = "0.12.2"
 # Daemon util
 daemonize = "0.5.0"
 # Time for log
 time = "0.3.34"
-chrono = { version = "0.4.33", features = ["clock", "iana-time-zone", "std"] }
+chrono = { version = "0.4.35", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.196", features = ["derive"] }
-serde_json = "1.0.113"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
 serde_with = { version = "3.6.1", features = ["json"] }
 # TOML
 toml = "0.8.10"
@@ -61,10 +61,10 @@ sha2 = "0.10.8"
 actix-web = "4.5.1"
 actix-multipart = "0.6.1"
 # Discord
-serenity = "0.12.0"
+serenity = "0.12.1"
 
 # Image convert
-image = "0.24.8"
+image = "0.24.9"
 # Font
 rusttype="0.9.3"
 # Scraping
