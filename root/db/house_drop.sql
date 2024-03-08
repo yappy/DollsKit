@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS logs;
+
+DROP TABLE IF EXISTS log_levels;
