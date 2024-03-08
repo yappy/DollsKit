@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/upload.rs`."><title>upload.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/upload.rs`."><title>upload.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -245,7 +246,7 @@
 <span class="kw">use </span>tokio_stream::StreamExt;
 
 <span class="kw">const </span>FILE_NAME_MAX_LEN: usize = <span class="number">32</span>;
-<span class="kw">const </span>TMP_FILE_NAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;upload.tmp~&quot;</span>;
+<span class="kw">const </span>TMP_FILE_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"upload.tmp~"</span>;
 <span class="comment">// TODO: config file
 </span><span class="kw">const </span>UPLOAD_FILE_LIMIT_MB: usize = <span class="number">4 </span>&lt;&lt; <span class="number">30</span>;
 <span class="kw">const </span>UPLOAD_TOTAL_LIMIT_MB: usize = <span class="number">32 </span>&lt;&lt; <span class="number">30</span>;
@@ -255,12 +256,12 @@
 /// アップロード完了までには時間がかかるのでロック中に await 可能な Mutex とする。
 </span><span class="kw">static </span>FS_LOCK: tokio::sync::Mutex&lt;()&gt; = tokio::sync::Mutex::const_new(());
 
-<span class="attr">#[actix_web::get(<span class="string">&quot;/upload/&quot;</span>)]
+<span class="attr">#[actix_web::get(<span class="string">"/upload/"</span>)]
 </span><span class="kw">async fn </span>index_get() -&gt; <span class="kw">impl </span>Responder {
-    <span class="macro">info!</span>(<span class="string">&quot;GET /upload/&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">"GET /upload/"</span>);
     <span class="kw">let </span>body = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-        <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-        <span class="string">&quot;/res/http/upload/index.html&quot;
+        <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+        <span class="string">"/res/http/upload/index.html"
     </span>));
 
     HttpResponse::Ok()
@@ -268,7 +269,7 @@
         .body(body)
 }
 
-<span class="attr">#[actix_web::post(<span class="string">&quot;/upload/&quot;</span>)]
+<span class="attr">#[actix_web::post(<span class="string">"/upload/"</span>)]
 </span><span class="kw">async fn </span>index_post(<span class="kw-2">mut </span>payload: Multipart, ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
     <span class="kw">let </span>res = index_post_main(<span class="kw-2">&amp;mut </span>payload, ctrl).<span class="kw">await</span>;
 
@@ -282,7 +283,7 @@
                 }
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="macro">warn!</span>(<span class="string">&quot;Upload: Error while drain: {e}&quot;</span>);
+                <span class="macro">warn!</span>(<span class="string">"Upload: Error while drain: {e}"</span>);
                 <span class="kw">break</span>;
             }
         }
@@ -293,7 +294,7 @@
 
 <span class="doccomment">/// &lt;https://github.com/actix/examples/tree/master/forms/multipart&gt;
 </span><span class="kw">async fn </span>index_post_main(payload: <span class="kw-2">&amp;mut </span>Multipart, ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
-    <span class="macro">info!</span>(<span class="string">&quot;POST /upload/&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">"POST /upload/"</span>);
 
     <span class="kw">let </span>(dir, _flimit, _tlimit) = {
         <span class="kw">let </span>http = ctrl.sysmods().http.lock().<span class="kw">await</span>;
@@ -311,68 +312,68 @@
     // 取れない場合は 503 System Unavailable
     </span><span class="kw">let </span>fs_lock = <span class="kw">match </span>FS_LOCK.try_lock() {
         <span class="prelude-val">Ok</span>(lock) =&gt; lock,
-        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Upload is busy&quot;</span>, <span class="number">503</span>)),
+        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">"Upload is busy"</span>, <span class="number">503</span>)),
     };
 
     <span class="comment">// ディレクトリが無ければ作成
-    </span><span class="macro">info!</span>(<span class="string">&quot;Upload: create all: {}&quot;</span>, dir.to_string_lossy());
-    std::fs::create_dir_all(dir).context(<span class="string">&quot;Failed to create upload dir&quot;</span>)<span class="question-mark">?</span>;
+    </span><span class="macro">info!</span>(<span class="string">"Upload: create all: {}"</span>, dir.to_string_lossy());
+    std::fs::create_dir_all(dir).context(<span class="string">"Failed to create upload dir"</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// multipart/form-data のパース
     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>field) = conv_mperror(payload.try_next().<span class="kw">await</span>)<span class="question-mark">? </span>{
-        <span class="macro">info!</span>(<span class="string">&quot;Upload: multipart/form-data entry&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Upload: multipart/form-data entry"</span>);
 
         <span class="comment">// content_disposition からファイル名を取得、チェック
         </span><span class="kw">let </span>cont_disp = field.content_disposition();
         <span class="kw">let </span>fname = cont_disp.get_filename();
         <span class="kw">let </span>fname = check_file_name(fname)<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;Upload: filename: {fname}&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Upload: filename: {fname}"</span>);
         <span class="kw">let </span>dstpath = dir.join(fname);
 
         <span class="comment">// tempfile 作成
-        </span><span class="macro">info!</span>(<span class="string">&quot;Upload: create: {}&quot;</span>, tmppath.to_string_lossy());
+        </span><span class="macro">info!</span>(<span class="string">"Upload: create: {}"</span>, tmppath.to_string_lossy());
         <span class="kw">let </span><span class="kw-2">mut </span>tmpf = File::create(<span class="kw-2">&amp;</span>tmppath)
             .<span class="kw">await
-            </span>.context(<span class="string">&quot;Failed to create temp file&quot;</span>)<span class="question-mark">?</span>;
+            </span>.context(<span class="string">"Failed to create temp file"</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// ファイルデータ本体
         </span><span class="kw">let </span><span class="kw-2">mut </span>total = <span class="number">0</span>;
         <span class="kw">while let </span><span class="prelude-val">Some</span>(chunk) = conv_mperror(field.try_next().<span class="kw">await</span>)<span class="question-mark">? </span>{
-            tmpf.write(<span class="kw-2">&amp;</span>chunk).<span class="kw">await</span>.context(<span class="string">&quot;Write error&quot;</span>)<span class="question-mark">?</span>;
+            tmpf.write(<span class="kw-2">&amp;</span>chunk).<span class="kw">await</span>.context(<span class="string">"Write error"</span>)<span class="question-mark">?</span>;
             total += chunk.len();
-            <span class="macro">trace!</span>(<span class="string">&quot;{total} B received&quot;</span>);
+            <span class="macro">trace!</span>(<span class="string">"{total} B received"</span>);
             <span class="kw">if </span>total &gt; UPLOAD_FILE_LIMIT_MB &lt;&lt; <span class="number">20 </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;File size is too large&quot;</span>, <span class="number">413</span>));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">"File size is too large"</span>, <span class="number">413</span>));
             }
         }
-        <span class="macro">info!</span>(<span class="string">&quot;{total} B received&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"{total} B received"</span>);
 
         <span class="kw">let </span>dirsize = get_disk_usage(<span class="kw-2">&amp;</span>dir.to_string_lossy()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;Upload: du: {dirsize}&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Upload: du: {dirsize}"</span>);
 
         <span class="kw">if </span>dirsize &lt;= UPLOAD_TOTAL_LIMIT_MB &lt;&lt; <span class="number">20 </span>{
             <span class="comment">// リネーム
             </span><span class="macro">info!</span>(
-                <span class="string">&quot;Upload: rename from {} to {}&quot;</span>,
+                <span class="string">"Upload: rename from {} to {}"</span>,
                 tmppath.to_string_lossy(),
                 dstpath.to_string_lossy()
             );
             tokio::fs::rename(<span class="kw-2">&amp;</span>tmppath, <span class="kw-2">&amp;</span>dstpath)
                 .<span class="kw">await
-                </span>.context(<span class="string">&quot;Rename failed&quot;</span>)<span class="question-mark">?</span>;
+                </span>.context(<span class="string">"Rename failed"</span>)<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="comment">// トータルサイズオーバーなので削除
-            </span><span class="macro">error!</span>(<span class="string">&quot;Upload: total size over&quot;</span>);
-            <span class="macro">info!</span>(<span class="string">&quot;Upload: remove {}&quot;</span>, tmppath.to_string_lossy());
+            </span><span class="macro">error!</span>(<span class="string">"Upload: total size over"</span>);
+            <span class="macro">info!</span>(<span class="string">"Upload: remove {}"</span>, tmppath.to_string_lossy());
             tokio::fs::remove_file(<span class="kw-2">&amp;</span>tmppath)
                 .<span class="kw">await
-                </span>.context(<span class="string">&quot;Remove failed&quot;</span>)<span class="question-mark">?</span>;
-            <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Insufficient storage&quot;</span>, <span class="number">507</span>));
+                </span>.context(<span class="string">"Remove failed"</span>)<span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">"Insufficient storage"</span>, <span class="number">507</span>));
         }
 
         <span class="comment">// close
     </span>} <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;File data required&quot;</span>, <span class="number">400</span>));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(ActixError::new(<span class="string">"File data required"</span>, <span class="number">400</span>));
     }
 
     <span class="comment">// ファイルシステムアンロック
@@ -380,7 +381,7 @@
 
     <span class="prelude-val">Ok</span>(HttpResponse::Ok()
         .content_type(ContentType::plaintext())
-        .body(<span class="string">&quot;&quot;</span>))
+        .body(<span class="string">""</span>))
 }
 
 <span class="doccomment">/// MultipartError に [Send] が実装されていないからか自動変換が効かない。
@@ -399,34 +400,34 @@
 /// * 半角英数字およびドット、ハイフン、アンダースコアのみ
 /// * ドットで始まらない (隠しファイルや `.` `..` などで何かが起こらないようにする)
 </span><span class="kw">fn </span>check_file_name(name: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str, ActixError&gt; {
-    <span class="kw">let </span>name = name.unwrap_or(<span class="string">&quot;&quot;</span>);
+    <span class="kw">let </span>name = name.unwrap_or(<span class="string">""</span>);
     <span class="kw">if </span>name.is_empty() {
-        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;No file name&quot;</span>, <span class="number">400</span>))
+        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">"No file name"</span>, <span class="number">400</span>))
     } <span class="kw">else if </span>name.len() &gt; FILE_NAME_MAX_LEN {
-        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;File name too long&quot;</span>, <span class="number">400</span>))
+        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">"File name too long"</span>, <span class="number">400</span>))
     } <span class="kw">else if </span>name
         .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == <span class="string">&#39;.&#39; </span>|| c == <span class="string">&#39;-&#39; </span>|| c == <span class="string">&#39;_&#39;</span>)
-        &amp;&amp; !name.starts_with(<span class="string">&#39;.&#39;</span>)
+        .all(|c| c.is_ascii_alphanumeric() || c == <span class="string">'.' </span>|| c == <span class="string">'-' </span>|| c == <span class="string">'_'</span>)
+        &amp;&amp; !name.starts_with(<span class="string">'.'</span>)
     {
         <span class="prelude-val">Ok</span>(name)
     } <span class="kw">else </span>{
-        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">&quot;Invalid file name&quot;</span>, <span class="number">400</span>))
+        <span class="prelude-val">Err</span>(ActixError::new(<span class="string">"Invalid file name"</span>, <span class="number">400</span>))
     }
 }
 
 <span class="kw">async fn </span>get_disk_usage(dirpath: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="macro">format!</span>(<span class="string">&quot;du -s -B 1 {dirpath}&quot;</span>));
+    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="macro">format!</span>(<span class="string">"du -s -B 1 {dirpath}"</span>));
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;du command failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"du command failed"</span>);
 
-    <span class="comment">// example: &quot;2903404544      .&quot;
+    <span class="comment">// example: "2903404544      ."
     </span><span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
     <span class="kw">let </span>token = stdout
         .split_ascii_whitespace()
         .next()
-        .context(<span class="string">&quot;du parse error&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>size = token.parse().context(<span class="string">&quot;du parse error&quot;</span>)<span class="question-mark">?</span>;
+        .context(<span class="string">"du parse error"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>size = token.parse().context(<span class="string">"du parse error"</span>)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(size)
 }
@@ -437,24 +438,24 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_ok() {
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;ok.txt&quot;</span>)).is_ok());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">"ok.txt"</span>)).is_ok());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_empty() {
         <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">None</span>).is_err());
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;&quot;</span>)).is_err());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">""</span>)).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_long() {
-        <span class="kw">let </span>long_name = <span class="string">&quot;012345678901234567890123456789.txt&quot;</span>;
+        <span class="kw">let </span>long_name = <span class="string">"012345678901234567890123456789.txt"</span>;
         <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(long_name)).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>check_file_name_invalid() {
-        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">&quot;あ.txt&quot;</span>)).is_err());
+        <span class="macro">assert!</span>(check_file_name(<span class="prelude-val">Some</span>(<span class="string">"あ.txt"</span>)).is_err());
     }
 
     <span class="attr">#[test]

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/camera.rs`."><title>camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/camera.rs`."><title>camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -560,7 +561,7 @@
 };
 
 <span class="doccomment">/// サムネイルファイル名のポストフィクス。
-</span><span class="kw">const </span>THUMB_POSTFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;thumb&quot;</span>;
+</span><span class="kw">const </span>THUMB_POSTFIX: <span class="kw-2">&amp;</span>str = <span class="string">"thumb"</span>;
 
 <span class="doccomment">/// カメラ設定データ。toml 設定に対応する。
 </span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
@@ -589,8 +590,8 @@
             enabled: <span class="bool-val">false</span>,
             debug_exec_once: <span class="bool-val">false</span>,
             fake_camera: <span class="bool-val">true</span>,
-            pic_history_dir: <span class="string">&quot;./camera/history&quot;</span>.to_string(),
-            pic_archive_dir: <span class="string">&quot;./camera/archive&quot;</span>.to_string(),
+            pic_history_dir: <span class="string">"./camera/history"</span>.to_string(),
+            pic_archive_dir: <span class="string">"./camera/archive"</span>.to_string(),
             total_size_limit_mb: <span class="number">1024</span>,
             page_by: <span class="number">100</span>,
         }
@@ -638,7 +639,7 @@
     ///
     /// 設定データの読み込みと、ストレージの状態取得を行い画像リストを初期化する。
     </span><span class="kw">pub fn </span>new(wakeup_list: Vec&lt;NaiveTime&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[camera] initialize&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[camera] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.camera.clone());
         <span class="macro">ensure!</span>(config.page_by &gt; <span class="number">0</span>);
@@ -666,7 +667,7 @@
 
     <span class="doccomment">/// キーからファイル名を生成する。
     </span><span class="kw">fn </span>create_file_names(key: <span class="kw-2">&amp;</span>str) -&gt; (String, String) {
-        (<span class="macro">format!</span>(<span class="string">&quot;{key}.jpg&quot;</span>), <span class="macro">format!</span>(<span class="string">&quot;{key}_{THUMB_POSTFIX}.jpg&quot;</span>))
+        (<span class="macro">format!</span>(<span class="string">"{key}.jpg"</span>), <span class="macro">format!</span>(<span class="string">"{key}_{THUMB_POSTFIX}.jpg"</span>))
     }
 
     <span class="doccomment">/// 撮影した画像をストレージに書き出し、管理構造に追加する。
@@ -682,7 +683,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>dtstr;
         <span class="kw">loop </span>{
             now = Local::now();
-            dtstr = now.format(<span class="string">&quot;%Y%m%d_%H%M%S&quot;</span>).to_string();
+            dtstr = now.format(<span class="string">"%Y%m%d_%H%M%S"</span>).to_string();
 
             <span class="kw">if </span><span class="self">self</span>.storage.pic_history_list.contains_key(<span class="kw-2">&amp;</span>dtstr) {
                 tokio::time::sleep(tokio::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await
@@ -704,12 +705,12 @@
 
         <span class="comment">// ファイルに書き込む
         </span>{
-            <span class="macro">info!</span>(<span class="string">&quot;[camera-pic] write {}&quot;</span>, path_main.display());
+            <span class="macro">info!</span>(<span class="string">"[camera-pic] write {}"</span>, path_main.display());
             <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>path_main).<span class="kw">await</span><span class="question-mark">?</span>;
             file.write_all(img).<span class="kw">await</span><span class="question-mark">?</span>;
         }
         {
-            <span class="macro">info!</span>(<span class="string">&quot;[camera-pic] write {}&quot;</span>, path_th.display());
+            <span class="macro">info!</span>(<span class="string">"[camera-pic] write {}"</span>, path_th.display());
             <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>path_th).<span class="kw">await</span><span class="question-mark">?</span>;
             file.write_all(thumb).<span class="kw">await</span><span class="question-mark">?</span>;
         }
@@ -733,7 +734,7 @@
         <span class="kw">let </span>archive = <span class="kw-2">&amp;mut </span><span class="self">self</span>.storage.pic_archive_list;
         <span class="kw">let </span>entry = history
             .get(key)
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;picture not found: {}&quot;</span>, key))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"picture not found: {}"</span>, key))<span class="question-mark">?</span>;
 
         <span class="comment">// key からファイル名を生成し、パスを生成する
         </span><span class="kw">let </span>(name_main, name_th) = <span class="self">Self</span>::create_file_names(key);
@@ -754,7 +755,7 @@
             total_size: main_size + th_size,
         };
         <span class="kw">if </span>archive.insert(key.to_string(), entry).is_some() {
-            <span class="macro">warn!</span>(<span class="string">&quot;[camera-pic] pic archive is overwritten: {}&quot;</span>, key);
+            <span class="macro">warn!</span>(<span class="string">"[camera-pic] pic archive is overwritten: {}"</span>, key);
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -771,15 +772,15 @@
     <span class="kw">async fn </span>delete_pic(list: <span class="kw-2">&amp;mut </span>PicDict, id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>entry = list
             .remove(id)
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;picture not found: {}&quot;</span>, id))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"picture not found: {}"</span>, id))<span class="question-mark">?</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(<span class="kw-2">&amp;</span>entry.path_main).<span class="kw">await </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;[camera] cannot remove {} main: {}&quot;</span>, id, why);
+            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} main: {}"</span>, id, why);
         }
         <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(<span class="kw-2">&amp;</span>entry.path_th).<span class="kw">await </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;[camera] cannot remove {} thumb: {}&quot;</span>, id, why);
+            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} thumb: {}"</span>, id, why);
         }
-        <span class="macro">info!</span>(<span class="string">&quot;[camera] deleted: {}&quot;</span>, id);
+        <span class="macro">info!</span>(<span class="string">"[camera] deleted: {}"</span>, id);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -797,31 +798,31 @@
 
     <span class="doccomment">/// 必要に応じて自動削除を行う。
     </span><span class="kw">async fn </span>clean_pic_history(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[camera] clean history&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[camera] clean history"</span>);
 
         <span class="kw">let </span>limit = <span class="self">self</span>.config.total_size_limit_mb <span class="kw">as </span>u64 * <span class="number">1024 </span>* <span class="number">1024</span>;
         <span class="kw">let </span>history = <span class="kw-2">&amp;mut </span><span class="self">self</span>.storage.pic_history_list;
 
         <span class="kw">let </span><span class="kw-2">mut </span>total = <span class="self">Self</span>::calc_total_size(history);
         <span class="kw">while </span>total &gt; limit {
-            <span class="macro">info!</span>(<span class="string">&quot;[camera] total: {}, limit: {}&quot;</span>, total, limit);
+            <span class="macro">info!</span>(<span class="string">"[camera] total: {}, limit: {}"</span>, total, limit);
 
             <span class="comment">// 一番古いものを削除する (1.66.0 or later)
             </span><span class="kw">let </span>(id, entry) = history.pop_first().unwrap();
             <span class="comment">// 削除でのエラーはログを出して続行する
             </span><span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(entry.path_main).<span class="kw">await </span>{
-                <span class="macro">error!</span>(<span class="string">&quot;[camera] cannot remove {} main: {}&quot;</span>, id, why);
+                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} main: {}"</span>, id, why);
             }
             <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(entry.path_th).<span class="kw">await </span>{
-                <span class="macro">error!</span>(<span class="string">&quot;[camera] cannot remove {} thumb: {}&quot;</span>, id, why);
+                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} thumb: {}"</span>, id, why);
             }
-            <span class="macro">info!</span>(<span class="string">&quot;[camera] deleted: {}&quot;</span>, id);
+            <span class="macro">info!</span>(<span class="string">"[camera] deleted: {}"</span>, id);
 
             total -= entry.total_size;
         }
 
         <span class="macro">assert!</span>(total == <span class="self">Self</span>::calc_total_size(history));
-        <span class="macro">info!</span>(<span class="string">&quot;[camera] clean history completed&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[camera] clean history completed"</span>);
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -845,12 +846,12 @@
     ///
     /// 設定有効ならば [Self::auto_task] を spawn する。
     </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">&quot;[camera] on_start&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[camera] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.enabled {
             <span class="kw">if </span><span class="self">self</span>.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(<span class="string">&quot;camera-auto&quot;</span>, Camera::auto_task);
+                ctrl.spawn_oneshot_task(<span class="string">"camera-auto"</span>, Camera::auto_task);
             } <span class="kw">else </span>{
-                ctrl.spawn_periodic_task(<span class="string">&quot;camera-auto&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list, Camera::auto_task);
+                ctrl.spawn_periodic_task(<span class="string">"camera-auto"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list, Camera::auto_task);
             }
         }
     }
@@ -862,13 +863,13 @@
 </span><span class="kw">fn </span>init_pics(dir: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;PicDict&gt; {
     <span class="kw">let </span>root = Path::new(dir);
     <span class="kw">if </span>!root.try_exists()<span class="question-mark">? </span>{
-        <span class="macro">warn!</span>(<span class="string">&quot;create dir: {}&quot;</span>, root.to_string_lossy());
+        <span class="macro">warn!</span>(<span class="string">"create dir: {}"</span>, root.to_string_lossy());
         std::fs::create_dir_all(root)<span class="question-mark">?</span>;
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>result = PicDict::new();
     result = find_files_rec(result, root)<span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">&quot;find {} files in {}&quot;</span>, result.len(), dir);
+    <span class="macro">info!</span>(<span class="string">"find {} files in {}"</span>, result.len(), dir);
 
     <span class="prelude-val">Ok</span>(result)
 }
@@ -877,7 +878,7 @@
 </span><span class="kw">fn </span>find_files_rec(<span class="kw-2">mut </span>dict: PicDict, path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;PicDict&gt; {
     <span class="kw">if </span>path.is_file() {
         <span class="comment">// 拡張子が jpg でないものは無視
-        </span><span class="kw">if </span>path.extension().unwrap_or_default() != <span class="string">&quot;jpg&quot; </span>{
+        </span><span class="kw">if </span>path.extension().unwrap_or_default() != <span class="string">"jpg" </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(dict);
         }
         <span class="comment">// 拡張子を除いた部分が空文字列およびサムネイルの場合は無視
@@ -888,8 +889,8 @@
 
         <span class="comment">// サムネイル画像のパスを生成
         </span><span class="kw">let </span><span class="kw-2">mut </span>path_th = PathBuf::from(path);
-        path_th.set_file_name(<span class="macro">format!</span>(<span class="string">&quot;{name}_{THUMB_POSTFIX}&quot;</span>));
-        path_th.set_extension(<span class="string">&quot;jpg&quot;</span>);
+        path_th.set_file_name(<span class="macro">format!</span>(<span class="string">"{name}_{THUMB_POSTFIX}"</span>));
+        path_th.set_extension(<span class="string">"jpg"</span>);
 
         <span class="comment">// サイズ取得
         </span><span class="kw">let </span>size = std::fs::metadata(path)<span class="question-mark">?</span>.st_size();
@@ -904,7 +905,7 @@
         };
         <span class="kw">if let </span><span class="prelude-val">Some</span>(old) = dict.insert(name.to_string(), entry) {
             <span class="macro">warn!</span>(
-                <span class="string">&quot;duplicate picture: {}, {}&quot;</span>,
+                <span class="string">"duplicate picture: {}, {}"</span>,
                 old.path_main.display(),
                 path.display()
             );
@@ -1006,21 +1007,21 @@
 
     <span class="kw">let </span>bin = <span class="kw">if </span>!fake {
         <span class="kw">let </span>_lock = LOCK.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>output = Command::new(<span class="string">&quot;libcamera-still&quot;</span>)
-            .arg(<span class="string">&quot;-o&quot;</span>)
-            .arg(<span class="string">&quot;-&quot;</span>)
-            .arg(<span class="string">&quot;-t&quot;</span>)
+        <span class="kw">let </span>output = Command::new(<span class="string">"libcamera-still"</span>)
+            .arg(<span class="string">"-o"</span>)
+            .arg(<span class="string">"-"</span>)
+            .arg(<span class="string">"-t"</span>)
             .arg(opt.timeout_ms.to_string())
-            .arg(<span class="string">&quot;-q&quot;</span>)
+            .arg(<span class="string">"-q"</span>)
             .arg(opt.q.to_string())
-            .arg(<span class="string">&quot;--width&quot;</span>)
+            .arg(<span class="string">"--width"</span>)
             .arg(opt.w.to_string())
-            .arg(<span class="string">&quot;--height&quot;</span>)
+            .arg(<span class="string">"--height"</span>)
             .arg(opt.h.to_string())
             .output()
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">if </span>!output.status.success() {
-            <span class="macro">bail!</span>(<span class="string">&quot;libcamera-still failed: {}&quot;</span>, output.status);
+            <span class="macro">bail!</span>(<span class="string">"libcamera-still failed: {}"</span>, output.status);
         }
 
         output.stdout
@@ -1028,7 +1029,7 @@
     </span>} <span class="kw">else </span>{
         <span class="comment">// バイナリ同梱のデフォルト画像が撮れたことにする
         </span><span class="kw">let </span>buf =
-            <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>), <span class="string">&quot;/res/camera_def.jpg&quot;</span>)).to_vec();
+            <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>), <span class="string">"/res/camera_def.jpg"</span>)).to_vec();
 
         <span class="comment">// オプションの w, h にリサイズする
         </span><span class="kw">let </span>src = image::load_from_memory_with_format(<span class="kw-2">&amp;</span>buf, image::ImageFormat::Jpeg)<span class="question-mark">?</span>;

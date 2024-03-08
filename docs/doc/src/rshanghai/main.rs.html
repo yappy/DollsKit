@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -313,19 +314,19 @@
 </span><span class="kw">const </span>CRATE_NAME: <span class="kw-2">&amp;</span>str = <span class="macro">module_path!</span>();
 
 <span class="doccomment">/// デーモン化の際に指定する stdout のリダイレクト先。
-</span><span class="kw">const </span>FILE_STDOUT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;stdout.txt&quot;</span>;
+</span><span class="kw">const </span>FILE_STDOUT: <span class="kw-2">&amp;</span>str = <span class="string">"stdout.txt"</span>;
 <span class="doccomment">/// デーモン化の際に指定する stderr のリダイレクト先。
-</span><span class="kw">const </span>FILE_STDERR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;stderr.txt&quot;</span>;
+</span><span class="kw">const </span>FILE_STDERR: <span class="kw-2">&amp;</span>str = <span class="string">"stderr.txt"</span>;
 <span class="doccomment">/// Cron 用シェルスクリプトの出力先。
-</span><span class="kw">const </span>FILE_EXEC_SH: <span class="kw-2">&amp;</span>str = <span class="string">&quot;exec.sh&quot;</span>;
+</span><span class="kw">const </span>FILE_EXEC_SH: <span class="kw-2">&amp;</span>str = <span class="string">"exec.sh"</span>;
 <span class="doccomment">/// Cron 用シェルスクリプトの出力先。
-</span><span class="kw">const </span>FILE_KILL_SH: <span class="kw-2">&amp;</span>str = <span class="string">&quot;kill.sh&quot;</span>;
+</span><span class="kw">const </span>FILE_KILL_SH: <span class="kw-2">&amp;</span>str = <span class="string">"kill.sh"</span>;
 <span class="doccomment">/// Cron 設定例の出力先。
-</span><span class="kw">const </span>FILE_CRON: <span class="kw-2">&amp;</span>str = <span class="string">&quot;cron.txt&quot;</span>;
+</span><span class="kw">const </span>FILE_CRON: <span class="kw-2">&amp;</span>str = <span class="string">"cron.txt"</span>;
 <span class="doccomment">/// デーモン化の際に指定する pid ファイルパス。
-</span><span class="kw">const </span>FILE_PID: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rshanghai.pid&quot;</span>;
+</span><span class="kw">const </span>FILE_PID: <span class="kw-2">&amp;</span>str = <span class="string">"rshanghai.pid"</span>;
 <span class="doccomment">/// ログのファイル出力先。
-</span><span class="kw">const </span>FILE_LOG: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rshanghai.log&quot;</span>;
+</span><span class="kw">const </span>FILE_LOG: <span class="kw-2">&amp;</span>str = <span class="string">"rshanghai.log"</span>;
 
 <span class="doccomment">/// stdout, stderr をリダイレクトし、デーモン化する。
 ///
@@ -336,14 +337,14 @@
     <span class="kw">let </span>stdout = <span class="kw">match </span>File::create(FILE_STDOUT) {
         <span class="prelude-val">Ok</span>(f) =&gt; f,
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {FILE_STDOUT} error: {e}&quot;</span>);
+            <span class="macro">eprintln!</span>(<span class="string">"Open {FILE_STDOUT} error: {e}"</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
     <span class="kw">let </span>stderr = <span class="kw">match </span>File::create(FILE_STDERR) {
         <span class="prelude-val">Ok</span>(f) =&gt; f,
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;Open {FILE_STDERR} error: {e}&quot;</span>);
+            <span class="macro">eprintln!</span>(<span class="string">"Open {FILE_STDERR} error: {e}"</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
@@ -351,14 +352,14 @@
     <span class="kw">let </span>daemonize = Daemonize::new()
         .pid_file(FILE_PID)
         <span class="comment">//.chown_pid_file(true)
-        </span>.working_directory(<span class="string">&quot;.&quot;</span>)
-        <span class="comment">//.user(&quot;nobody&quot;)
-        //.group(&quot;daemon&quot;)
+        </span>.working_directory(<span class="string">"."</span>)
+        <span class="comment">//.user("nobody")
+        //.group("daemon")
         </span>.stdout(stdout)
         .stderr(stderr);
 
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = daemonize.start() {
-        <span class="macro">eprintln!</span>(<span class="string">&quot;Daemonize error: {e}&quot;</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"Daemonize error: {e}"</span>);
         std::process::exit(<span class="number">1</span>);
     }
 }
@@ -378,7 +379,7 @@
         .set_time_offset_to_local()
         .unwrap()
         .set_time_format_custom(<span class="macro">format_description!</span>(
-            <span class="string">&quot;[year]-[month]-[day] [hour]:[minute]:[second]&quot;
+            <span class="string">"[year]-[month]-[day] [hour]:[minute]:[second]"
         </span>))
         .build();
     <span class="kw">let </span>file = OpenOptions::new()
@@ -409,21 +410,21 @@
     <span class="kw">let </span>build_info = sys::version::version_info();
     <span class="comment">// 同一テキストをツイートしようとするとエラーになるので日時を含める
     </span><span class="kw">let </span>now = chrono::Local::now();
-    <span class="kw">let </span>now = now.format(<span class="string">&quot;%F %T %:z&quot;</span>);
-    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;[{now}] Boot...\n{build_info}&quot;</span>);
+    <span class="kw">let </span>now = now.format(<span class="string">"%F %T %:z"</span>);
+    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">"[{now}] Boot...\n{build_info}"</span>);
 
     {
         <span class="kw">let </span><span class="kw-2">mut </span>twitter = ctrl.sysmods().twitter.lock().<span class="kw">await</span>;
         <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = twitter.tweet(<span class="kw-2">&amp;</span>msg).<span class="kw">await </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;error on tweet&quot;</span>);
-            <span class="macro">error!</span>(<span class="string">&quot;{:#?}&quot;</span>, why);
+            <span class="macro">error!</span>(<span class="string">"error on tweet"</span>);
+            <span class="macro">error!</span>(<span class="string">"{:#?}"</span>, why);
         }
     }
     {
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
         <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = discord.say(<span class="kw-2">&amp;</span>msg).<span class="kw">await </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;error on discord notification&quot;</span>);
-            <span class="macro">error!</span>(<span class="string">&quot;{:#?}&quot;</span>, why);
+            <span class="macro">error!</span>(<span class="string">"error on discord notification"</span>);
+            <span class="macro">error!</span>(<span class="string">"{:#?}"</span>, why);
         }
     }
 
@@ -437,26 +438,26 @@
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
 </span><span class="kw">fn </span>system_main() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">loop </span>{
-        <span class="macro">info!</span>(<span class="string">&quot;system main&quot;</span>);
-        <span class="macro">info!</span>(<span class="string">&quot;{}&quot;</span>, sys::version::version_info());
+        <span class="macro">info!</span>(<span class="string">"system main"</span>);
+        <span class="macro">info!</span>(<span class="string">"{}"</span>, sys::version::version_info());
 
         sys::config::load()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>sysmods = SystemModules::new()<span class="question-mark">?</span>;
         <span class="kw">let </span>ts = TaskServer::new(sysmods);
 
-        ts.spawn_oneshot_task(<span class="string">&quot;boot_tweet&quot;</span>, boot_msg_task);
+        ts.spawn_oneshot_task(<span class="string">"boot_tweet"</span>, boot_msg_task);
         <span class="kw">let </span>run_result = ts.run();
 
-        <span class="macro">info!</span>(<span class="string">&quot;task server dropped&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"task server dropped"</span>);
 
         <span class="kw">match </span>run_result {
             RunResult::Shutdown =&gt; {
-                <span class="macro">info!</span>(<span class="string">&quot;result: shutdown&quot;</span>);
+                <span class="macro">info!</span>(<span class="string">"result: shutdown"</span>);
                 <span class="kw">break</span>;
             }
             RunResult::Reboot =&gt; {
-                <span class="macro">info!</span>(<span class="string">&quot;result: reboot&quot;</span>);
+                <span class="macro">info!</span>(<span class="string">"result: reboot"</span>);
             }
         }
     }
@@ -486,21 +487,21 @@
         <span class="kw">let </span>f = create_sh(FILE_EXEC_SH)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>w = BufWriter::new(f);
 
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;#!/bin/bash&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;set -euxo pipefail&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"#!/bin/bash"</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"set -euxo pipefail"</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;cd &#39;{cd}&#39;&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;&#39;{exe}&#39; --daemon&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"cd '{cd}'"</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"'{exe}' --daemon"</span>)<span class="question-mark">?</span>;
     }
     {
         <span class="kw">let </span>f = create_sh(FILE_KILL_SH)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>w = BufWriter::new(f);
 
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;#!/bin/bash&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;set -euxo pipefail&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"#!/bin/bash"</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"set -euxo pipefail"</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;cd &#39;{cd}&#39;&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">&quot;kill `cat {FILE_PID}`&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"cd '{cd}'"</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="kw-2">&amp;mut </span>w, <span class="string">"kill `cat {FILE_PID}`"</span>)<span class="question-mark">?</span>;
     }
     {
         <span class="kw">let </span>f = File::create(FILE_CRON)<span class="question-mark">?</span>;
@@ -508,7 +509,7 @@
 
         <span class="macro">write!</span>(
             <span class="kw-2">&amp;mut </span>w,
-            <span class="string">&quot;# How to use
+            <span class="string">"# How to use
 # $ crontab &lt; {FILE_CRON}
 # How to verify
 # $ crontab -l
@@ -517,7 +518,7 @@
 # It seems that DNS fails just after reboot
 
 @reboot sleep 30; cd {cd}; ./{FILE_EXEC_SH}
-&quot;
+"
         </span>)<span class="question-mark">?</span>;
     }
 
@@ -529,8 +530,8 @@
 /// * `program` - プログラム名 (argv\[0\])。
 /// * `opts` - パーサオブジェクト。
 </span><span class="kw">fn </span>print_help(program: <span class="kw-2">&amp;</span>str, opts: Options) {
-    <span class="kw">let </span>brief = <span class="macro">format!</span>(<span class="string">&quot;Usage: {program} [options]&quot;</span>);
-    <span class="macro">print!</span>(<span class="string">&quot;{}&quot;</span>, opts.usage(<span class="kw-2">&amp;</span>brief));
+    <span class="kw">let </span>brief = <span class="macro">format!</span>(<span class="string">"Usage: {program} [options]"</span>);
+    <span class="macro">print!</span>(<span class="string">"{}"</span>, opts.usage(<span class="kw-2">&amp;</span>brief));
 }
 
 <span class="doccomment">/// エントリポイント。
@@ -544,23 +545,23 @@
     <span class="kw">let </span>program = <span class="kw-2">&amp;</span>args[<span class="number">0</span>];
 
     <span class="kw">let </span><span class="kw-2">mut </span>opts = Options::new();
-    opts.optflag(<span class="string">&quot;h&quot;</span>, <span class="string">&quot;help&quot;</span>, <span class="string">&quot;Print this help&quot;</span>);
-    opts.optflag(<span class="string">&quot;d&quot;</span>, <span class="string">&quot;daemon&quot;</span>, <span class="string">&quot;Run as daemon&quot;</span>);
+    opts.optflag(<span class="string">"h"</span>, <span class="string">"help"</span>, <span class="string">"Print this help"</span>);
+    opts.optflag(<span class="string">"d"</span>, <span class="string">"daemon"</span>, <span class="string">"Run as daemon"</span>);
     <span class="kw">let </span>matches = <span class="kw">match </span>opts.parse(<span class="kw-2">&amp;</span>args[<span class="number">1</span>..]) {
         <span class="prelude-val">Ok</span>(m) =&gt; m,
         <span class="prelude-val">Err</span>(fail) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">&quot;{fail}&quot;</span>);
+            <span class="macro">eprintln!</span>(<span class="string">"{fail}"</span>);
             std::process::exit(<span class="number">1</span>);
         }
     };
 
     <span class="comment">// --help がある場合は出力して終了
-    </span><span class="kw">if </span>matches.opt_present(<span class="string">&quot;h&quot;</span>) {
+    </span><span class="kw">if </span>matches.opt_present(<span class="string">"h"</span>) {
         print_help(program, opts);
         std::process::exit(<span class="number">0</span>);
     }
 
-    <span class="kw">if </span>matches.opt_present(<span class="string">&quot;d&quot;</span>) {
+    <span class="kw">if </span>matches.opt_present(<span class="string">"d"</span>) {
         daemon();
         init_log(<span class="bool-val">true</span>);
     } <span class="kw">else </span>{
@@ -568,8 +569,8 @@
     }
 
     system_main().map_err(|e| {
-        <span class="macro">error!</span>(<span class="string">&quot;Error in system_main&quot;</span>);
-        <span class="macro">error!</span>(<span class="string">&quot;{:#}&quot;</span>, e);
+        <span class="macro">error!</span>(<span class="string">"Error in system_main"</span>);
+        <span class="macro">error!</span>(<span class="string">"{:#}"</span>, e);
         e
     })<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())

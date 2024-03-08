@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/line.rs`."><title>line.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/line.rs`."><title>line.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -556,7 +557,7 @@
 
 <span class="doccomment">/// [LinePrompt] のデフォルト値。
 </span><span class="kw">const </span>DEFAULT_TOML: <span class="kw-2">&amp;</span>str =
-    <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>), <span class="string">&quot;/res/openai_line.toml&quot;</span>));
+    <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>), <span class="string">"/res/openai_line.toml"</span>));
 <span class="kw">impl </span>Default <span class="kw">for </span>LinePrompt {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         toml::from_str(DEFAULT_TOML).unwrap()
@@ -587,7 +588,7 @@
 <span class="kw">impl </span>Line {
     <span class="doccomment">/// コンストラクタ。
     </span><span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[line] initialize&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[line] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.line.clone());
         <span class="kw">let </span>ai_config = config::get(|cfg| cfg.openai.clone());
@@ -623,14 +624,14 @@
 
 <span class="kw">impl </span>SystemModule <span class="kw">for </span>Line {
     <span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, _ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">&quot;[line] on_start&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[line] on_start"</span>);
     }
 }
 
 <span class="comment">////////////////////////////////////////////////////////////////////////////////
 
 </span><span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = <span class="string">&quot;type&quot;</span>)]
+#[serde(tag = <span class="string">"type"</span>)]
 </span><span class="kw">struct </span>ErrorResp {
     message: String,
     details: <span class="prelude-ty">Option</span>&lt;Vec&lt;Detail&gt;&gt;,
@@ -643,7 +644,7 @@
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>ProfileResp {
     <span class="kw">pub </span>display_name: String,
     <span class="kw">pub </span>user_id: String,
@@ -653,7 +654,7 @@
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 #[serde_with::skip_serializing_none]
 </span><span class="kw">struct </span>ReplyReq {
     reply_token: String,
@@ -663,13 +664,13 @@
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>ReplyResp {
     sent_messages: Vec&lt;SentMessage&gt;,
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 #[serde_with::skip_serializing_none]
 </span><span class="kw">struct </span>PushReq {
     to: String,
@@ -680,26 +681,26 @@
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>PushResp {
     sent_messages: Vec&lt;SentMessage&gt;,
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">struct </span>SentMessage {
     id: String,
     quote_token: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
-#[serde(tag = <span class="string">&quot;type&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
+#[serde(tag = <span class="string">"type"</span>)]
 #[serde_with::skip_serializing_none]
 </span><span class="kw">enum </span>Message {
-    <span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    <span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>Text { text: String },
-    <span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    <span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>Image {
         <span class="doccomment">/// url len &lt;= 5000
         /// protocol = https (&gt;= TLS 1.2)
@@ -715,14 +716,14 @@
 }
 
 <span class="kw">fn </span>url_profile(user_id: <span class="kw-2">&amp;</span>str) -&gt; String {
-    <span class="macro">format!</span>(<span class="string">&quot;https://api.line.me/v2/bot/profile/{user_id}&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">"https://api.line.me/v2/bot/profile/{user_id}"</span>)
 }
 <span class="kw">fn </span>url_group_profile(group_id: <span class="kw-2">&amp;</span>str, user_id: <span class="kw-2">&amp;</span>str) -&gt; String {
-    <span class="macro">format!</span>(<span class="string">&quot;https://api.line.me/v2/bot/group/{group_id}/member/{user_id}&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">"https://api.line.me/v2/bot/group/{group_id}/member/{user_id}"</span>)
 }
 
-<span class="kw">const </span>URL_REPLY: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.line.me/v2/bot/message/reply&quot;</span>;
-<span class="kw">const </span>URL_PUSH: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.line.me/v2/bot/message/push&quot;</span>;
+<span class="kw">const </span>URL_REPLY: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.line.me/v2/bot/message/reply"</span>;
+<span class="kw">const </span>URL_PUSH: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.line.me/v2/bot/message/push"</span>;
 
 <span class="kw">impl </span>Line {
     <span class="kw">pub async fn </span>get_profile(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ProfileResp&gt; {
@@ -750,7 +751,7 @@
     ///
     /// &lt;https://developers.line.biz/ja/docs/messaging-api/text-character-count/&gt;
     </span><span class="kw">pub async fn </span>reply(<span class="kw-2">&amp;</span><span class="self">self</span>, reply_token: <span class="kw-2">&amp;</span>str, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ReplyResp&gt; {
-        <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">&quot;text must not be empty&quot;</span>);
+        <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">"text must not be empty"</span>);
 
         <span class="kw">let </span>messages: Vec&lt;<span class="kw">_</span>&gt; = split_message(text)
             .iter()
@@ -758,7 +759,7 @@
                 text: chunk.to_string(),
             })
             .collect();
-        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">&quot;text too long: {}&quot;</span>, text.len());
+        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">"text too long: {}"</span>, text.len());
 
         <span class="kw">let </span>req = ReplyReq {
             reply_token: reply_token.to_string(),
@@ -766,7 +767,7 @@
             notification_disabled: <span class="prelude-val">None</span>,
         };
         <span class="kw">let </span>resp = <span class="self">self</span>.post_auth_json(URL_REPLY, <span class="kw-2">&amp;</span>req).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;{:?}&quot;</span>, resp);
+        <span class="macro">info!</span>(<span class="string">"{:?}"</span>, resp);
 
         <span class="prelude-val">Ok</span>(resp)
     }
@@ -776,7 +777,7 @@
     /// &lt;https://developers.line.biz/ja/docs/messaging-api/text-character-count/&gt;
     </span><span class="attr">#[allow(unused)]
     </span><span class="kw">pub async fn </span>push_message(<span class="kw-2">&amp;</span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>str, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ReplyResp&gt; {
-        <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">&quot;text must not be empty&quot;</span>);
+        <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">"text must not be empty"</span>);
 
         <span class="kw">let </span>messages: Vec&lt;<span class="kw">_</span>&gt; = split_message(text)
             .iter()
@@ -784,7 +785,7 @@
                 text: chunk.to_string(),
             })
             .collect();
-        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">&quot;text too long: {}&quot;</span>, text.len());
+        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">"text too long: {}"</span>, text.len());
 
         <span class="kw">let </span>req = PushReq {
             to: to.to_string(),
@@ -793,7 +794,7 @@
             custom_aggregation_units: <span class="prelude-val">None</span>,
         };
         <span class="kw">let </span>resp = <span class="self">self</span>.post_auth_json(URL_PUSH, <span class="kw-2">&amp;</span>req).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;{:?}&quot;</span>, resp);
+        <span class="macro">info!</span>(<span class="string">"{:?}"</span>, resp);
 
         <span class="prelude-val">Ok</span>(resp)
     }
@@ -812,7 +813,7 @@
             custom_aggregation_units: <span class="prelude-val">None</span>,
         };
         <span class="kw">let </span>resp = <span class="self">self</span>.post_auth_json(URL_PUSH, <span class="kw-2">&amp;</span>req).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;{:?}&quot;</span>, resp);
+        <span class="macro">info!</span>(<span class="string">"{:?}"</span>, resp);
 
         <span class="prelude-val">Ok</span>(resp)
     }
@@ -826,9 +827,9 @@
     ///   * Response body JSON を [ErrorResp] にパースできればその [Debug] を
     ///     メッセージとしてエラーを返す。
     ///   * 変換に失敗した場合、JSON ソースをメッセージとしてエラーを返す。
-    </span><span class="kw">async fn </span>check_resp&lt;<span class="lifetime">&#39;a</span>, T&gt;(resp: reqwest::Response) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
+    </span><span class="kw">async fn </span>check_resp&lt;<span class="lifetime">'a</span>, T&gt;(resp: reqwest::Response) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
     <span class="kw">where
-        </span>T: <span class="kw">for</span>&lt;<span class="lifetime">&#39;de</span>&gt; Deserialize&lt;<span class="lifetime">&#39;de</span>&gt;,
+        </span>T: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
         <span class="comment">// https://qiita.com/kzee/items/d01e6f3e00dfadb9a00b
         </span><span class="kw">let </span>status = resp.status();
@@ -838,22 +839,22 @@
             <span class="prelude-val">Ok</span>(serde_json::from_reader::&lt;<span class="kw">_</span>, T&gt;(body.as_bytes())<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
             <span class="kw">match </span>serde_json::from_str::&lt;ErrorResp&gt;(<span class="kw-2">&amp;</span>body) {
-                <span class="prelude-val">Ok</span>(obj) =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{status}: {:?}&quot;</span>, obj),
-                <span class="prelude-val">Err</span>(json_err) =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{status} - {json_err}: {body}&quot;</span>),
+                <span class="prelude-val">Ok</span>(obj) =&gt; <span class="macro">bail!</span>(<span class="string">"{status}: {:?}"</span>, obj),
+                <span class="prelude-val">Err</span>(json_err) =&gt; <span class="macro">bail!</span>(<span class="string">"{status} - {json_err}: {body}"</span>),
             }
         }
     }
 
-    <span class="kw">async fn </span>get_auth_json&lt;<span class="lifetime">&#39;a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, url: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
+    <span class="kw">async fn </span>get_auth_json&lt;<span class="lifetime">'a</span>, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, url: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
     <span class="kw">where
-        </span>T: <span class="kw">for</span>&lt;<span class="lifetime">&#39;de</span>&gt; Deserialize&lt;<span class="lifetime">&#39;de</span>&gt;,
+        </span>T: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
-        <span class="macro">info!</span>(<span class="string">&quot;[line] GET {url}&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[line] GET {url}"</span>);
         <span class="kw">let </span>token = <span class="kw-2">&amp;</span><span class="self">self</span>.config.token;
         <span class="kw">let </span>resp = <span class="self">self
             </span>.client
             .get(url)
-            .header(<span class="string">&quot;Authorization&quot;</span>, <span class="macro">format!</span>(<span class="string">&quot;Bearer {token}&quot;</span>))
+            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {token}"</span>))
             .send()
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -863,14 +864,14 @@
     <span class="kw">async fn </span>post_auth_json&lt;T, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, url: <span class="kw-2">&amp;</span>str, body: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;R&gt;
     <span class="kw">where
         </span>T: Serialize + Debug,
-        R: <span class="kw">for</span>&lt;<span class="lifetime">&#39;de</span>&gt; Deserialize&lt;<span class="lifetime">&#39;de</span>&gt;,
+        R: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
-        <span class="macro">info!</span>(<span class="string">&quot;[line] POST {url} {:?}&quot;</span>, body);
+        <span class="macro">info!</span>(<span class="string">"[line] POST {url} {:?}"</span>, body);
         <span class="kw">let </span>token = <span class="kw-2">&amp;</span><span class="self">self</span>.config.token;
         <span class="kw">let </span>resp = <span class="self">self
             </span>.client
             .post(url)
-            .header(<span class="string">&quot;Authorization&quot;</span>, <span class="macro">format!</span>(<span class="string">&quot;Bearer {token}&quot;</span>))
+            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {token}"</span>))
             .json(body)
             .send()
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -907,24 +908,24 @@
 <span class="kw">fn </span>register_draw_picture(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;FunctionContext&gt;) {
     <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
     properties.insert(
-        <span class="string">&quot;keywords&quot;</span>.to_string(),
+        <span class="string">"keywords"</span>.to_string(),
         ParameterElement {
-            type_: <span class="string">&quot;string&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Keywords for drawing. They must be in English.&quot;</span>.to_string()),
+            type_: <span class="string">"string"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Keywords for drawing. They must be in English."</span>.to_string()),
             ..Default::default()
         },
     );
     func_table.register_function(
         Function {
-            name: <span class="string">&quot;draw&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Draw a picture&quot;</span>.to_string()),
+            name: <span class="string">"draw"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Draw a picture"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties,
-                required: <span class="macro">vec!</span>[<span class="string">&quot;keywords&quot;</span>.to_string()],
+                required: <span class="macro">vec!</span>[<span class="string">"keywords"</span>.to_string()],
             },
         },
-        <span class="string">&quot;draw&quot;</span>,
+        <span class="string">"draw"</span>,
         Box::new(draw_picture_sync),
     );
 }
@@ -934,17 +935,17 @@
 }
 
 <span class="kw">async fn </span>draw_picture(ctx: FunctionContext, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>keywords = function::get_arg(args, <span class="string">&quot;keywords&quot;</span>)<span class="question-mark">?</span>.to_string();
+    <span class="kw">let </span>keywords = function::get_arg(args, <span class="string">"keywords"</span>)<span class="question-mark">?</span>.to_string();
 
     <span class="kw">let </span>ctrl = ctx.ctrl.clone();
-    ctrl.spawn_oneshot_fn(<span class="string">&quot;line_draw_picture&quot;</span>, <span class="kw">async move </span>{
+    ctrl.spawn_oneshot_fn(<span class="string">"line_draw_picture"</span>, <span class="kw">async move </span>{
         <span class="kw">let </span>url = {
             <span class="kw">let </span>ai = ctx.ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
             ai.generate_image(<span class="kw-2">&amp;</span>keywords, <span class="number">1</span>)
                 .<span class="kw">await</span><span class="question-mark">?
                 </span>.pop()
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?
         </span>};
         {
             <span class="kw">let </span>line = ctx.ctrl.sysmods().line.lock().<span class="kw">await</span>;
@@ -953,7 +954,7 @@
         <span class="prelude-val">Ok</span>(())
     });
 
-    <span class="prelude-val">Ok</span>(<span class="string">&quot;Accepted. The result will be automatially posted later. Assistant should not draw for now.&quot;</span>.to_string())
+    <span class="prelude-val">Ok</span>(<span class="string">"Accepted. The result will be automatially posted later. Assistant should not draw for now."</span>.to_string())
 }
 
 <span class="attr">#[cfg(test)]
@@ -966,14 +967,14 @@
         <span class="macro">assert!</span>(split_message(<span class="kw-2">&amp;</span>src).is_empty());
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..MSG_SPLIT_LEN {
-            <span class="kw">let </span>a = <span class="string">&#39;A&#39; </span><span class="kw">as </span>u32;
+            <span class="kw">let </span>a = <span class="string">'A' </span><span class="kw">as </span>u32;
             src.push(char::from_u32(a + (i <span class="kw">as </span>u32 % <span class="number">26</span>)).unwrap());
         }
         <span class="kw">let </span>res = split_message(<span class="kw-2">&amp;</span>src);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, res.len());
         <span class="macro">assert_eq!</span>(src, res[<span class="number">0</span>]);
 
-        src.push(<span class="string">&#39;0&#39;</span>);
+        src.push(<span class="string">'0'</span>);
         <span class="kw">let </span>res = split_message(<span class="kw-2">&amp;</span>src);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, res.len());
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>src[..MSG_SPLIT_LEN], res[<span class="number">0</span>]);
@@ -981,7 +982,7 @@
 
         src.pop();
         src.pop();
-        src.push(<span class="string">&#39;😀&#39;</span>);
+        src.push(<span class="string">'😀'</span>);
         <span class="kw">let </span>res = split_message(<span class="kw-2">&amp;</span>src);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, res.len());
         <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>src[..MSG_SPLIT_LEN - <span class="number">1</span>], res[<span class="number">0</span>]);

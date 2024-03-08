@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/github.rs`."><title>github.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/github.rs`."><title>github.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -205,10 +206,10 @@
 <span class="kw">use </span>log::{error, info};
 <span class="kw">use </span>serde_json::Value;
 
-<span class="attr">#[actix_web::get(<span class="string">&quot;/github/&quot;</span>)]
+<span class="attr">#[actix_web::get(<span class="string">"/github/"</span>)]
 </span><span class="kw">async fn </span>index_get() -&gt; <span class="kw">impl </span>Responder {
-    <span class="kw">let </span>body = <span class="string">r#&quot;&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
+    <span class="kw">let </span>body = <span class="string">r#"&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
   &lt;head&gt;
     &lt;title&gt;Github Webhook&lt;/title&gt;
   &lt;/head&gt;
@@ -217,7 +218,7 @@
     &lt;p&gt;Your request is GET.&lt;/p&gt;
   &lt;/body&gt;
 &lt;/html&gt;
-&quot;#</span>;
+"#</span>;
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -225,52 +226,52 @@
 }
 
 <span class="doccomment">/// Github webhook 設定で Content type = application/json に設定すること。
-</span><span class="attr">#[actix_web::post(<span class="string">&quot;/github/&quot;</span>)]
+</span><span class="attr">#[actix_web::post(<span class="string">"/github/"</span>)]
 </span><span class="kw">async fn </span>index_post(req: HttpRequest, body: String, ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
-    <span class="macro">info!</span>(<span class="string">&quot;POST github webhook&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">"POST github webhook"</span>);
 
     <span class="kw">let </span>headers = req.headers();
-    <span class="kw">let </span>event = headers.get(<span class="string">&quot;X-GitHub-Event&quot;</span>);
-    <span class="kw">let </span>delivery = headers.get(<span class="string">&quot;X-GitHub-Delivery&quot;</span>);
-    <span class="kw">let </span>signature256 = headers.get(<span class="string">&quot;X-Hub-Signature-256&quot;</span>);
+    <span class="kw">let </span>event = headers.get(<span class="string">"X-GitHub-Event"</span>);
+    <span class="kw">let </span>delivery = headers.get(<span class="string">"X-GitHub-Delivery"</span>);
+    <span class="kw">let </span>signature256 = headers.get(<span class="string">"X-Hub-Signature-256"</span>);
     <span class="kw">if </span>event.is_none() || delivery.is_none() || signature256.is_none() {
-        <span class="macro">error!</span>(<span class="string">&quot;400: X-GitHub-Event, X-GitHub-Delivery, X-Hub-Signature-256 required&quot;</span>);
+        <span class="macro">error!</span>(<span class="string">"400: X-GitHub-Event, X-GitHub-Delivery, X-Hub-Signature-256 required"</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;X-GitHub-Event, X-GitHub-Delivery, X-Hub-Signature-256 required&quot;</span>));
+            .body(<span class="string">"X-GitHub-Event, X-GitHub-Delivery, X-Hub-Signature-256 required"</span>));
     }
 
     <span class="kw">let </span>event = event.unwrap().to_str();
     <span class="kw">let </span>delivery = delivery.unwrap().to_str();
     <span class="kw">let </span>signature256 = signature256.unwrap().to_str();
     <span class="kw">if </span>event.is_err() || delivery.is_err() || signature256.is_err() {
-        <span class="macro">error!</span>(<span class="string">&quot;400: Bad HTTP header&quot;</span>);
+        <span class="macro">error!</span>(<span class="string">"400: Bad HTTP header"</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;Bad X-Hub header&quot;</span>));
+            .body(<span class="string">"Bad X-Hub header"</span>));
     }
     <span class="kw">let </span>event = event.unwrap();
     <span class="kw">let </span>delivery = delivery.unwrap();
     <span class="kw">let </span>signature256 = signature256.unwrap();
-    <span class="macro">info!</span>(<span class="string">&quot;X-GitHub-Event: {}&quot;</span>, event);
-    <span class="macro">info!</span>(<span class="string">&quot;X-GitHub-Delivery: {}&quot;</span>, delivery);
-    <span class="macro">info!</span>(<span class="string">&quot;X-Hub-Signature-256: {}&quot;</span>, signature256);
+    <span class="macro">info!</span>(<span class="string">"X-GitHub-Event: {}"</span>, event);
+    <span class="macro">info!</span>(<span class="string">"X-GitHub-Delivery: {}"</span>, delivery);
+    <span class="macro">info!</span>(<span class="string">"X-Hub-Signature-256: {}"</span>, signature256);
 
-    <span class="comment">// &quot;push&quot; 以外は無視する
-    </span><span class="kw">if </span>event != <span class="string">&quot;push&quot; </span>{
-        <span class="macro">info!</span>(<span class="string">r#&quot;event &quot;{}&quot; ignored&quot;#</span>, event);
+    <span class="comment">// "push" 以外は無視する
+    </span><span class="kw">if </span>event != <span class="string">"push" </span>{
+        <span class="macro">info!</span>(<span class="string">r#"event "{}" ignored"#</span>, event);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;&quot;</span>));
+            .body(<span class="string">""</span>));
     }
 
-    <span class="comment">// &quot;sha256=&quot; の部分を取り除く
-    </span><span class="kw">let </span>prefix = <span class="string">&quot;sha256=&quot;</span>;
+    <span class="comment">// "sha256=" の部分を取り除く
+    </span><span class="kw">let </span>prefix = <span class="string">"sha256="</span>;
     <span class="kw">if </span>!signature256.starts_with(prefix) {
-        <span class="macro">error!</span>(<span class="string">&quot;400: Invalid signature&quot;</span>);
+        <span class="macro">error!</span>(<span class="string">"400: Invalid signature"</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;Invalid signature&quot;</span>));
+            .body(<span class="string">"Invalid signature"</span>));
     }
     <span class="kw">let </span>signature256 = <span class="kw-2">&amp;</span>signature256[prefix.len()..];
 
@@ -278,12 +279,12 @@
     </span><span class="kw">if </span>signature256.len() % <span class="number">2 </span>!= <span class="number">0 </span>{
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;Invalid signature&quot;</span>));
+            .body(<span class="string">"Invalid signature"</span>));
     }
     <span class="kw">let </span><span class="kw-2">mut </span>hash: Vec&lt;u8&gt; = Vec::new();
     <span class="kw">for </span>i <span class="kw">in </span>(<span class="number">0</span>..signature256.len()).step_by(<span class="number">2</span>) {
         <span class="kw">let </span>bytestr = <span class="kw-2">&amp;</span>signature256[i..i + <span class="number">2</span>];
-        <span class="kw">let </span>byte = u8::from_str_radix(bytestr, <span class="number">16</span>).map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">&quot;Invalid signature&quot;</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>byte = u8::from_str_radix(bytestr, <span class="number">16</span>).map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">"Invalid signature"</span>))<span class="question-mark">?</span>;
         hash.push(byte);
     }
 
@@ -297,18 +298,18 @@
         .ghhook_secret
         .clone();
     <span class="kw">if </span>netutil::hmac_sha256_verify(secret.as_bytes(), body.as_bytes(), <span class="kw-2">&amp;</span>hash).is_err() {
-        <span class="macro">error!</span>(<span class="string">&quot;SHA256 verify error (see github webhook settings)&quot;</span>);
+        <span class="macro">error!</span>(<span class="string">"SHA256 verify error (see github webhook settings)"</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;SHA256 verify error&quot;</span>));
+            .body(<span class="string">"SHA256 verify error"</span>));
     }
-    <span class="macro">info!</span>(<span class="string">&quot;verify request body OK&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">"verify request body OK"</span>);
 
     process_post(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>body).<span class="kw">await</span>;
 
     <span class="prelude-val">Ok</span>(HttpResponse::Ok()
         .content_type(ContentType::plaintext())
-        .body(<span class="string">&quot;&quot;</span>))
+        .body(<span class="string">""</span>))
 }
 
 <span class="kw">async fn </span>process_post(ctrl: <span class="kw-2">&amp;</span>Control, json_body: <span class="kw-2">&amp;</span>str) {
@@ -316,7 +317,7 @@
         <span class="prelude-val">Ok</span>(msg) =&gt; {
             <span class="kw">let </span>ctrl_clone = ctrl.clone();
             <span class="kw">let </span>msg_clone = msg.clone();
-            ctrl.spawn_oneshot_fn(<span class="string">&quot;http-github-tweet&quot;</span>, <span class="kw">async move </span>{
+            ctrl.spawn_oneshot_fn(<span class="string">"http-github-tweet"</span>, <span class="kw">async move </span>{
                 ctrl_clone
                     .sysmods()
                     .twitter
@@ -327,12 +328,12 @@
             </span>});
 
             <span class="kw">let </span>ctrl_clone = ctrl.clone();
-            ctrl.spawn_oneshot_fn(<span class="string">&quot;http-github-discord&quot;</span>, <span class="kw">async move </span>{
+            ctrl.spawn_oneshot_fn(<span class="string">"http-github-discord"</span>, <span class="kw">async move </span>{
                 ctrl_clone.sysmods().discord.lock().<span class="kw">await</span>.say(<span class="kw-2">&amp;</span>msg).<span class="kw">await
             </span>});
         }
         <span class="prelude-val">Err</span>(why) =&gt; {
-            <span class="macro">error!</span>(<span class="string">&quot;{:#?}&quot;</span>, why);
+            <span class="macro">error!</span>(<span class="string">"{:#?}"</span>, why);
         }
     }
 }
@@ -340,14 +341,14 @@
 <span class="kw">fn </span>create_msg_from_json(json_body: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
     <span class="kw">let </span>root: Value = serde_json::from_str(json_body)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>refstr = root[<span class="string">&quot;ref&quot;</span>]
+    <span class="kw">let </span>refstr = root[<span class="string">"ref"</span>]
         .as_str()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;ref not found&quot;</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>compare = root[<span class="string">&quot;compare&quot;</span>]
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"ref not found"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>compare = root[<span class="string">"compare"</span>]
         .as_str()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;compare not found&quot;</span>))<span class="question-mark">?</span>;
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"compare not found"</span>))<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">&quot;Pushed to Github: {refstr}\n{compare}&quot;</span>))
+    <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">"Pushed to Github: {refstr}\n{compare}"</span>))
 }
 
 <span class="attr">#[cfg(test)]
@@ -357,37 +358,37 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>webhook_simple_push() {
         <span class="kw">let </span>jsonstr = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/github/simplepush.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/github/simplepush.json"
         </span>));
         <span class="kw">let </span>msg = create_msg_from_json(jsonstr).unwrap();
 
-        <span class="macro">assert_eq!</span>(msg, <span class="string">&quot;Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6&quot;</span>);
+        <span class="macro">assert_eq!</span>(msg, <span class="string">"Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>webhook_empty_branch() {
         <span class="kw">let </span>jsonstr = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/github/emptybranch.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/github/emptybranch.json"
         </span>));
         <span class="kw">let </span>msg = create_msg_from_json(jsonstr).unwrap();
 
         <span class="macro">assert_eq!</span>(
             msg,
-            <span class="string">&quot;Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/newbranch&quot;
+            <span class="string">"Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/newbranch"
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>webhook_delete_branch() {
         <span class="kw">let </span>jsonstr = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/github/deletebranch.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/github/deletebranch.json"
         </span>));
         <span class="kw">let </span>msg = create_msg_from_json(jsonstr).unwrap();
 
-        <span class="macro">assert_eq!</span>(msg, <span class="string">&quot;Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000&quot;</span>);
+        <span class="macro">assert_eq!</span>(msg, <span class="string">"Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000"</span>);
     }
 }
 </code></pre></div></section></main></body></html>

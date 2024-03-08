@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -651,7 +652,7 @@
         wakeup_list_check: Vec&lt;NaiveTime&gt;,
         wakeup_list_tweet: Vec&lt;NaiveTime&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[health] initialize&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[health] initialize"</span>);
 
         <span class="kw">let </span>config: HealthConfig = config::get(|cfg| cfg.health.clone());
 
@@ -702,21 +703,21 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>text = String::new();
 
-            text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;CPU: {:.1}%&quot;</span>, cpu_info.cpu_percent_total));
+            text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"CPU: {:.1}%"</span>, cpu_info.cpu_percent_total));
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(temp) = cpu_info.temp {
-                text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\nCPU Temp: {temp:.1}&#39;C&quot;</span>));
+                text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\nCPU Temp: {temp:.1}'C"</span>));
             }
 
             text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                <span class="string">&quot;\nMemory: {:.1}/{:.1} MB Avail ({:.1}%)&quot;</span>,
+                <span class="string">"\nMemory: {:.1}/{:.1} MB Avail ({:.1}%)"</span>,
                 mem_info.avail_mib,
                 mem_info.total_mib,
                 <span class="number">100.0 </span>* mem_info.avail_mib / mem_info.total_mib,
             ));
 
             text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                <span class="string">&quot;\nDisk: {:.1}/{:.1} GB Avail ({:.1}%)&quot;</span>,
+                <span class="string">"\nDisk: {:.1}/{:.1} GB Avail ({:.1}%)"</span>,
                 disk_info.avail_gib,
                 disk_info.total_gib,
                 <span class="number">100.0 </span>* disk_info.avail_gib / disk_info.total_gib,
@@ -745,7 +746,7 @@
         </span><span class="macro">select! </span>{
             <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(<span class="number">5</span>)) =&gt; {}
             <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
-                <span class="macro">info!</span>(<span class="string">&quot;[health-tweet] task cancel&quot;</span>);
+                <span class="macro">info!</span>(<span class="string">"[health-tweet] task cancel"</span>);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
         }
@@ -759,19 +760,19 @@
 
 <span class="kw">impl </span>SystemModule <span class="kw">for </span>Health {
     <span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">&quot;[health] on_start&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[health] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.enabled {
             <span class="kw">if </span><span class="self">self</span>.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(<span class="string">&quot;health-check&quot;</span>, Health::check_task_entry);
-                ctrl.spawn_oneshot_task(<span class="string">&quot;health-tweet&quot;</span>, Health::tweet_task_entry);
+                ctrl.spawn_oneshot_task(<span class="string">"health-check"</span>, Health::check_task_entry);
+                ctrl.spawn_oneshot_task(<span class="string">"health-tweet"</span>, Health::tweet_task_entry);
             } <span class="kw">else </span>{
                 ctrl.spawn_periodic_task(
-                    <span class="string">&quot;health-check&quot;</span>,
+                    <span class="string">"health-check"</span>,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list_check,
                     Health::check_task_entry,
                 );
                 ctrl.spawn_periodic_task(
-                    <span class="string">&quot;health-tweet&quot;</span>,
+                    <span class="string">"health-tweet"</span>,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list_tweet,
                     Health::tweet_task_entry,
                 );
@@ -826,7 +827,7 @@
 ///
 /// _/proc/stat_ による。
 </span><span class="kw">async fn </span>get_cpu_info() -&gt; <span class="prelude-ty">Result</span>&lt;CpuInfo&gt; {
-    <span class="kw">let </span>buf = tokio::fs::read(<span class="string">&quot;/proc/stat&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>buf = tokio::fs::read(<span class="string">"/proc/stat"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>text = String::from_utf8_lossy(<span class="kw-2">&amp;</span>buf);
 
     <span class="comment">// See `man proc`
@@ -866,17 +867,17 @@
             }
         }
         <span class="comment">// cpu or cpu%d の行を取り出す
-        </span><span class="kw">if </span>name.is_none() || !name.unwrap().starts_with(<span class="string">&quot;cpu&quot;</span>) {
+        </span><span class="kw">if </span>name.is_none() || !name.unwrap().starts_with(<span class="string">"cpu"</span>) {
             <span class="kw">continue</span>;
         }
 
-        <span class="kw">let </span>user: u64 = user.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>nice: u64 = nice.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>system: u64 = system.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-        <span class="kw">let </span>idle: u64 = idle.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>user: u64 = user.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>nice: u64 = nice.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>system: u64 = system.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
+        <span class="kw">let </span>idle: u64 = idle.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
         <span class="kw">let </span>total = user + nice + system + idle;
         <span class="kw">let </span>value = (total - idle) <span class="kw">as </span>f64 / total <span class="kw">as </span>f64;
-        <span class="kw">if </span>name == <span class="prelude-val">Some</span>(<span class="string">&quot;cpu&quot;</span>) {
+        <span class="kw">if </span>name == <span class="prelude-val">Some</span>(<span class="string">"cpu"</span>) {
             cpu_percent_total = <span class="prelude-val">Some</span>(value);
         } <span class="kw">else </span>{
             cpu_percent_list.push(value);
@@ -899,9 +900,9 @@
 ///
 /// `free` コマンドによる。
 </span><span class="kw">async fn </span>get_mem_info() -&gt; <span class="prelude-ty">Result</span>&lt;MemInfo&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">&quot;free&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">"free"</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;free command failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"free command failed"</span>);
 
     <span class="comment">// sample
     //                total        used        free      shared  buff/cache   available
@@ -923,8 +924,8 @@
         }
         <span class="kw">break</span>;
     }
-    <span class="kw">let </span>total = total.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>avail = avail.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>total = total.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>avail = avail.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span>total_mib = total.parse::&lt;u64&gt;()<span class="question-mark">? </span><span class="kw">as </span>f64 / <span class="number">1024.0</span>;
     <span class="kw">let </span>avail_mib = avail.parse::&lt;u64&gt;()<span class="question-mark">? </span><span class="kw">as </span>f64 / <span class="number">1024.0</span>;
 
@@ -938,9 +939,9 @@
 ///
 /// `df` コマンドによる。
 </span><span class="kw">async fn </span>get_disk_info() -&gt; <span class="prelude-ty">Result</span>&lt;DiskInfo&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">&quot;df&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">"df"</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;df command failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"df command failed"</span>);
 
     <span class="comment">// sample
     // ファイルシス   1K-ブロック     使用    使用可 使用% マウント位置
@@ -968,14 +969,14 @@
             }
         }
         <span class="kw">if let </span><span class="prelude-val">Some</span>(mp) = mp_tmp {
-            <span class="kw">if </span>mp == <span class="string">&quot;/&quot; </span>{
+            <span class="kw">if </span>mp == <span class="string">"/" </span>{
                 total = total_tmp;
                 avail = avail_tmp;
             }
         }
     }
-    <span class="kw">let </span>total = total.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>;
-    <span class="kw">let </span>avail = avail.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;parse error&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>total = total.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>avail = avail.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"parse error"</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span>total_gib = total.parse::&lt;u64&gt;()<span class="question-mark">? </span><span class="kw">as </span>f64 / <span class="number">1024.0 </span>/ <span class="number">1024.0</span>;
     <span class="kw">let </span>avail_gib = avail.parse::&lt;u64&gt;()<span class="question-mark">? </span><span class="kw">as </span>f64 / <span class="number">1024.0 </span>/ <span class="number">1024.0</span>;
 
@@ -994,11 +995,11 @@
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
 </span><span class="kw">async fn </span>get_cpu_temp() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;f64&gt;&gt; {
-    <span class="kw">let </span>result = tokio::fs::read(<span class="string">&quot;/sys/class/thermal/thermal_zone0/temp&quot;</span>).<span class="kw">await</span>;
+    <span class="kw">let </span>result = tokio::fs::read(<span class="string">"/sys/class/thermal/thermal_zone0/temp"</span>).<span class="kw">await</span>;
     <span class="kw">match </span>result {
         <span class="prelude-val">Ok</span>(buf) =&gt; {
             <span class="kw">let </span>text = String::from_utf8_lossy(<span class="kw-2">&amp;</span>buf);
-            <span class="comment">// &#39;C を 1000 倍した整数が得られるので変換する
+            <span class="comment">// 'C を 1000 倍した整数が得られるので変換する
             </span><span class="kw">let </span>temp = text.trim().parse::&lt;f64&gt;()<span class="question-mark">? </span>/ <span class="number">1000.0</span>;
 
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(temp))
@@ -1016,8 +1017,8 @@
 }
 
 <span class="kw">pub async fn </span>get_cpu_cores() -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
-    <span class="kw">let </span>output = Command::new(<span class="string">&quot;nproc&quot;</span>).output().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;nproc command failed&quot;</span>);
+    <span class="kw">let </span>output = Command::new(<span class="string">"nproc"</span>).output().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"nproc command failed"</span>);
 
     <span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
 
@@ -1025,9 +1026,9 @@
 }
 
 <span class="kw">pub async fn </span>get_current_freq() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
-    <span class="kw">let </span>result = Command::new(<span class="string">&quot;vcgencmd&quot;</span>)
-        .arg(<span class="string">&quot;measure_clock &quot;</span>)
-        .arg(<span class="string">&quot;arm&quot;</span>)
+    <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>)
+        .arg(<span class="string">"measure_clock "</span>)
+        .arg(<span class="string">"arm"</span>)
         .output()
         .<span class="kw">await</span>;
     <span class="kw">let </span>output = <span class="kw">match </span>result {
@@ -1042,22 +1043,22 @@
             }
         }
     };
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;vcgencmd measure_clock failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"vcgencmd measure_clock failed"</span>);
 
     <span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
-    <span class="kw">let </span>actual = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">&#39;=&#39;</span>) {
+    <span class="kw">let </span>actual = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">'='</span>) {
         ri.parse::&lt;u64&gt;()<span class="question-mark">?
     </span>} <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>));
     };
 
     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(actual))
 }
 
 <span class="kw">pub async fn </span>get_freq_conf() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
-    <span class="kw">let </span>result = Command::new(<span class="string">&quot;vcgencmd&quot;</span>)
-        .arg(<span class="string">&quot;get_config&quot;</span>)
-        .arg(<span class="string">&quot;arm_freq&quot;</span>)
+    <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>)
+        .arg(<span class="string">"get_config"</span>)
+        .arg(<span class="string">"arm_freq"</span>)
         .output()
         .<span class="kw">await</span>;
     <span class="kw">let </span>output = <span class="kw">match </span>result {
@@ -1072,14 +1073,14 @@
             }
         }
     };
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;vcgencmd get_config failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"vcgencmd get_config failed"</span>);
 
     <span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
-    <span class="kw">let </span>conf = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">&#39;=&#39;</span>) {
+    <span class="kw">let </span>conf = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">'='</span>) {
         <span class="comment">// MHz =&gt; Hz
         </span>ri.parse::&lt;u64&gt;()<span class="question-mark">? </span>* <span class="number">1000 </span>* <span class="number">1000
     </span>} <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>));
     };
 
     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(conf))
@@ -1109,7 +1110,7 @@
 }
 
 <span class="kw">pub async fn </span>get_throttle_status() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ThrottleFlags&gt;&gt; {
-    <span class="kw">let </span>result = Command::new(<span class="string">&quot;vcgencmd&quot;</span>).arg(<span class="string">&quot;get_throttled&quot;</span>).output().<span class="kw">await</span>;
+    <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>).arg(<span class="string">"get_throttled"</span>).output().<span class="kw">await</span>;
     <span class="kw">let </span>output = <span class="kw">match </span>result {
         <span class="prelude-val">Ok</span>(output) =&gt; output,
         <span class="prelude-val">Err</span>(e) =&gt; {
@@ -1122,15 +1123,15 @@
             }
         }
     };
-    <span class="macro">ensure!</span>(output.status.success(), <span class="string">&quot;vcgencmd get_throttled failed&quot;</span>);
+    <span class="macro">ensure!</span>(output.status.success(), <span class="string">"vcgencmd get_throttled failed"</span>);
 
     <span class="kw">let </span>stdout = String::from_utf8_lossy(<span class="kw-2">&amp;</span>output.stdout);
-    <span class="kw">let </span>bits = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">&quot;=0x&quot;</span>) {
+    <span class="kw">let </span>bits = <span class="kw">if let </span><span class="prelude-val">Some</span>((_le, ri)) = stdout.trim().split_once(<span class="string">"=0x"</span>) {
         u32::from_str_radix(ri, <span class="number">16</span>)<span class="question-mark">?
     </span>} <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>));
     };
-    <span class="kw">let </span>status = ThrottleFlags::from_bits(bits).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Invalid bitflags&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>status = ThrottleFlags::from_bits(bits).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Invalid bitflags"</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(status))
 }
@@ -1146,11 +1147,11 @@
         <span class="macro">assert!</span>((<span class="number">0.0</span>..=<span class="number">100.0</span>).contains(<span class="kw-2">&amp;</span>info.cpu_percent_total));
 
         <span class="kw">let </span>temp = info.temp;
-        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">&quot;arm&quot;</span>, target_arch = <span class="string">&quot;aarch64&quot;</span>)) {
+        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">"arm"</span>, target_arch = <span class="string">"aarch64"</span>)) {
             <span class="kw">let </span>temp = temp.unwrap();
             <span class="macro">assert!</span>(
                 (<span class="number">30.0</span>..=<span class="number">100.0</span>).contains(<span class="kw-2">&amp;</span>temp),
-                <span class="string">&quot;strange temperature: {temp}&quot;
+                <span class="string">"strange temperature: {temp}"
             </span>);
         } <span class="kw">else </span>{
             <span class="macro">assert!</span>(temp.is_none());
@@ -1174,24 +1175,24 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>cpu_cores() {
         <span class="kw">let </span>cores = get_cpu_cores().<span class="kw">await</span>.unwrap();
-        <span class="macro">assert!</span>((<span class="number">1</span>..=<span class="number">256</span>).contains(<span class="kw-2">&amp;</span>cores), <span class="string">&quot;CPU cores: {cores}&quot;</span>);
+        <span class="macro">assert!</span>((<span class="number">1</span>..=<span class="number">256</span>).contains(<span class="kw-2">&amp;</span>cores), <span class="string">"CPU cores: {cores}"</span>);
     }
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>cpu_freq() {
         <span class="kw">let </span>cur = get_current_freq().<span class="kw">await</span>.unwrap();
         <span class="kw">let </span>conf = get_freq_conf().<span class="kw">await</span>.unwrap();
-        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">&quot;arm&quot;</span>, target_arch = <span class="string">&quot;aarch64&quot;</span>)) {
+        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">"arm"</span>, target_arch = <span class="string">"aarch64"</span>)) {
             <span class="kw">let </span>cur = cur.unwrap();
             <span class="kw">let </span>conf = conf.unwrap();
             <span class="comment">// 100MHz - 10GHz
             </span><span class="macro">assert!</span>(
                 (<span class="number">100_000_000</span>..<span class="number">10_000_000_000</span>).contains(<span class="kw-2">&amp;</span>cur),
-                <span class="string">&quot;CPU frequency: {cur} Hz&quot;
+                <span class="string">"CPU frequency: {cur} Hz"
             </span>);
             <span class="macro">assert!</span>(
                 (<span class="number">100_000_000</span>..<span class="number">10_000_000_000</span>).contains(<span class="kw-2">&amp;</span>conf),
-                <span class="string">&quot;CPU frequency: {conf} Hz&quot;
+                <span class="string">"CPU frequency: {conf} Hz"
             </span>);
         } <span class="kw">else </span>{
             <span class="macro">assert!</span>(cur.is_none());
@@ -1202,7 +1203,7 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>throttle_status() {
         <span class="kw">let </span>flags = get_throttle_status().<span class="kw">await</span>.unwrap();
-        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">&quot;arm&quot;</span>, target_arch = <span class="string">&quot;aarch64&quot;</span>)) {
+        <span class="kw">if </span><span class="macro">cfg!</span>(any(target_arch = <span class="string">"arm"</span>, target_arch = <span class="string">"aarch64"</span>)) {
             <span class="comment">// enum に変換できれば OK
             </span><span class="macro">assert!</span>(flags.is_some());
         } <span class="kw">else </span>{

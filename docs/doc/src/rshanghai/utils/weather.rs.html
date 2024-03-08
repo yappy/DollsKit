@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/utils/weather.rs`."><title>weather.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/utils/weather.rs`."><title>weather.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -569,10 +570,10 @@
 /// Note: 2023/10/29
 ///
 /// ```
-/// Not found: JmaOfficeInfo { code: &quot;014030&quot;, name: &quot;十勝地方&quot;, en_name: &quot;Tokachi&quot;, office_name: &quot;帯広測候所&quot; }
-/// Not found: JmaOfficeInfo { code: &quot;460040&quot;, name: &quot;奄美地方&quot;, en_name: &quot;Amami&quot;, office_name: &quot;名瀬測候所&quot; }
+/// Not found: JmaOfficeInfo { code: "014030", name: "十勝地方", en_name: "Tokachi", office_name: "帯広測候所" }
+/// Not found: JmaOfficeInfo { code: "460040", name: "奄美地方", en_name: "Amami", office_name: "名瀬測候所" }
 /// ```
-</span><span class="kw">const </span>JMA_AREA_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>), <span class="string">&quot;/res/area.json&quot;</span>));
+</span><span class="kw">const </span>JMA_AREA_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>), <span class="string">"/res/area.json"</span>));
 
 <span class="doccomment">/// &lt;https://www.jma.go.jp/bosai/forecast/&gt;
 ///
@@ -581,8 +582,8 @@
 ///
 /// `[昼画像,夜画像,?,日本語,英語]`
 </span><span class="kw">const </span>JMA_TELOPLS_JSON: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-    <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-    <span class="string">&quot;/res/forecast_telops.json&quot;
+    <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+    <span class="string">"/res/forecast_telops.json"
 </span>));
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -591,7 +592,7 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>JmaOfficeInfo {
     <span class="doccomment">/// JSON 中には存在しない。後でキーを入れる。
     </span><span class="attr">#[serde(default)]
@@ -620,7 +621,7 @@
     list
 }
 
-<span class="kw">pub fn </span>offices() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>Vec&lt;JmaOfficeInfo&gt; {
+<span class="kw">pub fn </span>offices() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>Vec&lt;JmaOfficeInfo&gt; {
     OFFICE_LIST.get_or_init(office_list)
 }
 
@@ -649,11 +650,11 @@
     <span class="kw">let </span>map = WEATHER_CODE_MAP.get_or_init(weather_code_map);
     map.get(code)
         .map(String::as_str)
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Weather code not found: {code}&quot;</span>))
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Weather code not found: {code}"</span>))
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>OverviewForecast {
     <span class="kw">pub </span>publishing_office: String,
     <span class="kw">pub </span>report_datetime: String,
@@ -665,7 +666,7 @@
 <span class="kw">pub type </span>ForecastRoot = Vec&lt;Forecast&gt;;
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>Forecast {
     <span class="kw">pub </span>publishing_office: String,
     <span class="kw">pub </span>report_datetime: String,
@@ -673,7 +674,7 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>TimeSeries {
     <span class="kw">pub </span>time_defines: Vec&lt;String&gt;,
     <span class="kw">pub </span>areas: Vec&lt;AreaArrayElement&gt;,
@@ -682,7 +683,7 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>AreaArrayElement {
     <span class="kw">pub </span>area: Area,
     <span class="attr">#[serde(flatten)]
@@ -690,7 +691,7 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>Area {
     <span class="kw">pub </span>name: String,
     <span class="kw">pub </span>code: String,
@@ -701,14 +702,14 @@
 </span><span class="kw">pub enum </span>AreaData {
     <span class="comment">// [1]
     </span><span class="doccomment">/// 明日から7日間
-    </span><span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    </span><span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>WheatherPop {
         weather_codes: Vec&lt;String&gt;,
         pops: Vec&lt;String&gt;,
         reliabilities: Vec&lt;String&gt;,
     },
     <span class="doccomment">/// 明日から7日間
-    </span><span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    </span><span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>DetailedTempreture {
         temps_min: Vec&lt;String&gt;,
         temps_min_upper: Vec&lt;String&gt;,
@@ -720,7 +721,7 @@
 
     <span class="comment">// [0]
     // 今日から3日分
-    </span><span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    </span><span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>Wheather {
         weather_codes: Vec&lt;String&gt;,
         weathers: Vec&lt;String&gt;,
@@ -728,15 +729,15 @@
         waves: Vec&lt;String&gt;,
     },
     <span class="doccomment">/// 今日から6時間ごと、5回分
-    </span><span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    </span><span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>Pop { pops: Vec&lt;String&gt; },
     <span class="doccomment">/// 明日の 0:00+9:00 と 9:00+9:00 (最低気温と最高気温)
-    </span><span class="attr">#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+    </span><span class="attr">#[serde(rename_all = <span class="string">"camelCase"</span>)]
     </span>Tempreture { temps: Vec&lt;String&gt; },
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;camelCase&quot;</span>)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>TempPrecipAverage {
     area: Area,
     min: String,
@@ -745,12 +746,12 @@
 
 <span class="doccomment">/// office_code から overview_forecast URL を得る。
 </span><span class="kw">pub fn </span>url_overview_forecast(office_code: <span class="kw-2">&amp;</span>str) -&gt; String {
-    <span class="macro">format!</span>(<span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{office_code}.json&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">"https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{office_code}.json"</span>)
 }
 
 <span class="doccomment">/// office_code から forecast URL を得る。
 </span><span class="kw">pub fn </span>url_forecast(office_code: <span class="kw-2">&amp;</span>str) -&gt; String {
-    <span class="macro">format!</span>(<span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">"https://www.jma.go.jp/bosai/forecast/data/forecast/{office_code}.json"</span>)
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -771,17 +772,17 @@
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>DateDataElem {
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>weather_pop_area: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>weather: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>pop: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>tempreture_area: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>temp_min: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>temp_max: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
@@ -800,7 +801,7 @@
             <span class="kw">if </span>areas.is_empty() {
                 <span class="kw">continue</span>;
             }
-            <span class="comment">// &quot;areas&quot; データの中で最初のものを代表して使う
+            <span class="comment">// "areas" データの中で最初のものを代表して使う
             </span><span class="kw">let </span>area = <span class="kw-2">&amp;</span>areas[<span class="number">0</span>];
             <span class="kw">for </span>(i, dt_str) <span class="kw">in </span>td.iter().enumerate() {
                 fill_by_element(<span class="kw-2">&amp;mut </span>date_data, i, dt_str, area)<span class="question-mark">?</span>;
@@ -811,7 +812,7 @@
     <span class="kw">let </span>now: DateTime&lt;Local&gt; = Local::now();
     <span class="prelude-val">Ok</span>(AiReadableWeather {
         url_for_more_info: <span class="macro">format!</span>(
-            <span class="string">&quot;https://www.jma.go.jp/bosai/forecast/#area_type=offices&amp;area_code={office_code}&quot;
+            <span class="string">"https://www.jma.go.jp/bosai/forecast/#area_type=offices&amp;area_code={office_code}"
         </span>),
         now: now.to_string(),
 
@@ -842,15 +843,15 @@
             </span><span class="kw">let </span>v = result.entry(dt_str.to_string()).or_default();
             <span class="kw">let </span>weather_code = weather_codes
                 .get(idx)
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
-            <span class="kw">let </span>pop = pops.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>pop = pops.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
 
             v.weather_pop_area = <span class="prelude-val">Some</span>(area.area.name.to_string());
             <span class="kw">if </span>v.weather.is_none() &amp;&amp; !weather_code.is_empty() {
                 v.weather = <span class="prelude-val">Some</span>(weather_code_to_string(weather_code)<span class="question-mark">?</span>.to_string());
             }
             <span class="kw">if </span>v.pop.is_none() &amp;&amp; !pop.is_empty() {
-                v.pop = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}%&quot;</span>, <span class="kw-2">&amp;</span>pop));
+                v.pop = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">"{}%"</span>, <span class="kw-2">&amp;</span>pop));
             }
         }
         AreaData::DetailedTempreture {
@@ -862,8 +863,8 @@
             temps_max_lower: <span class="kw">_</span>,
         } =&gt; {
             <span class="kw">let </span>v = result.entry(dt_str.to_string()).or_default();
-            <span class="kw">let </span>min = temps_min.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
-            <span class="kw">let </span>max = temps_max.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>min = temps_min.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>max = temps_max.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
 
             v.tempreture_area = <span class="prelude-val">Some</span>(area.area.name.to_string());
             <span class="kw">if </span>!min.is_empty() {
@@ -880,13 +881,13 @@
             waves: <span class="kw">_</span>,
         } =&gt; {
             <span class="kw">let </span>v = result.entry(dt_str.to_string()).or_default();
-            <span class="kw">let </span>weather = weathers.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>weather = weathers.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
 
             v.weather_pop_area = <span class="prelude-val">Some</span>(area.area.name.to_string());
             v.weather = <span class="prelude-val">Some</span>(weather.to_string());
         }
         AreaData::Pop { pops } =&gt; {
-            <span class="kw">let </span>pop = pops.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>pop = pops.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
 
             <span class="comment">// 既にキーがあるときのみ
             </span>result.entry(dt_str.to_string()).and_modify(|v| {
@@ -894,8 +895,8 @@
             });
         }
         AreaData::Tempreture { temps } =&gt; {
-            <span class="kw">let </span>dt = <span class="macro">format!</span>(<span class="string">&quot;{}T00:00:00+09:00&quot;</span>, <span class="kw-2">&amp;</span>dt_str[<span class="number">0</span>..<span class="number">10</span>]);
-            <span class="kw">let </span>temp = temps.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Parse error&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>dt = <span class="macro">format!</span>(<span class="string">"{}T00:00:00+09:00"</span>, <span class="kw-2">&amp;</span>dt_str[<span class="number">0</span>..<span class="number">10</span>]);
+            <span class="kw">let </span>temp = temps.get(idx).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Parse error"</span>))<span class="question-mark">?</span>;
             result.entry(dt).and_modify(|v| {
                 <span class="kw">if </span>idx == <span class="number">0 </span>{
                     v.temp_min = <span class="prelude-val">Some</span>(temp.to_string());
@@ -963,40 +964,40 @@
     </span><span class="comment">// cargo test office_list -- --ignored --nocapture
     </span><span class="kw">async fn </span>office_list() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>olist = offices();
-        <span class="macro">println!</span>(<span class="string">&quot;Office count: {}&quot;</span>, olist.len());
+        <span class="macro">println!</span>(<span class="string">"Office count: {}"</span>, olist.len());
         <span class="kw">let </span>client = Client::new();
         <span class="kw">for </span>info <span class="kw">in </span>olist.iter() {
             <span class="kw">let </span>url = <span class="macro">format!</span>(
-                <span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json&quot;</span>,
+                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json"</span>,
                 info.code
             );
             <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">if </span>resp.status().is_success() {
-                <span class="comment">//println!(&quot;{}&quot;, resp.text().await?);
+                <span class="comment">//println!("{}", resp.text().await?);
             </span>} <span class="kw">else </span>{
-                <span class="macro">println!</span>(<span class="string">&quot;overview_forecast not found: {:?}&quot;</span>, info);
+                <span class="macro">println!</span>(<span class="string">"overview_forecast not found: {:?}"</span>, info);
             }
 
             <span class="kw">let </span>url = <span class="macro">format!</span>(
-                <span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/forecast/{}.json&quot;</span>,
+                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/forecast/{}.json"</span>,
                 info.code
             );
             <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">if </span>resp.status().is_success() {
-                <span class="comment">//println!(&quot;{}&quot;, resp.text().await?);
+                <span class="comment">//println!("{}", resp.text().await?);
             </span>} <span class="kw">else </span>{
-                <span class="macro">println!</span>(<span class="string">&quot;forecast not found: {:?}&quot;</span>, info);
+                <span class="macro">println!</span>(<span class="string">"forecast not found: {:?}"</span>, info);
             }
 
             <span class="kw">let </span>url = <span class="macro">format!</span>(
-                <span class="string">&quot;https://www.jma.go.jp/bosai/forecast/data/overview_week/{}.json&quot;</span>,
+                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/overview_week/{}.json"</span>,
                 info.code
             );
             <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">if </span>resp.status().is_success() {
-                <span class="comment">//println!(&quot;{}&quot;, resp.text().await?);
+                <span class="comment">//println!("{}", resp.text().await?);
             </span>} <span class="kw">else </span>{
-                <span class="macro">println!</span>(<span class="string">&quot;overview_week not found: {:?}&quot;</span>, info);
+                <span class="macro">println!</span>(<span class="string">"overview_week not found: {:?}"</span>, info);
             }
         }
 
@@ -1006,20 +1007,20 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>parse_overview_forecast() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/overview_forecast_130000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/overview_forecast_130000.json"
         </span>));
         <span class="kw">let </span>obj: OverviewForecast = serde_json::from_str(src)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;気象庁&quot;</span>, obj.publishing_office);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;東京都&quot;</span>, obj.target_area);
+        <span class="macro">assert_eq!</span>(<span class="string">"気象庁"</span>, obj.publishing_office);
+        <span class="macro">assert_eq!</span>(<span class="string">"東京都"</span>, obj.target_area);
 
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/overview_forecast_140000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/overview_forecast_140000.json"
         </span>));
         <span class="kw">let </span>obj: OverviewForecast = serde_json::from_str(src)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;横浜地方気象台&quot;</span>, obj.publishing_office);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;神奈川県&quot;</span>, obj.target_area);
+        <span class="macro">assert_eq!</span>(<span class="string">"横浜地方気象台"</span>, obj.publishing_office);
+        <span class="macro">assert_eq!</span>(<span class="string">"神奈川県"</span>, obj.target_area);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1027,27 +1028,27 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>parse_forecast() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/forecast_130000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/forecast_130000.json"
         </span>));
         <span class="kw">let </span>obj: ForecastRoot = serde_json::from_str(src)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;気象庁&quot;</span>, obj[<span class="number">0</span>].publishing_office);
+        <span class="macro">assert_eq!</span>(<span class="string">"気象庁"</span>, obj[<span class="number">0</span>].publishing_office);
 
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/forecast_140000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/forecast_140000.json"
         </span>));
         <span class="kw">let </span>obj: ForecastRoot = serde_json::from_str(src)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;横浜地方気象台&quot;</span>, obj[<span class="number">0</span>].publishing_office);
+        <span class="macro">assert_eq!</span>(<span class="string">"横浜地方気象台"</span>, obj[<span class="number">0</span>].publishing_office);
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>weather_code() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;晴&quot;</span>, weather_code_to_string(<span class="string">&quot;100&quot;</span>)<span class="question-mark">?</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;晴時々曇&quot;</span>, weather_code_to_string(<span class="string">&quot;101&quot;</span>)<span class="question-mark">?</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;雪で雷を伴う&quot;</span>, weather_code_to_string(<span class="string">&quot;450&quot;</span>)<span class="question-mark">?</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"晴"</span>, weather_code_to_string(<span class="string">"100"</span>)<span class="question-mark">?</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"晴時々曇"</span>, weather_code_to_string(<span class="string">"101"</span>)<span class="question-mark">?</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"雪で雷を伴う"</span>, weather_code_to_string(<span class="string">"450"</span>)<span class="question-mark">?</span>);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1056,30 +1057,30 @@
     </span><span class="comment">// cargo test ai_readable -- --nocapture
     </span><span class="kw">fn </span>ai_readable() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/overview_forecast_130000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/overview_forecast_130000.json"
         </span>));
         <span class="kw">let </span>ov: OverviewForecast = serde_json::from_str(src)<span class="question-mark">?</span>;
         <span class="kw">let </span>src = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/weather/forecast_130000.json&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/weather/forecast_130000.json"
         </span>));
         <span class="kw">let </span>fcr: ForecastRoot = serde_json::from_str(src)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>obj = weather_to_ai_readable(<span class="string">&quot;130000&quot;</span>, <span class="kw-2">&amp;</span>ov, <span class="kw-2">&amp;</span>fcr)<span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, serde_json::to_string_pretty(<span class="kw-2">&amp;</span>obj).unwrap());
+        <span class="kw">let </span>obj = weather_to_ai_readable(<span class="string">"130000"</span>, <span class="kw-2">&amp;</span>ov, <span class="kw-2">&amp;</span>fcr)<span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">"{}"</span>, serde_json::to_string_pretty(<span class="kw-2">&amp;</span>obj).unwrap());
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>edit_distance_test() {
-        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">&quot;&quot;</span>, <span class="string">&quot;abc&quot;</span>).unwrap());
-        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">&quot;def&quot;</span>, <span class="string">&quot;&quot;</span>).unwrap());
-        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">&quot;kitten&quot;</span>, <span class="string">&quot;sitting&quot;</span>).unwrap());
+        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">""</span>, <span class="string">"abc"</span>).unwrap());
+        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">"def"</span>, <span class="string">""</span>).unwrap());
+        <span class="macro">assert_eq!</span>(<span class="number">3</span>, edit_distance(<span class="string">"kitten"</span>, <span class="string">"sitting"</span>).unwrap());
 
-        <span class="macro">assert_eq!</span>(<span class="number">4</span>, edit_distance(<span class="string">&quot;カラクリ&quot;</span>, <span class="string">&quot;ボンゴレ&quot;</span>).unwrap());
-        <span class="macro">assert_eq!</span>(<span class="number">4</span>, edit_distance(<span class="string">&quot;テスト&quot;</span>, <span class="string">&quot;テストパターン&quot;</span>).unwrap());
+        <span class="macro">assert_eq!</span>(<span class="number">4</span>, edit_distance(<span class="string">"カラクリ"</span>, <span class="string">"ボンゴレ"</span>).unwrap());
+        <span class="macro">assert_eq!</span>(<span class="number">4</span>, edit_distance(<span class="string">"テスト"</span>, <span class="string">"テストパターン"</span>).unwrap());
     }
 }
 </code></pre></div></section></main></body></html>

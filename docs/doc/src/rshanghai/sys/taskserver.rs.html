@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -388,7 +389,7 @@
     </span>ctrl: Control,
     <span class="doccomment">/// システムシャットダウン時の中断リクエストの送信側。
     /// &lt;https://tokio.rs/tokio/topics/shutdown&gt;
-    /// &quot;Telling things to shut down&quot; + &quot;Waiting for things to finish shutting down&quot;
+    /// "Telling things to shut down" + "Waiting for things to finish shutting down"
     </span>cancel_tx: CancelTx,
 }
 
@@ -411,7 +412,7 @@
     /// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
     </span><span class="kw">pub fn </span>spawn_oneshot_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
     <span class="kw">where
-        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
         T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send,
     {
         <span class="comment">// move するデータを準備する
@@ -419,7 +420,7 @@
         <span class="kw">let </span>ctrl = <span class="self">self</span>.clone();
 
         <span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
-            <span class="macro">info!</span>(<span class="string">&quot;[{}] start (one-shot)&quot;</span>, name);
+            <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
 
             <span class="comment">// ctrl を clone して move する
             </span><span class="kw">let </span>future = f(ctrl.clone());
@@ -427,9 +428,9 @@
             <span class="comment">// drop clone of ctrl
 
             </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                <span class="macro">error!</span>(<span class="string">&quot;[{}] finish (error): {:?}&quot;</span>, name, e);
+                <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
             } <span class="kw">else </span>{
-                <span class="macro">info!</span>(<span class="string">&quot;[{}] finish (success)&quot;</span>, name);
+                <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
             }
             <span class="comment">// drop ctrl
         </span>});
@@ -437,20 +438,20 @@
 
     <span class="kw">pub fn </span>spawn_oneshot_fn&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
     <span class="kw">where
-        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">'static</span>,
     {
         <span class="comment">// move するデータを準備する
         </span><span class="kw">let </span>name = name.to_string();
 
         <span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
-            <span class="macro">info!</span>(<span class="string">&quot;[{}] start (one-shot)&quot;</span>, name);
+            <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
 
             <span class="kw">let </span>result = f.<span class="kw">await</span>;
 
             <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                <span class="macro">error!</span>(<span class="string">&quot;[{}] finish (error): {:?}&quot;</span>, name, e);
+                <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
             } <span class="kw">else </span>{
-                <span class="macro">info!</span>(<span class="string">&quot;[{}] finish (success)&quot;</span>, name);
+                <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
             }
             <span class="comment">// drop ctrl
         </span>});
@@ -468,8 +469,8 @@
     /// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
     </span><span class="kw">pub fn </span>spawn_periodic_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, wakeup_list: <span class="kw-2">&amp;</span>[NaiveTime], f: F)
     <span class="kw">where
-        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">&#39;static</span>,
-        T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
+        T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
     {
         <span class="comment">// move するデータを準備する
         </span><span class="kw">let </span>name = name.to_string();
@@ -478,9 +479,9 @@
         <span class="comment">// 空でなくソート済み、秒以下がゼロなのを確認後
         // 今日のその時刻からなる NaiveDateTime に変換する
         // TODO: is_sorted() がまだ unstable
-        </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">&quot;time list is empty&quot;</span>);
+        </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">"time list is empty"</span>);
         <span class="kw">let </span>sorted = wakeup_list.windows(<span class="number">2</span>).all(|t| t[<span class="number">0</span>] &lt;= t[<span class="number">1</span>]);
-        <span class="macro">assert!</span>(sorted, <span class="string">&quot;time list is not sorted&quot;</span>);
+        <span class="macro">assert!</span>(sorted, <span class="string">"time list is not sorted"</span>);
         <span class="kw">let </span>today = Local::now().date_naive();
         <span class="kw">let </span><span class="kw-2">mut </span>dt_list: Vec&lt;<span class="kw">_</span>&gt; = wakeup_list
             .iter()
@@ -496,17 +497,17 @@
         <span class="kw">let </span>log_iter = wakeup_list.iter().take(LOG_LIMIT);
         <span class="kw">let </span><span class="kw-2">mut </span>str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
             <span class="kw">let </span>str = <span class="kw">if </span>i == <span class="number">0 </span>{
-                <span class="macro">format!</span>(<span class="string">&quot;{v}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"{v}"</span>)
             } <span class="kw">else </span>{
-                <span class="macro">format!</span>(<span class="string">&quot;, {v}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">", {v}"</span>)
             };
             sum + <span class="kw-2">&amp;</span>str
         });
         <span class="kw">if </span>wakeup_list.len() &gt; LOG_LIMIT {
-            str += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;, ... ({} items)&quot;</span>, wakeup_list.len());
+            str += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">", ... ({} items)"</span>, wakeup_list.len());
         }
-        <span class="macro">info!</span>(<span class="string">&quot;[{}] registered as a periodic task&quot;</span>, name);
-        <span class="macro">info!</span>(<span class="string">&quot;[{}] wakeup time: {}&quot;</span>, name, str);
+        <span class="macro">info!</span>(<span class="string">"[{}] registered as a periodic task"</span>, name);
+        <span class="macro">info!</span>(<span class="string">"[{}] wakeup time: {}"</span>, name, str);
 
         <span class="comment">// spawn async task
         </span><span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
@@ -518,32 +519,32 @@
                 </span><span class="kw">let </span>now = Local::now().naive_local();
                 <span class="kw">let </span>now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), <span class="number">0</span>).unwrap();
                 <span class="kw">let </span>next_min = now_hmd + CDuration::minutes(<span class="number">1</span>);
-                <span class="macro">trace!</span>(<span class="string">&quot;[{}] periodic task check: {}&quot;</span>, name, now_hmd);
+                <span class="macro">trace!</span>(<span class="string">"[{}] periodic task check: {}"</span>, name, now_hmd);
 
                 <span class="comment">// 起動時刻リスト内で二分探索
                 </span><span class="kw">match </span>dt_list.binary_search(<span class="kw-2">&amp;</span>now_hmd) {
                     <span class="prelude-val">Ok</span>(_ind) =&gt; {
                         <span class="comment">// 一致するものを発見したので続行
-                        </span><span class="macro">trace!</span>(<span class="string">&quot;[{}] hit in time list: {}&quot;</span>, name, now_hmd);
+                        </span><span class="macro">trace!</span>(<span class="string">"[{}] hit in time list: {}"</span>, name, now_hmd);
                     }
                     <span class="prelude-val">Err</span>(ind) =&gt; {
                         <span class="comment">// ind = insertion point
-                        </span><span class="macro">trace!</span>(<span class="string">&quot;[{}] not found in time list: {}&quot;</span>, name, now_hmd);
+                        </span><span class="macro">trace!</span>(<span class="string">"[{}] not found in time list: {}"</span>, name, now_hmd);
                         <span class="comment">// 起きるべき時刻は dt_list[ind]
                         </span><span class="kw">if </span>ind &lt; dt_list.len() {
                             <span class="kw">let </span>target_dt = dt_list[ind] + CDuration::seconds(<span class="number">1</span>);
                             <span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
                             <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
-                            <span class="macro">trace!</span>(<span class="string">&quot;[{}] target: {}, sleep_sec: {}&quot;</span>, name, target_dt, sleep_sec);
+                            <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
                             <span class="macro">select! </span>{
                                 <span class="kw">_ </span>= tokio::time::sleep(TDuration::from_secs(sleep_sec)) =&gt; {}
                                 <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
-                                    <span class="macro">info!</span>(<span class="string">&quot;[{}] cancel periodic task&quot;</span>, name);
+                                    <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
                                     <span class="kw">return</span>;
                                 }
                             }
 
-                            <span class="macro">trace!</span>(<span class="string">&quot;[{}] wake up&quot;</span>, name);
+                            <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
                         } <span class="kw">else </span>{
                             <span class="comment">// 一番後ろよりも現在時刻が後
                             // 起動時刻リストをすべて1日ずつ後ろにずらす
@@ -551,7 +552,7 @@
                                 <span class="kw">let </span>tomorrow = dt.date() + CDuration::days(<span class="number">1</span>);
                                 <span class="kw">let </span>time = dt.time();
                                 <span class="kw-2">*</span>dt = tomorrow.and_time(time);
-                                <span class="macro">trace!</span>(<span class="string">&quot;[{}] advance time list by 1 day&quot;</span>, name);
+                                <span class="macro">trace!</span>(<span class="string">"[{}] advance time list by 1 day"</span>, name);
                             }
                         }
                         <span class="kw">continue</span>;
@@ -560,16 +561,16 @@
 
                 <span class="comment">// ctrl を clone して future 内に move する
                 </span><span class="kw">let </span>future = f(ctrl.clone());
-                <span class="macro">info!</span>(<span class="string">&quot;[{}] start (periodic)&quot;</span>, name);
+                <span class="macro">info!</span>(<span class="string">"[{}] start (periodic)"</span>, name);
                 <span class="kw">let </span>result = future.<span class="kw">await</span>;
                 <span class="comment">// drop clone of ctrl
                 </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                    <span class="macro">error!</span>(<span class="string">&quot;[{}] finish (error): {:?}&quot;</span>, name, e);
+                    <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
                 } <span class="kw">else </span>{
-                    <span class="macro">info!</span>(<span class="string">&quot;[{}] finish (success)&quot;</span>, name);
+                    <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
                 }
 
-                <span class="comment">// 次の &quot;分&quot; を狙って sleep する
+                <span class="comment">// 次の "分" を狙って sleep する
                 // 目標は安全のため hh:mm:05 を狙う
                 </span><span class="kw">let </span>target_dt = next_min + CDuration::seconds(<span class="number">5</span>);
                 <span class="comment">// タスクの実行に1分以上かかると負になるが、
@@ -577,15 +578,15 @@
                 // その場合は 0 に補正する
                 </span><span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
                 <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
-                <span class="macro">trace!</span>(<span class="string">&quot;[{}] target: {}, sleep_sec: {}&quot;</span>, name, target_dt, sleep_sec);
+                <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
                 <span class="macro">select! </span>{
                     <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) =&gt; {}
                     <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
-                        <span class="macro">info!</span>(<span class="string">&quot;[{}] cancel periodic task&quot;</span>, name);
+                        <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
                         <span class="kw">return</span>;
                     }
                 }
-                <span class="macro">trace!</span>(<span class="string">&quot;[{}] wake up&quot;</span>, name);
+                <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
             }
             <span class="comment">// drop ctrl
         </span>});
@@ -614,7 +615,7 @@
     <span class="doccomment">/// [Control::spawn_oneshot_task] と同じ。
     </span><span class="kw">pub fn </span>spawn_oneshot_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
     <span class="kw">where
-        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
         T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send,
     {
         <span class="self">self</span>.ctrl.spawn_oneshot_task(name, f);
@@ -641,15 +642,15 @@
             <span class="kw">let </span>run_result;
             <span class="macro">tokio::select! </span>{
                 <span class="kw">_ </span>= sigint.recv() =&gt; {
-                    <span class="macro">info!</span>(<span class="string">&quot;[signal] SIGINT&quot;</span>);
+                    <span class="macro">info!</span>(<span class="string">"[signal] SIGINT"</span>);
                     run_result = RunResult::Shutdown;
                 },
                 <span class="kw">_ </span>= sigterm.recv() =&gt; {
-                    <span class="macro">info!</span>(<span class="string">&quot;[signal] SIGTERM&quot;</span>);
+                    <span class="macro">info!</span>(<span class="string">"[signal] SIGTERM"</span>);
                     run_result = RunResult::Shutdown;
                 },
                 <span class="kw">_ </span>= sighup.recv() =&gt; {
-                    <span class="macro">info!</span>(<span class="string">&quot;[signal] SIGHUP&quot;</span>);
+                    <span class="macro">info!</span>(<span class="string">"[signal] SIGHUP"</span>);
                     run_result = RunResult::Reboot;
                 },
             }
@@ -662,9 +663,9 @@
             // 残りは各 async task に clone された Control
             </span>drop(ctrl);
             <span class="comment">// 全 cancel_rx が drop されるまで待つ
-            </span><span class="macro">info!</span>(<span class="string">&quot;waiting for all tasks to be completed....&quot;</span>);
+            </span><span class="macro">info!</span>(<span class="string">"waiting for all tasks to be completed...."</span>);
             <span class="self">self</span>.cancel_tx.closed().<span class="kw">await</span>;
-            <span class="macro">info!</span>(<span class="string">&quot;OK: all tasks are completed&quot;</span>);
+            <span class="macro">info!</span>(<span class="string">"OK: all tasks are completed"</span>);
 
             run_result
         })

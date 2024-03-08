@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -477,7 +478,7 @@
 <span class="comment">// https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
 </span><span class="doccomment">/// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
-</span><span class="kw">pub type </span>FuncBodyAsync&lt;<span class="lifetime">&#39;a</span>&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;String&gt;&gt; + Sync + Send + <span class="lifetime">&#39;a</span>&gt;&gt;;
+</span><span class="kw">pub type </span>FuncBodyAsync&lt;<span class="lifetime">'a</span>&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;String&gt;&gt; + Sync + Send + <span class="lifetime">'a</span>&gt;&gt;;
 <span class="doccomment">/// 関数の Rust 上での定義。
 ///
 /// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
@@ -498,10 +499,10 @@
     <span class="doccomment">/// OpenAI API に渡すためのリスト。
     </span>function_list: Vec&lt;Function&gt;,
     <span class="doccomment">/// 関数名から Rust 関数へのマップ。
-    </span>call_table: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, FuncBody&lt;T&gt;&gt;,
+    </span>call_table: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, FuncBody&lt;T&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             function_list: Default::default(),
@@ -520,11 +521,11 @@
     /// 結果も API にそのまま渡せる [ChatMessage] で返す。
     /// エラーも適切なメッセージとして返す。
     </span><span class="kw">pub async fn </span>call(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: T, func_name: <span class="kw-2">&amp;</span>str, args_json_str: <span class="kw-2">&amp;</span>str) -&gt; ChatMessage {
-        <span class="macro">info!</span>(<span class="string">&quot;[openai-func] Call {func_name} {args_json_str}&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[openai-func] Call {func_name} {args_json_str}"</span>);
 
         <span class="kw">let </span>res = {
             <span class="kw">let </span>args = serde_json::from_str::&lt;Args&gt;(args_json_str)
-                .map_err(|err| <span class="macro">anyhow!</span>(<span class="string">&quot;Arguments parse error: {err}&quot;</span>));
+                .map_err(|err| <span class="macro">anyhow!</span>(<span class="string">"Arguments parse error: {err}"</span>));
             <span class="kw">match </span>args {
                 <span class="prelude-val">Ok</span>(args) =&gt; <span class="self">self</span>.call_internal(ctx, func_name, <span class="kw-2">&amp;</span>args.args).<span class="kw">await</span>,
                 <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err),
@@ -533,11 +534,11 @@
 
         <span class="kw">let </span>content = <span class="kw">match </span><span class="kw-2">&amp;</span>res {
             <span class="prelude-val">Ok</span>(res) =&gt; {
-                <span class="macro">info!</span>(<span class="string">&quot;[openai-func] {func_name} returned: {res}&quot;</span>);
+                <span class="macro">info!</span>(<span class="string">"[openai-func] {func_name} returned: {res}"</span>);
                 res.to_string()
             }
             <span class="prelude-val">Err</span>(err) =&gt; {
-                <span class="macro">warn!</span>(<span class="string">&quot;[openai-func] {func_name} failed: {:#?}&quot;</span>, err);
+                <span class="macro">warn!</span>(<span class="string">"[openai-func] {func_name} failed: {:#?}"</span>, err);
                 err.to_string()
             }
         };
@@ -555,13 +556,13 @@
         <span class="kw">let </span>func = <span class="self">self
             </span>.call_table
             .get(func_name)
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: Function {func_name} not found&quot;</span>))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Function {func_name} not found"</span>))<span class="question-mark">?</span>;
 
         <span class="comment">// call body
-        </span>func(ctx, args).<span class="kw">await</span>.map_err(|err| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: {err}&quot;</span>))
+        </span>func(ctx, args).<span class="kw">await</span>.map_err(|err| <span class="macro">anyhow!</span>(<span class="string">"Error: {err}"</span>))
     }
 
-    <span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, body: FuncBody&lt;T&gt;) {
+    <span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, body: FuncBody&lt;T&gt;) {
         <span class="self">self</span>.function_list.push(function);
         <span class="self">self</span>.call_table.insert(name, Box::new(body));
     }
@@ -577,9 +578,9 @@
 
 <span class="doccomment">/// args から引数名で検索し、値への参照を返す。
 /// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-</span><span class="kw">pub fn </span>get_arg&lt;<span class="lifetime">&#39;a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>String&gt; {
+</span><span class="kw">pub fn </span>get_arg&lt;<span class="lifetime">'a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>String&gt; {
     <span class="kw">let </span>value = args.get(<span class="kw-2">&amp;</span>name.to_string());
-    value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Error: Argument {name} is required&quot;</span>))
+    value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} is required"</span>))
 }
 
 <span class="comment">// =============================================================================
@@ -594,19 +595,19 @@
     <span class="prelude-val">Ok</span>(version::version_info().to_string())
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_version(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;get_version&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get the version of the assistant program&quot;</span>.to_string()),
+            name: <span class="string">"get_version"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get the version of the assistant program"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties: Default::default(),
                 required: Default::default(),
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;get_version&quot;</span>, Box::new(get_version_sync));
+            .insert(<span class="string">"get_version"</span>, Box::new(get_version_sync));
     }
 }
 
@@ -618,11 +619,11 @@
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">struct </span>CpuStatus {
     number_of_cores: u32,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>current_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>config_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>throttle_status: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 }
 
@@ -630,20 +631,20 @@
     <span class="kw">let </span>number_of_cores = get_cpu_cores().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>current_frequency = get_current_freq()
         .<span class="kw">await</span><span class="question-mark">?
-        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">&quot;{} MHz&quot;</span>, hz / <span class="number">1_000_000</span>));
+        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">"{} MHz"</span>, hz / <span class="number">1_000_000</span>));
     <span class="kw">let </span>config_frequency = get_freq_conf()
         .<span class="kw">await</span><span class="question-mark">?
-        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">&quot;{} MHz&quot;</span>, hz / <span class="number">1_000_000</span>));
+        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">"{} MHz"</span>, hz / <span class="number">1_000_000</span>));
     <span class="kw">let </span>throttle_status = get_throttle_status().<span class="kw">await</span><span class="question-mark">?</span>.map(|st| {
         <span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[];
         <span class="kw">if </span>st.contains(ThrottleFlags::UNDER_VOLTAGE) {
-            v.push(<span class="string">&quot;Under Voltage&quot;</span>.to_string());
+            v.push(<span class="string">"Under Voltage"</span>.to_string());
         }
         <span class="kw">if </span>st.contains(ThrottleFlags::SOFT_TEMP_LIMIT) {
-            v.push(<span class="string">&quot;Soft Throttled&quot;</span>.to_string());
+            v.push(<span class="string">"Soft Throttled"</span>.to_string());
         }
         <span class="kw">if </span>st.contains(ThrottleFlags::THROTTLED) {
-            v.push(<span class="string">&quot;Hard Throttled&quot;</span>.to_string());
+            v.push(<span class="string">"Hard Throttled"</span>.to_string());
         }
         v
     });
@@ -658,19 +659,19 @@
     <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj)<span class="question-mark">?</span>)
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_cpu_status(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;get_cpu_status&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get the current status of assistant&#39;s CPU&quot;</span>.to_string()),
+            name: <span class="string">"get_cpu_status"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get the current status of assistant's CPU"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties: Default::default(),
                 required: Default::default(),
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;get_cpu_status&quot;</span>, Box::new(get_cpu_status_sync));
+            .insert(<span class="string">"get_cpu_status"</span>, Box::new(get_cpu_status_sync));
     }
 }
 
@@ -680,44 +681,44 @@
 }
 
 <span class="kw">async fn </span>get_current_datetime(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>tz = get_arg(args, <span class="string">&quot;tz&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>tz = get_arg(args, <span class="string">"tz"</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>tz.as_str() {
-        <span class="string">&quot;JST&quot; </span>=&gt; {
+        <span class="string">"JST" </span>=&gt; {
             <span class="kw">let </span>dt: DateTime&lt;Local&gt; = Local::now();
             <span class="prelude-val">Ok</span>(dt.to_string())
         }
-        <span class="string">&quot;UTC&quot; </span>=&gt; {
+        <span class="string">"UTC" </span>=&gt; {
             <span class="kw">let </span>dt: DateTime&lt;Utc&gt; = Utc::now();
             <span class="prelude-val">Ok</span>(dt.to_string())
         }
         <span class="kw">_ </span>=&gt; {
-            <span class="macro">bail!</span>(<span class="string">&quot;Parameter tz must be JST or UTC&quot;</span>)
+            <span class="macro">bail!</span>(<span class="string">"Parameter tz must be JST or UTC"</span>)
         }
     }
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_current_datetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
         properties.insert(
-            <span class="string">&quot;tz&quot;</span>.to_string(),
+            <span class="string">"tz"</span>.to_string(),
             ParameterElement {
-                type_: <span class="string">&quot;string&quot;</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">&quot;Time zone&quot;</span>.to_string()),
-                enum_: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">&quot;JST&quot;</span>.to_string(), <span class="string">&quot;UTC&quot;</span>.to_string()]),
+                type_: <span class="string">"string"</span>.to_string(),
+                description: <span class="prelude-val">Some</span>(<span class="string">"Time zone"</span>.to_string()),
+                enum_: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">"JST"</span>.to_string(), <span class="string">"UTC"</span>.to_string()]),
             },
         );
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;get_current_datetime&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get the current date and time&quot;</span>.to_string()),
+            name: <span class="string">"get_current_datetime"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get the current date and time"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties,
-                required: <span class="macro">vec!</span>[<span class="string">&quot;tz&quot;</span>.to_string()],
+                required: <span class="macro">vec!</span>[<span class="string">"tz"</span>.to_string()],
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;get_current_datetime&quot;</span>, Box::new(get_current_datetime_sync));
+            .insert(<span class="string">"get_current_datetime"</span>, Box::new(get_current_datetime_sync));
     }
 }
 
@@ -732,12 +733,12 @@
 
     <span class="kw">let </span>fragment = Html::parse_document(src);
     <span class="comment">// CSS セレクタで body タグを選択
-    </span><span class="kw">let </span>selector = Selector::parse(<span class="string">&quot;body&quot;</span>).unwrap();
+    </span><span class="kw">let </span>selector = Selector::parse(<span class="string">"body"</span>).unwrap();
     <span class="comment">// イテレータを返すが最初の1つだけを対象とする
     </span><span class="kw">let </span>body = fragment
         .select(<span class="kw-2">&amp;</span>selector)
         .next()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;body not found&quot;</span>))<span class="question-mark">?</span>;
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"body not found"</span>))<span class="question-mark">?</span>;
 
     <span class="comment">// 空白文字をまとめる
     </span><span class="kw">let </span><span class="kw-2">mut </span>res = String::new();
@@ -747,7 +748,7 @@
         <span class="kw">for </span>c <span class="kw">in </span>text.chars() {
             <span class="kw">if </span>c.is_whitespace() {
                 <span class="kw">if </span>!prev_space {
-                    res.push(<span class="string">&#39; &#39;</span>);
+                    res.push(<span class="string">' '</span>);
                 }
                 prev_space = <span class="bool-val">true</span>;
             } <span class="kw">else </span>{
@@ -763,7 +764,7 @@
 <span class="kw">async fn </span>request_url(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
     <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
     <span class="kw">const </span>SIZE_MAX: usize = <span class="number">5 </span>* <span class="number">1024</span>;
-    <span class="kw">let </span>url = get_arg(args, <span class="string">&quot;url&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>url = get_arg(args, <span class="string">"url"</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>client = Client::builder().timeout(TIMEOUT).build()<span class="question-mark">?</span>;
     <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -787,35 +788,35 @@
         }
     } <span class="kw">else </span>{
         <span class="macro">bail!</span>(
-            <span class="string">&quot;{}, {}&quot;</span>,
+            <span class="string">"{}, {}"</span>,
             status.as_str(),
-            status.canonical_reason().unwrap_or(<span class="string">&quot;&quot;</span>)
+            status.canonical_reason().unwrap_or(<span class="string">""</span>)
         );
     }
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_request_url(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
         properties.insert(
-            <span class="string">&quot;url&quot;</span>.to_string(),
+            <span class="string">"url"</span>.to_string(),
             ParameterElement {
-                type_: <span class="string">&quot;string&quot;</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">&quot;URL to access&quot;</span>.to_string()),
+                type_: <span class="string">"string"</span>.to_string(),
+                description: <span class="prelude-val">Some</span>(<span class="string">"URL to access"</span>.to_string()),
                 enum_: <span class="prelude-val">None</span>,
             },
         );
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;request_url&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Request HTTP GET&quot;</span>.to_string()),
+            name: <span class="string">"request_url"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Request HTTP GET"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties,
-                required: <span class="macro">vec!</span>[<span class="string">&quot;url&quot;</span>.to_string()],
+                required: <span class="macro">vec!</span>[<span class="string">"url"</span>.to_string()],
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;request_url&quot;</span>, Box::new(request_url_sync));
+            .insert(<span class="string">"request_url"</span>, Box::new(request_url_sync));
     }
 }
 
@@ -827,11 +828,11 @@
 
 <span class="kw">async fn </span>get_weather_report(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
     <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
-    <span class="kw">let </span>area = get_arg(args, <span class="string">&quot;area&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>area = get_arg(args, <span class="string">"area"</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// 引数の都市名をコードに変換
     </span><span class="kw">let </span>code =
-        weather::office_name_to_code(area).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Invalid area: {}&quot;</span>, area))<span class="question-mark">?</span>;
+        weather::office_name_to_code(area).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Invalid area: {}"</span>, area))<span class="question-mark">?</span>;
 
     <span class="kw">let </span>url1 = weather::url_overview_forecast(<span class="kw-2">&amp;</span>code);
     <span class="kw">let </span>url2 = weather::url_forecast(<span class="kw-2">&amp;</span>code);
@@ -849,7 +850,7 @@
     <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj).unwrap())
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>&gt; FunctionTable&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
     <span class="kw">fn </span>register_get_weather_report(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>area_list: Vec&lt;<span class="kw">_</span>&gt; = weather::offices()
             .iter()
@@ -858,24 +859,24 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
         properties.insert(
-            <span class="string">&quot;area&quot;</span>.to_string(),
+            <span class="string">"area"</span>.to_string(),
             ParameterElement {
-                type_: <span class="string">&quot;string&quot;</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">&quot;Area name (city name, etc.)&quot;</span>.to_string()),
+                type_: <span class="string">"string"</span>.to_string(),
+                description: <span class="prelude-val">Some</span>(<span class="string">"Area name (city name, etc.)"</span>.to_string()),
                 enum_: <span class="prelude-val">Some</span>(area_list),
             },
         );
         <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">&quot;get_weather_report&quot;</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">&quot;Get whether report data&quot;</span>.to_string()),
+            name: <span class="string">"get_weather_report"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get whether report data"</span>.to_string()),
             parameters: Parameters {
-                type_: <span class="string">&quot;object&quot;</span>.to_string(),
+                type_: <span class="string">"object"</span>.to_string(),
                 properties,
-                required: <span class="macro">vec!</span>[<span class="string">&quot;area&quot;</span>.to_string()],
+                required: <span class="macro">vec!</span>[<span class="string">"area"</span>.to_string()],
             },
         });
         <span class="self">self</span>.call_table
-            .insert(<span class="string">&quot;get_weather_report&quot;</span>, Box::new(get_weather_report_sync));
+            .insert(<span class="string">"get_weather_report"</span>, Box::new(get_weather_report_sync));
     }
 }
 
@@ -888,12 +889,12 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>parse_html() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">const </span>SRC: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-            <span class="string">&quot;/res/test/scraping/top.htm&quot;
+            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+            <span class="string">"/res/test/scraping/top.htm"
         </span>));
 
         <span class="kw">let </span>res = compact_html(SRC)<span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{res}&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"{res}"</span>);
 
         <span class="prelude-val">Ok</span>(())
     }

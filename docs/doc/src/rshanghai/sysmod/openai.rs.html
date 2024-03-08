@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai.rs`."><title>openai.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai.rs`."><title>openai.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -523,12 +524,12 @@
 <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
 
 <span class="doccomment">/// &lt;https://platform.openai.com/docs/api-reference/chat/create&gt;
-</span><span class="kw">const </span>URL_CHAT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.openai.com/v1/chat/completions&quot;</span>;
-<span class="kw">const </span>URL_IMAGE_GEN: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.openai.com/v1/images/generations&quot;</span>;
+</span><span class="kw">const </span>URL_CHAT: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.openai.com/v1/chat/completions"</span>;
+<span class="kw">const </span>URL_IMAGE_GEN: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.openai.com/v1/images/generations"</span>;
 
 <span class="doccomment">/// モデル情報。
 </span><span class="kw">pub struct </span>ModelInfo {
-    <span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    <span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     <span class="doccomment">/// トークン数制限。入力と出力を全て合わせた値。
     </span><span class="kw">pub </span>token_limit: usize,
     <span class="kw">pub </span>year: u16,
@@ -542,25 +543,25 @@
 /// &lt;https://openai.com/pricing&gt;
 </span><span class="kw">const </span>MODEL_LIST: <span class="kw-2">&amp;</span>[ModelInfo] = <span class="kw-2">&amp;</span>[
     ModelInfo {
-        name: <span class="string">&quot;gpt-3.5-turbo&quot;</span>,
+        name: <span class="string">"gpt-3.5-turbo"</span>,
         token_limit: <span class="number">4096</span>,
         year: <span class="number">2021</span>,
         month: <span class="number">9</span>,
     },
     ModelInfo {
-        name: <span class="string">&quot;gpt-3.5-turbo-16k&quot;</span>,
+        name: <span class="string">"gpt-3.5-turbo-16k"</span>,
         token_limit: <span class="number">16385</span>,
         year: <span class="number">2021</span>,
         month: <span class="number">9</span>,
     },
     ModelInfo {
-        name: <span class="string">&quot;gpt-4&quot;</span>,
+        name: <span class="string">"gpt-4"</span>,
         token_limit: <span class="number">8192</span>,
         year: <span class="number">2021</span>,
         month: <span class="number">9</span>,
     },
     ModelInfo {
-        name: <span class="string">&quot;gpt-4-32k&quot;</span>,
+        name: <span class="string">"gpt-4-32k"</span>,
         token_limit: <span class="number">32768</span>,
         year: <span class="number">2021</span>,
         month: <span class="number">9</span>,
@@ -584,7 +585,7 @@
 
     map.get(model)
         .copied()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Model not found: {model}&quot;</span>))
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Model not found: {model}"</span>))
 }
 
 <span class="kw">pub fn </span>get_output_reserved_token(info: <span class="kw-2">&amp;</span>ModelInfo) -&gt; usize {
@@ -593,19 +594,19 @@
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>ChatMessage {
-    <span class="doccomment">/// &quot;system&quot;, &quot;user&quot;, &quot;assistant&quot;, or &quot;function&quot;
+    <span class="doccomment">/// "system", "user", "assistant", or "function"
     </span><span class="kw">pub </span>role: Role,
-    <span class="doccomment">/// Required if role is &quot;function&quot;
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="doccomment">/// Required if role is "function"
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>name: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="doccomment">/// Required even if None (null)
     </span><span class="kw">pub </span>content: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>function_call: <span class="prelude-ty">Option</span>&lt;FunctionCall&gt;,
 }
 
 <span class="attr">#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;lowercase&quot;</span>)]
+#[serde(rename_all = <span class="string">"lowercase"</span>)]
 </span><span class="kw">pub enum </span>Role {
     <span class="attr">#[default]
     </span>System,
@@ -646,20 +647,20 @@
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>ParameterElement {
-    <span class="doccomment">/// e.g. &quot;string&quot;
-    </span><span class="attr">#[serde(rename = <span class="string">&quot;type&quot;</span>)]
+    <span class="doccomment">/// e.g. "string"
+    </span><span class="attr">#[serde(rename = <span class="string">"type"</span>)]
     </span><span class="kw">pub </span>type_: String,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>description: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(rename = <span class="string">&quot;enum&quot;</span>)]
-    #[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(rename = <span class="string">"enum"</span>)]
+    #[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>enum_: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 }
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Parameters {
-    <span class="doccomment">/// &quot;object&quot;
-    </span><span class="attr">#[serde(rename = <span class="string">&quot;type&quot;</span>)]
+    <span class="doccomment">/// "object"
+    </span><span class="attr">#[serde(rename = <span class="string">"type"</span>)]
     </span><span class="kw">pub </span>type_: String,
     <span class="kw">pub </span>properties: HashMap&lt;String, ParameterElement&gt;,
     <span class="kw">pub </span>required: Vec&lt;String&gt;,
@@ -668,7 +669,7 @@
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Function {
     <span class="kw">pub </span>name: String,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>description: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>parameters: Parameters,
 }
@@ -678,19 +679,19 @@
     model: String,
     messages: Vec&lt;ChatMessage&gt;,
 
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>function_call: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>functions: <span class="prelude-ty">Option</span>&lt;Vec&lt;Function&gt;&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>temperature: <span class="prelude-ty">Option</span>&lt;f32&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>max_tokens: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>n: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>stop: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
@@ -701,38 +702,38 @@
     </span>prompt: String,
     <span class="doccomment">/// The number of images to generate. Must be between 1 and 10.
     /// Defaults to 1
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>n: <span class="prelude-ty">Option</span>&lt;u8&gt;,
     <span class="doccomment">/// The format in which the generated images are returned.
     /// Must be one of url or b64_json.
     /// Defaults to url
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>response_format: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="doccomment">/// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
     /// Defaults to 1024x1024
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>size: <span class="prelude-ty">Option</span>&lt;ImageSize&gt;,
     <span class="doccomment">/// A unique identifier representing your end-user,
     /// which can help OpenAI to monitor and detect abuse. Learn more.
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;snake_case&quot;</span>)]
+#[serde(rename_all = <span class="string">"snake_case"</span>)]
 </span><span class="kw">enum </span>ResponseFormat {
     Url,
     B64Json,
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">&quot;snake_case&quot;</span>)]
+#[serde(rename_all = <span class="string">"snake_case"</span>)]
 </span><span class="kw">enum </span>ImageSize {
-    <span class="attr">#[serde(rename = <span class="string">&quot;256x256&quot;</span>)]
+    <span class="attr">#[serde(rename = <span class="string">"256x256"</span>)]
     </span>X256,
-    <span class="attr">#[serde(rename = <span class="string">&quot;512x512&quot;</span>)]
+    <span class="attr">#[serde(rename = <span class="string">"512x512"</span>)]
     </span>X512,
-    <span class="attr">#[serde(rename = <span class="string">&quot;1024x1024&quot;</span>)]
+    <span class="attr">#[serde(rename = <span class="string">"1024x1024"</span>)]
     </span>X1024,
 }
 
@@ -764,7 +765,7 @@
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             enabled: <span class="bool-val">false</span>,
-            api_key: <span class="string">&quot;&quot;</span>.to_string(),
+            api_key: <span class="string">""</span>.to_string(),
             model: MODEL_LIST.first().unwrap().name.to_string(),
         }
     }
@@ -778,22 +779,22 @@
 
 <span class="kw">impl </span>OpenAi {
     <span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] initialize&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[openai] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.openai.clone());
 
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] OpenAI model list START&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[openai] OpenAI model list START"</span>);
         <span class="kw">for </span>info <span class="kw">in </span>MODEL_LIST.iter() {
             <span class="macro">info!</span>(
-                <span class="string">&quot;[openai] name: \&quot;{}\&quot;, token_limit: {}&quot;</span>,
+                <span class="string">"[openai] name: \"{}\", token_limit: {}"</span>,
                 info.name, info.token_limit
             );
         }
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] OpenAI model list END&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[openai] OpenAI model list END"</span>);
 
         <span class="kw">let </span>info = get_model_info(<span class="kw-2">&amp;</span>config.model)<span class="question-mark">?</span>;
         <span class="macro">info!</span>(
-            <span class="string">&quot;[openai] selected: model: {}, token_limit: {}&quot;</span>,
+            <span class="string">"[openai] selected: model: {}, token_limit: {}"</span>,
             info.name, info.token_limit
         );
 
@@ -830,16 +831,16 @@
             ..Default::default()
         };
 
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] chat request: {:?}&quot;</span>, body);
+        <span class="macro">info!</span>(<span class="string">"[openai] chat request: {:?}"</span>, body);
         <span class="kw">if </span>!<span class="self">self</span>.config.enabled {
-            <span class="macro">warn!</span>(<span class="string">&quot;[openai] skip because openai feature is disabled&quot;</span>);
-            <span class="macro">bail!</span>(<span class="string">&quot;openai is disabled&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"[openai] skip because openai feature is disabled"</span>);
+            <span class="macro">bail!</span>(<span class="string">"openai is disabled"</span>);
         }
 
         <span class="kw">let </span>resp = <span class="self">self
             </span>.client
             .post(URL_CHAT)
-            .header(<span class="string">&quot;Authorization&quot;</span>, <span class="macro">format!</span>(<span class="string">&quot;Bearer {key}&quot;</span>))
+            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
             .json(<span class="kw-2">&amp;</span>body)
             .send()
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -851,12 +852,12 @@
         </span><span class="kw">let </span>choice0 = resp_msg
             .choices
             .first()
-            .ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;choices is empty&quot;</span>))<span class="question-mark">?</span>;
+            .ok_or(<span class="macro">anyhow!</span>(<span class="string">"choices is empty"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>text = choice0
             .message
             .content
             .as_ref()
-            .ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;message content is empty&quot;</span>))<span class="question-mark">?
+            .ok_or(<span class="macro">anyhow!</span>(<span class="string">"message content is empty"</span>))<span class="question-mark">?
             </span>.clone();
 
         <span class="prelude-val">Ok</span>(text)
@@ -875,16 +876,16 @@
             ..Default::default()
         };
 
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] chat request with function: {:?}&quot;</span>, body);
+        <span class="macro">info!</span>(<span class="string">"[openai] chat request with function: {:?}"</span>, body);
         <span class="kw">if </span>!<span class="self">self</span>.config.enabled {
-            <span class="macro">warn!</span>(<span class="string">&quot;[openai] skip because openai feature is disabled&quot;</span>);
-            <span class="macro">bail!</span>(<span class="string">&quot;openai is disabled&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"[openai] skip because openai feature is disabled"</span>);
+            <span class="macro">bail!</span>(<span class="string">"openai is disabled"</span>);
         }
 
         <span class="kw">let </span>resp = <span class="self">self
             </span>.client
             .post(URL_CHAT)
-            .header(<span class="string">&quot;Authorization&quot;</span>, <span class="macro">format!</span>(<span class="string">&quot;Bearer {key}&quot;</span>))
+            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
             .json(<span class="kw-2">&amp;</span>body)
             .send()
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -896,7 +897,7 @@
         </span><span class="kw">let </span>msg = <span class="kw-2">&amp;</span>resp_msg
             .choices
             .first()
-            .ok_or(<span class="macro">anyhow!</span>(<span class="string">&quot;choices is empty&quot;</span>))<span class="question-mark">?
+            .ok_or(<span class="macro">anyhow!</span>(<span class="string">"choices is empty"</span>))<span class="question-mark">?
             </span>.message;
 
         <span class="prelude-val">Ok</span>(msg.clone())
@@ -911,16 +912,16 @@
             ..Default::default()
         };
 
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] image gen request: {:?}&quot;</span>, body);
+        <span class="macro">info!</span>(<span class="string">"[openai] image gen request: {:?}"</span>, body);
         <span class="kw">if </span>!<span class="self">self</span>.config.enabled {
-            <span class="macro">warn!</span>(<span class="string">&quot;[openai] skip because openai feature is disabled&quot;</span>);
-            <span class="macro">bail!</span>(<span class="string">&quot;openai is disabled&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"[openai] skip because openai feature is disabled"</span>);
+            <span class="macro">bail!</span>(<span class="string">"openai is disabled"</span>);
         }
 
         <span class="kw">let </span>resp = <span class="self">self
             </span>.client
             .post(URL_IMAGE_GEN)
-            .header(<span class="string">&quot;Authorization&quot;</span>, <span class="macro">format!</span>(<span class="string">&quot;Bearer {key}&quot;</span>))
+            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
             .json(<span class="kw-2">&amp;</span>body)
             .send()
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -930,7 +931,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::new();
         <span class="kw">for </span>img <span class="kw">in </span>resp.data.iter() {
-            <span class="kw">let </span>url = img.url.as_ref().ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;url is required&quot;</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>url = img.url.as_ref().ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"url is required"</span>))<span class="question-mark">?</span>;
             result.push(url.to_string());
         }
 
@@ -940,7 +941,7 @@
 
 <span class="kw">impl </span>SystemModule <span class="kw">for </span>OpenAi {
     <span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, _ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">&quot;[openai] on_start&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[openai] on_start"</span>);
     }
 }
 
@@ -955,24 +956,24 @@
     #[ignore]
     </span><span class="comment">// cargo test openai -- --ignored --nocapture
     </span><span class="kw">async fn </span>openai() {
-        <span class="kw">let </span>src = std::fs::read_to_string(<span class="string">&quot;config.toml&quot;</span>).unwrap();
+        <span class="kw">let </span>src = std::fs::read_to_string(<span class="string">"config.toml"</span>).unwrap();
         <span class="kw">let </span>_unset = config::set(toml::from_str(<span class="kw-2">&amp;</span>src).unwrap());
 
         <span class="kw">let </span>ai = OpenAi::new().unwrap();
         <span class="kw">let </span>msgs = <span class="macro">vec!</span>[
             ChatMessage {
                 role: Role::System,
-                content: <span class="prelude-val">Some</span>(<span class="string">&quot;あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。&quot;</span>.to_string()),
+                content: <span class="prelude-val">Some</span>(<span class="string">"あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。"</span>.to_string()),
                 ..Default::default()
             },
             ChatMessage {
                 role: Role::System,
-                content: <span class="prelude-val">Some</span>(<span class="string">&quot;やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。&quot;</span>.to_string()),
+                content: <span class="prelude-val">Some</span>(<span class="string">"やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。"</span>.to_string()),
                 ..Default::default()
             },
             ChatMessage {
                 role: Role::User,
-                content: <span class="prelude-val">Some</span>(<span class="string">&quot;こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。&quot;</span>.to_string()),
+                content: <span class="prelude-val">Some</span>(<span class="string">"こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。"</span>.to_string()),
                 ..Default::default()
             },
         ];
@@ -984,7 +985,7 @@
                 err.to_string()
             }
         };
-        <span class="macro">println!</span>(<span class="string">&quot;{resp}&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"{resp}"</span>);
     }
 
     <span class="attr">#[tokio::test]
@@ -992,12 +993,12 @@
     #[ignore]
     </span><span class="comment">// cargo test image_gen -- --ignored --nocapture
     </span><span class="kw">async fn </span>image_gen() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>src = std::fs::read_to_string(<span class="string">&quot;config.toml&quot;</span>).unwrap();
+        <span class="kw">let </span>src = std::fs::read_to_string(<span class="string">"config.toml"</span>).unwrap();
         <span class="kw">let </span>_unset = config::set(toml::from_str(<span class="kw-2">&amp;</span>src).unwrap());
 
         <span class="kw">let </span>ai = OpenAi::new().unwrap();
         <span class="kw">let </span>res = ai
-            .generate_image(<span class="string">&quot;Rasberry Pi の上に乗っている管理人形&quot;</span>, <span class="number">1</span>)
+            .generate_image(<span class="string">"Rasberry Pi の上に乗っている管理人形"</span>, <span class="number">1</span>)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, res.len());
 

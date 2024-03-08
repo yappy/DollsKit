@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/twitter.rs`."><title>twitter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1318,24 +1319,24 @@
 <span class="kw">pub const </span>LIMIT_PHOTO_COUNT: usize = <span class="number">4</span>;
 <span class="kw">pub const </span>LIMIT_PHOTO_SIZE: usize = <span class="number">5_000_000</span>;
 
-<span class="kw">const </span>URL_USERS_ME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/users/me&quot;</span>;
-<span class="kw">const </span>URL_USERS_BY: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/users/by&quot;</span>;
+<span class="kw">const </span>URL_USERS_ME: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.twitter.com/2/users/me"</span>;
+<span class="kw">const </span>URL_USERS_BY: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.twitter.com/2/users/by"</span>;
 <span class="kw">const </span>LIMIT_USERS_BY: usize = <span class="number">100</span>;
 
 <span class="macro">macro_rules! </span>URL_USERS_TIMELINES_HOME {
     () =&gt; {
-        <span class="string">&quot;https://api.twitter.com/2/users/{}/timelines/reverse_chronological&quot;
+        <span class="string">"https://api.twitter.com/2/users/{}/timelines/reverse_chronological"
     </span>};
 }
 <span class="macro">macro_rules! </span>URL_USERS_TWEET {
     () =&gt; {
-        <span class="string">&quot;https://api.twitter.com/2/users/{}/tweets&quot;
+        <span class="string">"https://api.twitter.com/2/users/{}/tweets"
     </span>};
 }
 
-<span class="kw">const </span>URL_TWEETS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://api.twitter.com/2/tweets&quot;</span>;
+<span class="kw">const </span>URL_TWEETS: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.twitter.com/2/tweets"</span>;
 
-<span class="kw">const </span>URL_UPLOAD: <span class="kw-2">&amp;</span>str = <span class="string">&quot;https://upload.twitter.com/1.1/media/upload.json&quot;</span>;
+<span class="kw">const </span>URL_UPLOAD: <span class="kw-2">&amp;</span>str = <span class="string">"https://upload.twitter.com/1.1/media/upload.json"</span>;
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>User {
@@ -1424,23 +1425,23 @@
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>Media {
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>media_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>tagged_user_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 }
 
 <span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>TweetParam {
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>poll: <span class="prelude-ty">Option</span>&lt;TweetParamPoll&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>reply: <span class="prelude-ty">Option</span>&lt;TweetParamReply&gt;,
     <span class="doccomment">/// 本文。media.media_ids が無いなら必須。
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>text: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="doccomment">/// 添付メディアデータ。
-    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;Option::is_none&quot;</span>)]
+    </span><span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span>media: <span class="prelude-ty">Option</span>&lt;Media&gt;,
 }
 
@@ -1502,12 +1503,12 @@
             tlcheck_enabled: <span class="bool-val">false</span>,
             debug_exec_once: <span class="bool-val">false</span>,
             fake_tweet: <span class="bool-val">true</span>,
-            consumer_key: <span class="string">&quot;&quot;</span>.to_string(),
-            consumer_secret: <span class="string">&quot;&quot;</span>.to_string(),
-            access_token: <span class="string">&quot;&quot;</span>.to_string(),
-            access_secret: <span class="string">&quot;&quot;</span>.to_string(),
-            ai_hashtag: <span class="string">&quot;DollsAI&quot;</span>.to_string(),
-            font_file: <span class="string">&quot;&quot;</span>.to_string(),
+            consumer_key: <span class="string">""</span>.to_string(),
+            consumer_secret: <span class="string">""</span>.to_string(),
+            access_token: <span class="string">""</span>.to_string(),
+            access_secret: <span class="string">""</span>.to_string(),
+            ai_hashtag: <span class="string">"DollsAI"</span>.to_string(),
+            font_file: <span class="string">""</span>.to_string(),
             tlcheck: Default::default(),
             prompt: Default::default(),
         }
@@ -1539,7 +1540,7 @@
 
 <span class="doccomment">/// [TimelineCheck] のデフォルト値。
 </span><span class="kw">const </span>DEFAULT_TLCHECK_TOML: <span class="kw-2">&amp;</span>str =
-    <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>), <span class="string">&quot;/res/tlcheck.toml&quot;</span>));
+    <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>), <span class="string">"/res/tlcheck.toml"</span>));
 <span class="kw">impl </span>Default <span class="kw">for </span>TimelineCheck {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         toml::from_str(DEFAULT_TLCHECK_TOML).unwrap()
@@ -1554,8 +1555,8 @@
 
 <span class="doccomment">/// [TwitterPrompt] のデフォルト値。
 </span><span class="kw">const </span>DEFAULT_PROMPT_TOML: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-    <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-    <span class="string">&quot;/res/openai_twitter.toml&quot;
+    <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
+    <span class="string">"/res/openai_twitter.toml"
 </span>));
 <span class="kw">impl </span>Default <span class="kw">for </span>TwitterPrompt {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
@@ -1596,7 +1597,7 @@
 
 <span class="kw">impl </span>Twitter {
     <span class="kw">pub fn </span>new(wakeup_list: Vec&lt;NaiveTime&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;[twitter] initialize&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[twitter] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.twitter.clone());
 
@@ -1622,21 +1623,21 @@
     </span><span class="kw">async fn </span>twitter_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// 自分の ID
         </span><span class="kw">let </span>me = <span class="self">self</span>.get_my_id().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;[tw-check] user_me: {:?}&quot;</span>, me);
+        <span class="macro">info!</span>(<span class="string">"[tw-check] user_me: {:?}"</span>, me);
 
         <span class="comment">// チェック開始 ID
         </span><span class="kw">let </span>since_id = <span class="self">self</span>.get_since_id().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;[tw-check] since_id: {}&quot;</span>, since_id);
+        <span class="macro">info!</span>(<span class="string">"[tw-check] since_id: {}"</span>, since_id);
 
         <span class="comment">// 設定ファイル中の全 user name (screen name) から ID を得る
-        </span><span class="macro">info!</span>(<span class="string">&quot;[tw-check] get all user info from screen name&quot;</span>);
+        </span><span class="macro">info!</span>(<span class="string">"[tw-check] get all user info from screen name"</span>);
         <span class="comment">// borrow checker (E0502) が手強すぎて勝てないので諦めてコピーを取る
         </span><span class="kw">let </span>rules = <span class="self">self</span>.config.tlcheck.rules.clone();
         <span class="kw">for </span>rule <span class="kw">in </span>rules.iter() {
             <span class="self">self</span>.resolve_ids(<span class="kw-2">&amp;</span>rule.user_names).<span class="kw">await</span><span class="question-mark">?</span>;
         }
         <span class="macro">info!</span>(
-            <span class="string">&quot;[tw-check] user id cache size: {}&quot;</span>,
+            <span class="string">"[tw-check] user id cache size: {}"</span>,
             <span class="self">self</span>.username_user_cache.len()
         );
 
@@ -1644,7 +1645,7 @@
 
         // 自分の最終ツイート以降のタイムラインを得る (リツイートは除く)
         </span><span class="kw">let </span>tl = <span class="self">self</span>.users_timelines_home(<span class="kw-2">&amp;</span>me.id, <span class="kw-2">&amp;</span>since_id).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;{} tweets fetched&quot;</span>, tl.data.len());
+        <span class="macro">info!</span>(<span class="string">"{} tweets fetched"</span>, tl.data.len());
 
         <span class="comment">// 全リプライを Vec として得る
         </span><span class="kw">let </span><span class="kw-2">mut </span>reply_buf = <span class="self">self</span>.create_reply_list(<span class="kw-2">&amp;</span>tl, <span class="kw-2">&amp;</span>me);
@@ -1667,7 +1668,7 @@
             <span class="kw">let </span>max = cur.max(next);
 
             <span class="kw">let </span>name = <span class="self">self</span>.get_username_from_id(<span class="kw-2">&amp;</span>to_user_id).unwrap();
-            <span class="macro">info!</span>(<span class="string">&quot;reply to: {}&quot;</span>, name);
+            <span class="macro">info!</span>(<span class="string">"reply to: {}"</span>, name);
 
             <span class="comment">// post_image_if_long が有効で文字数オーバーの場合、画像にして投稿する
             </span><span class="kw">if </span><span class="self">self</span>.font.is_some() &amp;&amp; post_image_if_long &amp;&amp; text.chars().count() &gt; TWEET_LEN_MAX {
@@ -1679,7 +1680,7 @@
                     LONG_TWEET_IMAGE_WIDTH,
                 );
                 <span class="kw">let </span>media_id = <span class="self">self</span>.media_upload(pngbin).<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="self">self</span>.tweet_custom(<span class="string">&quot;&quot;</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>to_tw_id), <span class="kw-2">&amp;</span>[media_id]).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="self">self</span>.tweet_custom(<span class="string">""</span>, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>to_tw_id), <span class="kw-2">&amp;</span>[media_id]).<span class="kw">await</span><span class="question-mark">?</span>;
             } <span class="kw">else </span>{
                 <span class="self">self</span>.tweet_custom(<span class="kw-2">&amp;</span>text, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>to_tw_id), <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
             }
@@ -1693,13 +1694,13 @@
         let param = TweetParam {
             poll: Some(TweetParamPoll {
                 duration_minutes: 60 * 24,
-                options: vec![&quot;ホワイト&quot;.into(), &quot;ブラック&quot;.into()],
+                options: vec!["ホワイト".into(), "ブラック".into()],
             }),
-            text: Some(&quot;?&quot;.into()),
+            text: Some("?".into()),
             ..Default::default()
         };
         let resp = self.tweets_post(param).await?;
-        info!(&quot;tweet result: {:?}&quot;, resp);
+        info!("tweet result: {:?}", resp);
         */
 
         </span><span class="prelude-val">Ok</span>(())
@@ -1744,7 +1745,7 @@
                     <span class="comment">// 配列内のすべてのパターンを満たす
                     </span><span class="kw">let </span>match_hit = pats.iter().all(|pat| <span class="self">Self</span>::pattern_match(pat, <span class="kw-2">&amp;</span>tw.text));
                     <span class="kw">if </span>match_hit {
-                        <span class="macro">info!</span>(<span class="string">&quot;FIND: {:?}&quot;</span>, tw);
+                        <span class="macro">info!</span>(<span class="string">"FIND: {:?}"</span>, tw);
                         <span class="comment">// 配列からリプライをランダムに1つ選ぶ
                         </span><span class="kw">let </span>rnd_idx = rand::thread_rng().gen_range(<span class="number">0</span>..msgs.len());
                         reply_buf.push(Reply {
@@ -1791,14 +1792,14 @@
             });
 
         <span class="kw">for </span>tw <span class="kw">in </span>tliter {
-            <span class="macro">info!</span>(<span class="string">&quot;FIND (AI): {:?}&quot;</span>, tw);
+            <span class="macro">info!</span>(<span class="string">"FIND (AI): {:?}"</span>, tw);
 
             <span class="kw">let </span>user = <span class="self">Self</span>::resolve_user(
                 tw.author_id.as_ref().unwrap(),
                 <span class="kw-2">&amp;</span>tl.includes.as_ref().unwrap().users,
             );
             <span class="kw">if </span>user.is_none() {
-                <span class="macro">warn!</span>(<span class="string">&quot;User {} is not found&quot;</span>, tw.author_id.as_ref().unwrap());
+                <span class="macro">warn!</span>(<span class="string">"User {} is not found"</span>, tw.author_id.as_ref().unwrap());
                 <span class="kw">continue</span>;
             }
 
@@ -1809,7 +1810,7 @@
                 .pre
                 .iter()
                 .map(|text| {
-                    <span class="kw">let </span>text = text.replace(<span class="string">&quot;${user}&quot;</span>, <span class="kw-2">&amp;</span>user.unwrap().name);
+                    <span class="kw">let </span>text = text.replace(<span class="string">"${user}"</span>, <span class="kw-2">&amp;</span>user.unwrap().name);
                     ChatMessage {
                         role: Role::System,
                         content: <span class="prelude-val">Some</span>(text),
@@ -1860,7 +1861,7 @@
                         post_image_if_long: <span class="bool-val">true</span>,
                     }),
                     <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">warn!</span>(<span class="string">&quot;AI chat error: {e}&quot;</span>);
+                        <span class="macro">warn!</span>(<span class="string">"AI chat error: {e}"</span>);
                     }
                 }
             }
@@ -1869,31 +1870,31 @@
         reply_buf
     }
 
-    <span class="kw">fn </span>resolve_user&lt;<span class="lifetime">&#39;a</span>&gt;(id: <span class="kw-2">&amp;</span>str, users: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[User]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>User&gt; {
+    <span class="kw">fn </span>resolve_user&lt;<span class="lifetime">'a</span>&gt;(id: <span class="kw-2">&amp;</span>str, users: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[User]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>User&gt; {
         users.iter().find(|<span class="kw-2">&amp;</span>user| user.id == id)
     }
 
     <span class="doccomment">/// text から pat を検索する。
-    /// 先頭が &#39;^&#39; だとそれで始まる場合のみ。
-    /// 末尾が &#39;$&#39; だとそれで終わる場合のみ。
+    /// 先頭が '^' だとそれで始まる場合のみ。
+    /// 末尾が '$' だとそれで終わる場合のみ。
     </span><span class="attr">#[allow(clippy::bool_to_int_with_if)]
     </span><span class="kw">fn </span>pattern_match(pat: <span class="kw-2">&amp;</span>str, text: <span class="kw-2">&amp;</span>str) -&gt; bool {
         <span class="kw">let </span>count = pat.chars().count();
         <span class="kw">if </span>count == <span class="number">0 </span>{
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
-        <span class="kw">let </span>match_start = pat.starts_with(<span class="string">&#39;^&#39;</span>);
-        <span class="kw">let </span>match_end = pat.ends_with(<span class="string">&#39;$&#39;</span>);
+        <span class="kw">let </span>match_start = pat.starts_with(<span class="string">'^'</span>);
+        <span class="kw">let </span>match_end = pat.ends_with(<span class="string">'$'</span>);
         <span class="kw">let </span>begin = pat
             .char_indices()
             <span class="comment">// clippy::bool_to_int_with_if
             </span>.nth(<span class="kw">if </span>match_start { <span class="number">1 </span>} <span class="kw">else </span>{ <span class="number">0 </span>})
-            .unwrap_or((<span class="number">0</span>, <span class="string">&#39;\0&#39;</span>))
+            .unwrap_or((<span class="number">0</span>, <span class="string">'\0'</span>))
             .<span class="number">0</span>;
         <span class="kw">let </span>end = pat
             .char_indices()
             .nth(<span class="kw">if </span>match_end { count - <span class="number">1 </span>} <span class="kw">else </span>{ count })
-            .unwrap_or((pat.len(), <span class="string">&#39;\0&#39;</span>))
+            .unwrap_or((pat.len(), <span class="string">'\0'</span>))
             .<span class="number">0</span>;
         <span class="kw">let </span>pat = <span class="kw-2">&amp;</span>pat[begin..end];
         <span class="kw">if </span>pat.is_empty() {
@@ -1916,8 +1917,8 @@
         <span class="kw">let </span>me = <span class="self">self</span>.get_my_id().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">if </span><span class="self">self</span>.tl_check_since_id.is_none() {
             <span class="kw">let </span>usertw = <span class="self">self</span>.users_tweets(<span class="kw-2">&amp;</span>me.id).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="comment">// API は成功したが最新 ID が得られなかった場合は &quot;1&quot; を設定する
-            </span><span class="self">self</span>.tl_check_since_id = <span class="prelude-val">Some</span>(usertw.meta.newest_id.unwrap_or_else(|| <span class="string">&quot;1&quot;</span>.into()));
+            <span class="comment">// API は成功したが最新 ID が得られなかった場合は "1" を設定する
+            </span><span class="self">self</span>.tl_check_since_id = <span class="prelude-val">Some</span>(usertw.meta.newest_id.unwrap_or_else(|| <span class="string">"1"</span>.into()));
         }
 
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.tl_check_since_id.clone().unwrap())
@@ -1971,10 +1972,10 @@
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>text) = param.text {
             <span class="kw">let </span>len = text.chars().count();
             <span class="kw">if </span>len &gt; TWEET_LEN_MAX {
-                <span class="macro">warn!</span>(<span class="string">&quot;tweet length &gt; {}: {}&quot;</span>, TWEET_LEN_MAX, len);
-                <span class="macro">warn!</span>(<span class="string">&quot;before: {}&quot;</span>, text);
+                <span class="macro">warn!</span>(<span class="string">"tweet length &gt; {}: {}"</span>, TWEET_LEN_MAX, len);
+                <span class="macro">warn!</span>(<span class="string">"before: {}"</span>, text);
                 <span class="kw">let </span>text = <span class="self">Self</span>::truncate_tweet_text(text).to_string();
-                <span class="macro">warn!</span>(<span class="string">&quot;after : {}&quot;</span>, text);
+                <span class="macro">warn!</span>(<span class="string">"after : {}"</span>, text);
                 param.text = <span class="prelude-val">Some</span>(text);
             }
         }
@@ -1985,7 +1986,7 @@
 
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
-            <span class="macro">info!</span>(<span class="string">&quot;fake tweet: {:?}&quot;</span>, param);
+            <span class="macro">info!</span>(<span class="string">"fake tweet: {:?}"</span>, param);
 
             <span class="prelude-val">Ok</span>(())
         }
@@ -2008,21 +2009,21 @@
     /// &lt;https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices&gt;
     </span><span class="kw">pub async fn </span>media_upload&lt;T: Into&lt;reqwest::Body&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, bin: T) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
         <span class="kw">if </span><span class="self">self</span>.config.fake_tweet {
-            <span class="macro">info!</span>(<span class="string">&quot;fake upload&quot;</span>);
+            <span class="macro">info!</span>(<span class="string">"fake upload"</span>);
 
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="number">0</span>);
         }
 
-        <span class="macro">info!</span>(<span class="string">&quot;upload&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"upload"</span>);
         <span class="kw">let </span>part = multipart::Part::stream(bin);
-        <span class="kw">let </span>form = multipart::Form::new().part(<span class="string">&quot;media&quot;</span>, part);
+        <span class="kw">let </span>form = multipart::Form::new().part(<span class="string">"media"</span>, part);
 
         <span class="kw">let </span>resp = <span class="self">self
             </span>.http_oauth_post_multipart(URL_UPLOAD, <span class="kw-2">&amp;</span>BTreeMap::new(), form)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>obj: UploadResponseData = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">&quot;upload OK: media_id={}&quot;</span>, obj.media_id);
+        <span class="macro">info!</span>(<span class="string">"upload OK: media_id={}"</span>, obj.media_id);
 
         <span class="prelude-val">Ok</span>(obj.media_id)
     }
@@ -2087,7 +2088,7 @@
             </span><span class="kw">let </span>result = <span class="self">self</span>.users_by(request_users).<span class="kw">await</span>;
             <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
                 <span class="kw">if </span>e.is::&lt;serde_json::Error&gt;() {
-                    <span class="macro">panic!</span>(<span class="string">&quot;parse error {e:?}&quot;</span>);
+                    <span class="macro">panic!</span>(<span class="string">"parse error {e:?}"</span>);
                 } <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
@@ -2095,7 +2096,7 @@
 
             <span class="kw">for </span>user <span class="kw">in </span>result<span class="question-mark">?</span>.data.iter() {
                 <span class="macro">info!</span>(
-                    <span class="string">&quot;[twitter] resolve username: {} =&gt; {}&quot;</span>,
+                    <span class="string">"[twitter] resolve username: {} =&gt; {}"</span>,
                     user.username, user.id
                 );
                 <span class="self">self</span>.username_user_cache
@@ -2107,7 +2108,7 @@
             }
             <span class="macro">assert!</span>(
                 rest.is_empty(),
-                <span class="string">&quot;cannot resolved (account suspended?): {rest:?}&quot;
+                <span class="string">"cannot resolved (account suspended?): {rest:?}"
             </span>);
 
             start += LIMIT_USERS_BY;
@@ -2127,13 +2128,13 @@
 
     <span class="kw">async fn </span>users_by(<span class="kw-2">&amp;</span><span class="self">self</span>, users: <span class="kw-2">&amp;</span>[String]) -&gt; <span class="prelude-ty">Result</span>&lt;UsersBy&gt; {
         <span class="kw">if </span>!(<span class="number">1</span>..LIMIT_USERS_BY).contains(<span class="kw-2">&amp;</span>users.len()) {
-            <span class="macro">panic!</span>(<span class="string">&quot;{} limit over: {}&quot;</span>, URL_USERS_BY, users.len());
+            <span class="macro">panic!</span>(<span class="string">"{} limit over: {}"</span>, URL_USERS_BY, users.len());
         }
-        <span class="kw">let </span>users_str = users.join(<span class="string">&quot;,&quot;</span>);
+        <span class="kw">let </span>users_str = users.join(<span class="string">","</span>);
         <span class="kw">let </span>resp = <span class="self">self
             </span>.http_oauth_get(
                 URL_USERS_BY,
-                <span class="kw-2">&amp;</span>BTreeMap::from([(<span class="string">&quot;usernames&quot;</span>.into(), users_str)]),
+                <span class="kw-2">&amp;</span>BTreeMap::from([(<span class="string">"usernames"</span>.into(), users_str)]),
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -2145,14 +2146,14 @@
     <span class="kw">async fn </span>users_timelines_home(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>str, since_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Timeline&gt; {
         <span class="kw">let </span>url = <span class="macro">format!</span>(<span class="macro">URL_USERS_TIMELINES_HOME!</span>(), id);
         <span class="kw">let </span>param = KeyValue::from([
-            (<span class="string">&quot;since_id&quot;</span>.to_string(), since_id.to_string()),
-            (<span class="string">&quot;exclude&quot;</span>.to_string(), <span class="string">&quot;retweets&quot;</span>.to_string()),
-            (<span class="string">&quot;expansions&quot;</span>.to_string(), <span class="string">&quot;author_id&quot;</span>.to_string()),
-            (<span class="string">&quot;tweet.fields&quot;</span>.to_string(), <span class="string">&quot;entities&quot;</span>.to_string()),
+            (<span class="string">"since_id"</span>.to_string(), since_id.to_string()),
+            (<span class="string">"exclude"</span>.to_string(), <span class="string">"retweets"</span>.to_string()),
+            (<span class="string">"expansions"</span>.to_string(), <span class="string">"author_id"</span>.to_string()),
+            (<span class="string">"tweet.fields"</span>.to_string(), <span class="string">"entities"</span>.to_string()),
         ]);
         <span class="kw">let </span>resp = <span class="self">self</span>.http_oauth_get(<span class="kw-2">&amp;</span>url, <span class="kw-2">&amp;</span>param).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">debug!</span>(<span class="string">&quot;{json_str}&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"{json_str}"</span>);
         <span class="kw">let </span>obj: Timeline = netutil::convert_from_json(<span class="kw-2">&amp;</span>json_str)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(obj)
@@ -2162,9 +2163,9 @@
         <span class="kw">let </span>url = <span class="macro">format!</span>(<span class="macro">URL_USERS_TWEET!</span>(), id);
         <span class="kw">let </span>param = KeyValue::from([
             <span class="comment">// retweets and/or replies
-            </span>(<span class="string">&quot;exclude&quot;</span>.into(), <span class="string">&quot;retweets&quot;</span>.into()),
+            </span>(<span class="string">"exclude"</span>.into(), <span class="string">"retweets"</span>.into()),
             <span class="comment">// default=10, min=5, max=100
-            </span>(<span class="string">&quot;max_results&quot;</span>.into(), <span class="string">&quot;100&quot;</span>.into()),
+            </span>(<span class="string">"max_results"</span>.into(), <span class="string">"100"</span>.into()),
         ]);
         <span class="kw">let </span>resp = <span class="self">self</span>.http_oauth_get(<span class="kw-2">&amp;</span>url, <span class="kw-2">&amp;</span>param).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -2191,7 +2192,7 @@
         <span class="kw">let </span>cf = <span class="kw-2">&amp;</span><span class="self">self</span>.config;
         <span class="kw">let </span><span class="kw-2">mut </span>oauth_param = create_oauth_field(<span class="kw-2">&amp;</span>cf.consumer_key, <span class="kw-2">&amp;</span>cf.access_token);
         <span class="kw">let </span>signature = create_signature(
-            <span class="string">&quot;GET&quot;</span>,
+            <span class="string">"GET"</span>,
             base_url,
             <span class="kw-2">&amp;</span>oauth_param,
             query_param,
@@ -2199,7 +2200,7 @@
             <span class="kw-2">&amp;</span>cf.consumer_secret,
             <span class="kw-2">&amp;</span>cf.access_secret,
         );
-        oauth_param.insert(<span class="string">&quot;oauth_signature&quot;</span>.into(), signature);
+        oauth_param.insert(<span class="string">"oauth_signature"</span>.into(), signature);
 
         <span class="kw">let </span>(oauth_k, oauth_v) = create_http_oauth_header(<span class="kw-2">&amp;</span>oauth_param);
 
@@ -2221,12 +2222,12 @@
         body_param: <span class="kw-2">&amp;</span>T,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;reqwest::Response&gt; {
         <span class="kw">let </span>json_str = serde_json::to_string(body_param).unwrap();
-        <span class="macro">debug!</span>(<span class="string">&quot;POST: {}&quot;</span>, json_str);
+        <span class="macro">debug!</span>(<span class="string">"POST: {}"</span>, json_str);
 
         <span class="kw">let </span>client = reqwest::Client::new();
         <span class="kw">let </span>req = <span class="self">self
             </span>.http_oauth_post(<span class="kw-2">&amp;</span>client, base_url, query_param)
-            .header(<span class="string">&quot;Content-type&quot;</span>, <span class="string">&quot;application/json&quot;</span>)
+            .header(<span class="string">"Content-type"</span>, <span class="string">"application/json"</span>)
             .body(json_str);
         <span class="kw">let </span>resp = req.send().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -2257,7 +2258,7 @@
         <span class="kw">let </span>cf = <span class="kw-2">&amp;</span><span class="self">self</span>.config;
         <span class="kw">let </span><span class="kw-2">mut </span>oauth_param = create_oauth_field(<span class="kw-2">&amp;</span>cf.consumer_key, <span class="kw-2">&amp;</span>cf.access_token);
         <span class="kw">let </span>signature = create_signature(
-            <span class="string">&quot;POST&quot;</span>,
+            <span class="string">"POST"</span>,
             base_url,
             <span class="kw-2">&amp;</span>oauth_param,
             query_param,
@@ -2265,7 +2266,7 @@
             <span class="kw-2">&amp;</span>cf.consumer_secret,
             <span class="kw-2">&amp;</span>cf.access_secret,
         );
-        oauth_param.insert(<span class="string">&quot;oauth_signature&quot;</span>.into(), signature);
+        oauth_param.insert(<span class="string">"oauth_signature"</span>.into(), signature);
 
         <span class="kw">let </span>(oauth_k, oauth_v) = create_http_oauth_header(<span class="kw-2">&amp;</span>oauth_param);
 
@@ -2279,13 +2280,13 @@
 
 <span class="kw">impl </span>SystemModule <span class="kw">for </span>Twitter {
     <span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">&quot;[twitter] on_start&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"[twitter] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.tlcheck_enabled {
             <span class="kw">if </span><span class="self">self</span>.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(<span class="string">&quot;tw-check&quot;</span>, Twitter::twitter_task_entry);
+                ctrl.spawn_oneshot_task(<span class="string">"tw-check"</span>, Twitter::twitter_task_entry);
             } <span class="kw">else </span>{
                 ctrl.spawn_periodic_task(
-                    <span class="string">&quot;tw-check&quot;</span>,
+                    <span class="string">"tw-check"</span>,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list,
                     Twitter::twitter_task_entry,
                 );
@@ -2312,7 +2313,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>param = KeyValue::new();
 
     <span class="comment">// oauth_consumer_key: アプリの識別子
-    </span>param.insert(<span class="string">&quot;oauth_consumer_key&quot;</span>.into(), consumer_key.into());
+    </span>param.insert(<span class="string">"oauth_consumer_key"</span>.into(), consumer_key.into());
 
     <span class="comment">// oauth_nonce: ランダム値 (リプレイ攻撃対策)
     // 暗号学的安全性が必要か判断がつかないので安全な方にしておく
@@ -2321,27 +2322,27 @@
     </span><span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
     <span class="kw">let </span>rnd32: [u8; <span class="number">32</span>] = rng.gen();
     <span class="kw">let </span>rnd32_str = general_purpose::STANDARD.encode(rnd32);
-    <span class="kw">let </span><span class="kw-2">mut </span>nonce_str = <span class="string">&quot;&quot;</span>.to_string();
+    <span class="kw">let </span><span class="kw-2">mut </span>nonce_str = <span class="string">""</span>.to_string();
     <span class="kw">for </span>c <span class="kw">in </span>rnd32_str.chars() {
         <span class="kw">if </span>c.is_alphanumeric() {
             nonce_str.push(c);
         }
     }
-    param.insert(<span class="string">&quot;oauth_nonce&quot;</span>.into(), nonce_str);
+    param.insert(<span class="string">"oauth_nonce"</span>.into(), nonce_str);
 
     <span class="comment">// 署名は署名以外の oauth_* フィールドに対しても行う
     // 今はまだ不明なので後で追加する
-    // param.emplace(&quot;oauth_signature&quot;, sha1(...));
+    // param.emplace("oauth_signature", sha1(...));
 
     // oauth_signature_method, oauth_timestamp, oauth_token, oauth_version
-    </span>param.insert(<span class="string">&quot;oauth_signature_method&quot;</span>.to_string(), <span class="string">&quot;HMAC-SHA1&quot;</span>.into());
+    </span>param.insert(<span class="string">"oauth_signature_method"</span>.to_string(), <span class="string">"HMAC-SHA1"</span>.into());
     <span class="kw">let </span>unix_epoch_sec = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    param.insert(<span class="string">&quot;oauth_timestamp&quot;</span>.into(), unix_epoch_sec.to_string());
-    param.insert(<span class="string">&quot;oauth_token&quot;</span>.into(), access_token.into());
-    param.insert(<span class="string">&quot;oauth_version&quot;</span>.into(), <span class="string">&quot;1.0&quot;</span>.into());
+    param.insert(<span class="string">"oauth_timestamp"</span>.into(), unix_epoch_sec.to_string());
+    param.insert(<span class="string">"oauth_token"</span>.into(), access_token.into());
+    param.insert(<span class="string">"oauth_version"</span>.into(), <span class="string">"1.0"</span>.into());
 
     param
 }
@@ -2366,12 +2367,12 @@
     consumer_secret: <span class="kw-2">&amp;</span>str,
     token_secret: <span class="kw-2">&amp;</span>str,
 ) -&gt; String {
-    <span class="comment">// &quot;Collecting the request method and URL&quot;
+    <span class="comment">// "Collecting the request method and URL"
     // Example:
     // http_method = POST
     // base_url = https://api.twitter.com/1.1/statuses/update.json
 
-    // &quot;Collecting parameters&quot;
+    // "Collecting parameters"
     // 以下の percent encode 前データを percent encode しながら 1つにまとめて
     // キーの辞書順にソートする
     // キーの重複は Twitter では認められていないのでシンプルに考えて OK
@@ -2393,7 +2394,7 @@
         <span class="kw">for </span>(k, v) <span class="kw">in </span>src.iter() {
             <span class="kw">let </span>old = param.insert(netutil::percent_encode(k), netutil::percent_encode(v));
             <span class="kw">if </span>old.is_some() {
-                <span class="macro">panic!</span>(<span class="string">&quot;duplicate key: {k}&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"duplicate key: {k}"</span>);
             }
         }
     };
@@ -2402,21 +2403,21 @@
     encode_add(<span class="kw-2">&amp;mut </span>param, body_param);
 
     <span class="comment">// 3-7
-    </span><span class="kw">let </span><span class="kw-2">mut </span>parameter_string = <span class="string">&quot;&quot;</span>.to_string();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>parameter_string = <span class="string">""</span>.to_string();
     <span class="kw">let </span><span class="kw-2">mut </span>is_first = <span class="bool-val">true</span>;
     <span class="kw">for </span>(k, v) <span class="kw">in </span>param {
         <span class="kw">if </span>is_first {
             is_first = <span class="bool-val">false</span>;
         } <span class="kw">else </span>{
-            parameter_string.push(<span class="string">&#39;&amp;&#39;</span>);
+            parameter_string.push(<span class="string">'&amp;'</span>);
         }
         parameter_string.push_str(<span class="kw-2">&amp;</span>k);
-        parameter_string.push(<span class="string">&#39;=&#39;</span>);
+        parameter_string.push(<span class="string">'='</span>);
         parameter_string.push_str(<span class="kw-2">&amp;</span>v);
     }
 
-    <span class="comment">// &quot;Creating the signature base string&quot;
-    // &quot;signature base string&quot; by OAuth spec
+    <span class="comment">// "Creating the signature base string"
+    // "signature base string" by OAuth spec
     // 署名対象となる文字列を生成する
     // method, url, param を &amp; でつなげるだけ
     //
@@ -2425,48 +2426,48 @@
     // 3. Percent encode the URL and append it to the output string.
     // 4. Append the ‘&amp;’ character to the output string.
     // 5. Percent encode the parameter string and append it to the output string.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>signature_base_string = <span class="string">&quot;&quot;</span>.to_string();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>signature_base_string = <span class="string">""</span>.to_string();
     signature_base_string.push_str(<span class="kw-2">&amp;</span>http_method.to_ascii_uppercase());
-    signature_base_string.push(<span class="string">&#39;&amp;&#39;</span>);
+    signature_base_string.push(<span class="string">'&amp;'</span>);
     signature_base_string.push_str(<span class="kw-2">&amp;</span>netutil::percent_encode(base_url));
-    signature_base_string.push(<span class="string">&#39;&amp;&#39;</span>);
+    signature_base_string.push(<span class="string">'&amp;'</span>);
     signature_base_string.push_str(<span class="kw-2">&amp;</span>netutil::percent_encode(<span class="kw-2">&amp;</span>parameter_string));
 
-    <span class="comment">// &quot;Getting a signing key&quot;
+    <span class="comment">// "Getting a signing key"
     // 署名鍵は consumer_secret と token_secret をエスケープして &amp; でつなぐだけ
-    </span><span class="kw">let </span><span class="kw-2">mut </span>signing_key = <span class="string">&quot;&quot;</span>.to_string();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>signing_key = <span class="string">""</span>.to_string();
     signing_key.push_str(consumer_secret);
-    signing_key.push(<span class="string">&#39;&amp;&#39;</span>);
+    signing_key.push(<span class="string">'&amp;'</span>);
     signing_key.push_str(token_secret);
 
-    <span class="comment">// &quot;Calculating the signature&quot;
+    <span class="comment">// "Calculating the signature"
     // HMAC SHA1
     </span><span class="kw">let </span>result = netutil::hmac_sha1(signing_key.as_bytes(), signature_base_string.as_bytes());
 
-    <span class="comment">// base64 encode したものを署名として &quot;oauth_signature&quot; に設定する
+    <span class="comment">// base64 encode したものを署名として "oauth_signature" に設定する
     </span>general_purpose::STANDARD.encode(result.into_bytes())
 }
 
 <span class="doccomment">/// HTTP header に設定する (key, value) を文字列として生成して返す。
 ///
-/// Authorization: OAuth key1=&quot;value1&quot;, key2=&quot;value2&quot;, ..., keyN=&quot;valueN&quot;
+/// Authorization: OAuth key1="value1", key2="value2", ..., keyN="valueN"
 </span><span class="kw">fn </span>create_http_oauth_header(oauth_param: <span class="kw-2">&amp;</span>KeyValue) -&gt; (String, String) {
-    <span class="kw">let </span><span class="kw-2">mut </span>oauth_value = <span class="string">&quot;OAuth &quot;</span>.to_string();
+    <span class="kw">let </span><span class="kw-2">mut </span>oauth_value = <span class="string">"OAuth "</span>.to_string();
     {
         <span class="kw">let </span>v: Vec&lt;<span class="kw">_</span>&gt; = oauth_param
             .iter()
             .map(|(k, v)| {
                 <span class="macro">format!</span>(
-                    <span class="string">r#&quot;{}=&quot;{}&quot;&quot;#</span>,
+                    <span class="string">r#"{}="{}""#</span>,
                     netutil::percent_encode(k),
                     netutil::percent_encode(v)
                 )
             })
             .collect();
-        oauth_value.push_str(<span class="kw-2">&amp;</span>v.join(<span class="string">&quot;, &quot;</span>));
+        oauth_value.push_str(<span class="kw-2">&amp;</span>v.join(<span class="string">", "</span>));
     }
 
-    (<span class="string">&quot;Authorization&quot;</span>.into(), oauth_value)
+    (<span class="string">"Authorization"</span>.into(), oauth_value)
 }
 
 <span class="attr">#[cfg(test)]
@@ -2486,12 +2487,12 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>truncate_tweet_text() {
         <span class="comment">// 20 chars * 7
-        </span><span class="kw">let </span>from1 = <span class="string">&quot;あいうえおかきくけこ0123456789&quot;</span>.repeat(<span class="number">7</span>);
+        </span><span class="kw">let </span>from1 = <span class="string">"あいうえおかきくけこ0123456789"</span>.repeat(<span class="number">7</span>);
         <span class="kw">let </span>to1 = Twitter::truncate_tweet_text(<span class="kw-2">&amp;</span>from1).to_string();
         <span class="macro">assert_eq!</span>(from1.chars().count(), TWEET_LEN_MAX);
         <span class="macro">assert_eq!</span>(from1, to1);
 
-        <span class="kw">let </span>from2 = <span class="macro">format!</span>(<span class="string">&quot;{from1}あ&quot;</span>);
+        <span class="kw">let </span>from2 = <span class="macro">format!</span>(<span class="string">"{from1}あ"</span>);
         <span class="kw">let </span>to2 = Twitter::truncate_tweet_text(<span class="kw-2">&amp;</span>from2).to_string();
         <span class="macro">assert_eq!</span>(from2.chars().count(), TWEET_LEN_MAX + <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(from1, to2);
@@ -2499,67 +2500,67 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>tweet_pattern_match() {
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;あいうえお&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;^あいうえお&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;あいうえお$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;^あいうえお$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"あいうえお"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"^あいうえお"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"あいうえお$"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"^あいうえお$"</span>, <span class="string">"あいうえお"</span>));
 
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;あいう&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;^あいう&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;あいう$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^あいう$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"あいう"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"^あいう"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"あいう$"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^あいう$"</span>, <span class="string">"あいうえお"</span>));
 
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;うえお&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^うえお&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;うえお$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^うえお$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"うえお"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^うえお"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"うえお$"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^うえお$"</span>, <span class="string">"あいうえお"</span>));
 
-        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">&quot;いうえ&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^いうえ&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;いうえ$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^いうえ$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
+        <span class="macro">assert!</span>(Twitter::pattern_match(<span class="string">"いうえ"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^いうえ"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"いうえ$"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^いうえ$"</span>, <span class="string">"あいうえお"</span>));
 
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
-        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">&quot;^$&quot;</span>, <span class="string">&quot;あいうえお&quot;</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">""</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"$"</span>, <span class="string">"あいうえお"</span>));
+        <span class="macro">assert!</span>(!Twitter::pattern_match(<span class="string">"^$"</span>, <span class="string">"あいうえお"</span>));
     }
 
     <span class="comment">// https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
     </span><span class="attr">#[test]
     </span><span class="kw">fn </span>twitter_sample_signature() {
-        <span class="kw">let </span>method = <span class="string">&quot;POST&quot;</span>;
-        <span class="kw">let </span>url = <span class="string">&quot;https://api.twitter.com/1.1/statuses/update.json&quot;</span>;
+        <span class="kw">let </span>method = <span class="string">"POST"</span>;
+        <span class="kw">let </span>url = <span class="string">"https://api.twitter.com/1.1/statuses/update.json"</span>;
 
         <span class="comment">// This is just an example in the Twitter API document
         // Not a real secret key
         </span><span class="kw">let </span><span class="kw-2">mut </span>oauth_param = KeyValue::new();
-        oauth_param.insert(<span class="string">&quot;oauth_consumer_key&quot;</span>.into(), <span class="string">&quot;xvz1evFS4wEEPTGEFPHBog&quot;</span>.into());
+        oauth_param.insert(<span class="string">"oauth_consumer_key"</span>.into(), <span class="string">"xvz1evFS4wEEPTGEFPHBog"</span>.into());
         oauth_param.insert(
-            <span class="string">&quot;oauth_nonce&quot;</span>.into(),
-            <span class="string">&quot;kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg&quot;</span>.into(),
+            <span class="string">"oauth_nonce"</span>.into(),
+            <span class="string">"kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"</span>.into(),
         );
-        oauth_param.insert(<span class="string">&quot;oauth_signature_method&quot;</span>.into(), <span class="string">&quot;HMAC-SHA1&quot;</span>.into());
-        oauth_param.insert(<span class="string">&quot;oauth_timestamp&quot;</span>.into(), <span class="string">&quot;1318622958&quot;</span>.into());
+        oauth_param.insert(<span class="string">"oauth_signature_method"</span>.into(), <span class="string">"HMAC-SHA1"</span>.into());
+        oauth_param.insert(<span class="string">"oauth_timestamp"</span>.into(), <span class="string">"1318622958"</span>.into());
         oauth_param.insert(
-            <span class="string">&quot;oauth_token&quot;</span>.into(),
-            <span class="string">&quot;370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb&quot;</span>.into(),
+            <span class="string">"oauth_token"</span>.into(),
+            <span class="string">"370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb"</span>.into(),
         );
-        oauth_param.insert(<span class="string">&quot;oauth_version&quot;</span>.into(), <span class="string">&quot;1.0&quot;</span>.into());
+        oauth_param.insert(<span class="string">"oauth_version"</span>.into(), <span class="string">"1.0"</span>.into());
 
         <span class="kw">let </span><span class="kw-2">mut </span>query_param = KeyValue::new();
-        query_param.insert(<span class="string">&quot;include_entities&quot;</span>.into(), <span class="string">&quot;true&quot;</span>.into());
+        query_param.insert(<span class="string">"include_entities"</span>.into(), <span class="string">"true"</span>.into());
 
         <span class="kw">let </span><span class="kw-2">mut </span>body_param = KeyValue::new();
         body_param.insert(
-            <span class="string">&quot;status&quot;</span>.into(),
-            <span class="string">&quot;Hello Ladies + Gentlemen, a signed OAuth request!&quot;</span>.into(),
+            <span class="string">"status"</span>.into(),
+            <span class="string">"Hello Ladies + Gentlemen, a signed OAuth request!"</span>.into(),
         );
 
         <span class="comment">// This is just an example in the Twitter API document
         // Not a real secret key
-        </span><span class="kw">let </span>consumer_secret = <span class="string">&quot;kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw&quot;</span>;
-        <span class="kw">let </span>token_secret = <span class="string">&quot;LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE&quot;</span>;
+        </span><span class="kw">let </span>consumer_secret = <span class="string">"kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"</span>;
+        <span class="kw">let </span>token_secret = <span class="string">"LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE"</span>;
 
         <span class="kw">let </span>result = create_signature(
             method,
@@ -2571,7 +2572,7 @@
             token_secret,
         );
 
-        <span class="macro">assert_eq!</span>(result, <span class="string">&quot;hCtSmYh+iHYCEqBWrE7C7hYmtUk=&quot;</span>);
+        <span class="macro">assert_eq!</span>(result, <span class="string">"hCtSmYh+iHYCEqBWrE7C7hYmtUk="</span>);
     }
 }
 </code></pre></div></section></main></body></html>

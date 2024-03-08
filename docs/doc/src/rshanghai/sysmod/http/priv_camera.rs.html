@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/priv_camera.rs`."><title>priv_camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/priv_camera.rs`."><title>priv_camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -510,25 +511,25 @@
 <span class="kw">use </span>tokio::{fs::File, io::AsyncReadExt};
 
 <span class="doccomment">/// GET /priv/camera/ Camera インデックスページ。
-</span><span class="attr">#[actix_web::get(<span class="string">&quot;/camera/&quot;</span>)]
+</span><span class="attr">#[actix_web::get(<span class="string">"/camera/"</span>)]
 </span><span class="kw">async fn </span>index_get() -&gt; <span class="kw">impl </span>Responder {
-    <span class="kw">let </span>body = <span class="string">r#&quot;&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
+    <span class="kw">let </span>body = <span class="string">r#"&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
   &lt;head&gt;
     &lt;title&gt;(Privileged) Camera&lt;/title&gt;
   &lt;/head&gt;
   &lt;body&gt;
     &lt;h1&gt;(Privileged) Camera&lt;/h1&gt;
-    &lt;form action=&quot;./take&quot; method=&quot;post&quot;&gt;
-      &lt;input type=&quot;submit&quot; value=&quot;Take a picture!&quot;&gt;
+    &lt;form action="./take" method="post"&gt;
+      &lt;input type="submit" value="Take a picture!"&gt;
     &lt;/form&gt;
-    &lt;p&gt;&lt;a href=&quot;./history&quot;&gt;Picture List&lt;/a&gt;&lt;/p&gt;
-    &lt;p&gt;&lt;a href=&quot;./archive&quot;&gt;Archive&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;a href="./history"&gt;Picture List&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;a href="./archive"&gt;Archive&lt;/a&gt;&lt;/p&gt;
     &lt;h2&gt;Navigation&lt;/h2&gt;
-    &lt;p&gt;&lt;a href=&quot;../&quot;&gt;Main Page&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;a href="../"&gt;Main Page&lt;/a&gt;&lt;/p&gt;
   &lt;/body&gt;
 &lt;/html&gt;
-&quot;#</span>;
+"#</span>;
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -542,7 +543,7 @@
 }
 
 <span class="doccomment">/// GET /priv/camera/history/ 写真一覧。
-</span><span class="attr">#[actix_web::get(<span class="string">&quot;/camera/history&quot;</span>)]
+</span><span class="attr">#[actix_web::get(<span class="string">"/camera/history"</span>)]
 </span><span class="kw">async fn </span>history_get(ctrl: web::Data&lt;Control&gt;, query: web::Query&lt;HistArGetQuery&gt;) -&gt; HttpResponse {
     <span class="kw">let </span>html = {
         <span class="kw">let </span>camera = ctrl.sysmods().camera.lock().<span class="kw">await</span>;
@@ -551,11 +552,11 @@
 
         create_pic_list_page(
             hist,
-            <span class="string">&quot;history&quot;</span>,
+            <span class="string">"history"</span>,
             query.page,
             page_by,
-            <span class="string">&quot;(Privileged) Picture History&quot;</span>,
-            <span class="kw-2">&amp;</span>[(<span class="string">&quot;archive&quot;</span>, <span class="string">&quot;Archive&quot;</span>), (<span class="string">&quot;delete&quot;</span>, <span class="string">&quot;Delete&quot;</span>)],
+            <span class="string">"(Privileged) Picture History"</span>,
+            <span class="kw-2">&amp;</span>[(<span class="string">"archive"</span>, <span class="string">"Archive"</span>), (<span class="string">"delete"</span>, <span class="string">"Delete"</span>)],
         )
     };
 
@@ -565,7 +566,7 @@
 }
 
 <span class="doccomment">/// GET /priv/camera/archive/ アーカイブ済み写真一覧。
-</span><span class="attr">#[actix_web::get(<span class="string">&quot;/camera/archive&quot;</span>)]
+</span><span class="attr">#[actix_web::get(<span class="string">"/camera/archive"</span>)]
 </span><span class="kw">async fn </span>archive_get(ctrl: web::Data&lt;Control&gt;, query: web::Query&lt;HistArGetQuery&gt;) -&gt; HttpResponse {
     <span class="kw">let </span>html = {
         <span class="kw">let </span>camera = ctrl.sysmods().camera.lock().<span class="kw">await</span>;
@@ -574,13 +575,13 @@
 
         create_pic_list_page(
             archive,
-            <span class="string">&quot;archive&quot;</span>,
+            <span class="string">"archive"</span>,
             query.page,
             page_by,
-            <span class="string">&quot;(Privileged) Picture Archive&quot;</span>,
+            <span class="string">"(Privileged) Picture Archive"</span>,
             <span class="kw-2">&amp;</span>[
-                (<span class="string">&quot;twitter&quot;</span>, <span class="string">&quot;Post on Twitter (Max 4 pics or less)&quot;</span>),
-                (<span class="string">&quot;delete&quot;</span>, <span class="string">&quot;Delete&quot;</span>),
+                (<span class="string">"twitter"</span>, <span class="string">"Post on Twitter (Max 4 pics or less)"</span>),
+                (<span class="string">"delete"</span>, <span class="string">"Delete"</span>),
             ],
         )
     };
@@ -596,7 +597,7 @@
 /// * `start` - pic_list の何番目から表示するか。
 /// * `page_by` - start からいくつ画像を表示するか。
 /// * `title` - タイトル。
-/// * `commands` - POST の &quot;cmd&quot; パラメータで送られる値とラジオボタンに
+/// * `commands` - POST の "cmd" パラメータで送られる値とラジオボタンに
 /// 添えるラベルからなるタプルの配列
 </span><span class="kw">fn </span>create_pic_list_page(
     pic_list: <span class="kw-2">&amp;</span>BTreeMap&lt;String, PicEntry&gt;,
@@ -610,51 +611,51 @@
     <span class="kw">let </span>data: Vec&lt;<span class="kw">_</span>&gt; = pic_list.keys().rev().skip(start).take(page_by).collect();
 
     <span class="kw">let </span><span class="kw-2">mut </span>fig_list = String::new();
-    fig_list += <span class="string">r#&quot;    &lt;form method=&quot;post&quot;&gt;
+    fig_list += <span class="string">r#"    &lt;form method="post"&gt;
       &lt;fieldset&gt;
         &lt;legend&gt;Commands for selected items&lt;/legend&gt;
-        &lt;input type=&quot;submit&quot; value=&quot;Execute&quot;&gt;
-&quot;#</span>;
+        &lt;input type="submit" value="Execute"&gt;
+"#</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>is_first = <span class="bool-val">true</span>;
     <span class="kw">for </span><span class="kw-2">&amp;</span>(cmd, label) <span class="kw">in </span>commands {
         <span class="kw">let </span>checked = <span class="kw">if </span>is_first {
             is_first = <span class="bool-val">false</span>;
-            <span class="string">r#&quot; checked=&quot;checked&quot;&quot;#
+            <span class="string">r#" checked="checked""#
         </span>} <span class="kw">else </span>{
-            <span class="string">&quot;&quot;
+            <span class="string">""
         </span>};
         fig_list += <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-            <span class="string">r#&quot;        &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;cmd&quot; value=&quot;{cmd}&quot;{checked}&gt;{label}&lt;/label&gt;
-&quot;#
+            <span class="string">r#"        &lt;label&gt;&lt;input type="radio" name="cmd" value="{cmd}"{checked}&gt;{label}&lt;/label&gt;
+"#
         </span>);
     }
-    fig_list += <span class="string">r#&quot;      &lt;/fieldset&gt;
-      &lt;p&gt;&lt;input type=&quot;reset&quot; value=&quot;Reset&quot;&gt;&lt;/p&gt;
+    fig_list += <span class="string">r#"      &lt;/fieldset&gt;
+      &lt;p&gt;&lt;input type="reset" value="Reset"&gt;&lt;/p&gt;
 
-&quot;#</span>;
+"#</span>;
 
     <span class="kw">for </span>name <span class="kw">in </span>data {
         fig_list += <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-            <span class="string">r#&quot;      &lt;input type=&quot;checkbox&quot; id=&quot;{name}&quot; name=&quot;target&quot; value=&quot;{name}&quot;&gt;
-      &lt;figure class=&quot;pic&quot;&gt;
-        &lt;a href=&quot;./pic/{img_path_dir}/{name}/main&quot;&gt;&lt;img src=&quot;./pic/{img_path_dir}/{name}/thumb&quot; alt=&quot;{name}&quot;&gt;&lt;/a&gt;
-        &lt;figcaption class=&quot;pic&quot;&gt;&lt;label for=&quot;{name}&quot;&gt;{name}&lt;/label&gt;&lt;/figcaption&gt;
+            <span class="string">r#"      &lt;input type="checkbox" id="{name}" name="target" value="{name}"&gt;
+      &lt;figure class="pic"&gt;
+        &lt;a href="./pic/{img_path_dir}/{name}/main"&gt;&lt;img src="./pic/{img_path_dir}/{name}/thumb" alt="{name}"&gt;&lt;/a&gt;
+        &lt;figcaption class="pic"&gt;&lt;label for="{name}"&gt;{name}&lt;/label&gt;&lt;/figcaption&gt;
       &lt;/figure&gt;
-&quot;#
+"#
         </span>);
     }
-    fig_list += <span class="string">&quot;    &lt;/form&gt;&quot;</span>;
+    fig_list += <span class="string">"    &lt;/form&gt;"</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>page_navi = String::new();
-    page_navi += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;&lt;p&gt;{} files&lt;/p&gt;&quot;</span>, pic_list.len());
-    page_navi += <span class="string">&quot;&lt;p&gt;&quot;</span>;
+    page_navi += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"&lt;p&gt;{} files&lt;/p&gt;"</span>, pic_list.len());
+    page_navi += <span class="string">"&lt;p&gt;"</span>;
     <span class="kw">for </span>left <span class="kw">in </span>(<span class="number">0</span>..total).step_by(page_by) {
         <span class="kw">let </span>right = cmp::min(left + page_by - <span class="number">1</span>, total - <span class="number">1</span>);
         <span class="kw">let </span>link = <span class="kw">if </span>(left..=right).contains(<span class="kw-2">&amp;</span>start) {
-            <span class="macro">format!</span>(<span class="string">r#&quot;{}-{} &quot;#</span>, left + <span class="number">1</span>, right + <span class="number">1</span>)
+            <span class="macro">format!</span>(<span class="string">r#"{}-{} "#</span>, left + <span class="number">1</span>, right + <span class="number">1</span>)
         } <span class="kw">else </span>{
             <span class="macro">format!</span>(
-                <span class="string">r#&quot;&lt;a href=&quot;?page={}&quot;&gt;{}-{}&lt;/a&gt; &quot;#</span>,
+                <span class="string">r#"&lt;a href="?page={}"&gt;{}-{}&lt;/a&gt; "#</span>,
                 left,
                 left + <span class="number">1</span>,
                 right + <span class="number">1
@@ -662,11 +663,11 @@
         };
         page_navi += <span class="kw-2">&amp;</span>link;
     }
-    page_navi += <span class="string">&quot;&lt;/p&gt;&quot;</span>;
+    page_navi += <span class="string">"&lt;/p&gt;"</span>;
 
     <span class="macro">format!</span>(
-        <span class="string">r#&quot;&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
+        <span class="string">r#"&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
   &lt;head&gt;
     &lt;title&gt;{title}&lt;/title&gt;
     &lt;style&gt;
@@ -687,10 +688,10 @@
 {fig_list}
 
     &lt;h2&gt;Navigation&lt;/h2&gt;
-    &lt;p&gt;&lt;a href=&quot;./&quot;&gt;Camera Main Page&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;a href="./"&gt;Camera Main Page&lt;/a&gt;&lt;/p&gt;
   &lt;/body&gt;
 &lt;/html&gt;
-&quot;#
+"#
     </span>)
 }
 
@@ -705,24 +706,24 @@
 
     <span class="kw">for </span>(key, value) <span class="kw">in </span>iter {
         <span class="kw">match </span>key.as_str() {
-            <span class="string">&quot;cmd&quot; </span>=&gt; {
+            <span class="string">"cmd" </span>=&gt; {
                 cmd = <span class="prelude-val">Some</span>(value);
             }
-            <span class="string">&quot;target&quot; </span>=&gt; {
+            <span class="string">"target" </span>=&gt; {
                 targets.push(value);
             }
             <span class="kw">_ </span>=&gt; {}
         }
     }
 
-    cmd.map_or_else(|| <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;cmd is required&quot;</span>)), |cmd| <span class="prelude-val">Ok</span>((cmd, targets)))
+    cmd.map_or_else(|| <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"cmd is required"</span>)), |cmd| <span class="prelude-val">Ok</span>((cmd, targets)))
 }
 
 <span class="doccomment">/// POST /priv/camera/history
 ///
-/// * `cmd` - &quot;archive&quot; or &quot;delete&quot;
+/// * `cmd` - "archive" or "delete"
 /// * `target` - 対象の picture ID (複数回指定可)
-</span><span class="attr">#[actix_web::post(<span class="string">&quot;/camera/history&quot;</span>)]
+</span><span class="attr">#[actix_web::post(<span class="string">"/camera/history"</span>)]
 </span><span class="kw">async fn </span>history_post(
     ctrl: web::Data&lt;Control&gt;,
     form: web::Form&lt;Vec&lt;(String, String)&gt;&gt;,
@@ -736,7 +737,7 @@
     <span class="kw">let </span>(cmd, targets) = param.unwrap();
 
     <span class="kw">let </span>resp = <span class="kw">match </span>cmd.as_str() {
-        <span class="string">&quot;archive&quot; </span>=&gt; {
+        <span class="string">"archive" </span>=&gt; {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = archive_pics(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
                 <span class="kw">if </span>why.is::&lt;std::io::Error&gt;() {
                     HttpResponse::InternalServerError()
@@ -750,11 +751,11 @@
             } <span class="kw">else </span>{
                 <span class="comment">// 成功したら archive GET へリダイレクト
                 </span>HttpResponse::SeeOther()
-                    .append_header((<span class="string">&quot;LOCATION&quot;</span>, <span class="string">&quot;./archive&quot;</span>))
+                    .append_header((<span class="string">"LOCATION"</span>, <span class="string">"./archive"</span>))
                     .finish()
             }
         }
-        <span class="string">&quot;delete&quot; </span>=&gt; {
+        <span class="string">"delete" </span>=&gt; {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = delete_history_pics(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
                 HttpResponse::BadRequest()
                     .content_type(ContentType::plaintext())
@@ -762,22 +763,22 @@
             } <span class="kw">else </span>{
                 <span class="comment">// 成功したら history GET へリダイレクト
                 </span>HttpResponse::SeeOther()
-                    .append_header((<span class="string">&quot;LOCATION&quot;</span>, <span class="string">&quot;./history&quot;</span>))
+                    .append_header((<span class="string">"LOCATION"</span>, <span class="string">"./history"</span>))
                     .finish()
             }
         }
         <span class="kw">_ </span>=&gt; HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;invalid command&quot;</span>),
+            .body(<span class="string">"invalid command"</span>),
     };
     resp
 }
 
 <span class="doccomment">/// POST /priv/camera/archive
 ///
-/// * `cmd` - &quot;twitter&quot; or &quot;delete&quot;
+/// * `cmd` - "twitter" or "delete"
 /// * `target` - 対象の picture ID (複数回指定可)
-</span><span class="attr">#[actix_web::post(<span class="string">&quot;/camera/archive&quot;</span>)]
+</span><span class="attr">#[actix_web::post(<span class="string">"/camera/archive"</span>)]
 </span><span class="kw">async fn </span>archive_post(
     ctrl: web::Data&lt;Control&gt;,
     form: web::Form&lt;Vec&lt;(String, String)&gt;&gt;,
@@ -791,31 +792,31 @@
     <span class="kw">let </span>(cmd, targets) = param.unwrap();
 
     <span class="kw">let </span>resp = <span class="kw">match </span>cmd.as_str() {
-        <span class="string">&quot;twitter&quot; </span>=&gt; {
+        <span class="string">"twitter" </span>=&gt; {
             <span class="kw">if </span>targets.is_empty() || targets.len() &gt; LIMIT_PHOTO_COUNT {
-                error_resp_msg(StatusCode::BAD_REQUEST, <span class="string">&quot;invalid pic count&quot;</span>)
+                error_resp_msg(StatusCode::BAD_REQUEST, <span class="string">"invalid pic count"</span>)
             } <span class="kw">else if let </span><span class="prelude-val">Err</span>(why) = twitter_post(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
                 error_resp_msg(StatusCode::INTERNAL_SERVER_ERROR, <span class="kw-2">&amp;</span>why.to_string())
             } <span class="kw">else </span>{
                 <span class="comment">// 成功したら archive GET へリダイレクト
                 </span>HttpResponse::SeeOther()
-                    .append_header((<span class="string">&quot;LOCATION&quot;</span>, <span class="string">&quot;./history&quot;</span>))
+                    .append_header((<span class="string">"LOCATION"</span>, <span class="string">"./history"</span>))
                     .finish()
             }
         }
-        <span class="string">&quot;delete&quot; </span>=&gt; {
+        <span class="string">"delete" </span>=&gt; {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = delete_archive_pics(<span class="kw-2">&amp;</span>ctrl, <span class="kw-2">&amp;</span>targets).<span class="kw">await </span>{
                 error_resp_msg(StatusCode::BAD_REQUEST, <span class="kw-2">&amp;</span>why.to_string())
             } <span class="kw">else </span>{
                 <span class="comment">// 成功したら archive GET へリダイレクト
                 </span>HttpResponse::SeeOther()
-                    .append_header((<span class="string">&quot;LOCATION&quot;</span>, <span class="string">&quot;./history&quot;</span>))
+                    .append_header((<span class="string">"LOCATION"</span>, <span class="string">"./history"</span>))
                     .finish()
             }
         }
         <span class="kw">_ </span>=&gt; HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
-            .body(<span class="string">&quot;invalid command&quot;</span>),
+            .body(<span class="string">"invalid command"</span>),
     };
     resp
 }
@@ -862,7 +863,7 @@
                 <span class="kw">let _ </span>= file.read_to_end(<span class="kw-2">&amp;mut </span>bin).<span class="kw">await</span><span class="question-mark">?</span>;
                 binlist.push(bin);
             } <span class="kw">else </span>{
-                <span class="macro">bail!</span>(<span class="string">&quot;ID not found&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"ID not found"</span>);
             }
         }
     }
@@ -886,7 +887,7 @@
             <span class="kw">let </span>media_id = tw.media_upload(bin).<span class="kw">await</span><span class="question-mark">?</span>;
             midlist.push(media_id);
         }
-        <span class="kw">let </span>text = ids.join(<span class="string">&quot;\n&quot;</span>);
+        <span class="kw">let </span>text = ids.join(<span class="string">"\n"</span>);
         tw.tweet_custom(<span class="kw-2">&amp;</span>text, <span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>midlist).<span class="kw">await</span><span class="question-mark">?</span>;
     }
 
@@ -897,7 +898,7 @@
 /// 写真取得エンドポイント。
 ///
 /// image/jpeg を返す。
-</span><span class="attr">#[actix_web::get(<span class="string">&quot;/camera/pic/history/{name}/{kind}&quot;</span>)]
+</span><span class="attr">#[actix_web::get(<span class="string">"/camera/pic/history/{name}/{kind}"</span>)]
 </span><span class="kw">async fn </span>pic_history_get(ctrl: web::Data&lt;Control&gt;, path: web::Path&lt;(String, String)&gt;) -&gt; WebResult {
     <span class="kw">let </span>(name, kind) = path.into_inner();
 
@@ -908,7 +909,7 @@
 /// 写真取得エンドポイント。
 ///
 /// image/jpeg を返す。
-</span><span class="attr">#[actix_web::get(<span class="string">&quot;/camera/pic/archive/{name}/{kind}&quot;</span>)]
+</span><span class="attr">#[actix_web::get(<span class="string">"/camera/pic/archive/{name}/{kind}"</span>)]
 </span><span class="kw">async fn </span>pic_archive_get(ctrl: web::Data&lt;Control&gt;, path: web::Path&lt;(String, String)&gt;) -&gt; WebResult {
     <span class="kw">let </span>(name, kind) = path.into_inner();
 
@@ -922,8 +923,8 @@
 
 <span class="kw">async fn </span>pic_get_internal(ctrl: <span class="kw-2">&amp;</span>Control, stype: StorageType, name: <span class="kw-2">&amp;</span>str, kind: <span class="kw-2">&amp;</span>str) -&gt; WebResult {
     <span class="kw">let </span>is_th = <span class="kw">match </span>kind {
-        <span class="string">&quot;main&quot; </span>=&gt; <span class="bool-val">false</span>,
-        <span class="string">&quot;thumb&quot; </span>=&gt; <span class="bool-val">true</span>,
+        <span class="string">"main" </span>=&gt; <span class="bool-val">false</span>,
+        <span class="string">"thumb" </span>=&gt; <span class="bool-val">true</span>,
         <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(error_resp(StatusCode::BAD_REQUEST)),
     };
 
@@ -955,12 +956,12 @@
     }
 }
 
-<span class="attr">#[actix_web::post(<span class="string">&quot;/camera/take&quot;</span>)]
+<span class="attr">#[actix_web::post(<span class="string">"/camera/take"</span>)]
 </span><span class="kw">async fn </span>take_post(ctrl: web::Data&lt;Control&gt;) -&gt; WebResult {
     <span class="kw">let </span>pic = take_a_pic(TakePicOption::new()).<span class="kw">await</span>;
     <span class="kw">if let </span><span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) = pic {
-        <span class="macro">error!</span>(<span class="string">&quot;take a picture error&quot;</span>);
-        <span class="macro">error!</span>(<span class="string">&quot;{:#}&quot;</span>, e);
+        <span class="macro">error!</span>(<span class="string">"take a picture error"</span>);
+        <span class="macro">error!</span>(<span class="string">"{:#}"</span>, e);
     }
     <span class="kw">let </span>pic = pic<span class="question-mark">?</span>;
 
@@ -970,7 +971,7 @@
         let mini = create_thumbnail(&amp;pic)?;
         let tw = ctrl.sysmods().twitter.lock().await;
         let id = tw.media_upload(mini).await;
-        info!(&quot;{id:?}&quot;);
+        info!("{id:?}");
         id?;
     }
      */
