@@ -181,7 +181,7 @@ impl Control {
                 // 現在時刻を取得して分までに切り捨てる
                 let now = Local::now().naive_local();
                 let now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), 0).unwrap();
-                let next_min = now_hmd + CDuration::minutes(1);
+                let next_min = now_hmd + CDuration::try_minutes(1).unwrap();
                 trace!("[{}] periodic task check: {}", name, now_hmd);
 
                 // 起動時刻リスト内で二分探索
@@ -195,7 +195,7 @@ impl Control {
                         trace!("[{}] not found in time list: {}", name, now_hmd);
                         // 起きるべき時刻は dt_list[ind]
                         if ind < dt_list.len() {
-                            let target_dt = dt_list[ind] + CDuration::seconds(1);
+                            let target_dt = dt_list[ind] + CDuration::try_seconds(1).unwrap();
                             let sleep_duration = target_dt - Local::now().naive_local();
                             let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
                             trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
@@ -212,7 +212,7 @@ impl Control {
                             // 一番後ろよりも現在時刻が後
                             // 起動時刻リストをすべて1日ずつ後ろにずらす
                             for dt in dt_list.iter_mut() {
-                                let tomorrow = dt.date() + CDuration::days(1);
+                                let tomorrow = dt.date() + CDuration::try_days(1).unwrap();
                                 let time = dt.time();
                                 *dt = tomorrow.and_time(time);
                                 trace!("[{}] advance time list by 1 day", name);
@@ -235,7 +235,7 @@ impl Control {
 
                 // 次の "分" を狙って sleep する
                 // 目標は安全のため hh:mm:05 を狙う
-                let target_dt = next_min + CDuration::seconds(5);
+                let target_dt = next_min + CDuration::try_seconds(5).unwrap();
                 // タスクの実行に1分以上かかると負になるが、
                 // chrono::Duration は負数を許している
                 // その場合は 0 に補正する
