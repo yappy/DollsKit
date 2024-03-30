@@ -1,7 +1,7 @@
 use super::openai::ChatMessage;
 use super::SystemModule;
-use crate::sys::config;
 use crate::sys::taskserver::Control;
+use crate::sys::{config, taskserver};
 use crate::sysmod::openai::Role;
 use crate::utils::graphics::FontRenderer;
 use crate::utils::netutil;
@@ -994,9 +994,10 @@ impl SystemModule for Twitter {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("tw-check", Twitter::twitter_task_entry);
+                taskserver::spawn_oneshot_task(&ctrl, "tw-check", Twitter::twitter_task_entry);
             } else {
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    &ctrl,
                     "tw-check",
                     &self.wakeup_list,
                     Twitter::twitter_task_entry,

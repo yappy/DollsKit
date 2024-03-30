@@ -2,8 +2,13 @@
 //!
 //! <https://docs.github.com/ja/developers/webhooks-and-events/webhooks>
 
+use std::sync::Arc;
+
 use super::WebResult;
-use crate::{sys::taskserver::Control, utils::netutil};
+use crate::{
+    sys::taskserver::{self, Control},
+    utils::netutil,
+};
 use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use log::{error, info};
@@ -118,9 +123,9 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
 async fn process_post(ctrl: &Control, json_body: &str) {
     match create_msg_from_json(json_body) {
         Ok(msg) => {
-            let ctrl_clone = ctrl.clone();
+            let ctrl_clone = Arc::clone(ctrl);
             let msg_clone = msg.clone();
-            ctrl.spawn_oneshot_fn("http-github-tweet", async move {
+            taskserver::spawn_oneshot_fn(&ctrl, "http-github-tweet", async move {
                 ctrl_clone
                     .sysmods()
                     .twitter
@@ -131,7 +136,7 @@ async fn process_post(ctrl: &Control, json_body: &str) {
             });
 
             let ctrl_clone = ctrl.clone();
-            ctrl.spawn_oneshot_fn("http-github-discord", async move {
+            taskserver::spawn_oneshot_fn(&ctrl, "http-github-discord", async move {
                 ctrl_clone.sysmods().discord.lock().await.say(&msg).await
             });
         }

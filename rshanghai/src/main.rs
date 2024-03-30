@@ -157,7 +157,7 @@ fn system_main() -> Result<()> {
         let sysmods = SystemModules::new()?;
         let ts = TaskServer::new(sysmods);
 
-        ts.spawn_oneshot_task("boot_tweet", boot_msg_task);
+        ts.spawn_oneshot_task("boot_msg", boot_msg_task);
         let run_result = ts.run();
 
         info!("task server dropped");

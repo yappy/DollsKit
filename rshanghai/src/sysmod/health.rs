@@ -1,8 +1,8 @@
 //! 定期ヘルスチェック機能。
 
 use super::SystemModule;
-use crate::sys::config;
 use crate::sys::taskserver::Control;
+use crate::sys::{config, taskserver};
 use anyhow::{anyhow, ensure, Result};
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
@@ -134,11 +134,12 @@ impl Health {
 
     /// [Self::tweet_task] のエントリ関数。
     /// モジュールをロックしてメソッド呼び出しを行う。
-    async fn tweet_task_entry(mut ctrl: Control) -> Result<()> {
+    async fn tweet_task_entry(ctrl: Control) -> Result<()> {
+        let mut cancel_rx = ctrl.take_cancel_rx();
         // check_task を先に実行する (可能性を高める) ために遅延させる
         select! {
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {}
-            _ = ctrl.cancel_rx().changed() => {
+            _ = cancel_rx.changed() => {
                 info!("[health-tweet] task cancel");
                 return Ok(());
             }
@@ -156,15 +157,17 @@ impl SystemModule for Health {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("health-check", Health::check_task_entry);
-                ctrl.spawn_oneshot_task("health-tweet", Health::tweet_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, "health-check", Health::check_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, "health-tweet", Health::tweet_task_entry);
             } else {
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     "health-check",
                     &self.wakeup_list_check,
                     Health::check_task_entry,
                 );
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     "health-tweet",
                     &self.wakeup_list_tweet,
                     Health::tweet_task_entry,

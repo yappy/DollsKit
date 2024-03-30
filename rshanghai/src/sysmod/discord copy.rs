@@ -3,8 +3,8 @@
 use super::camera::{take_a_pic, TakePicOption};
 use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
+use crate::sys::version;
 use crate::sys::{config, taskserver::Control};
-use crate::sys::{taskserver, version};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
@@ -288,9 +288,8 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     // 別タスクを立ち上げる
     let mut ctrl_for_cancel = ctrl.clone();
     let shard_manager = client.shard_manager.clone();
-    taskserver::spawn_oneshot_fn(&ctrl, "discord-exit", async move {
-        let mut cancel_rx = ctrl_for_cancel.take_cancel_rx();
-        cancel_rx.changed().await.unwrap();
+    ctrl.spawn_oneshot_fn("discord-exit", async move {
+        ctrl_for_cancel.cancel_rx().changed().await.unwrap();
         info!("[discord-exit] recv cancel");
         shard_manager.shutdown_all().await;
         info!("[discord-exit] shutdown_all ok");
@@ -306,7 +305,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     });
 
     // 定期チェックタスクを立ち上げる
-    taskserver::spawn_periodic_task(&ctrl, "discord-periodic", &wakeup_list, periodic_main);
+    ctrl.spawn_periodic_task("discord-periodic", &wakeup_list, periodic_main);
 
     // システムスタート
     client.start().await?;
@@ -480,7 +479,7 @@ impl SystemModule for Discord {
     fn on_start(&self, ctrl: &Control) {
         info!("[discord] on_start");
         if self.config.enabled {
-            taskserver::spawn_oneshot_task(ctrl, "discord", discord_main);
+            ctrl.spawn_oneshot_task("discord", discord_main);
         }
     }
 }

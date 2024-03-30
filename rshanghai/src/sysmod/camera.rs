@@ -4,8 +4,8 @@
 //! [CameraConfig::fake_camera] 設定でフェイクできる。
 
 use super::SystemModule;
-use crate::sys::config;
 use crate::sys::taskserver::Control;
+use crate::sys::{config, taskserver};
 use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
 use image::{imageops::FilterType, ImageOutputFormat};
@@ -312,9 +312,14 @@ impl SystemModule for Camera {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("camera-auto", Camera::auto_task);
+                taskserver::spawn_oneshot_task(&ctrl, "camera-auto", Camera::auto_task);
             } else {
-                ctrl.spawn_periodic_task("camera-auto", &self.wakeup_list, Camera::auto_task);
+                taskserver::spawn_periodic_task(
+                    &ctrl,
+                    "camera-auto",
+                    &self.wakeup_list,
+                    Camera::auto_task,
+                );
             }
         }
     }
