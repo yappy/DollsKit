@@ -295,13 +295,13 @@ async fn discord_main(ctrl: Control) -> Result<()> {
             on_error: |err| Box::pin(on_error(err)),
             event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some("~".into()),
+                //prefix: Some("~".into()),
                 case_insensitive_commands: true,
                 ..Default::default()
             },
             skip_checks_for_owners: true,
             // This is also where commands go
-            commands: vec![testcmd(), context_testcmd()],
+            commands: command_list(),
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
@@ -486,24 +486,64 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
-/// This is command test.
-///
-/// `~testcmd` to call.
-#[poise::command(slash_command, prefix_command, category = "General")]
-async fn testcmd(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
-    ctx.say("Hello dolls").await?;
+//------------------------------------------------------------------------------
+// command
+// https://docs.rs/poise/latest/poise/macros/attr.command.html
+//------------------------------------------------------------------------------
+
+fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
+    vec![help(), sysinfo(), ai(), aistatus()]
+}
+
+/// Show command help.
+#[poise::command(slash_command, category = "General")]
+pub async fn help(
+    ctx: PoiseContext<'_>,
+    #[description = "Command name"] command: Option<String>,
+) -> Result<(), PoiseError> {
+    let config = poise::builtins::HelpConfiguration {
+        // その人だけに見える返信にするかどうか
+        ephemeral: false,
+        show_subcommands: true,
+        extra_text_at_bottom: "",
+        ..Default::default()
+    };
+    poise::builtins::help(ctx, command.as_deref(), config).await?;
     Ok(())
 }
 
-/// Give a user some random food
-#[poise::command(context_menu_command = "Context Menu Test Command")]
-async fn context_testcmd(
-    ctx: PoiseContext<'_>,
-    #[description = "User to give food to"] user: serenity::User,
-) -> Result<(), PoiseError> {
-    let response = format!("<@{}>: Hello Dolls", user.id);
+/// Show system information.
+#[poise::command(slash_command, category = "General")]
+async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let ver_info: &str = version::version_info();
+    ctx.reply(ver_info).await?;
 
-    ctx.say(response).await?;
+    Ok(())
+}
+
+/// AI assistant.
+#[poise::command(slash_command, category = "AI")]
+async fn ai(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    Ok(())
+}
+
+#[poise::command(slash_command, category = "AI", subcommands("aistatus_show", "aistatus_reset"))]
+async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    // 親コマンドはスラッシュコマンドでは使用不可
+    Ok(())
+}
+
+#[poise::command(slash_command, category = "AI", rename = "show")]
+async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.reply("Not ready...").await?;
+
+    Ok(())
+}
+
+#[poise::command(slash_command, category = "AI", rename = "reset")]
+async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.reply("Not ready...").await?;
+
     Ok(())
 }
 

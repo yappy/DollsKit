@@ -58,7 +58,7 @@ impl Controller {
     /// キャンセル通知を待つ。
     pub async fn wait_cancel_rx(&self) {
         // mutex をロックして Receiver を取得し、その clone を作る
-        let org = self.cancel_rx.lock().unwrap().as_mut().map(|rx|rx.clone());
+        let org = self.cancel_rx.lock().unwrap().as_mut().map(|rx| rx.clone());
         if let Some(mut rx) = org {
             // clone した Receiver 上で待つ
             rx.changed().await.unwrap();
