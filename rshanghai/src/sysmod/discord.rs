@@ -293,6 +293,8 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             on_error: |err| Box::pin(on_error(err)),
+            pre_command: |ctx| Box::pin(pre_command(ctx)),
+            post_command: |ctx| Box::pin(post_command(ctx)),
             event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
             prefix_options: poise::PrefixFrameworkOptions {
                 //prefix: Some("~".into()),
@@ -380,6 +382,39 @@ async fn reply_long(ctx: &PoiseContext<'_>, content: &str) -> Result<()> {
         if fin {
             break;
         }
+    }
+    Ok(())
+}
+
+/// Markdown エスケープしながら Markdown 引用する。
+/// 文字数制限に気を付けつつ分割して送信する。
+async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()> {
+    // mention 関連でのずれが少し怖いので余裕を持たせる
+    // 引用符の分も含める
+    const LEN: usize = MSG_MAX_LEN - 128;
+    const QUOTE_PRE: &str = "```\n";
+    const QUOTE_PST: &str = "\n```";
+    const SPECIALS: &str = "#+-*_\\`.!{}[]()";
+
+    let mut count = 0;
+    let mut buf = String::from(QUOTE_PRE);
+    for c in content.chars() {
+        if count >= LEN {
+            buf.push_str(QUOTE_PST);
+            ctx.reply(buf).await?;
+
+            count = 0;
+            buf = String::from(QUOTE_PRE);
+        }
+        if SPECIALS.find(c).is_some() {
+            buf.push('\\');
+        }
+        buf.push(c);
+        count += 1;
+    }
+    if !buf.is_empty() {
+        buf.push_str(QUOTE_PST);
+        ctx.reply(buf).await?;
     }
     Ok(())
 }
@@ -522,11 +557,14 @@ async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 }
 
 /// AI assistant.
+///
+/// The owner of assistant will pay the usage fee for ChatGPT.
 #[poise::command(slash_command, category = "AI")]
 async fn ai(
     ctx: PoiseContext<'_>,
     #[description = "Chat message to AI assistant"]
     #[min_length = 1]
+    #[max_length = 1024]
     chat_msg: String,
 ) -> Result<(), PoiseError> {
     let data = ctx.data();
@@ -535,8 +573,12 @@ async fn ai(
     // タイムアウト処理
     discord.check_history_timeout();
 
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &chat_msg).await?;
+
     // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
-    let sysmsg = discord.config
+    let sysmsg = discord
+        .config
         .prompt
         .each
         .join("")
@@ -609,7 +651,8 @@ async fn ai(
 
             // タイムアウト延長
             discord.chat_timeout = Some(
-                Instant::now() + Duration::from_secs(discord.config.prompt.history_timeout_min as u64 * 60),
+                Instant::now()
+                    + Duration::from_secs(discord.config.prompt.history_timeout_min as u64 * 60),
             );
         }
         Err(err) => {
@@ -636,16 +679,37 @@ async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
+/// Show AI chat history status.
 #[poise::command(slash_command, category = "AI", rename = "show")]
 async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
-    ctx.reply("Not ready...").await?;
+    let text = {
+        let ctrl = &ctx.data().ctrl;
+        let mut discord = ctrl.sysmods().discord.lock().await;
+
+        discord.check_history_timeout();
+        format!(
+            "History: {}\nToken: {} / {}, Timeout: {} min",
+            discord.chat_history.len(),
+            discord.chat_history.usage().0,
+            discord.chat_history.usage().1,
+            discord.config.prompt.history_timeout_min
+        )
+    };
+    ctx.reply(text).await?;
 
     Ok(())
 }
 
+/// Clear AI chat history status.
 #[poise::command(slash_command, category = "AI", rename = "reset")]
 async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
-    ctx.reply("Not ready...").await?;
+    {
+        let ctrl = &ctx.data().ctrl;
+        let mut discord = ctrl.sysmods().discord.lock().await;
+
+        discord.chat_history.clear();
+    }
+    ctx.reply("OK").await?;
 
     Ok(())
 }
@@ -662,11 +726,47 @@ impl SystemModule for Discord {
     }
 }
 
+/// Poise イベントハンドラ。
+async fn pre_command(ctx: PoiseContext<'_>) {
+    info!(
+        "[discord] command {} from {:?} {:?}",
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or("?")
+    );
+    info!("[discord] {:?}", ctx.invocation_string());
+}
+
+async fn post_command(ctx: PoiseContext<'_>) {
+    info!(
+        "[discord] command {} from {:?} {:?} OK",
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or("?")
+    );
+}
+
+/// Poise イベントハンドラ。
+///
+/// [poise::builtins::on_error] のままでまずい部分を自分でやる。
 async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
+    // エラーを返していないので panic にする
     match error {
-        poise::FrameworkError::Setup { error, .. } => panic!("Failed to start bot: {:?}", error),
+        poise::FrameworkError::Setup { error, .. } => {
+            panic!("Failed on setup: {:#?}", error)
+        }
+        poise::FrameworkError::EventHandler { error, .. } => {
+            panic!("Failed on eventhandler: {:#?}", error)
+        }
         poise::FrameworkError::Command { error, ctx, .. } => {
-            println!("Error in command `{}`: {:?}", ctx.command().name, error,);
+            error!(
+                "[discord] error in command `{}`: {:#?}",
+                ctx.command().name,
+                error
+            );
+        }
+        poise::FrameworkError::UnknownInteraction { interaction, .. } => {
+            warn!("[discord] received unknown interaction \"{}\"", interaction.data.name);
         }
         error => {
             if let Err(e) = poise::builtins::on_error(error).await {
