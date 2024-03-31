@@ -527,7 +527,7 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
 //------------------------------------------------------------------------------
 
 fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
-    vec![help(), sysinfo(), ai(), aistatus()]
+    vec![help(), sysinfo(), ai(), aistatus(), aiimg()]
 }
 
 /// Show command help.
@@ -710,6 +710,31 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         discord.chat_history.clear();
     }
     ctx.reply("OK").await?;
+
+    Ok(())
+}
+
+/// AI image generation.
+#[poise::command(slash_command, category = "AI")]
+async fn aiimg(
+    ctx: PoiseContext<'_>,
+    #[description = "Prompt string."]
+    #[min_length = 1]
+    #[max_length = 1024]
+    prompt: String,
+) -> Result<(), PoiseError> {
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &prompt).await?;
+
+    let img_url = {
+        let ctrl = &ctx.data().ctrl;
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        let mut resp = ai.generate_image(&prompt, 1).await?;
+        resp.pop().ok_or_else(|| anyhow!("image array too short"))?
+    };
+
+    ctx.reply(img_url).await?;
 
     Ok(())
 }

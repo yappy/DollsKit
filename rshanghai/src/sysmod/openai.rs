@@ -430,6 +430,7 @@ impl OpenAi {
             let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
             result.push(url.to_string());
         }
+        info!("[openai] image gen OK: {:?}", result);
 
         Ok(result)
     }
