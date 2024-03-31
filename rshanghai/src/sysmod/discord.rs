@@ -9,6 +9,7 @@ use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
+use crate::utils::playtools::dice::{self};
 use ::serenity::all::FullEvent;
 use anyhow::{anyhow, ensure, Result};
 use chrono::{NaiveTime, Utc};
@@ -525,7 +526,7 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
 //------------------------------------------------------------------------------
 
 fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
-    vec![help(), sysinfo(), ai(), aistatus(), aiimg()]
+    vec![help(), sysinfo(), dice(), ai(), aistatus(), aiimg()]
 }
 
 /// Show command help.
@@ -550,6 +551,39 @@ pub async fn help(
 async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let ver_info: &str = version::version_info();
     ctx.reply(ver_info).await?;
+
+    Ok(())
+}
+
+/// Roll dice(s).
+#[poise::command(slash_command, category = "Play Tools")]
+async fn dice(
+    ctx: PoiseContext<'_>,
+    #[description = "Face count (default=6)"] face: Option<u64>,
+    #[description = "Dice count (default=1)"] count: Option<u64>,
+) -> Result<(), PoiseError> {
+    let face = face.unwrap_or(6);
+    let count = count.unwrap_or(1);
+
+    let msg = match dice::roll(face, count) {
+        Ok(v) => {
+            let mut buf = format!("Roll {} dice with {} face(s)\n", count, face);
+            buf.push('[');
+            let mut first = true;
+            for n in v {
+                if first {
+                    first = false;
+                } else {
+                    buf.push(',');
+                }
+                buf.push_str(&n.to_string());
+            }
+            buf.push(']');
+            buf
+        }
+        Err(err) => err.to_string(),
+    };
+    ctx.reply(msg).await?;
 
     Ok(())
 }
