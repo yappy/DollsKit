@@ -5,7 +5,7 @@ use anyhow::Result;
 use chrono::prelude::*;
 use log::{error, info, trace};
 use std::future::Future;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::watch;
@@ -31,7 +31,7 @@ pub struct Controller {
 }
 
 pub type Control = Arc<Controller>;
-pub type WeakControl = Weak<Controller>;
+//pub type WeakControl = Weak<Controller>;
 
 /// [TaskServer::run] の返す実行終了種別。
 pub enum RunResult {

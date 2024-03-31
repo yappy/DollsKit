@@ -1,9 +1,8 @@
 //! Discord クライアント (bot) 機能。
 
-use super::camera::{take_a_pic, TakePicOption};
 use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
-use crate::sys::taskserver::WeakControl;
+
 use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
@@ -14,18 +13,17 @@ use ::serenity::all::FullEvent;
 use anyhow::{anyhow, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
-use poise::samples::register_globally;
+
 use poise::{serenity_prelude as serenity, FrameworkContext};
-use rand::Rng;
+
 use serde::{Deserialize, Serialize};
-use serenity::async_trait;
-use serenity::builder::{CreateAttachment, CreateMessage};
-use serenity::http::{Http, MessagePagination};
+
+use serenity::http::MessagePagination;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::Client;
-use static_assertions::const_assert;
-use std::collections::{BTreeMap, HashSet};
+
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
@@ -791,7 +789,10 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
             );
         }
         poise::FrameworkError::UnknownInteraction { interaction, .. } => {
-            warn!("[discord] received unknown interaction \"{}\"", interaction.data.name);
+            warn!(
+                "[discord] received unknown interaction \"{}\"",
+                interaction.data.name
+            );
         }
         error => {
             if let Err(e) = poise::builtins::on_error(error).await {

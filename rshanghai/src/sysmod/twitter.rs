@@ -994,10 +994,10 @@ impl SystemModule for Twitter {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {
-                taskserver::spawn_oneshot_task(&ctrl, "tw-check", Twitter::twitter_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, "tw-check", Twitter::twitter_task_entry);
             } else {
                 taskserver::spawn_periodic_task(
-                    &ctrl,
+                    ctrl,
                     "tw-check",
                     &self.wakeup_list,
                     Twitter::twitter_task_entry,

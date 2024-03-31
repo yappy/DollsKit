@@ -125,7 +125,7 @@ async fn process_post(ctrl: &Control, json_body: &str) {
         Ok(msg) => {
             let ctrl_clone = Arc::clone(ctrl);
             let msg_clone = msg.clone();
-            taskserver::spawn_oneshot_fn(&ctrl, "http-github-tweet", async move {
+            taskserver::spawn_oneshot_fn(ctrl, "http-github-tweet", async move {
                 ctrl_clone
                     .sysmods()
                     .twitter
@@ -136,7 +136,7 @@ async fn process_post(ctrl: &Control, json_body: &str) {
             });
 
             let ctrl_clone = ctrl.clone();
-            taskserver::spawn_oneshot_fn(&ctrl, "http-github-discord", async move {
+            taskserver::spawn_oneshot_fn(ctrl, "http-github-discord", async move {
                 ctrl_clone.sysmods().discord.lock().await.say(&msg).await
             });
         }

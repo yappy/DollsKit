@@ -312,10 +312,10 @@ impl SystemModule for Camera {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                taskserver::spawn_oneshot_task(&ctrl, "camera-auto", Camera::auto_task);
+                taskserver::spawn_oneshot_task(ctrl, "camera-auto", Camera::auto_task);
             } else {
                 taskserver::spawn_periodic_task(
-                    &ctrl,
+                    ctrl,
                     "camera-auto",
                     &self.wakeup_list,
                     Camera::auto_task,
