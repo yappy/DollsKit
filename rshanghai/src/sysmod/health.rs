@@ -135,11 +135,10 @@ impl Health {
     /// [Self::tweet_task] のエントリ関数。
     /// モジュールをロックしてメソッド呼び出しを行う。
     async fn tweet_task_entry(ctrl: Control) -> Result<()> {
-        let mut cancel_rx = ctrl.take_cancel_rx();
         // check_task を先に実行する (可能性を高める) ために遅延させる
         select! {
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {}
-            _ = cancel_rx.changed() => {
+            _ = ctrl.wait_cancel_rx() => {
                 info!("[health-tweet] task cancel");
                 return Ok(());
             }

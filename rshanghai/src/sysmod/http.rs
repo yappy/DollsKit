@@ -109,8 +109,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     let ctrl_for_stop = Arc::clone(&ctrl);
     let handle = server.handle();
     taskserver::spawn_oneshot_fn(&ctrl, "http-exit", async move {
-        let mut cancel_rx = ctrl_for_stop.take_cancel_rx();
-        cancel_rx.changed().await.unwrap();
+        ctrl_for_stop.wait_cancel_rx().await;
         info!("[http-exit] recv cancel");
         handle.stop(true).await;
         info!("[http-exit] server stop ok");

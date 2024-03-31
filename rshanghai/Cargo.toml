@@ -62,6 +62,7 @@ actix-web = "4.5.1"
 actix-multipart = "0.6.1"
 # Discord
 serenity = "0.12.1"
+poise = "0.6.1"
 
 # Image convert
 image = "0.24.9"

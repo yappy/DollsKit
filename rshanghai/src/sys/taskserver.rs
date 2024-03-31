@@ -4,7 +4,6 @@ use crate::sysmod::SystemModules;
 use anyhow::Result;
 use chrono::prelude::*;
 use log::{error, info, trace};
-use std::cell::RefCell;
 use std::future::Future;
 use std::sync::{Arc, Weak};
 use tokio::select;
@@ -56,13 +55,16 @@ impl Controller {
         &self.sysmods
     }
 
-    /// キャンセル通知の受信オブジェクトを取得する。
-    pub fn take_cancel_rx(&self) -> CancelRx {
-        self.cancel_rx
-            .lock()
-            .unwrap()
-            .take()
-            .expect("cancel_rx() can be called only once")
+    /// キャンセル通知を待つ。
+    pub async fn wait_cancel_rx(&self) {
+        // mutex をロックして Receiver を取得し、その clone を作る
+        let org = self.cancel_rx.lock().unwrap().as_mut().map(|rx|rx.clone());
+        if let Some(mut rx) = org {
+            // clone した Receiver 上で待つ
+            rx.changed().await.unwrap();
+        } else {
+            // 既に drop されていた場合はすぐに返る
+        }
     }
 }
 
@@ -176,7 +178,6 @@ where
         type CDuration = chrono::Duration;
         type TDuration = tokio::time::Duration;
 
-        let mut cancel_rx = ctrl_move.take_cancel_rx();
         loop {
             // 現在時刻を取得して分までに切り捨てる
             let now = Local::now().naive_local();
@@ -201,7 +202,7 @@ where
                         trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
                         select! {
                             _ = tokio::time::sleep(TDuration::from_secs(sleep_sec)) => {}
-                            _ = cancel_rx.changed() => {
+                            _ = ctrl_move.wait_cancel_rx() => {
                                 info!("[{}] cancel periodic task", name);
                                 return;
                             }
@@ -244,7 +245,7 @@ where
             trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
             select! {
                 _ = tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) => {}
-                _ = cancel_rx.changed() => {
+                _ = ctrl_move.wait_cancel_rx() => {
                     info!("[{}] cancel periodic task", name);
                     return;
                 }
@@ -288,13 +289,9 @@ impl TaskServer {
 
     /// 実行を開始し、完了するまでブロックする。
     ///
-    /// self の所有権はを consume するため、一度しか実行できない。
-    pub fn run(mut self) -> RunResult {
-        // async block へ move するためのコピーを作る
-        let ctrl = self.ctrl.clone();
-        // オリジナルの cancel_rx を self から奪って drop しておく
-        drop(self.ctrl.take_cancel_rx());
-
+    /// self の所有権を consume するため、一度しか実行できない。
+    pub fn run(self) -> RunResult {
+        let ctrl = Arc::clone(&self.ctrl);
         self.ctrl.rt.block_on(async move {
             // SystemModule 全体に on_start イベントを配送
             ctrl.sysmods.on_start(&ctrl).await;
@@ -323,10 +320,8 @@ impl TaskServer {
             // 値を true に設定して全タスクにキャンセルリクエストを通知する
             self.cancel_tx.send_replace(true);
             // 全タスク完了待ち
-            // この async block で持っている分の cancel_rx を ctrl ごと drop する
-            // オリジナルの self.ctrl.cancel_rx も drop 済みなので
-            // 残りは各 async task に clone された Control
-            drop(ctrl);
+            // オリジナルの cancel_rx を self.ctrl から奪って drop しておく
+            drop(ctrl.cancel_rx.lock().unwrap().take());
             // 全 cancel_rx が drop されるまで待つ
             info!("waiting for all tasks to be completed....");
             self.cancel_tx.closed().await;
@@ -334,5 +329,6 @@ impl TaskServer {
 
             run_result
         })
+        // drop self (self.ctrl)
     }
 }
