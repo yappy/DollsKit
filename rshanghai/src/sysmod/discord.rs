@@ -32,7 +32,7 @@ use std::time::Duration;
 use time::Instant;
 
 struct PoiseData {
-    ctrl: WeakControl,
+    ctrl: Control,
 }
 type PoiseError = anyhow::Error;
 type PoiseContext<'a> = poise::Context<'a, PoiseData, PoiseError>;
@@ -316,7 +316,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 
                 // construct user data here (invoked when bot connects to Discord)
                 Ok(PoiseData {
-                    ctrl: Arc::downgrade(&ctrl_for_setup),
+                    ctrl: Arc::clone(&ctrl_for_setup),
                 })
             })
         })
@@ -359,7 +359,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 }
 
 /// 文字数制限に気を付けつつ分割して送信する。
-async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
+async fn reply_long(ctx: &PoiseContext<'_>, content: &str) -> Result<()> {
     // mention 関連でのずれが少し怖いので余裕を持たせる
     const LEN: usize = MSG_MAX_LEN - 128;
 
@@ -375,7 +375,7 @@ async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
             None => (remain, true),
         };
         if !chunk.is_empty() {
-            msg.reply(ctx, chunk).await?;
+            ctx.reply(chunk).await?;
         }
         if fin {
             break;
@@ -523,11 +523,114 @@ async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
 /// AI assistant.
 #[poise::command(slash_command, category = "AI")]
-async fn ai(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+async fn ai(
+    ctx: PoiseContext<'_>,
+    #[description = "Chat message to AI assistant"]
+    #[min_length = 1]
+    chat_msg: String,
+) -> Result<(), PoiseError> {
+    let data = ctx.data();
+    let mut discord = data.ctrl.sysmods().discord.lock().await;
+
+    // タイムアウト処理
+    discord.check_history_timeout();
+
+    // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
+    let sysmsg = discord.config
+        .prompt
+        .each
+        .join("")
+        .replace("${user}", &ctx.author().name);
+    discord.chat_history.push({
+        ChatMessage {
+            role: Role::System,
+            content: Some(sysmsg),
+            ..Default::default()
+        }
+    });
+    discord.chat_history.push(ChatMessage {
+        role: Role::User,
+        content: Some(chat_msg.to_string()),
+        ..Default::default()
+    });
+
+    let reply_msg = loop {
+        let ai = data.ctrl.sysmods().openai.lock().await;
+
+        // 送信用リスト
+        let mut all_msgs = Vec::new();
+        // 先頭システムメッセージ
+        all_msgs.push(ChatMessage {
+            role: Role::System,
+            content: Some(discord.config.prompt.pre.join("")),
+            ..Default::default()
+        });
+        // それ以降 (ヒストリの中身全部) を追加
+        for m in discord.chat_history.iter() {
+            all_msgs.push(m.clone());
+        }
+        // ChatGPT API
+        let reply_msg = ai
+            .chat_with_function(&all_msgs, discord.func_table.function_list())
+            .await;
+        match &reply_msg {
+            Ok(reply) => {
+                // 応答を履歴に追加
+                discord.chat_history.push(reply.clone());
+                if reply.function_call.is_some() {
+                    // function call が返ってきた
+                    let func_name = &reply.function_call.as_ref().unwrap().name;
+                    let func_args = &reply.function_call.as_ref().unwrap().arguments;
+                    let func_res = discord.func_table.call((), func_name, func_args).await;
+                    // function 応答を履歴に追加
+                    discord.chat_history.push(func_res);
+                    // continue
+                } else {
+                    // 通常の応答が返ってきた
+                    break reply_msg;
+                }
+            }
+            Err(err) => {
+                // エラーが発生した
+                error!("{:#?}", err);
+                break reply_msg;
+            }
+        }
+    };
+
+    // discord 返信
+    match reply_msg {
+        Ok(reply_msg) => {
+            let text = reply_msg
+                .content
+                .ok_or_else(|| anyhow!("content required"))?;
+            info!("[discord] openai reply: {text}");
+            reply_long(&ctx, &text).await?;
+
+            // タイムアウト延長
+            discord.chat_timeout = Some(
+                Instant::now() + Duration::from_secs(discord.config.prompt.history_timeout_min as u64 * 60),
+            );
+        }
+        Err(err) => {
+            error!("[discord] openai error: {:#?}", err);
+            // HTTP status が得られるタイプのエラーのみ discord 返信する
+            if let Some(err) = err.downcast_ref::<HttpStatusError>() {
+                warn!("openai reply: {} {}", err.status, err.body);
+                let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
+                ctx.reply(reply_msg.to_string()).await?;
+            }
+        }
+    }
+
     Ok(())
 }
 
-#[poise::command(slash_command, category = "AI", subcommands("aistatus_show", "aistatus_reset"))]
+#[poise::command(
+    slash_command,
+    category = "AI",
+    subcommands("aistatus_show", "aistatus_reset")
+)]
 async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     // 親コマンドはスラッシュコマンドでは使用不可
     Ok(())
@@ -596,13 +699,7 @@ async fn event_handler(
             // このタイミングで [Discord::ctx] に ctx をクローンして保存する。
             info!("[discord] cache ready - guild: {}", guilds.len());
 
-            let ctrl = if let Some(ctrl) = data.ctrl.upgrade() {
-                ctrl
-            } else {
-                info!("[discord] already dropped");
-                return Ok(());
-            };
-            let mut discord = ctrl.sysmods().discord.lock().await;
+            let mut discord = data.ctrl.sysmods().discord.lock().await;
             let ctx_clone = ctx.clone();
             discord.ctx = Some(ctx_clone);
 
