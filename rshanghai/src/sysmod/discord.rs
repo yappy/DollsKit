@@ -535,6 +535,7 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
         sysinfo(),
         autodel(),
         dice(),
+        attack(),
         ai(),
         aistatus(),
         aiimg(),
@@ -670,9 +671,31 @@ async fn dice(
     Ok(())
 }
 
+/// Order the assistant to say something.
+///
+/// You can specify target user(s).
+#[poise::command(slash_command, category = "Manipulation", owners_only)]
+async fn attack(
+    ctx: PoiseContext<'_>,
+    #[description = "Target user"] target: Option<UserId>,
+    #[description = "Chat message to be said"]
+    #[min_length = 1]
+    #[max_length = 1024]
+    chat_msg: String,
+) -> Result<(), PoiseError> {
+    let text = if let Some(user) = target {
+        format!("{} {}", user.mention(), chat_msg)
+    } else {
+        chat_msg
+    };
+
+    ctx.reply(text).await?;
+    Ok(())
+}
+
 /// AI assistant.
 ///
-/// The owner of assistant will pay the usage fee for ChatGPT.
+/// The owner of the assistant will pay the usage fee for ChatGPT.
 #[poise::command(slash_command, category = "AI")]
 async fn ai(
     ctx: PoiseContext<'_>,
