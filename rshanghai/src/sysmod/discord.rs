@@ -151,36 +151,6 @@ impl Display for AutoDeleteConfig {
     }
 }
 
-fn convert_duration(mut min: u32) -> (u32, u32, u32) {
-    let day = min / (60 * 24);
-    min %= 60 * 24;
-    let hour = min / 60;
-    min %= 60;
-
-    (day, hour, min)
-}
-
-fn parse_duration(src: &str) -> Result<u32> {
-    let mut min = 0u32;
-    let mut buf = String::new();
-    for c in src.chars() {
-        if c == 'd' || c == 'h' || c == 'm' {
-            let n: u32 = buf.parse()?;
-            let n = match c {
-                'd' => n.saturating_mul(24 * 60),
-                'h' => n.saturating_mul(60),
-                'm' => n,
-                _ => panic!(),
-            };
-            min = min.saturating_add(n);
-            buf.clear();
-        } else {
-            buf.push(c);
-        }
-    }
-    Ok(min)
-}
-
 impl Discord {
     /// コンストラクタ。
     ///
@@ -192,10 +162,10 @@ impl Discord {
         let config = config::get(|cfg| cfg.discord.clone());
         let ai_config = config::get(|cfg| cfg.openai.clone());
 
-        let mut auto_del_congig = BTreeMap::new();
+        let mut auto_del_config = BTreeMap::new();
         for &ch in &config.auto_del_chs {
             ensure!(ch != 0);
-            auto_del_congig.insert(
+            auto_del_config.insert(
                 ChannelId::new(ch),
                 AutoDeleteConfig {
                     keep_count: 0,
@@ -230,7 +200,7 @@ impl Discord {
             wakeup_list,
             ctx: None,
             postponed_msgs: Default::default(),
-            auto_del_config: auto_del_congig,
+            auto_del_config,
             chat_history,
             chat_timeout: None,
             func_table,
@@ -418,6 +388,40 @@ async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()>
     Ok(())
 }
 
+/// 分を (日, 時間, 分) に変換する。
+fn convert_duration(mut min: u32) -> (u32, u32, u32) {
+    let day = min / (60 * 24);
+    min %= 60 * 24;
+    let hour = min / 60;
+    min %= 60;
+
+    (day, hour, min)
+}
+
+/// 日時分からなる文字列を分に変換する。
+///
+/// 例: 1d2h3m
+fn parse_duration(src: &str) -> Result<u32> {
+    let mut min = 0u32;
+    let mut buf = String::new();
+    for c in src.chars() {
+        if c == 'd' || c == 'h' || c == 'm' {
+            let n: u32 = buf.parse()?;
+            let n = match c {
+                'd' => n.saturating_mul(24 * 60),
+                'h' => n.saturating_mul(60),
+                'm' => n,
+                _ => panic!(),
+            };
+            min = min.saturating_add(n);
+            buf.clear();
+        } else {
+            buf.push(c);
+        }
+    }
+    Ok(min)
+}
+
 /// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
 /// すべて削除する。
 ///
@@ -526,7 +530,15 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
 //------------------------------------------------------------------------------
 
 fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
-    vec![help(), sysinfo(), dice(), ai(), aistatus(), aiimg()]
+    vec![
+        help(),
+        sysinfo(),
+        autodel(),
+        dice(),
+        ai(),
+        aistatus(),
+        aiimg(),
+    ]
 }
 
 /// Show command help.
@@ -551,6 +563,76 @@ pub async fn help(
 async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let ver_info: &str = version::version_info();
     ctx.reply(ver_info).await?;
+
+    Ok(())
+}
+
+const AUTODEL_INVALID_CH_MSG: &str = "Auto delete feature is not enabled for this channel.
+Please contact my owner.";
+
+#[poise::command(
+    slash_command,
+    category = "Auto Delete",
+    subcommands("autodel_status", "autodel_set")
+)]
+async fn autodel(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    // 親コマンドはスラッシュコマンドでは使用不可
+    Ok(())
+}
+
+/// Get the auto-delete status in this channel.
+#[poise::command(slash_command, category = "Auto Delete", rename = "status")]
+async fn autodel_status(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let ch = ctx.channel_id();
+    let config = {
+        let data = ctx.data();
+        let discord = data.ctrl.sysmods().discord.lock().await;
+
+        discord.auto_del_config.get(&ch).copied()
+    };
+
+    if let Some(config) = config {
+        ctx.reply(format!("{config}")).await?;
+    } else {
+        ctx.reply(AUTODEL_INVALID_CH_MSG).await?;
+    }
+
+    Ok(())
+}
+
+/// Enable/Disable/Config auto-delete feature in this channel.
+///
+/// "0 0" disables the feature.
+#[poise::command(slash_command, category = "Auto Delete", rename = "set")]
+async fn autodel_set(
+    ctx: PoiseContext<'_>,
+    #[description = "Delete old messages other than this count of newer ones (0: disable)"]
+    keep_count: u32,
+    #[description = "Delete messages after this time (e.g. 1d, 3h, 30m, 1d23h59m, etc.) (0: disable)"]
+    keep_duration: String,
+) -> Result<(), PoiseError> {
+    let ch = ctx.channel_id();
+    let keep_duration = parse_duration(&keep_duration);
+    if keep_duration.is_err() {
+        ctx.reply("keep_duration parse error.").await?;
+        return Ok(());
+    }
+    let keep_duration = keep_duration.unwrap();
+
+    let msg = {
+        let mut discord = ctx.data().ctrl.sysmods().discord.lock().await;
+
+        let config = discord.auto_del_config.get_mut(&ch);
+        match config {
+            Some(config) => {
+                config.keep_count = keep_count;
+                config.keep_dur_min = keep_duration;
+                format!("OK\n{config}")
+            }
+            None => AUTODEL_INVALID_CH_MSG.to_string(),
+        }
+    };
+    ctx.reply(msg).await?;
 
     Ok(())
 }
@@ -750,7 +832,7 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 #[poise::command(slash_command, category = "AI")]
 async fn aiimg(
     ctx: PoiseContext<'_>,
-    #[description = "Prompt string."]
+    #[description = "Prompt string"]
     #[min_length = 1]
     #[max_length = 1024]
     prompt: String,
