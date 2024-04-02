@@ -5,17 +5,18 @@ use super::SystemModule;
 
 use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
+use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
-use ::serenity::all::FullEvent;
+use ::serenity::all::{CreateAttachment, FullEvent};
 use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 
-use poise::{serenity_prelude as serenity, FrameworkContext};
+use poise::{serenity_prelude as serenity, CreateReply, FrameworkContext};
 
 use serde::{Deserialize, Serialize};
 
@@ -552,6 +553,7 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
         autodel(),
         dice(),
         attack(),
+        camera(),
         ai(),
         aistatus(),
         aiimg(),
@@ -707,6 +709,24 @@ async fn attack(
 
     info!("[discord] reply: {text}");
     ctx.reply(text).await?;
+    Ok(())
+}
+
+/// Take a picture.
+#[poise::command(slash_command, category = "Manipulation", owners_only)]
+async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.reply("Taking a picture...").await?;
+
+    let pic = camera::take_a_pic(TakePicOption::new()).await?;
+
+    let attach = CreateAttachment::bytes(&pic[..], "camera.jpg");
+    ctx.send(
+        CreateReply::default()
+            .content("camera.jpg")
+            .attachment(attach),
+    )
+    .await?;
+
     Ok(())
 }
 
