@@ -11,7 +11,7 @@ use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
 use ::serenity::all::FullEvent;
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 
@@ -24,7 +24,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::Client;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
@@ -52,11 +52,12 @@ pub struct DiscordConfig {
     notif_channel: u64,
     /// 自動削除機能の対象とするチャネル ID のリスト。
     auto_del_chs: Vec<u64>,
+    /// オーナーのユーザ ID。
+    /// Discord bot から得られるものは使わない。
+    owner_ids: Vec<u64>,
     /// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     perm_err_msg: String,
-    /// パーミッションエラーを強制的に発生させる。デバッグ用。
-    force_perm_err: bool,
     /// OpenAI プロンプト。
     #[serde(default)]
     prompt: DiscordPrompt,
@@ -69,8 +70,8 @@ impl Default for DiscordConfig {
             token: "".to_string(),
             notif_channel: 0,
             auto_del_chs: Default::default(),
+            owner_ids: Default::default(),
             perm_err_msg: "バカジャネーノ".to_string(),
-            force_perm_err: false,
             prompt: Default::default(),
         }
     }
@@ -207,6 +208,9 @@ impl Discord {
         })
     }
 
+    /// 発言を投稿する。
+    ///
+    /// 接続前の場合、接続後まで遅延する。
     pub async fn say(&mut self, msg: &str) -> Result<()> {
         if !self.config.enabled {
             info!("[discord] disabled - msg: {}", msg);
@@ -249,15 +253,19 @@ impl Discord {
 async fn discord_main(ctrl: Control) -> Result<()> {
     let (config, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
+
         (discord.config.clone(), discord.wakeup_list.clone())
     };
 
-    // 自身の ID が on_mention 設定に必要なので別口で取得しておく
-    /*
-    let http = Http::new(&config.token);
-    let info = http.get_current_application_info().await?;
-    let myid = UserId::new(info.id.get());
-    let ownerids = HashSet::from([info.owner.ok_or_else(|| anyhow!("No owner"))?.id]); */
+    // owner_ids を HashSet に変換 (0 は panic するので禁止)
+    let mut owners = HashSet::new();
+    for id in config.owner_ids {
+        if id == 0 {
+            bail!("owner id must not be 0");
+        }
+        owners.insert(UserId::new(id));
+    }
+
     let ctrl_for_setup = ctrl.clone();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -265,13 +273,16 @@ async fn discord_main(ctrl: Control) -> Result<()> {
             pre_command: |ctx| Box::pin(pre_command(ctx)),
             post_command: |ctx| Box::pin(post_command(ctx)),
             event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
+            // prefix コマンドは使っていない
             prefix_options: poise::PrefixFrameworkOptions {
                 //prefix: Some("~".into()),
-                case_insensitive_commands: true,
+                //case_insensitive_commands: true,
                 ..Default::default()
             },
-            skip_checks_for_owners: true,
-            // This is also where commands go
+            // owner は手動で設定する
+            initialize_owners: false,
+            owners,
+            // コマンドリスト
             commands: command_list(),
             ..Default::default()
         })
@@ -796,7 +807,7 @@ async fn ai(
             error!("[discord] openai error: {:#?}", err);
             // HTTP status が得られるタイプのエラーのみ discord 返信する
             if let Some(err) = err.downcast_ref::<HttpStatusError>() {
-                warn!("openai reply: {} {}", err.status, err.body);
+                warn!("[discord] openai reply: {} {}", err.status, err.body);
                 let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
                 ctx.reply(reply_msg.to_string()).await?;
             }
@@ -912,7 +923,7 @@ async fn post_command(ctx: PoiseContext<'_>) {
 ///
 /// [poise::builtins::on_error] のままでまずい部分を自分でやる。
 async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
-    // エラーを返していないので panic にする
+    // エラーを返していないはずのものは panic にする
     match error {
         poise::FrameworkError::Setup { error, .. } => {
             panic!("Failed on setup: {:#?}", error)
@@ -927,6 +938,23 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
                 error
             );
         }
+        poise::FrameworkError::NotAnOwner { ctx, .. } => {
+            let errmsg = ctx
+                .data()
+                .ctrl
+                .sysmods()
+                .discord
+                .lock()
+                .await
+                .config
+                .perm_err_msg
+                .clone();
+            info!("[discord] not an owner: {}", ctx.author());
+            info!("[discord] reply: {errmsg}");
+            if let Err(why) = ctx.reply(errmsg).await {
+                error!("[discord] reply error: {:#?}", why)
+            }
+        }
         poise::FrameworkError::UnknownInteraction { interaction, .. } => {
             warn!(
                 "[discord] received unknown interaction \"{}\"",
@@ -934,8 +962,8 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
             );
         }
         error => {
-            if let Err(e) = poise::builtins::on_error(error).await {
-                println!("Error while handling error: {}", e)
+            if let Err(why) = poise::builtins::on_error(error).await {
+                error!("[discord] error while handling error: {:#?}", why)
             }
         }
     }
