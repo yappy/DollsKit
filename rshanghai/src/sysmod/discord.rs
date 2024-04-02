@@ -265,9 +265,13 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         }
         owners.insert(UserId::new(id));
     }
+    info!("[discord] owners: {:?}", owners);
 
     let ctrl_for_setup = ctrl.clone();
     let framework = poise::Framework::builder()
+        // owner は手動で設定する
+        .initialize_owners(false)
+        // その他オプション
         .options(poise::FrameworkOptions {
             on_error: |err| Box::pin(on_error(err)),
             pre_command: |ctx| Box::pin(pre_command(ctx)),
@@ -279,13 +283,14 @@ async fn discord_main(ctrl: Control) -> Result<()> {
                 //case_insensitive_commands: true,
                 ..Default::default()
             },
-            // owner は手動で設定する
+            // owner は手動で設定する (builder の方から設定されるようだがデフォルトが true なので念のためこちらも)
             initialize_owners: false,
             owners,
             // コマンドリスト
             commands: command_list(),
             ..Default::default()
         })
+        // ハンドラ
         .setup(|ctx, _ready, framework| {
             // 最初の ready イベントで呼ばれる
             Box::pin(async move {
@@ -700,6 +705,7 @@ async fn attack(
         chat_msg
     };
 
+    info!("[discord] reply: {text}");
     ctx.reply(text).await?;
     Ok(())
 }
