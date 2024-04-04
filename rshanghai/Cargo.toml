@@ -65,7 +65,7 @@ serenity = "0.12.1"
 poise = "0.6.1"
 
 # Image convert
-image = "0.24.9"
+image = "0.25.1"
 # Font
 rusttype="0.9.3"
 # Scraping

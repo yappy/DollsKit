@@ -8,7 +8,7 @@ use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
 use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{Local, NaiveTime};
-use image::{imageops::FilterType, ImageOutputFormat};
+use image::{imageops::FilterType, ImageFormat};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -412,8 +412,6 @@ const PIC_DEF_TO_MS: u32 = 1000;
 const THUMB_W: u32 = 128;
 /// サムネイルの縦サイズ。
 const THUMB_H: u32 = 96;
-/// サムネイルの jpeg クオリティ。
-const THUMB_Q: u8 = 35;
 
 /// 写真撮影オプション。
 pub struct TakePicOption {
@@ -503,7 +501,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
         let src = image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg)?;
         let dst = src.resize_exact(opt.w, opt.h, FilterType::Nearest);
         let mut output = Cursor::new(vec![]);
-        dst.write_to(&mut output, ImageOutputFormat::Jpeg(PIC_DEF_Q))?;
+        dst.write_to(&mut output, ImageFormat::Jpeg)?;
 
         output.into_inner()
     };
@@ -521,7 +519,7 @@ pub fn create_thumbnail(src_buf: &[u8]) -> Result<Vec<u8>> {
     let dst = src.thumbnail(THUMB_W, THUMB_H);
 
     let mut buf = Cursor::new(Vec::<u8>::new());
-    dst.write_to(&mut buf, ImageOutputFormat::Jpeg(THUMB_Q))?;
+    dst.write_to(&mut buf, ImageFormat::Jpeg)?;
 
     Ok(buf.into_inner())
 }
@@ -535,7 +533,7 @@ pub fn resize(src_buf: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
     let dst = src.resize_exact(w, h, FilterType::Nearest);
 
     let mut buf = Cursor::new(Vec::<u8>::new());
-    dst.write_to(&mut buf, ImageOutputFormat::Jpeg(PIC_DEF_Q))?;
+    dst.write_to(&mut buf, ImageFormat::Jpeg)?;
 
     Ok(buf.into_inner())
 }
