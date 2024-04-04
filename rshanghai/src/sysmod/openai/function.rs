@@ -39,7 +39,7 @@ pub struct Args {
     args: FuncArgs,
 }
 
-/// 関数群の管理。
+/// OpenAI function 群の管理テーブル。
 pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
@@ -58,6 +58,32 @@ impl<T: 'static> FunctionTable<T> {
     /// OpenAI API に渡すためのリストを取得する。
     pub fn function_list(&self) -> &Vec<Function> {
         &self.function_list
+    }
+
+    /// 関数一覧のヘルプ文字列を生成する。
+    pub fn create_help(&self) -> String {
+        let mut text = String::new();
+
+        let mut first = true;
+        for f in self.function_list.iter() {
+            if first {
+                first = false;
+            } else {
+                text.push('\n');
+            }
+
+            text.push_str(&f.name);
+
+            let mut params: Vec<_> = f.parameters.properties.keys().cloned().collect();
+            params.sort();
+            text.push_str(&format!("({})", params.join(", ")));
+
+            if let Some(desc) = &f.description {
+                text.push_str(&format!("\n    {}", desc));
+            }
+        }
+
+        text
     }
 
     /// 関数を呼び出す。
@@ -107,12 +133,14 @@ impl<T: 'static> FunctionTable<T> {
         func(ctx, args).await.map_err(|err| anyhow!("Error: {err}"))
     }
 
+    /// 関数を登録する。
     pub fn register_function(&mut self, function: Function, body: FuncBody<T>) {
         let name = function.name.clone();
         self.function_list.push(function);
         self.call_table.insert(name, Box::new(body));
     }
 
+    /// [basicfuncs] 以下のすべての基本的な関数を登録する。
     pub fn register_basic_functions(&mut self) {
         basicfuncs::register_all(self);
     }

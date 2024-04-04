@@ -846,7 +846,7 @@ async fn ai(
 #[poise::command(
     slash_command,
     category = "AI",
-    subcommands("aistatus_show", "aistatus_reset")
+    subcommands("aistatus_show", "aistatus_reset", "aistatus_funclist")
 )]
 async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     // 親コマンドはスラッシュコマンドでは使用不可
@@ -884,6 +884,21 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         discord.chat_history.clear();
     }
     ctx.reply("OK").await?;
+
+    Ok(())
+}
+
+/// Show AI function list.
+/// You can request the assistant to call these functions.
+#[poise::command(slash_command, category = "AI", rename = "funclist")]
+async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let help = {
+        let discord = ctx.data().ctrl.sysmods().discord.lock().await;
+
+        discord.func_table.create_help()
+    };
+    let text = format!("```\n{help}\n```");
+    ctx.reply(text).await?;
 
     Ok(())
 }
