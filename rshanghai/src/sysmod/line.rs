@@ -432,7 +432,6 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
                 required: vec!["keywords".to_string()],
             },
         },
-        "draw",
         Box::new(draw_picture_sync),
     );
 }

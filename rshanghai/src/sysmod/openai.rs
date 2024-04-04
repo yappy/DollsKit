@@ -1,5 +1,6 @@
 //! OpenAI API.
 
+mod basicfuncs;
 pub mod function;
 
 use std::collections::HashMap;
