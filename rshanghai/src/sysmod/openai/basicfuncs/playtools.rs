@@ -36,7 +36,7 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
         "face".to_string(),
         ParameterElement {
             type_: "integer".to_string(),
-            description: Some("Face count of the dices (default is 6)".to_string()),
+            description: Some("Face count of the dice (default is 6)".to_string()),
             minumum: Some(FACE_MIN),
             maximum: Some(FACE_MAX),
             ..Default::default()
@@ -46,7 +46,7 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
         "count".to_string(),
         ParameterElement {
             type_: "integer".to_string(),
-            description: Some("How many dices do you roll? (default is 1)".to_string()),
+            description: Some("How many dice do you roll? (default is 1)".to_string()),
             minumum: Some(COUNT_MIN),
             maximum: Some(COUNT_MAX),
             ..Default::default()
@@ -56,11 +56,11 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
             name: "role_dice".to_string(),
-            description: Some("Get the current date and time".to_string()),
+            description: Some("Role dice with specified number of faces specified number of times".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties,
-                required: vec!["tz".to_string()],
+                required: Default::default(),
             },
         },
         Box::new(role_dice_pin),
