@@ -142,6 +142,7 @@ struct ChatResponse {
     pub choices: Vec<Choice>,
 }
 
+/// <https://json-schema.org/understanding-json-schema>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ParameterElement {
     /// e.g. "string"
@@ -152,6 +153,10 @@ pub struct ParameterElement {
     #[serde(rename = "enum")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enum_: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub minumum: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum: Option<i32>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

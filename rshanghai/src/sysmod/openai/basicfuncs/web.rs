@@ -94,6 +94,7 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
             type_: "string".to_string(),
             description: Some("URL to access".to_string()),
             enum_: None,
+            ..Default::default()
         },
     );
 
@@ -152,6 +153,7 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
             type_: "string".to_string(),
             description: Some("Area name (city name, etc.)".to_string()),
             enum_: Some(area_list),
+            ..Default::default()
         },
     );
 

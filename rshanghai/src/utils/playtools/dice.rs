@@ -5,15 +5,15 @@ use static_assertions::const_assert;
 /// ダイスの面数の最大値。
 pub const FACE_MAX: u64 = 1u64 << 56;
 /// ダイスの個数の最大値。
-pub const COUNT_MAX: u64 = 100u64;
+pub const COUNT_MAX: u32 = 100;
 
-const_assert!(FACE_MAX < u64::MAX / COUNT_MAX);
+const_assert!(FACE_MAX < u64::MAX / COUNT_MAX as u64);
 
 /// ダイスを振る。
 ///
 /// * `face` - 何面のダイスを振るか。
 /// * `count` - 何個のダイスを振るか。
-pub fn roll(face: u64, count: u64) -> Result<Vec<u64>> {
+pub fn roll(face: u64, count: u32) -> Result<Vec<u64>> {
     ensure!(
         (1..=FACE_MAX).contains(&face),
         "face must be 1 <= face <= {FACE_MAX}",

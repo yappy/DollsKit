@@ -661,7 +661,7 @@ async fn autodel_set(
 async fn dice(
     ctx: PoiseContext<'_>,
     #[description = "Face count (default=6)"] face: Option<u64>,
-    #[description = "Dice count (default=1)"] count: Option<u64>,
+    #[description = "Dice count (default=1)"] count: Option<u32>,
 ) -> Result<(), PoiseError> {
     let face = face.unwrap_or(6);
     let count = count.unwrap_or(1);

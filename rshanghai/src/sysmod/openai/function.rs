@@ -2,12 +2,15 @@
 
 use super::basicfuncs;
 use crate::sysmod::openai::{ChatMessage, Role};
+use anyhow::bail;
 use anyhow::{anyhow, Result};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
+use std::ops::RangeBounds;
 use std::pin::Pin;
+use std::str::FromStr;
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -121,4 +124,73 @@ impl<T: 'static> FunctionTable<T> {
 pub fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
     let value = args.get(&name.to_string());
     value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
+}
+
+/// args から引数名で検索し、T へ変換する。
+/// 見つからない、または変換に失敗した場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_parsed_arg<T, E>(args: &FuncArgs, name: &str) -> Result<T>
+where
+    T: FromStr<Err = E>,
+{
+    let s = get_arg(args, name)?;
+    match s.parse() {
+        Ok(n) => Ok(n),
+        Err(_) => bail!("Error: Invalid argument: {name}"),
+    }
+}
+
+/// args から引数名で検索し、T へ変換する。
+/// 見つからない、または変換に失敗した場合、または範囲外の場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_ranged_arg<T, R, E>(args: &FuncArgs, name: &str, range: R) -> Result<T>
+where
+    T: FromStr<Err = E> + PartialOrd,
+    R: RangeBounds<T>,
+{
+    let n = get_parsed_arg(args, name)?;
+    if range.contains(&n) {
+        Ok(n)
+    } else {
+        bail!("Error: Out of range: {name}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn function_args() {
+        let mut args = FuncArgs::new();
+        args.insert("keytest".to_string(), "ok".to_string());
+        args.insert("int".to_string(), "42".to_string());
+        args.insert("notint".to_string(), "abcde".to_string());
+
+        assert!(get_arg(&args, &"keytest".to_string()).unwrap() == "ok");
+        assert!(get_arg(&args, &"unknown".to_string())
+            .unwrap_err()
+            .to_string()
+            .contains("required"));
+
+        assert!(get_parsed_arg::<i32, _>(&args, &"int".to_string()).unwrap() == 42);
+        assert!(get_parsed_arg::<i32, _>(&args, &"notint".to_string())
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid"));
+
+        assert!(get_ranged_arg::<i32, _, _>(&args, &"int".to_string(), 1..=42).unwrap() == 42);
+        assert!(
+            get_ranged_arg::<i32, _, _>(&args, &"notint".to_string(), 1..43)
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid")
+        );
+        assert!(
+            get_ranged_arg::<i32, _, _>(&args, &"int".to_string(), 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("Out of range")
+        );
+    }
 }
