@@ -4,7 +4,7 @@ use crate::sysmod::health::{
     get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
 };
 use crate::sysmod::openai::function::{
-    get_arg, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
 };
 use anyhow::{bail, Result};
 use chrono::{DateTime, Local, Utc};
@@ -109,8 +109,8 @@ fn register_get_cpu_status<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// 現在の日時を取得する。
 async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
-    let tz = get_arg(args, "tz")?;
-    match tz.as_str() {
+    let tz = get_arg_str(args, "tz")?;
+    match tz {
         "JST" => {
             let dt: DateTime<Local> = Local::now();
             Ok(dt.to_string())

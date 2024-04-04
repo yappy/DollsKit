@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::ops::RangeBounds;
 use std::pin::Pin;
-use std::str::FromStr;
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -29,8 +28,8 @@ pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync 
 ///
 /// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
 pub type FuncBody<T> = Box<dyn Fn(T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
-/// 引数。文字列から文字列へのマップ。
-pub type FuncArgs = HashMap<String, String>;
+/// 引数。文字列から Json value へのマップ。
+pub type FuncArgs = HashMap<String, serde_json::value::Value>;
 
 /// 引数は JSON ソース文字列で与えられる。
 /// デシリアライズでパースするための構造体。
@@ -119,38 +118,33 @@ impl<T: 'static> FunctionTable<T> {
     }
 }
 
-/// args から引数名で検索し、値への参照を返す。
-/// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-pub fn get_arg<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a String> {
+/// args から引数名で文字列値を取得する。
+/// 見つからない、または型が違う場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_arg_str<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a str> {
     let value = args.get(&name.to_string());
-    value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))
+    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
+    let value = value
+        .as_str()
+        .ok_or_else(|| anyhow!("Error: Argument {name} must be string"))?;
+
+    Ok(value)
 }
 
-/// args から引数名で検索し、T へ変換する。
-/// 見つからない、または変換に失敗した場合、
-/// いい感じのエラーメッセージの [anyhow::Error] を返す。
-pub fn get_parsed_arg<T, E>(args: &FuncArgs, name: &str) -> Result<T>
-where
-    T: FromStr<Err = E>,
-{
-    let s = get_arg(args, name)?;
-    match s.parse() {
-        Ok(n) => Ok(n),
-        Err(_) => bail!("Error: Invalid argument: {name}"),
-    }
-}
-
-/// args から引数名で検索し、T へ変換する。
+/// args から引数名で i64 を取得する。
 /// 見つからない、または変換に失敗した場合、または範囲外の場合、
 /// いい感じのエラーメッセージの [anyhow::Error] を返す。
-pub fn get_ranged_arg<T, R, E>(args: &FuncArgs, name: &str, range: R) -> Result<T>
+pub fn get_arg_i64<R>(args: &FuncArgs, name: &str, range: R) -> Result<i64>
 where
-    T: FromStr<Err = E> + PartialOrd,
-    R: RangeBounds<T>,
+    R: RangeBounds<i64>,
 {
-    let n = get_parsed_arg(args, name)?;
-    if range.contains(&n) {
-        Ok(n)
+    let value = args.get(&name.to_string());
+    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
+    let value = value
+        .as_i64()
+        .ok_or_else(|| anyhow!("Error: Argument {name} must be integer"))?;
+
+    if range.contains(&value) {
+        Ok(value)
     } else {
         bail!("Error: Out of range: {name}")
     }
@@ -163,34 +157,24 @@ mod tests {
     #[test]
     fn function_args() {
         let mut args = FuncArgs::new();
-        args.insert("keytest".to_string(), "ok".to_string());
-        args.insert("int".to_string(), "42".to_string());
-        args.insert("notint".to_string(), "abcde".to_string());
+        args.insert("keytest".to_string(), "ok".into());
+        args.insert("int".to_string(), 42.into());
+        args.insert("notint".to_string(), "abcde".into());
 
-        assert!(get_arg(&args, &"keytest".to_string()).unwrap() == "ok");
-        assert!(get_arg(&args, &"unknown".to_string())
+        assert!(get_arg_str(&args, &"keytest".to_string()).unwrap() == "ok");
+        assert!(get_arg_str(&args, &"unknown".to_string())
             .unwrap_err()
             .to_string()
             .contains("required"));
 
-        assert!(get_parsed_arg::<i32, _>(&args, &"int".to_string()).unwrap() == 42);
-        assert!(get_parsed_arg::<i32, _>(&args, &"notint".to_string())
+        assert!(get_arg_i64(&args, &"int".to_string(), 1..=42).unwrap() == 42);
+        assert!(get_arg_i64(&args, &"notint".to_string(), 1..43)
             .unwrap_err()
             .to_string()
             .contains("Invalid"));
-
-        assert!(get_ranged_arg::<i32, _, _>(&args, &"int".to_string(), 1..=42).unwrap() == 42);
-        assert!(
-            get_ranged_arg::<i32, _, _>(&args, &"notint".to_string(), 1..43)
-                .unwrap_err()
-                .to_string()
-                .contains("Invalid")
-        );
-        assert!(
-            get_ranged_arg::<i32, _, _>(&args, &"int".to_string(), 1..42)
-                .unwrap_err()
-                .to_string()
-                .contains("Out of range")
-        );
+        assert!(get_arg_i64(&args, &"int".to_string(), 1..42)
+            .unwrap_err()
+            .to_string()
+            .contains("Out of range"));
     }
 }

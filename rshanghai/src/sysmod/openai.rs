@@ -154,9 +154,9 @@ pub struct ParameterElement {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enum_: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub minumum: Option<i32>,
+    pub minumum: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub maximum: Option<i32>,
+    pub maximum: Option<i64>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

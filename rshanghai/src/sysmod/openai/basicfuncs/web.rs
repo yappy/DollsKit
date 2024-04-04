@@ -1,7 +1,7 @@
 //! Web アクセス関連。
 
 use crate::sysmod::openai::function::{
-    get_arg, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
 };
 use crate::utils::netutil;
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
@@ -51,7 +51,7 @@ fn compact_html(src: &str) -> Result<String> {
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     const SIZE_MAX: usize = 5 * 1024;
-    let url = get_arg(args, "url")?;
+    let url = get_arg_str(args, "url")?;
 
     let client = Client::builder().timeout(TIMEOUT).build()?;
     let resp = client.get(url).send().await?;
@@ -114,7 +114,7 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
-    let area = get_arg(args, "area")?;
+    let area = get_arg_str(args, "area")?;
 
     // 引数の都市名をコードに変換
     let code =

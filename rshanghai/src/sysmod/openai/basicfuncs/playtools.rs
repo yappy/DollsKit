@@ -1,7 +1,7 @@
 //! システム情報取得。
 
 use crate::sysmod::openai::function::{
-    get_ranged_arg, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_i64, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
 };
 use crate::utils::playtools::dice;
 use anyhow::Result;
@@ -12,15 +12,15 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_role_dice(func_table);
 }
 
-const FACE_MIN: i32 = 1;
-const FACE_MAX: i32 = 100;
-const COUNT_MIN: i32 = 1;
-const COUNT_MAX: i32 = 100;
+const FACE_MIN: i64 = 1;
+const FACE_MAX: i64 = 100;
+const COUNT_MIN: i64 = 1;
+const COUNT_MAX: i64 = 100;
 
 /// サイコロを振る。
 async fn role_dice(args: &FuncArgs) -> Result<String> {
-    let face: i32 = get_ranged_arg(args, "face", FACE_MIN..=FACE_MAX)?;
-    let count: i32 = get_ranged_arg(args, "count", COUNT_MIN..=COUNT_MAX)?;
+    let face: i64 = get_arg_i64(args, "face", FACE_MIN..=FACE_MAX)?;
+    let count: i64 = get_arg_i64(args, "count", COUNT_MIN..=COUNT_MAX)?;
     let result = dice::roll(face as u64, count as u32)?;
 
     Ok(format!("{:?}", result))

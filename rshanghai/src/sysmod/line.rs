@@ -441,7 +441,7 @@ fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
 }
 
 async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
-    let keywords = function::get_arg(args, "keywords")?.to_string();
+    let keywords = function::get_arg_str(args, "keywords")?.to_string();
 
     let ctrl = ctx.ctrl.clone();
     taskserver::spawn_oneshot_fn(&ctrl, "line_draw_picture", async move {
