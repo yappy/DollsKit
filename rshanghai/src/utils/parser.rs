@@ -315,7 +315,7 @@ impl RuntimeValue {
             Self::Integer(n) => n
                 .checked_neg()
                 .ok_or_else(|| anyhow!("overflow"))
-                .map(|v| Self::Integer(v)),
+                .map(Self::Integer),
         }
     }
 
@@ -325,7 +325,7 @@ impl RuntimeValue {
                 Self::Integer(b) => a
                     .checked_add(b)
                     .ok_or_else(|| anyhow!("overflow"))
-                    .map(|v| Self::Integer(v)),
+                    .map(Self::Integer),
             },
         }
     }
@@ -336,7 +336,7 @@ impl RuntimeValue {
                 Self::Integer(b) => a
                     .checked_sub(b)
                     .ok_or_else(|| anyhow!("overflow"))
-                    .map(|v| Self::Integer(v)),
+                    .map(Self::Integer),
             },
         }
     }
@@ -347,7 +347,7 @@ impl RuntimeValue {
                 Self::Integer(b) => a
                     .checked_mul(b)
                     .ok_or_else(|| anyhow!("overflow"))
-                    .map(|v| Self::Integer(v)),
+                    .map(Self::Integer),
             },
         }
     }
@@ -364,7 +364,7 @@ impl RuntimeValue {
                             "overflow"
                         })
                     })
-                    .map(|v| Self::Integer(v)),
+                    .map(Self::Integer),
             },
         }
     }
@@ -375,7 +375,7 @@ impl RuntimeValue {
                 Self::Integer(b) => a
                     .checked_rem_euclid(b)
                     .ok_or_else(|| anyhow!("overflow"))
-                    .map(|v| Self::Integer(v)),
+                    .map(Self::Integer),
             },
         }
     }

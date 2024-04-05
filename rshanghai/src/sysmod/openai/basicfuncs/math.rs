@@ -16,7 +16,7 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
 async fn calculate(args: &FuncArgs) -> Result<String> {
     let formula = get_arg_str(args, "formula")?;
 
-    let toks = parser::lexical_analyze(&formula)?;
+    let toks = parser::lexical_analyze(formula)?;
     let ast = parser::parse_formula(toks)?;
     let result = parser::evaluate(ast)?;
 

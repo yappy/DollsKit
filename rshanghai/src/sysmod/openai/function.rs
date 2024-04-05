@@ -189,18 +189,18 @@ mod tests {
         args.insert("int".to_string(), 42.into());
         args.insert("notint".to_string(), "abcde".into());
 
-        assert!(get_arg_str(&args, &"keytest".to_string()).unwrap() == "ok");
-        assert!(get_arg_str(&args, &"unknown".to_string())
+        assert!(get_arg_str(&args, "keytest").unwrap() == "ok");
+        assert!(get_arg_str(&args, "unknown")
             .unwrap_err()
             .to_string()
             .contains("required"));
 
-        assert!(get_arg_i64(&args, &"int".to_string(), 1..=42).unwrap() == 42);
-        assert!(get_arg_i64(&args, &"notint".to_string(), 1..43)
+        assert!(get_arg_i64(&args, "int", 1..=42).unwrap() == 42);
+        assert!(get_arg_i64(&args, "notint", 1..43)
             .unwrap_err()
             .to_string()
             .contains("must be integer"));
-        assert!(get_arg_i64(&args, &"int".to_string(), 1..42)
+        assert!(get_arg_i64(&args, "int", 1..42)
             .unwrap_err()
             .to_string()
             .contains("Out of range"));
