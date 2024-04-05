@@ -551,6 +551,7 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
         help(),
         sysinfo(),
         autodel(),
+        coin(),
         dice(),
         attack(),
         camera(),
@@ -656,7 +657,38 @@ async fn autodel_set(
     Ok(())
 }
 
-/// Roll dice(s).
+/// Flip coin(s).
+#[poise::command(slash_command, category = "Play Tools")]
+async fn coin(
+    ctx: PoiseContext<'_>,
+    #[description = "Dice count (default=1)"] count: Option<u32>,
+) -> Result<(), PoiseError> {
+    let count = count.unwrap_or(1);
+
+    let msg = match dice::roll(2, count) {
+        Ok(v) => {
+            let mut buf = format!("Flip {count} coin(s)\n");
+            buf.push('[');
+            let mut first = true;
+            for n in v {
+                if first {
+                    first = false;
+                } else {
+                    buf.push(',');
+                }
+                buf.push_str(if n==1 {"\"H\""}else{"\"T\""});
+            }
+            buf.push(']');
+            buf
+        }
+        Err(err) => err.to_string(),
+    };
+    ctx.reply(msg).await?;
+
+    Ok(())
+}
+
+/// Roll dice.
 #[poise::command(slash_command, category = "Play Tools")]
 async fn dice(
     ctx: PoiseContext<'_>,
@@ -668,7 +700,7 @@ async fn dice(
 
     let msg = match dice::roll(face, count) {
         Ok(v) => {
-            let mut buf = format!("Roll {} dice with {} face(s)\n", count, face);
+            let mut buf = format!("Roll {count} dice with {face} face(s)\n");
             buf.push('[');
             let mut first = true;
             for n in v {
