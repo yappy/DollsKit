@@ -40,7 +40,7 @@ struct Lexer<'a> {
 }
 
 impl Lexer<'_> {
-    fn new(src: &String) -> Lexer {
+    fn new(src: &str) -> Lexer {
         Lexer {
             iter: src.chars(),
             buf: None,
