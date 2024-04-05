@@ -676,7 +676,7 @@ async fn coin(
                 } else {
                     buf.push(',');
                 }
-                buf.push_str(if n==1 {"\"H\""}else{"\"T\""});
+                buf.push_str(if n == 1 { "\"H\"" } else { "\"T\"" });
             }
             buf.push(']');
             buf
@@ -772,6 +772,8 @@ async fn ai(
     #[min_length = 1]
     #[max_length = 1024]
     chat_msg: String,
+    #[description = "Show internal details when AI calls a function. (default=False)"]
+    trace_function_call: Option<bool>,
 ) -> Result<(), PoiseError> {
     let data = ctx.data();
     let mut discord = data.ctrl.sysmods().discord.lock().await;
@@ -830,6 +832,17 @@ async fn ai(
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = discord.func_table.call((), func_name, func_args).await;
+                    // trace
+                    if trace_function_call.unwrap_or(false) {
+                        reply_long(
+                            &ctx,
+                            &format!(
+                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
+                                func_res.content.as_ref().unwrap()
+                            ),
+                        )
+                        .await?;
+                    }
                     // function 応答を履歴に追加
                     discord.chat_history.push(func_res);
                     // continue
