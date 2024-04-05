@@ -380,7 +380,7 @@ async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()>
     const LEN: usize = MSG_MAX_LEN - 128;
     const QUOTE_PRE: &str = "```\n";
     const QUOTE_PST: &str = "\n```";
-    const SPECIALS: &str = "#+-*_\\`.!{}[]()";
+    const SPECIALS: &str = "\\`";
 
     let mut count = 0;
     let mut buf = String::from(QUOTE_PRE);
