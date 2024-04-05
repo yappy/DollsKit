@@ -33,7 +33,7 @@ fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
             name: "get_version".to_string(),
-            description: Some("Get the version of the assistant program".to_string()),
+            description: Some("Get version of this assistant program".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties: Default::default(),
@@ -96,7 +96,7 @@ fn register_get_cpu_status<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
             name: "get_cpu_status".to_string(),
-            description: Some("Get the current status of assistant's CPU".to_string()),
+            description: Some("Get current status of assistant's CPU".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties: Default::default(),
