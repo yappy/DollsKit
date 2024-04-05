@@ -199,7 +199,7 @@ mod tests {
         assert!(get_arg_i64(&args, &"notint".to_string(), 1..43)
             .unwrap_err()
             .to_string()
-            .contains("Invalid"));
+            .contains("must be integer"));
         assert!(get_arg_i64(&args, &"int".to_string(), 1..42)
             .unwrap_err()
             .to_string()
