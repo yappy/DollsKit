@@ -159,12 +159,12 @@ pub fn lexical_analyze(src: &str) -> Result<Vec<TokenWithPos>> {
 
 //------------------------------------------------------------------------------
 
-enum Ast {
+pub enum Ast {
     Operation(Operation),
     Literal(RuntimeValue),
 }
 
-enum Operation {
+pub enum Operation {
     Minus(Box<Ast>),
     Add(Box<Ast>, Box<Ast>),
     Sub(Box<Ast>, Box<Ast>),
@@ -174,8 +174,17 @@ enum Operation {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum RuntimeValue {
+pub enum RuntimeValue {
     Integer(i64),
+}
+
+impl std::fmt::Display for RuntimeValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            RuntimeValue::Integer(n) => f.write_str(&n.to_string())?,
+        }
+        Ok(())
+    }
 }
 
 struct Parser {
@@ -291,9 +300,9 @@ impl Parser {
     }
 }
 
-pub fn parse_expr(src: Vec<TokenWithPos>) -> Result<Ast> {
+pub fn parse_formula(src: Vec<TokenWithPos>) -> Result<Ast> {
     let mut parser = Parser::new(src);
-    let root = parser.parse_expr()?;
+    let root = parser.parse_formula()?;
 
     Ok(root)
 }
@@ -424,10 +433,10 @@ mod tests {
     #[test]
     fn parse_eval() {
         let src = "
-(((1 + 2) * 3) - (1 + 2 * 3))
+(((1 + 2) * 3) - --(1 + 2 * 3))
 ";
         let toks = lexical_analyze(src).unwrap();
-        let root = parse_expr(toks).unwrap();
+        let root = parse_formula(toks).unwrap();
         let v = evaluate(root).unwrap();
         assert_eq!(RuntimeValue::Integer(2), v);
     }
