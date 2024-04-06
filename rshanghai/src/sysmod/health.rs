@@ -1,8 +1,8 @@
 //! 定期ヘルスチェック機能。
 
 use super::SystemModule;
-use crate::sys::config;
 use crate::sys::taskserver::Control;
+use crate::sys::{config, taskserver};
 use anyhow::{anyhow, ensure, Result};
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
@@ -134,11 +134,11 @@ impl Health {
 
     /// [Self::tweet_task] のエントリ関数。
     /// モジュールをロックしてメソッド呼び出しを行う。
-    async fn tweet_task_entry(mut ctrl: Control) -> Result<()> {
+    async fn tweet_task_entry(ctrl: Control) -> Result<()> {
         // check_task を先に実行する (可能性を高める) ために遅延させる
         select! {
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {}
-            _ = ctrl.cancel_rx().changed() => {
+            _ = ctrl.wait_cancel_rx() => {
                 info!("[health-tweet] task cancel");
                 return Ok(());
             }
@@ -156,15 +156,17 @@ impl SystemModule for Health {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {
-                ctrl.spawn_oneshot_task("health-check", Health::check_task_entry);
-                ctrl.spawn_oneshot_task("health-tweet", Health::tweet_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, "health-check", Health::check_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, "health-tweet", Health::tweet_task_entry);
             } else {
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     "health-check",
                     &self.wakeup_list_check,
                     Health::check_task_entry,
                 );
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     "health-tweet",
                     &self.wakeup_list_tweet,
                     Health::tweet_task_entry,
@@ -379,7 +381,6 @@ async fn get_disk_info() -> Result<DiskInfo> {
     })
 }
 
-/// [CpuTemp] を計測する。
 /// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
 /// _/sys/class/thermal/thermal_zone0/temp_ による。
@@ -409,6 +410,9 @@ async fn get_cpu_temp() -> Result<Option<f64>> {
     }
 }
 
+/// CPU 論理コア数を取得する。
+///
+/// nproc コマンドを使用する。
 pub async fn get_cpu_cores() -> Result<u32> {
     let output = Command::new("nproc").output().await?;
     ensure!(output.status.success(), "nproc command failed");
@@ -418,6 +422,10 @@ pub async fn get_cpu_cores() -> Result<u32> {
     Ok(stdout.trim().parse()?)
 }
 
+/// CPU クロック周波数を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_current_freq() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("measure_clock ")
@@ -448,6 +456,11 @@ pub async fn get_current_freq() -> Result<Option<u64>> {
     Ok(Some(actual))
 }
 
+/// CPU クロック周波数の設定値を取得する。
+/// 実際の周波数は発熱によるスロットリングによりこれより低くなる可能性がある。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_freq_conf() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("get_config")
@@ -502,6 +515,10 @@ bitflags! {
     }
 }
 
+/// CPU スロットリング状態を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
     let result = Command::new("vcgencmd").arg("get_throttled").output().await;
     let output = match result {

@@ -1,13 +1,15 @@
 //! LINE API。
-use super::{
-    openai::{
-        function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
-        ParameterElement,
-    },
-    SystemModule,
+
+use super::openai::{
+    function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
+    ParameterElement,
 };
+use super::SystemModule;
 use crate::{
-    sys::{config, taskserver::Control},
+    sys::{
+        config,
+        taskserver::{self, Control},
+    },
     sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
     utils::chat_history::{self, ChatHistory},
 };
@@ -429,7 +431,6 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
                 required: vec!["keywords".to_string()],
             },
         },
-        "draw",
         Box::new(draw_picture_sync),
     );
 }
@@ -439,10 +440,10 @@ fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
 }
 
 async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
-    let keywords = function::get_arg(args, "keywords")?.to_string();
+    let keywords = function::get_arg_str(args, "keywords")?.to_string();
 
     let ctrl = ctx.ctrl.clone();
-    ctrl.spawn_oneshot_fn("line_draw_picture", async move {
+    taskserver::spawn_oneshot_fn(&ctrl, "line_draw_picture", async move {
         let url = {
             let ai = ctx.ctrl.sysmods().openai.lock().await;
 

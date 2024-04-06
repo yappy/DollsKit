@@ -13,14 +13,14 @@ panic = 'abort'
 
 [dependencies]
 # Error handling
-anyhow = "1.0.80"
-thiserror = "1.0.57"
+anyhow = "1.0.81"
+thiserror = "1.0.58"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.3.0"
 # Bit flags
-bitflags = "2.4.2"
+bitflags = "2.5.0"
 
 # Command line parser
 getopts = "0.2.21"
@@ -32,24 +32,24 @@ simplelog = "0.12.2"
 daemonize = "0.5.0"
 # Time for log
 time = "0.3.34"
-chrono = { version = "0.4.35", features = ["clock", "iana-time-zone", "std"] }
+chrono = { version = "0.4.37", features = ["clock", "iana-time-zone", "std"] }
 # Json
 serde = { version = "1.0.197", features = ["derive"] }
-serde_json = "1.0.114"
-serde_with = { version = "3.6.1", features = ["json"] }
+serde_json = "1.0.115"
+serde_with = { version = "3.7.0", features = ["json"] }
 # TOML
-toml = "0.8.10"
+toml = "0.8.12"
 
 # Async
-tokio = { version = "1.36.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
-tokio-stream = "0.1.14"
+tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio-stream = "0.1.15"
 
 # HTTP client
-reqwest = { version = "0.11.24", features = ["json"] }
+reqwest = { version = "0.11.27", features = ["json"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
-base64 = "0.21.7"
+base64 = "0.22.0"
 # RNG
 rand = "0.8.5"
 # HMAC
@@ -62,13 +62,14 @@ actix-web = "4.5.1"
 actix-multipart = "0.6.1"
 # Discord
 serenity = "0.12.1"
+poise = "0.6.1"
 
 # Image convert
-image = "0.24.9"
+image = "0.25.1"
 # Font
 rusttype="0.9.3"
 # Scraping
-scraper = "0.18.1"
+scraper = "0.19.0"
 # ChatGPT tokenizer
 tiktoken-rs = "0.5.8"
 
