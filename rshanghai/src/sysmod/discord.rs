@@ -1,34 +1,41 @@
 //! Discord クライアント (bot) 機能。
 
-use super::camera::{take_a_pic, TakePicOption};
 use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
-use crate::sys::version;
+
 use crate::sys::{config, taskserver::Control};
+use crate::sys::{taskserver, version};
+use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::{self, ChatHistory};
 use crate::utils::netutil::HttpStatusError;
-use anyhow::{anyhow, ensure, Result};
+use crate::utils::playtools::dice::{self};
+use ::serenity::all::{CreateAttachment, FullEvent};
+use anyhow::{anyhow, bail, ensure, Result};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
-use rand::Rng;
+
+use poise::{serenity_prelude as serenity, CreateReply, FrameworkContext};
+
 use serde::{Deserialize, Serialize};
-use serenity::async_trait;
-use serenity::builder::{CreateAttachment, CreateMessage};
-use serenity::framework::standard::macros::{command, group, help, hook};
-use serenity::framework::standard::{
-    help_commands, Args, CommandError, CommandGroup, CommandResult, Configuration, HelpOptions,
-};
-use serenity::http::{Http, MessagePagination};
+
+use serenity::http::MessagePagination;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use serenity::{framework::StandardFramework, Client};
-use static_assertions::const_assert;
+use serenity::Client;
+
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
+use std::sync::Arc;
 use std::time::Duration;
 use time::Instant;
+
+struct PoiseData {
+    ctrl: Control,
+}
+type PoiseError = anyhow::Error;
+type PoiseContext<'a> = poise::Context<'a, PoiseData, PoiseError>;
 
 /// メッセージの最大文字数。 (Unicode codepoint)
 const MSG_MAX_LEN: usize = 2000;
@@ -46,11 +53,12 @@ pub struct DiscordConfig {
     notif_channel: u64,
     /// 自動削除機能の対象とするチャネル ID のリスト。
     auto_del_chs: Vec<u64>,
+    /// オーナーのユーザ ID。
+    /// Discord bot から得られるものは使わない。
+    owner_ids: Vec<u64>,
     /// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     perm_err_msg: String,
-    /// パーミッションエラーを強制的に発生させる。デバッグ用。
-    force_perm_err: bool,
     /// OpenAI プロンプト。
     #[serde(default)]
     prompt: DiscordPrompt,
@@ -63,8 +71,8 @@ impl Default for DiscordConfig {
             token: "".to_string(),
             notif_channel: 0,
             auto_del_chs: Default::default(),
+            owner_ids: Default::default(),
             perm_err_msg: "バカジャネーノ".to_string(),
-            force_perm_err: false,
             prompt: Default::default(),
         }
     }
@@ -99,7 +107,7 @@ pub struct Discord {
     wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
     ///
-    /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
+    /// 起動直後は None で、[event_handler] イベントの度に置き換わる。
     ctx: Option<Context>,
     /// [Self::ctx] が None の間に発言しようとしたメッセージのキュー。
     ///
@@ -127,6 +135,7 @@ pub struct AutoDeleteConfig {
 }
 
 impl Display for AutoDeleteConfig {
+    /// to_string 可能にする。
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let count_str = if self.keep_count != 0 {
             self.keep_count.to_string()
@@ -155,10 +164,10 @@ impl Discord {
         let config = config::get(|cfg| cfg.discord.clone());
         let ai_config = config::get(|cfg| cfg.openai.clone());
 
-        let mut auto_del_congig = BTreeMap::new();
+        let mut auto_del_config = BTreeMap::new();
         for &ch in &config.auto_del_chs {
             ensure!(ch != 0);
-            auto_del_congig.insert(
+            auto_del_config.insert(
                 ChannelId::new(ch),
                 AutoDeleteConfig {
                     keep_count: 0,
@@ -193,13 +202,16 @@ impl Discord {
             wakeup_list,
             ctx: None,
             postponed_msgs: Default::default(),
-            auto_del_config: auto_del_congig,
+            auto_del_config,
             chat_history,
             chat_timeout: None,
             func_table,
         })
     }
 
+    /// 発言を投稿する。
+    ///
+    /// 接続前の場合、接続後まで遅延する。
     pub async fn say(&mut self, msg: &str) -> Result<()> {
         if !self.config.enabled {
             info!("[discord] disabled - msg: {}", msg);
@@ -242,54 +254,74 @@ impl Discord {
 async fn discord_main(ctrl: Control) -> Result<()> {
     let (config, wakeup_list) = {
         let discord = ctrl.sysmods().discord.lock().await;
+
         (discord.config.clone(), discord.wakeup_list.clone())
     };
 
-    // 自身の ID が on_mention 設定に必要なので別口で取得しておく
-    let http = Http::new(&config.token);
-    let info = http.get_current_application_info().await?;
-    let myid = UserId::new(info.id.get());
-    let ownerids = HashSet::from([info.owner.ok_or_else(|| anyhow!("No owner"))?.id]);
+    // owner_ids を HashSet に変換 (0 は panic するので禁止)
+    let mut owners = HashSet::new();
+    for id in config.owner_ids {
+        if id == 0 {
+            bail!("owner id must not be 0");
+        }
+        owners.insert(UserId::new(id));
+    }
+    info!("[discord] owners: {:?}", owners);
 
-    let framework = StandardFramework::new()
-        // コマンド前後でのフック (ロギング用)
-        .before(before_hook)
-        .after(after_hook)
-        .unrecognised_command(unrecognised_hook)
-        // コマンドとヘルプの登録
-        .group(&GENERAL_GROUP)
-        .help(&MY_HELP);
-    // コマンドのプレフィクスはなし
-    // bot へのメンションをトリガとする
-    framework.configure(
-        Configuration::new()
-            .prefix("")
-            .on_mention(Some(myid))
-            .owners(ownerids.clone()),
-    );
+    let ctrl_for_setup = ctrl.clone();
+    let framework = poise::Framework::builder()
+        // owner は手動で設定する
+        .initialize_owners(false)
+        // その他オプション
+        .options(poise::FrameworkOptions {
+            on_error: |err| Box::pin(on_error(err)),
+            pre_command: |ctx| Box::pin(pre_command(ctx)),
+            post_command: |ctx| Box::pin(post_command(ctx)),
+            event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
+            // prefix command
+            prefix_options: poise::PrefixFrameworkOptions {
+                prefix: None,
+                mention_as_prefix: true,
+                ..Default::default()
+            },
+            // owner は手動で設定する (builder の方から設定されるようだがデフォルトが true なので念のためこちらも)
+            initialize_owners: false,
+            owners,
+            // コマンドリスト
+            commands: command_list(),
+            ..Default::default()
+        })
+        // ハンドラ
+        .setup(|ctx, _ready, framework| {
+            // 最初の ready イベントで呼ばれる
+            Box::pin(async move {
+                let mut discord = ctrl_for_setup.sysmods().discord.lock().await;
+                discord.ctx = Some(ctx.clone());
+
+                info!("[discord] register commands...");
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                info!("[discord] register commands OK");
+
+                // construct user data here (invoked when bot connects to Discord)
+                Ok(PoiseData {
+                    ctrl: Arc::clone(&ctrl_for_setup),
+                })
+            })
+        })
+        .build();
 
     // クライアントの初期化
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     let mut client = Client::builder(config.token.clone(), intents)
-        .event_handler(Handler)
         .framework(framework)
         .await?;
 
-    // グローバルデータの設定
-    {
-        let mut data = client.data.write().await;
-
-        data.insert::<ControlData>(ctrl.clone());
-        data.insert::<ConfigData>(config);
-        data.insert::<OwnerData>(ownerids);
-    }
-
     // システムシャットダウンに対応してクライアントにシャットダウン要求を送る
     // 別タスクを立ち上げる
-    let mut ctrl_for_cancel = ctrl.clone();
+    let ctrl_for_cancel = Arc::clone(&ctrl);
     let shard_manager = client.shard_manager.clone();
-    ctrl.spawn_oneshot_fn("discord-exit", async move {
-        ctrl_for_cancel.cancel_rx().changed().await.unwrap();
+    taskserver::spawn_oneshot_fn(&ctrl, "discord-exit", async move {
+        ctrl_for_cancel.wait_cancel_rx().await;
         info!("[discord-exit] recv cancel");
         shard_manager.shutdown_all().await;
         info!("[discord-exit] shutdown_all ok");
@@ -305,7 +337,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
     });
 
     // 定期チェックタスクを立ち上げる
-    ctrl.spawn_periodic_task("discord-periodic", &wakeup_list, periodic_main);
+    taskserver::spawn_periodic_task(&ctrl, "discord-periodic", &wakeup_list, periodic_main);
 
     // システムスタート
     client.start().await?;
@@ -315,7 +347,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
 }
 
 /// 文字数制限に気を付けつつ分割して送信する。
-async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
+async fn reply_long(ctx: &PoiseContext<'_>, content: &str) -> Result<()> {
     // mention 関連でのずれが少し怖いので余裕を持たせる
     const LEN: usize = MSG_MAX_LEN - 128;
 
@@ -331,13 +363,80 @@ async fn reply_long(msg: &Message, ctx: &Context, content: &str) -> Result<()> {
             None => (remain, true),
         };
         if !chunk.is_empty() {
-            msg.reply(ctx, chunk).await?;
+            ctx.reply(chunk).await?;
         }
         if fin {
             break;
         }
     }
     Ok(())
+}
+
+/// Markdown エスケープしながら Markdown 引用する。
+/// 文字数制限に気を付けつつ分割して送信する。
+async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()> {
+    // mention 関連でのずれが少し怖いので余裕を持たせる
+    // 引用符の分も含める
+    const LEN: usize = MSG_MAX_LEN - 128;
+    const QUOTE_PRE: &str = "```\n";
+    const QUOTE_PST: &str = "\n```";
+    const SPECIALS: &str = "\\`";
+
+    let mut count = 0;
+    let mut buf = String::from(QUOTE_PRE);
+    for c in content.chars() {
+        if count >= LEN {
+            buf.push_str(QUOTE_PST);
+            ctx.reply(buf).await?;
+
+            count = 0;
+            buf = String::from(QUOTE_PRE);
+        }
+        if SPECIALS.find(c).is_some() {
+            buf.push('\\');
+        }
+        buf.push(c);
+        count += 1;
+    }
+    if !buf.is_empty() {
+        buf.push_str(QUOTE_PST);
+        ctx.reply(buf).await?;
+    }
+    Ok(())
+}
+
+/// 分を (日, 時間, 分) に変換する。
+fn convert_duration(mut min: u32) -> (u32, u32, u32) {
+    let day = min / (60 * 24);
+    min %= 60 * 24;
+    let hour = min / 60;
+    min %= 60;
+
+    (day, hour, min)
+}
+
+/// 日時分からなる文字列を分に変換する。
+///
+/// 例: 1d2h3m
+fn parse_duration(src: &str) -> Result<u32> {
+    let mut min = 0u32;
+    let mut buf = String::new();
+    for c in src.chars() {
+        if c == 'd' || c == 'h' || c == 'm' {
+            let n: u32 = buf.parse()?;
+            let n = match c {
+                'd' => n.saturating_mul(24 * 60),
+                'h' => n.saturating_mul(60),
+                'm' => n,
+                _ => panic!(),
+            };
+            min = min.saturating_add(n);
+            buf.clear();
+        } else {
+            buf.push(c);
+        }
+    }
+    Ok(min)
 }
 
 /// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
@@ -442,292 +541,280 @@ async fn periodic_main(ctrl: Control) -> Result<()> {
     Ok(())
 }
 
-/// コマンド開始前のフック。ロギング用。
-#[hook]
-async fn before_hook(_: &Context, msg: &Message, cmd_name: &str) -> bool {
-    info!("[discord] command {} by {}", cmd_name, msg.author.name);
+//------------------------------------------------------------------------------
+// command
+// https://docs.rs/poise/latest/poise/macros/attr.command.html
+//------------------------------------------------------------------------------
 
-    true
+fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
+    vec![
+        help(),
+        sysinfo(),
+        autodel(),
+        coin(),
+        dice(),
+        attack(),
+        camera(),
+        ai(),
+        aistatus(),
+        aiimg(),
+    ]
 }
 
-/// コマンド完了後のフック。ロギング用。
-#[hook]
-async fn after_hook(_: &Context, _: &Message, cmd_name: &str, result: Result<(), CommandError>) {
-    match result {
-        Ok(()) => {
-            info!("[discord] command {} succeeded", cmd_name);
-        }
-        Err(why) => {
-            error!("[discord] error in {}: {:?}", cmd_name, why);
-        }
+/// `help <command>` shows detailed command help.
+/// `help` shows all available commands briefly.
+#[poise::command(slash_command, prefix_command, category = "General")]
+pub async fn help(
+    ctx: PoiseContext<'_>,
+    #[description = "Command name"] command: Option<String>,
+) -> Result<(), PoiseError> {
+    let extra_text = "
+New slash command style
+  /command params...
+Compatible style (you can use \"double quote\" to use spaces in a parameter)
+  @bot_name command params...
+
+Parameter help will be displayed if you start to type slash command.
+If you use old style,
+  @bot_name help command_name
+to show detailed command help.
+";
+    let config = poise::builtins::HelpConfiguration {
+        // その人だけに見える返信にするかどうか
+        ephemeral: false,
+        show_subcommands: true,
+        extra_text_at_bottom: extra_text,
+        ..Default::default()
     };
-}
-
-/// コマンド認識不能時のフック。ロギング用。
-#[hook]
-async fn unrecognised_hook(_: &Context, msg: &Message, cmd_name: &str) {
-    warn!(
-        "[discord] unknown command {} by {}",
-        cmd_name, msg.author.name
-    );
-}
-
-impl SystemModule for Discord {
-    /// async 使用可能になってからの初期化。
-    ///
-    /// 設定有効ならば [discord_main] を spawn する。
-    fn on_start(&self, ctrl: &Control) {
-        info!("[discord] on_start");
-        if self.config.enabled {
-            ctrl.spawn_oneshot_task("discord", discord_main);
-        }
-    }
-}
-
-struct ControlData;
-impl TypeMapKey for ControlData {
-    type Value = Control;
-}
-
-struct ConfigData;
-impl TypeMapKey for ConfigData {
-    type Value = DiscordConfig;
-}
-
-struct OwnerData;
-impl TypeMapKey for OwnerData {
-    type Value = HashSet<UserId>;
-}
-
-struct Handler;
-
-/// Discord クライアントとしてのイベントハンドラ。
-#[async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
-        info!("[discord] connected as {}", ready.user.name);
-    }
-
-    async fn resume(&self, _: Context, _: ResumedEvent) {
-        info!("[discord] resumed");
-    }
-
-    /// このタイミングで [Discord::ctx] に ctx をクローンして保存する。
-    /// [Discord::postponed_msgs] があれば全て送信する。
-    async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
-        info!("[discord] cache ready - guild: {}", guilds.len());
-
-        let ctx_clone = ctx.clone();
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
-        let mut discord = ctrl.sysmods().discord.lock().await;
-        discord.ctx = Some(ctx_clone);
-
-        info!(
-            "[discord] send postponed msgs ({})",
-            discord.postponed_msgs.len()
-        );
-        for msg in &discord.postponed_msgs {
-            let ch = discord.config.notif_channel;
-            // notif_channel が有効の場合しかキューされない
-            assert_ne!(0, ch);
-
-            info!("[discord] say msg: {}", msg);
-            let ch = ChannelId::new(ch);
-            if let Err(why) = ch.say(&ctx, msg).await {
-                error!("{:#?}", why);
-            }
-        }
-        discord.postponed_msgs.clear();
-    }
-}
-
-#[help]
-async fn my_help(
-    context: &Context,
-    msg: &Message,
-    args: Args,
-    help_options: &'static HelpOptions,
-    groups: &[&'static CommandGroup],
-    owners: HashSet<UserId>,
-) -> CommandResult {
-    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await?;
+    poise::builtins::help(ctx, command.as_deref(), config).await?;
 
     Ok(())
 }
 
-async fn owner_check(ctx: &Context, msg: &Message) -> CommandResult {
-    let (accept, errmsg) = {
-        let data = ctx.data.read().await;
-        let owners = data.get::<OwnerData>().unwrap();
-        let config = data.get::<ConfigData>().unwrap();
-        let accept = !config.force_perm_err && owners.contains(&msg.author.id);
-        let errmsg = config.perm_err_msg.clone();
-
-        (accept, errmsg)
-    };
-
-    if accept {
-        Ok(())
-    } else {
-        if let Err(why) = msg.reply(ctx, errmsg).await {
-            warn!("error on reply: {:#}", why);
-        }
-
-        Err(anyhow!("permission error").into())
-    }
-}
-
-#[group]
-#[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset, aiimg)]
-struct General;
-
-#[command]
-#[description("Print system information.")]
-#[usage("")]
-#[example("")]
-async fn sysinfo(ctx: &Context, msg: &Message) -> CommandResult {
+/// Show system information.
+#[poise::command(slash_command, prefix_command, category = "General")]
+async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let ver_info: &str = version::version_info();
-    msg.reply(ctx, ver_info).await?;
+    ctx.reply(ver_info).await?;
 
     Ok(())
 }
 
-/// ダイスの面数の最大値。
-const DICE_MAX: u64 = 1u64 << 56;
-/// ダイスの個数の最大値。
-const DICE_COUNT_MAX: u64 = 100u64;
-const_assert!(DICE_MAX < u64::MAX / DICE_COUNT_MAX);
+const AUTODEL_INVALID_CH_MSG: &str = "Auto delete feature is not enabled for this channel.
+Please contact my owner.";
 
-/// ダイスロール機能のコア。
-///
-/// * `dice` - 何面のダイスを振るか。
-/// * `count` - 何個のダイスを振るか。
-fn dice_core(dice: u64, count: u64) -> Vec<u64> {
-    assert!((1..=DICE_MAX).contains(&dice));
-    assert!((1..=DICE_COUNT_MAX).contains(&count));
-
-    let mut result = vec![];
-    let mut rng = rand::thread_rng();
-    for _ in 0..count {
-        result.push(rng.gen_range(1..=dice));
-    }
-
-    result
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "Auto Delete",
+    subcommands("autodel_status", "autodel_set")
+)]
+async fn autodel(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    // 親コマンドはスラッシュコマンドでは使用不可
+    Ok(())
 }
 
-#[command]
-#[description("Roll a dice with 1-**dice** faces **count** times.")]
-#[description("Default: dice=6, count=1")]
-#[usage("[dice] [count]")]
-#[example("")]
-#[example("6 2")]
-#[min_args(0)]
-#[max_args(2)]
-async fn dice(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
-    let d = if !arg.is_empty() { arg.single()? } else { 6u64 };
-    let count = if !arg.is_empty() { arg.single()? } else { 1u64 };
-    if !(1..=DICE_MAX).contains(&d) || !(1..=DICE_COUNT_MAX).contains(&count) {
-        msg.reply(
-            ctx,
-            format!("Invalid parameter\n1 <= dice <= {DICE_MAX}, 1 <= count <= {DICE_COUNT_MAX}"),
-        )
-        .await?;
+/// Get the auto-delete status in this channel.
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "Auto Delete",
+    rename = "status"
+)]
+async fn autodel_status(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let ch = ctx.channel_id();
+    let config = {
+        let data = ctx.data();
+        let discord = data.ctrl.sysmods().discord.lock().await;
+
+        discord.auto_del_config.get(&ch).copied()
+    };
+
+    if let Some(config) = config {
+        ctx.reply(format!("{config}")).await?;
+    } else {
+        ctx.reply(AUTODEL_INVALID_CH_MSG).await?;
+    }
+
+    Ok(())
+}
+
+/// Enable/Disable/Config auto-delete feature in this channel.
+///
+/// "0 0" disables the feature.
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "Auto Delete",
+    rename = "set"
+)]
+async fn autodel_set(
+    ctx: PoiseContext<'_>,
+    #[description = "Delete old messages other than this count of newer ones (0: disable)"]
+    keep_count: u32,
+    #[description = "Delete messages after this time (e.g. 1d, 3h, 30m, 1d23h59m, etc.) (0: disable)"]
+    keep_duration: String,
+) -> Result<(), PoiseError> {
+    let ch = ctx.channel_id();
+    let keep_duration = parse_duration(&keep_duration);
+    if keep_duration.is_err() {
+        ctx.reply("keep_duration parse error.").await?;
         return Ok(());
     }
+    let keep_duration = keep_duration.unwrap();
 
-    let nums = dice_core(d, count);
-    let nums: Vec<_> = nums.iter().map(|n| n.to_string()).collect();
-    let buf = nums.join(", ");
-    assert!(!buf.is_empty());
+    let msg = {
+        let mut discord = ctx.data().ctrl.sysmods().discord.lock().await;
 
-    msg.reply(ctx, buf).await?;
-
-    Ok(())
-}
-
-#[command]
-#[description("Delete messages other than the most recent N ones.")]
-#[usage("<N>")]
-#[example("100")]
-#[num_args(1)]
-async fn delmsg(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
-    owner_check(ctx, msg).await?;
-
-    let n: usize = arg.single()?;
-
-    // id 昇順で後ろ n 個を残して他を消す
-    let (delcount, total) =
-        delete_msgs_in_channel(ctx, msg.channel_id, |_m, i, len| i + n < len).await?;
-
-    msg.reply(ctx, format!("{delcount}/{total} messages deleted"))
-        .await?;
-
-    Ok(())
-}
-
-#[command]
-#[description("Take a picture.")]
-#[usage("")]
-#[example("")]
-async fn camera(ctx: &Context, msg: &Message) -> CommandResult {
-    owner_check(ctx, msg).await?;
-
-    let pic = take_a_pic(TakePicOption::new()).await?;
-    let attachment = CreateAttachment::bytes(&pic[..], "camera.jpg");
-    let cm = CreateMessage::new().add_file(attachment);
-    msg.channel_id.send_message(ctx, cm).await?;
-
-    Ok(())
-}
-
-#[command]
-#[description("Let me say a message to the specified user.")]
-#[usage("here <user> <msg>")]
-#[usage("<channel> <user> <msg>")]
-#[example("12345 6789 hello")]
-#[num_args(3)]
-async fn attack(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
-    owner_check(ctx, msg).await?;
-
-    let chstr: String = arg.single()?;
-    let ch = if chstr == "here" {
-        msg.channel_id
-    } else {
-        ChannelId::new(chstr.parse::<u64>()?)
+        let config = discord.auto_del_config.get_mut(&ch);
+        match config {
+            Some(config) => {
+                config.keep_count = keep_count;
+                config.keep_dur_min = keep_duration;
+                format!("OK\n{config}")
+            }
+            None => AUTODEL_INVALID_CH_MSG.to_string(),
+        }
     };
-    let user = UserId::new(arg.single::<u64>()?);
-    let text: String = arg.single_quoted()?;
-
-    let cm = CreateMessage::new().content(format!("{} {}", user.mention(), text));
-    ch.send_message(ctx, cm).await?;
+    ctx.reply(msg).await?;
 
     Ok(())
 }
 
-#[command]
-#[description("OpenAI chat assistant.")]
-#[usage("<your message>")]
-#[example("Hello, what's your name?")]
-#[min_args(1)]
-async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
-    let chat_msg = arg.rest();
+/// Flip coin(s).
+#[poise::command(slash_command, prefix_command, category = "Play Tools")]
+async fn coin(
+    ctx: PoiseContext<'_>,
+    #[description = "Dice count (default=1)"] count: Option<u32>,
+) -> Result<(), PoiseError> {
+    let count = count.unwrap_or(1);
 
-    let data = ctx.data.read().await;
-    let ctrl = data.get::<ControlData>().unwrap();
-    let mut discord = ctrl.sysmods().discord.lock().await;
-    let config = data.get::<ConfigData>().unwrap();
+    let msg = match dice::roll(2, count) {
+        Ok(v) => {
+            let mut buf = format!("Flip {count} coin(s)\n");
+            buf.push('[');
+            let mut first = true;
+            for n in v {
+                if first {
+                    first = false;
+                } else {
+                    buf.push(',');
+                }
+                buf.push_str(if n == 1 { "\"H\"" } else { "\"T\"" });
+            }
+            buf.push(']');
+            buf
+        }
+        Err(err) => err.to_string(),
+    };
+    ctx.reply(msg).await?;
+
+    Ok(())
+}
+
+/// Roll dice.
+#[poise::command(slash_command, prefix_command, category = "Play Tools")]
+async fn dice(
+    ctx: PoiseContext<'_>,
+    #[description = "Face count (default=6)"] face: Option<u64>,
+    #[description = "Dice count (default=1)"] count: Option<u32>,
+) -> Result<(), PoiseError> {
+    let face = face.unwrap_or(6);
+    let count = count.unwrap_or(1);
+
+    let msg = match dice::roll(face, count) {
+        Ok(v) => {
+            let mut buf = format!("Roll {count} dice with {face} face(s)\n");
+            buf.push('[');
+            let mut first = true;
+            for n in v {
+                if first {
+                    first = false;
+                } else {
+                    buf.push(',');
+                }
+                buf.push_str(&n.to_string());
+            }
+            buf.push(']');
+            buf
+        }
+        Err(err) => err.to_string(),
+    };
+    ctx.reply(msg).await?;
+
+    Ok(())
+}
+
+/// Order the assistant to say something.
+///
+/// You can specify target user(s).
+#[poise::command(slash_command, prefix_command, category = "Manipulation", owners_only)]
+async fn attack(
+    ctx: PoiseContext<'_>,
+    #[description = "Target user"] target: Option<UserId>,
+    #[description = "Chat message to be said"]
+    #[min_length = 1]
+    #[max_length = 1024]
+    chat_msg: String,
+) -> Result<(), PoiseError> {
+    let text = if let Some(user) = target {
+        format!("{} {}", user.mention(), chat_msg)
+    } else {
+        chat_msg
+    };
+
+    info!("[discord] reply: {text}");
+    ctx.reply(text).await?;
+    Ok(())
+}
+
+/// Take a picture.
+#[poise::command(slash_command, prefix_command, category = "Manipulation", owners_only)]
+async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    ctx.reply("Taking a picture...").await?;
+
+    let pic = camera::take_a_pic(TakePicOption::new()).await?;
+
+    let attach = CreateAttachment::bytes(&pic[..], "camera.jpg");
+    ctx.send(
+        CreateReply::default()
+            .content("camera.jpg")
+            .attachment(attach),
+    )
+    .await?;
+
+    Ok(())
+}
+
+/// AI assistant.
+///
+/// The owner of the assistant will pay the usage fee for ChatGPT.
+#[poise::command(slash_command, prefix_command, category = "AI")]
+async fn ai(
+    ctx: PoiseContext<'_>,
+    #[description = "Chat message to AI assistant"]
+    #[min_length = 1]
+    #[max_length = 1024]
+    chat_msg: String,
+    #[description = "Show internal details when AI calls a function. (default=False)"]
+    trace_function_call: Option<bool>,
+) -> Result<(), PoiseError> {
+    let data = ctx.data();
+    let mut discord = data.ctrl.sysmods().discord.lock().await;
 
     // タイムアウト処理
     discord.check_history_timeout();
 
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &chat_msg).await?;
+
     // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
-    let sysmsg = config
+    let sysmsg = discord
+        .config
         .prompt
         .each
         .join("")
-        .replace("${user}", &msg.author.name);
+        .replace("${user}", &ctx.author().name);
     discord.chat_history.push({
         ChatMessage {
             role: Role::System,
@@ -742,14 +829,14 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     });
 
     let reply_msg = loop {
-        let ai = ctrl.sysmods().openai.lock().await;
+        let ai = data.ctrl.sysmods().openai.lock().await;
 
         // 送信用リスト
         let mut all_msgs = Vec::new();
         // 先頭システムメッセージ
         all_msgs.push(ChatMessage {
             role: Role::System,
-            content: Some(config.prompt.pre.join("")),
+            content: Some(discord.config.prompt.pre.join("")),
             ..Default::default()
         });
         // それ以降 (ヒストリの中身全部) を追加
@@ -769,6 +856,17 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = discord.func_table.call((), func_name, func_args).await;
+                    // trace
+                    if trace_function_call.unwrap_or(false) {
+                        reply_long(
+                            &ctx,
+                            &format!(
+                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
+                                func_res.content.as_ref().unwrap()
+                            ),
+                        )
+                        .await?;
+                    }
                     // function 応答を履歴に追加
                     discord.chat_history.push(func_res);
                     // continue
@@ -792,20 +890,21 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
                 .content
                 .ok_or_else(|| anyhow!("content required"))?;
             info!("[discord] openai reply: {text}");
-            reply_long(msg, ctx, &text).await?;
+            reply_long(&ctx, &text).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(
-                Instant::now() + Duration::from_secs(config.prompt.history_timeout_min as u64 * 60),
+                Instant::now()
+                    + Duration::from_secs(discord.config.prompt.history_timeout_min as u64 * 60),
             );
         }
         Err(err) => {
             error!("[discord] openai error: {:#?}", err);
             // HTTP status が得られるタイプのエラーのみ discord 返信する
             if let Some(err) = err.downcast_ref::<HttpStatusError>() {
-                warn!("openai reply: {} {}", err.status, err.body);
+                warn!("[discord] openai reply: {} {}", err.status, err.body);
                 let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
-                msg.reply(ctx, reply_msg.to_string()).await?;
+                ctx.reply(reply_msg.to_string()).await?;
             }
         }
     }
@@ -813,16 +912,23 @@ async fn ai(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
     Ok(())
 }
 
-#[command]
-#[description("Get ai command status.")]
-#[usage("")]
-#[example("")]
-async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "AI",
+    subcommands("aistatus_show", "aistatus_reset", "aistatus_funclist")
+)]
+async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    // 親コマンドはスラッシュコマンドでは使用不可
+    Ok(())
+}
+
+/// Show AI chat history status.
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "show")]
+async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let text = {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
+        let ctrl = &ctx.data().ctrl;
         let mut discord = ctrl.sysmods().discord.lock().await;
-        let config = data.get::<ConfigData>().unwrap();
 
         discord.check_history_timeout();
         format!(
@@ -830,152 +936,197 @@ async fn aistatus(ctx: &Context, msg: &Message) -> CommandResult {
             discord.chat_history.len(),
             discord.chat_history.usage().0,
             discord.chat_history.usage().1,
-            config.prompt.history_timeout_min
+            discord.config.prompt.history_timeout_min
         )
     };
-    msg.reply(ctx, text).await?;
+    ctx.reply(text).await?;
 
     Ok(())
 }
 
-#[command]
-#[description("Clear ai command history.")]
-#[usage("")]
-#[example("")]
-async fn aireset(ctx: &Context, msg: &Message) -> CommandResult {
+/// Clear AI chat history status.
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "reset")]
+async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
+        let ctrl = &ctx.data().ctrl;
         let mut discord = ctrl.sysmods().discord.lock().await;
 
         discord.chat_history.clear();
     }
-    msg.reply(ctx, "OK").await?;
+    ctx.reply("OK").await?;
 
     Ok(())
 }
 
-#[command]
-#[description("OpenAI image generation.")]
-#[usage("<prompt>")]
-#[example("A person who are returning home early from their office.")]
-#[min_args(1)]
-async fn aiimg(ctx: &Context, msg: &Message, arg: Args) -> CommandResult {
-    let prompt = arg.rest();
+/// Show AI function list.
+/// You can request the assistant to call these functions.
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "funclist")]
+async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
+    let help = {
+        let discord = ctx.data().ctrl.sysmods().discord.lock().await;
+
+        discord.func_table.create_help()
+    };
+    let text = format!("```\n{help}\n```");
+    ctx.reply(text).await?;
+
+    Ok(())
+}
+
+/// AI image generation.
+#[poise::command(slash_command, prefix_command, category = "AI")]
+async fn aiimg(
+    ctx: PoiseContext<'_>,
+    #[description = "Prompt string"]
+    #[min_length = 1]
+    #[max_length = 1024]
+    prompt: String,
+) -> Result<(), PoiseError> {
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &prompt).await?;
 
     let img_url = {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
+        let ctrl = &ctx.data().ctrl;
         let ai = ctrl.sysmods().openai.lock().await;
 
-        let mut resp = ai.generate_image(prompt, 1).await?;
+        let mut resp = ai.generate_image(&prompt, 1).await?;
         resp.pop().ok_or_else(|| anyhow!("image array too short"))?
     };
 
-    msg.reply(ctx, img_url).await?;
+    ctx.reply(img_url).await?;
 
     Ok(())
 }
 
-#[group]
-#[prefix = "autodel"]
-#[commands(status, set)]
-struct AutoDel;
-
-const INVALID_CH_MSG: &str = "Auto delete feature is not enabled for this channel.
-Please contact my owner.";
-
-fn convert_duration(mut min: u32) -> (u32, u32, u32) {
-    let day = min / (60 * 24);
-    min %= 60 * 24;
-    let hour = min / 60;
-    min %= 60;
-
-    (day, hour, min)
-}
-
-fn parse_duration(src: &str) -> Result<u32> {
-    let mut min = 0u32;
-    let mut buf = String::new();
-    for c in src.chars() {
-        if c == 'd' || c == 'h' || c == 'm' {
-            let n: u32 = buf.parse()?;
-            let n = match c {
-                'd' => n.saturating_mul(24 * 60),
-                'h' => n.saturating_mul(60),
-                'm' => n,
-                _ => panic!(),
-            };
-            min = min.saturating_add(n);
-            buf.clear();
-        } else {
-            buf.push(c);
+impl SystemModule for Discord {
+    /// async 使用可能になってからの初期化。
+    ///
+    /// 設定有効ならば [discord_main] を spawn する。
+    fn on_start(&self, ctrl: &Control) {
+        info!("[discord] on_start");
+        if self.config.enabled {
+            taskserver::spawn_oneshot_task(ctrl, "discord", discord_main);
         }
     }
-    Ok(min)
 }
 
-#[command]
-#[description("Get the auto-delete feature status in this channel.")]
-#[usage("")]
-#[example("")]
-async fn status(ctx: &Context, msg: &Message) -> CommandResult {
-    let ch = msg.channel_id;
-    let config = {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
-        let discord = ctrl.sysmods().discord.lock().await;
-
-        discord.auto_del_config.get(&ch).copied()
-    };
-
-    if let Some(config) = config {
-        msg.reply(ctx, format!("{config}")).await?;
-    } else {
-        msg.reply(ctx, INVALID_CH_MSG).await?;
-    }
-
-    Ok(())
+/// Poise イベントハンドラ。
+async fn pre_command(ctx: PoiseContext<'_>) {
+    info!(
+        "[discord] command {} from {:?} {:?}",
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or("?")
+    );
+    info!("[discord] {:?}", ctx.invocation_string());
 }
 
-#[command]
-#[description(
-    r#"Enable/Disable/Config auto-delete feature in this channel.
-"0 0" disables the feature."#
-)]
-#[usage("<keep_count> <keep_duration>")]
-#[example("0 0")]
-#[example("100 1d")]
-#[example("200 12h")]
-#[example("300 1d23h59m")]
-#[num_args(2)]
-// disabled in Direct Message
-#[only_in("guild")]
-async fn set(ctx: &Context, msg: &Message, mut arg: Args) -> CommandResult {
-    let keep_count: u32 = arg.single()?;
-    let keep_duration: String = arg.single()?;
-    let keep_duration: u32 = parse_duration(&keep_duration)?;
-    let ch = msg.channel_id;
+async fn post_command(ctx: PoiseContext<'_>) {
+    info!(
+        "[discord] command {} from {:?} {:?} OK",
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or("?")
+    );
+}
 
-    {
-        let data = ctx.data.read().await;
-        let ctrl = data.get::<ControlData>().unwrap();
-        let mut discord = ctrl.sysmods().discord.lock().await;
-
-        let config = discord.auto_del_config.get_mut(&ch);
-        match config {
-            Some(config) => {
-                config.keep_count = keep_count;
-                config.keep_dur_min = keep_duration;
-                msg.reply(ctx, format!("OK\n{config}")).await?;
-            }
-            None => {
-                msg.reply(ctx, INVALID_CH_MSG).await?;
+/// Poise イベントハンドラ。
+///
+/// [poise::builtins::on_error] のままでまずい部分を自分でやる。
+async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
+    // エラーを返していないはずのものは panic にする
+    match error {
+        poise::FrameworkError::Setup { error, .. } => {
+            panic!("Failed on setup: {:#?}", error)
+        }
+        poise::FrameworkError::EventHandler { error, .. } => {
+            panic!("Failed on eventhandler: {:#?}", error)
+        }
+        poise::FrameworkError::Command { error, ctx, .. } => {
+            error!(
+                "[discord] error in command `{}`: {:#?}",
+                ctx.command().name,
+                error
+            );
+        }
+        poise::FrameworkError::NotAnOwner { ctx, .. } => {
+            let errmsg = ctx
+                .data()
+                .ctrl
+                .sysmods()
+                .discord
+                .lock()
+                .await
+                .config
+                .perm_err_msg
+                .clone();
+            info!("[discord] not an owner: {}", ctx.author());
+            info!("[discord] reply: {errmsg}");
+            if let Err(why) = ctx.reply(errmsg).await {
+                error!("[discord] reply error: {:#?}", why)
             }
         }
-    };
+        poise::FrameworkError::UnknownInteraction { interaction, .. } => {
+            warn!(
+                "[discord] received unknown interaction \"{}\"",
+                interaction.data.name
+            );
+        }
+        error => {
+            if let Err(why) = poise::builtins::on_error(error).await {
+                error!("[discord] error while handling error: {:#?}", why)
+            }
+        }
+    }
+}
 
-    Ok(())
+/// Serenity の全イベントハンドラ。
+///
+/// Poise のコンテキストが渡されるので、Serenity ではなく Poise の
+/// FrameworkOptions 経由で設定する。
+async fn event_handler(
+    ctx: &Context,
+    ev: &FullEvent,
+    _fctx: FrameworkContext<'_, PoiseData, PoiseError>,
+    data: &PoiseData,
+) -> Result<(), PoiseError> {
+    match ev {
+        FullEvent::Ready { data_about_bot } => {
+            info!("[discord] connected as {}", data_about_bot.user.name);
+            Ok(())
+        }
+        FullEvent::Resume { event: _ } => {
+            info!("[discord] resumed");
+            Ok(())
+        }
+        FullEvent::CacheReady { guilds } => {
+            // このタイミングで [Discord::ctx] に ctx をクローンして保存する。
+            info!("[discord] cache ready - guild: {}", guilds.len());
+
+            let mut discord = data.ctrl.sysmods().discord.lock().await;
+            let ctx_clone = ctx.clone();
+            discord.ctx = Some(ctx_clone);
+
+            info!(
+                "[discord] send postponed msgs ({})",
+                discord.postponed_msgs.len()
+            );
+            for msg in &discord.postponed_msgs {
+                let ch = discord.config.notif_channel;
+                // notif_channel が有効の場合しかキューされない
+                assert_ne!(0, ch);
+
+                info!("[discord] say msg: {}", msg);
+                let ch = ChannelId::new(ch);
+                if let Err(why) = ch.say(&ctx, msg).await {
+                    error!("{:#?}", why);
+                }
+            }
+            discord.postponed_msgs.clear();
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 #[cfg(test)]
@@ -988,30 +1139,6 @@ mod tests {
         let obj: DiscordPrompt = Default::default();
         assert_ne!(obj.pre.len(), 0);
         assert_ne!(obj.each.len(), 0);
-    }
-
-    #[test]
-    fn dice_6_many_times() {
-        let mut result = dice_core(6, DICE_COUNT_MAX);
-        assert_eq!(result.len(), DICE_COUNT_MAX as usize);
-
-        // 100 回も振れば 1..=6 が 1 回ずつは出る
-        result.sort();
-        for x in 1..=6 {
-            assert!(result.binary_search(&x).is_ok());
-        }
-    }
-
-    #[test]
-    #[should_panic]
-    fn dice_invalid_dice() {
-        let _ = dice_core(DICE_MAX + 1, 1);
-    }
-
-    #[test]
-    #[should_panic]
-    fn dice_invalid_count() {
-        let _ = dice_core(6, DICE_COUNT_MAX + 1);
     }
 
     #[test]

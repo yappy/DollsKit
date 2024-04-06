@@ -1,7 +1,7 @@
 use std::io::Cursor;
 
 use anyhow::{Context, Result};
-use image::{DynamicImage, ImageOutputFormat, Rgba};
+use image::{DynamicImage, ImageFormat, Rgba};
 use rusttype::{point, Font, PositionedGlyph, Scale};
 
 pub struct FontRenderer {
@@ -111,7 +111,7 @@ impl FontRenderer {
         // Save the image to a png file
         let mut filebuf = Vec::new();
         image
-            .write_to(&mut Cursor::new(&mut filebuf), ImageOutputFormat::Png)
+            .write_to(&mut Cursor::new(&mut filebuf), ImageFormat::Png)
             .unwrap();
 
         filebuf

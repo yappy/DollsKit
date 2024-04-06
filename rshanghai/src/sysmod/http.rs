@@ -1,3 +1,7 @@
+//! HTTP Server 機能。
+//!
+//! actix_web ライブラリ / フレームワークによる。
+
 mod github;
 mod index;
 mod line_hook;
@@ -6,6 +10,7 @@ mod priv_index;
 mod upload;
 
 use super::SystemModule;
+use crate::sys::taskserver;
 use crate::sys::{config, taskserver::Control};
 use actix_web::{http::header::ContentType, HttpResponse, Responder};
 use actix_web::{web, HttpResponseBuilder};
@@ -14,6 +19,7 @@ use log::{error, info};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use std::sync::Arc;
 
 /// HTTP Server 設定データ。toml 設定に対応する。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,10 +110,10 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
     .run();
 
     // シャットダウンが来たらハンドルでサーバを停止するタスクを生成
-    let mut ctrl_for_stop = ctrl.clone();
+    let ctrl_for_stop = Arc::clone(&ctrl);
     let handle = server.handle();
-    ctrl.spawn_oneshot_fn("http-exit", async move {
-        ctrl_for_stop.cancel_rx().changed().await.unwrap();
+    taskserver::spawn_oneshot_fn(&ctrl, "http-exit", async move {
+        ctrl_for_stop.wait_cancel_rx().await;
         info!("[http-exit] recv cancel");
         handle.stop(true).await;
         info!("[http-exit] server stop ok");
@@ -125,7 +131,7 @@ impl SystemModule for HttpServer {
     fn on_start(&self, ctrl: &Control) {
         info!("[http] on_start");
         if self.config.enabled {
-            ctrl.spawn_oneshot_task("http", http_main_task);
+            taskserver::spawn_oneshot_task(ctrl, "http", http_main_task);
         }
     }
 }
