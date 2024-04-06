@@ -17,7 +17,10 @@ use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
 
+/// HTTP 通信のタイムアウト。
+/// これを設定しないと無限待ちになる危険性がある。
 const CONN_TIMEOUT: Duration = Duration::from_secs(10);
+/// AI 応答待ちのタイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(60);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
@@ -68,6 +71,9 @@ const MODEL_LIST: &[ModelInfo] = &[
 /// トークン数制限のうち出力用に予約する割合。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 
+/// [MODEL_LIST] からモデル名で [ModelInfo] を検索する。
+///
+/// HashMap で検索する。
 pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
     static MAP: OnceLock<HashMap<&str, &ModelInfo>> = OnceLock::new();
 
@@ -85,10 +91,13 @@ pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
         .ok_or_else(|| anyhow!("Model not found: {model}"))
 }
 
+/// 出力用に予約するトークン数を計算する。
 pub fn get_output_reserved_token(info: &ModelInfo) -> usize {
     (info.token_limit as f32 * OUTPUT_RESERVED_RATIO) as usize
 }
 
+/// OpenAI API JSON 定義。
+/// 会話メッセージ。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
     /// "system", "user", "assistant", or "function"
@@ -102,6 +111,8 @@ pub struct ChatMessage {
     pub function_call: Option<FunctionCall>,
 }
 
+/// OpenAI API JSON 定義。
+/// [ChatMessage] に設定されるロール。
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
@@ -112,12 +123,16 @@ pub enum Role {
     Function,
 }
 
+/// OpenAI API JSON 定義。
+/// function 呼び出し。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FunctionCall {
     pub name: String,
     pub arguments: String,
 }
 
+/// OpenAI API JSON 定義。
+/// トークン消費量。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Usage {
     pub prompt_tokens: u32,
@@ -125,6 +140,8 @@ pub struct Usage {
     pub total_tokens: u32,
 }
 
+/// OpenAI API JSON 定義。
+/// 応答案。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Choice {
     pub index: u32,
@@ -132,6 +149,8 @@ pub struct Choice {
     pub finish_reason: String,
 }
 
+/// OpenAI API JSON 定義。
+/// 会話応答データ。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct ChatResponse {
     pub id: String,
@@ -142,6 +161,9 @@ struct ChatResponse {
     pub choices: Vec<Choice>,
 }
 
+/// OpenAI API JSON 定義。
+/// function パラメータ定義。
+///
 /// <https://json-schema.org/understanding-json-schema>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ParameterElement {
@@ -159,6 +181,8 @@ pub struct ParameterElement {
     pub maximum: Option<i64>,
 }
 
+/// OpenAI API JSON 定義。
+/// function パラメータ定義。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Parameters {
     /// "object"
@@ -168,6 +192,8 @@ pub struct Parameters {
     pub required: Vec<String>,
 }
 
+/// OpenAI API JSON 定義。
+/// function 定義。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Function {
     pub name: String,
@@ -176,6 +202,8 @@ pub struct Function {
     pub parameters: Parameters,
 }
 
+/// OpenAI API JSON 定義。
+/// 会話リクエスト。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct ChatRequest {
     model: String,
@@ -197,6 +225,8 @@ struct ChatRequest {
     user: Option<String>,
 }
 
+/// OpenAI API JSON 定義。
+/// 画像生成リクエスト。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct ImageGenRequest {
     /// A text description of the desired image(s).
@@ -221,6 +251,8 @@ struct ImageGenRequest {
     user: Option<String>,
 }
 
+/// OpenAI API JSON 定義。
+/// 画像生成のフォーマット。
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum ResponseFormat {
@@ -228,6 +260,8 @@ enum ResponseFormat {
     B64Json,
 }
 
+/// OpenAI API JSON 定義。
+/// 画像生成のサイズ。
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum ImageSize {
@@ -239,12 +273,16 @@ enum ImageSize {
     X1024,
 }
 
+/// OpenAI API JSON 定義。
+/// 画像生成レスポンス。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct ImageGenResponse {
     created: u64,
     data: Vec<Image>,
 }
 
+/// OpenAI API JSON 定義。
+/// 画像データ。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Image {
     b64_json: Option<String>,
@@ -273,6 +311,7 @@ impl Default for OpenAiConfig {
     }
 }
 
+/// OpenAI システムモジュール。
 pub struct OpenAi {
     config: OpenAiConfig,
     model: String,
@@ -280,6 +319,7 @@ pub struct OpenAi {
 }
 
 impl OpenAi {
+    /// コンストラクタ。
     pub fn new() -> Result<Self> {
         info!("[openai] initialize");
 
@@ -325,6 +365,7 @@ impl OpenAi {
         false
     }
 
+    /// OpenAI Chat API を使用する。
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
@@ -365,6 +406,7 @@ impl OpenAi {
         Ok(text)
     }
 
+    /// OpenAI Chat API を fcuntion call 機能付きで使用する。
     pub async fn chat_with_function(
         &self,
         msgs: &[ChatMessage],
@@ -405,6 +447,7 @@ impl OpenAi {
         Ok(msg.clone())
     }
 
+    /// OpenAI Image Generation API を使用する。
     pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
         let key = &self.config.api_key;
         let body = ImageGenRequest {

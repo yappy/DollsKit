@@ -13,9 +13,13 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_role_dice(func_table);
 }
 
+/// ダイスまたはコイン数の最小値。
 const COUNT_MIN: i64 = 1;
+/// ダイスまたはコイン数の最大値。
 const COUNT_MAX: i64 = 100;
+/// ダイスの面数の最小値。
 const FACE_MIN: i64 = 1;
+/// ダイスの面数の最大値。
 const FACE_MAX: i64 = 100;
 
 /// サイコロを振る。

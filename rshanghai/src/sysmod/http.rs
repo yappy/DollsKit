@@ -1,3 +1,7 @@
+//! HTTP Server 機能。
+//!
+//! actix_web ライブラリ / フレームワークによる。
+
 mod github;
 mod index;
 mod line_hook;

@@ -46,17 +46,17 @@ cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH
 use rustc_version_runtime;
 use std::sync::OnceLock;
 
-#[rustfmt::skip] pub const GIT_BRANCH:    &str = env!("VERGEN_GIT_BRANCH");
-#[rustfmt::skip] pub const GIT_HASH:      &str = env!("VERGEN_GIT_SHA");
-#[rustfmt::skip] pub const GIT_DESCRIBE:  &str = env!("VERGEN_GIT_DESCRIBE");
-#[rustfmt::skip] pub const GIT_DATE:      &str = env!("VERGEN_GIT_COMMIT_DATE");
-#[rustfmt::skip] pub const GIT_TIMESTAMP: &str = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
-#[rustfmt::skip] pub const BUILD_DEBUG:   &str = env!("VERGEN_CARGO_DEBUG");
-#[rustfmt::skip] pub const BUILD_TARGET:  &str = env!("VERGEN_CARGO_TARGET_TRIPLE");
+#[rustfmt::skip] const GIT_BRANCH:    &str = env!("VERGEN_GIT_BRANCH");
+#[rustfmt::skip] const GIT_HASH:      &str = env!("VERGEN_GIT_SHA");
+#[rustfmt::skip] const GIT_DESCRIBE:  &str = env!("VERGEN_GIT_DESCRIBE");
+#[rustfmt::skip] const GIT_DATE:      &str = env!("VERGEN_GIT_COMMIT_DATE");
+#[rustfmt::skip] const GIT_TIMESTAMP: &str = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
+#[rustfmt::skip] const BUILD_DEBUG:   &str = env!("VERGEN_CARGO_DEBUG");
+#[rustfmt::skip] const BUILD_TARGET:  &str = env!("VERGEN_CARGO_TARGET_TRIPLE");
 
 // OnceLock / LazyLock が stable になったら LazyLock に書き換えたほうがよい
 
-// rustc "major.minor.patch"
+/// ビルドプロファイルを "debug" または "release" で返す。
 pub fn build_profile() -> &'static str {
     static BUILD_PROFILE: OnceLock<&str> = OnceLock::new();
 
@@ -69,7 +69,7 @@ pub fn build_profile() -> &'static str {
     })
 }
 
-// rustc "major.minor.patch"
+/// rustc コンパイラバージョン "major.minor.patch"
 pub fn rustc_version() -> &'static str {
     static RUSTC_VERSION: OnceLock<String> = OnceLock::new();
 
@@ -79,6 +79,7 @@ pub fn rustc_version() -> &'static str {
     })
 }
 
+/// バージョン情報を読みやすい形の複数行文字列で返す。
 #[rustfmt::skip]
 pub fn version_info() -> &'static str {
     static VERSION_INFO: OnceLock<String> = OnceLock::new();
@@ -94,6 +95,7 @@ Branch: {GIT_BRANCH} {GIT_DESCRIBE} {GIT_DATE}
 })
 }
 
+/// バージョン情報を文字列ベクタの形で返す。
 pub fn version_info_vec() -> &'static Vec<String> {
     static VERSION_INFO_VEC: OnceLock<Vec<String>> = OnceLock::new();
 

@@ -410,6 +410,9 @@ async fn get_cpu_temp() -> Result<Option<f64>> {
     }
 }
 
+/// CPU 論理コア数を取得する。
+///
+/// nproc コマンドを使用する。
 pub async fn get_cpu_cores() -> Result<u32> {
     let output = Command::new("nproc").output().await?;
     ensure!(output.status.success(), "nproc command failed");
@@ -419,6 +422,10 @@ pub async fn get_cpu_cores() -> Result<u32> {
     Ok(stdout.trim().parse()?)
 }
 
+/// CPU クロック周波数を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_current_freq() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("measure_clock ")
@@ -449,6 +456,11 @@ pub async fn get_current_freq() -> Result<Option<u64>> {
     Ok(Some(actual))
 }
 
+/// CPU クロック周波数の設定値を取得する。
+/// 実際の周波数は発熱によるスロットリングによりこれより低くなる可能性がある。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_freq_conf() -> Result<Option<u64>> {
     let result = Command::new("vcgencmd")
         .arg("get_config")
@@ -503,6 +515,10 @@ bitflags! {
     }
 }
 
+/// CPU スロットリング状態を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
 pub async fn get_throttle_status() -> Result<Option<ThrottleFlags>> {
     let result = Command::new("vcgencmd").arg("get_throttled").output().await;
     let output = match result {

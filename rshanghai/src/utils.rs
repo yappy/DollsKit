@@ -1,4 +1,4 @@
-//! 基本的なシステム関連。
+//! 各種ユーティリティ。
 
 pub mod chat_history;
 pub mod graphics;

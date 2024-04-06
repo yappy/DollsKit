@@ -1,3 +1,7 @@
+//! 乱数生成によるダイスロール。
+//!
+//! コインフリップにも応用可能。
+
 use anyhow::{ensure, Result};
 use rand::Rng;
 use static_assertions::const_assert;

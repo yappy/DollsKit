@@ -1,3 +1,5 @@
+//! Twitter 機能。
+
 use super::openai::ChatMessage;
 use super::SystemModule;
 use crate::sys::taskserver::Control;

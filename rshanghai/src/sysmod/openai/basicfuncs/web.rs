@@ -15,6 +15,7 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_get_weather_report(func_table);
 }
 
+/// HTML から無駄な文字を削除してデータ量を減らす。
 fn compact_html(src: &str) -> Result<String> {
     use scraper::{Html, Selector};
 
@@ -48,6 +49,7 @@ fn compact_html(src: &str) -> Result<String> {
     Ok(res)
 }
 
+/// URL に対して GET リクエストを行い結果を文字列で返す。
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     const SIZE_MAX: usize = 5 * 1024;
@@ -112,6 +114,7 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
     );
 }
 
+/// 気象情報を取得する。
 async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     let area = get_arg_str(args, "area")?;

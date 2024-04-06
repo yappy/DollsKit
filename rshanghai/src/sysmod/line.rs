@@ -1,11 +1,10 @@
 //! LINE API。
-use super::{
-    openai::{
-        function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
-        ParameterElement,
-    },
-    SystemModule,
+
+use super::openai::{
+    function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
+    ParameterElement,
 };
+use super::SystemModule;
 use crate::{
     sys::{
         config,

@@ -7,18 +7,28 @@ use tiktoken_rs::{cl100k_base, CoreBPE};
 
 static CORE: OnceLock<CoreBPE> = OnceLock::new();
 
+/// 会話履歴管理。
 pub struct ChatHistory {
+    /// トークン数合計上限。
     token_limit: usize,
+    /// 現在のトークン数合計。
     token_count: usize,
+    /// 履歴データのキュー。
     history: VecDeque<Element>,
 }
 
+/// 履歴データ。
 struct Element {
+    /// メッセージ。
     msg: ChatMessage,
+    /// [Self::msg] のトークン数。
     token_count: usize,
 }
 
 impl ChatHistory {
+    /// コンストラクタ。
+    ///
+    /// * `token_limit` - トークン数上限。
     pub fn new(token_limit: usize) -> Self {
         Self {
             token_limit,
@@ -59,20 +69,23 @@ impl ChatHistory {
         }
     }
 
+    /// 全履歴をクリアする。
     pub fn clear(&mut self) {
         self.history.clear();
         self.token_count = 0;
     }
 
+    /// 全履歴を走査するイテレータを返す。
     pub fn iter(&self) -> impl Iterator<Item = &ChatMessage> {
         self.history.iter().map(|elem| &elem.msg)
     }
 
+    /// 履歴の数を返す。
     pub fn len(&self) -> usize {
         self.history.len()
     }
 
-    /// The current token count. (usage / total)
+    /// 現在のトークン数使用量を (usage / total) のタプルで返す。
     pub fn usage(&self) -> (usize, usize) {
         (self.token_count, self.token_limit)
     }
