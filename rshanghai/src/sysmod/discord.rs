@@ -278,10 +278,10 @@ async fn discord_main(ctrl: Control) -> Result<()> {
             pre_command: |ctx| Box::pin(pre_command(ctx)),
             post_command: |ctx| Box::pin(post_command(ctx)),
             event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
-            // prefix コマンドは使っていない
+            // prefix command
             prefix_options: poise::PrefixFrameworkOptions {
-                //prefix: Some("~".into()),
-                //case_insensitive_commands: true,
+                prefix: None,
+                mention_as_prefix: true,
                 ..Default::default()
             },
             // owner は手動で設定する (builder の方から設定されるようだがデフォルトが true なので念のためこちらも)
@@ -561,25 +561,38 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
     ]
 }
 
-/// Show command help.
-#[poise::command(slash_command, category = "General")]
+/// `help <command>` shows detailed command help.
+/// `help` shows all available commands briefly.
+#[poise::command(slash_command, prefix_command, category = "General")]
 pub async fn help(
     ctx: PoiseContext<'_>,
     #[description = "Command name"] command: Option<String>,
 ) -> Result<(), PoiseError> {
+    let extra_text = "
+New slash command style
+  /command params...
+Compatible style (you can use \"double quote\" to use spaces in a parameter)
+  @bot_name command params...
+
+Parameter help will be displayed if you start to type slash command.
+If you use old style,
+  @bot_name help command_name
+to show detailed command help.
+";
     let config = poise::builtins::HelpConfiguration {
         // その人だけに見える返信にするかどうか
         ephemeral: false,
         show_subcommands: true,
-        extra_text_at_bottom: "",
+        extra_text_at_bottom: extra_text,
         ..Default::default()
     };
     poise::builtins::help(ctx, command.as_deref(), config).await?;
+
     Ok(())
 }
 
 /// Show system information.
-#[poise::command(slash_command, category = "General")]
+#[poise::command(slash_command, prefix_command, category = "General")]
 async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let ver_info: &str = version::version_info();
     ctx.reply(ver_info).await?;
@@ -592,6 +605,7 @@ Please contact my owner.";
 
 #[poise::command(
     slash_command,
+    prefix_command,
     category = "Auto Delete",
     subcommands("autodel_status", "autodel_set")
 )]
@@ -601,7 +615,12 @@ async fn autodel(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 }
 
 /// Get the auto-delete status in this channel.
-#[poise::command(slash_command, category = "Auto Delete", rename = "status")]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "Auto Delete",
+    rename = "status"
+)]
 async fn autodel_status(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let ch = ctx.channel_id();
     let config = {
@@ -623,7 +642,12 @@ async fn autodel_status(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 /// Enable/Disable/Config auto-delete feature in this channel.
 ///
 /// "0 0" disables the feature.
-#[poise::command(slash_command, category = "Auto Delete", rename = "set")]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    category = "Auto Delete",
+    rename = "set"
+)]
 async fn autodel_set(
     ctx: PoiseContext<'_>,
     #[description = "Delete old messages other than this count of newer ones (0: disable)"]
@@ -658,7 +682,7 @@ async fn autodel_set(
 }
 
 /// Flip coin(s).
-#[poise::command(slash_command, category = "Play Tools")]
+#[poise::command(slash_command, prefix_command, category = "Play Tools")]
 async fn coin(
     ctx: PoiseContext<'_>,
     #[description = "Dice count (default=1)"] count: Option<u32>,
@@ -689,7 +713,7 @@ async fn coin(
 }
 
 /// Roll dice.
-#[poise::command(slash_command, category = "Play Tools")]
+#[poise::command(slash_command, prefix_command, category = "Play Tools")]
 async fn dice(
     ctx: PoiseContext<'_>,
     #[description = "Face count (default=6)"] face: Option<u64>,
@@ -724,7 +748,7 @@ async fn dice(
 /// Order the assistant to say something.
 ///
 /// You can specify target user(s).
-#[poise::command(slash_command, category = "Manipulation", owners_only)]
+#[poise::command(slash_command, prefix_command, category = "Manipulation", owners_only)]
 async fn attack(
     ctx: PoiseContext<'_>,
     #[description = "Target user"] target: Option<UserId>,
@@ -745,7 +769,7 @@ async fn attack(
 }
 
 /// Take a picture.
-#[poise::command(slash_command, category = "Manipulation", owners_only)]
+#[poise::command(slash_command, prefix_command, category = "Manipulation", owners_only)]
 async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     ctx.reply("Taking a picture...").await?;
 
@@ -765,7 +789,7 @@ async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 /// AI assistant.
 ///
 /// The owner of the assistant will pay the usage fee for ChatGPT.
-#[poise::command(slash_command, category = "AI")]
+#[poise::command(slash_command, prefix_command, category = "AI")]
 async fn ai(
     ctx: PoiseContext<'_>,
     #[description = "Chat message to AI assistant"]
@@ -890,6 +914,7 @@ async fn ai(
 
 #[poise::command(
     slash_command,
+    prefix_command,
     category = "AI",
     subcommands("aistatus_show", "aistatus_reset", "aistatus_funclist")
 )]
@@ -899,7 +924,7 @@ async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 }
 
 /// Show AI chat history status.
-#[poise::command(slash_command, category = "AI", rename = "show")]
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "show")]
 async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let text = {
         let ctrl = &ctx.data().ctrl;
@@ -920,7 +945,7 @@ async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 }
 
 /// Clear AI chat history status.
-#[poise::command(slash_command, category = "AI", rename = "reset")]
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "reset")]
 async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     {
         let ctrl = &ctx.data().ctrl;
@@ -935,7 +960,7 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
 /// Show AI function list.
 /// You can request the assistant to call these functions.
-#[poise::command(slash_command, category = "AI", rename = "funclist")]
+#[poise::command(slash_command, prefix_command, category = "AI", rename = "funclist")]
 async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let help = {
         let discord = ctx.data().ctrl.sysmods().discord.lock().await;
@@ -949,7 +974,7 @@ async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 }
 
 /// AI image generation.
-#[poise::command(slash_command, category = "AI")]
+#[poise::command(slash_command, prefix_command, category = "AI")]
 async fn aiimg(
     ctx: PoiseContext<'_>,
     #[description = "Prompt string"]
