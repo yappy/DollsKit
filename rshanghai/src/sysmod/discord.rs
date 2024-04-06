@@ -107,7 +107,7 @@ pub struct Discord {
     wakeup_list: Vec<NaiveTime>,
     /// 現在有効な Discord Client コンテキスト。
     ///
-    /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
+    /// 起動直後は None で、[event_handler] イベントの度に置き換わる。
     ctx: Option<Context>,
     /// [Self::ctx] が None の間に発言しようとしたメッセージのキュー。
     ///
@@ -1083,7 +1083,7 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
 /// Serenity の全イベントハンドラ。
 ///
 /// Poise のコンテキストが渡されるので、Serenity ではなく Poise の
-/// [FrameworkOptions] 経由で設定する。
+/// FrameworkOptions 経由で設定する。
 async fn event_handler(
     ctx: &Context,
     ev: &FullEvent,

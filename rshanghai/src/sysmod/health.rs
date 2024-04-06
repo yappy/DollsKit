@@ -381,7 +381,6 @@ async fn get_disk_info() -> Result<DiskInfo> {
     })
 }
 
-/// [CpuTemp] を計測する。
 /// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
 /// _/sys/class/thermal/thermal_zone0/temp_ による。

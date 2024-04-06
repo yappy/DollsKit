@@ -206,7 +206,7 @@ impl Parser {
         self.src.pop_front().unwrap()
     }
 
-    /// expr = expr <EOF>
+    /// expr = expr \<EOF\>
     fn parse_formula(&mut self) -> Result<Ast> {
         let root = self.parse_term();
         let (next, pos) = self.get();
@@ -277,7 +277,7 @@ impl Parser {
         }
     }
 
-    /// primary = <(> expr <)> | <INTEGER>
+    /// primary = <(> expr <)> | \<INTEGER\>
     fn parse_primary(&mut self) -> Result<Ast> {
         let (tok, _) = self.peek();
         match *tok {

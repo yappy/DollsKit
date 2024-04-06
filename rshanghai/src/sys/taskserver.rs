@@ -278,7 +278,7 @@ impl TaskServer {
         TaskServer { ctrl, cancel_tx }
     }
 
-    /// [Control::spawn_oneshot_task] と同じ。
+    /// [spawn_oneshot_task] を内蔵の [Self::ctrl] を使って呼び出す。
     pub fn spawn_oneshot_task<F, T>(&self, name: &str, f: F)
     where
         F: Fn(Control) -> T + Send + Sync + 'static,
