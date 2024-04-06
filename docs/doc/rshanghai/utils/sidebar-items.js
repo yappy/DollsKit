@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["chat_history","graphics","netutil","weather"]};
+window.SIDEBAR_ITEMS = {"mod":["chat_history","graphics","netutil","parser","playtools","weather"]};

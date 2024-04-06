@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -333,8 +334,6 @@
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 非同期タスクを管理する。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::SystemModules;
@@ -355,29 +354,22 @@
 <span class="doccomment">/// [TaskServer] と各非同期タスク間で共有されるデータ。
 ///
 /// インスタンスは1つだけ生成され、[Arc] により共有される。
-</span><span class="kw">struct </span>InternalControl {
+</span><span class="kw">pub struct </span>Controller {
     <span class="doccomment">/// Tokio ランタイム。
     </span>rt: tokio::runtime::Runtime,
     <span class="doccomment">/// 全システムモジュールのリスト。
     </span>sysmods: SystemModules,
-}
-
-<span class="doccomment">/// 各非同期タスクに clone され渡されるコントロールハンドル。
-///
-/// 各フィールドは private で、メソッドで機能を提供する。
-/// [Clone::clone] 可能で、各タスクごとに複製したものが渡される。
-</span><span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>Control {
-    <span class="doccomment">/// private で [InternalControl] への [Arc] を持つ。
-    </span>internal: Arc&lt;InternalControl&gt;,
     <span class="doccomment">/// システムシャットダウン時、true が設定送信される。
     ///
     /// また、シャットダウンシーケンスにおいて、全タスクの完了待ちのためにも使う。
     /// サーバ側は clone されたこれがすべて drop されるまで待機する。
-    </span>cancel_rx: <span class="prelude-ty">Option</span>&lt;CancelRx&gt;,
+    </span>cancel_rx: std::sync::Mutex&lt;<span class="prelude-ty">Option</span>&lt;CancelRx&gt;&gt;,
 }
 
-<span class="doccomment">/// [TaskServer::run] の返す実行終了種別。
+<span class="kw">pub type </span>Control = Arc&lt;Controller&gt;;
+<span class="comment">//pub type WeakControl = Weak&lt;Controller&gt;;
+
+</span><span class="doccomment">/// [TaskServer::run] の返す実行終了種別。
 </span><span class="kw">pub enum </span>RunResult {
     Shutdown,
     Reboot,
@@ -393,204 +385,211 @@
     </span>cancel_tx: CancelTx,
 }
 
-<span class="kw">impl </span>Control {
+<span class="kw">impl </span>Controller {
     <span class="doccomment">/// [crate::sysmod::SystemModule] リストへの参照を取得する。
     </span><span class="kw">pub fn </span>sysmods(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SystemModules {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.internal.sysmods
+        <span class="kw-2">&amp;</span><span class="self">self</span>.sysmods
     }
 
-    <span class="doccomment">/// キャンセル通知の受信オブジェクトを取得する。
-    </span><span class="kw">pub fn </span>cancel_rx(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>CancelRx {
-        <span class="self">self</span>.cancel_rx.as_mut().unwrap()
+    <span class="doccomment">/// キャンセル通知を待つ。
+    </span><span class="kw">pub async fn </span>wait_cancel_rx(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="comment">// mutex をロックして Receiver を取得し、その clone を作る
+        </span><span class="kw">let </span>org = <span class="self">self</span>.cancel_rx.lock().unwrap().as_mut().map(|rx| rx.clone());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>rx) = org {
+            <span class="comment">// clone した Receiver 上で待つ
+            </span>rx.changed().<span class="kw">await</span>.unwrap();
+        } <span class="kw">else </span>{
+            <span class="comment">// 既に drop されていた場合はすぐに返る
+        </span>}
     }
+}
 
-    <span class="doccomment">/// 1回限りのタスクを生成して実行開始する。
-    ///
-    /// F: [Control] を引数に、T を返す関数。
-    /// T: Future&lt;Output = anyhow::Result&lt;()&gt; かつスレッド間移動可能。
-    ///
-    /// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
-    </span><span class="kw">pub fn </span>spawn_oneshot_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
-    <span class="kw">where
-        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
-        T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send,
-    {
-        <span class="comment">// move するデータを準備する
-        </span><span class="kw">let </span>name = name.to_string();
-        <span class="kw">let </span>ctrl = <span class="self">self</span>.clone();
+<span class="doccomment">/// 1回限りのタスクを生成して実行開始する。
+///
+/// F: [Control] を引数に、T を返す関数。
+/// T: Future&lt;Output = anyhow::Result&lt;()&gt; かつスレッド間移動可能。
+///
+/// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
+</span><span class="kw">pub fn </span>spawn_oneshot_task&lt;F, T&gt;(ctrl: <span class="kw-2">&amp;</span>Control, name: <span class="kw-2">&amp;</span>str, f: F)
+<span class="kw">where
+    </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
+    T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send,
+{
+    <span class="comment">// move するデータを準備する
+    </span><span class="kw">let </span>name = name.to_string();
+    <span class="kw">let </span>ctrl_move = Arc::clone(ctrl);
 
-        <span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
-            <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
+    ctrl.rt.spawn(<span class="kw">async move </span>{
+        <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
 
-            <span class="comment">// ctrl を clone して move する
-            </span><span class="kw">let </span>future = f(ctrl.clone());
+        <span class="comment">// ctrl を clone して future へ move する
+        </span><span class="kw">let </span>future = f(Arc::clone(<span class="kw-2">&amp;</span>ctrl_move));
+        <span class="kw">let </span>result = future.<span class="kw">await</span>;
+        <span class="comment">// drop clone of ctrl
+
+        </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
+            <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
+        } <span class="kw">else </span>{
+            <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
+        }
+        <span class="comment">// drop ctrl
+    </span>});
+}
+
+<span class="kw">pub fn </span>spawn_oneshot_fn&lt;F&gt;(ctrl: <span class="kw-2">&amp;</span>Control, name: <span class="kw-2">&amp;</span>str, f: F)
+<span class="kw">where
+    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">'static</span>,
+{
+    <span class="comment">// move するデータを準備する
+    </span><span class="kw">let </span>name = name.to_string();
+
+    ctrl.rt.spawn(<span class="kw">async move </span>{
+        <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
+
+        <span class="kw">let </span>result = f.<span class="kw">await</span>;
+
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
+            <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
+        } <span class="kw">else </span>{
+            <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
+        }
+        <span class="comment">// drop ctrl
+    </span>});
+}
+
+<span class="doccomment">/// 周期タスクを生成する。
+///
+/// wakeup_list: 起動時刻。以下を満たさないと panic する。
+/// * second 以下が 0 である。(分単位)
+/// * 昇順ソート済みである。
+///
+/// F: [Control] を引数に、T を返す関数。
+/// T: Future&lt;Output = anyhow::Result&lt;()&gt; かつスレッド間移動可能。
+///
+/// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
+</span><span class="kw">pub fn </span>spawn_periodic_task&lt;F, T&gt;(ctrl: <span class="kw-2">&amp;</span>Control, name: <span class="kw-2">&amp;</span>str, wakeup_list: <span class="kw-2">&amp;</span>[NaiveTime], f: F)
+<span class="kw">where
+    </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
+    T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
+{
+    <span class="comment">// move するデータを準備する
+    </span><span class="kw">let </span>name = name.to_string();
+    <span class="kw">let </span>ctrl_move = Arc::clone(ctrl);
+
+    <span class="comment">// 空でなくソート済み、秒以下がゼロなのを確認後
+    // 今日のその時刻からなる NaiveDateTime に変換する
+    // TODO: is_sorted() がまだ unstable
+    </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">"time list is empty"</span>);
+    <span class="kw">let </span>sorted = wakeup_list.windows(<span class="number">2</span>).all(|t| t[<span class="number">0</span>] &lt;= t[<span class="number">1</span>]);
+    <span class="macro">assert!</span>(sorted, <span class="string">"time list is not sorted"</span>);
+    <span class="kw">let </span>today = Local::now().date_naive();
+    <span class="kw">let </span><span class="kw-2">mut </span>dt_list: Vec&lt;<span class="kw">_</span>&gt; = wakeup_list
+        .iter()
+        .map(|time| {
+            <span class="macro">assert_eq!</span>(time.second(), <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(time.nanosecond(), <span class="number">0</span>);
+            today.and_time(<span class="kw-2">*</span>time)
+        })
+        .collect();
+
+    <span class="comment">// wakeup time list を最初の LOG_LIMIT 個までログに出力する
+    </span><span class="kw">const </span>LOG_LIMIT: usize = <span class="number">5</span>;
+    <span class="kw">let </span>log_iter = wakeup_list.iter().take(LOG_LIMIT);
+    <span class="kw">let </span><span class="kw-2">mut </span>str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
+        <span class="kw">let </span>str = <span class="kw">if </span>i == <span class="number">0 </span>{
+            <span class="macro">format!</span>(<span class="string">"{v}"</span>)
+        } <span class="kw">else </span>{
+            <span class="macro">format!</span>(<span class="string">", {v}"</span>)
+        };
+        sum + <span class="kw-2">&amp;</span>str
+    });
+    <span class="kw">if </span>wakeup_list.len() &gt; LOG_LIMIT {
+        str += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">", ... ({} items)"</span>, wakeup_list.len());
+    }
+    <span class="macro">info!</span>(<span class="string">"[{}] registered as a periodic task"</span>, name);
+    <span class="macro">info!</span>(<span class="string">"[{}] wakeup time: {}"</span>, name, str);
+
+    <span class="comment">// spawn async task
+    </span>ctrl.rt.spawn(<span class="kw">async move </span>{
+        <span class="kw">type </span>CDuration = chrono::Duration;
+        <span class="kw">type </span>TDuration = tokio::time::Duration;
+
+        <span class="kw">loop </span>{
+            <span class="comment">// 現在時刻を取得して分までに切り捨てる
+            </span><span class="kw">let </span>now = Local::now().naive_local();
+            <span class="kw">let </span>now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), <span class="number">0</span>).unwrap();
+            <span class="kw">let </span>next_min = now_hmd + CDuration::try_minutes(<span class="number">1</span>).unwrap();
+            <span class="macro">trace!</span>(<span class="string">"[{}] periodic task check: {}"</span>, name, now_hmd);
+
+            <span class="comment">// 起動時刻リスト内で二分探索
+            </span><span class="kw">match </span>dt_list.binary_search(<span class="kw-2">&amp;</span>now_hmd) {
+                <span class="prelude-val">Ok</span>(_ind) =&gt; {
+                    <span class="comment">// 一致するものを発見したので続行
+                    </span><span class="macro">trace!</span>(<span class="string">"[{}] hit in time list: {}"</span>, name, now_hmd);
+                }
+                <span class="prelude-val">Err</span>(ind) =&gt; {
+                    <span class="comment">// ind = insertion point
+                    </span><span class="macro">trace!</span>(<span class="string">"[{}] not found in time list: {}"</span>, name, now_hmd);
+                    <span class="comment">// 起きるべき時刻は dt_list[ind]
+                    </span><span class="kw">if </span>ind &lt; dt_list.len() {
+                        <span class="kw">let </span>target_dt = dt_list[ind] + CDuration::try_seconds(<span class="number">1</span>).unwrap();
+                        <span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
+                        <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
+                        <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
+                        <span class="macro">select! </span>{
+                            <span class="kw">_ </span>= tokio::time::sleep(TDuration::from_secs(sleep_sec)) =&gt; {}
+                            <span class="kw">_ </span>= ctrl_move.wait_cancel_rx() =&gt; {
+                                <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
+                                <span class="kw">return</span>;
+                            }
+                        }
+
+                        <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
+                    } <span class="kw">else </span>{
+                        <span class="comment">// 一番後ろよりも現在時刻が後
+                        // 起動時刻リストをすべて1日ずつ後ろにずらす
+                        </span><span class="kw">for </span>dt <span class="kw">in </span>dt_list.iter_mut() {
+                            <span class="kw">let </span>tomorrow = dt.date() + CDuration::try_days(<span class="number">1</span>).unwrap();
+                            <span class="kw">let </span>time = dt.time();
+                            <span class="kw-2">*</span>dt = tomorrow.and_time(time);
+                            <span class="macro">trace!</span>(<span class="string">"[{}] advance time list by 1 day"</span>, name);
+                        }
+                    }
+                    <span class="kw">continue</span>;
+                }
+            }
+
+            <span class="comment">// ctrl を clone して future 内に move する
+            </span><span class="kw">let </span>future = f(ctrl_move.clone());
+            <span class="macro">info!</span>(<span class="string">"[{}] start (periodic)"</span>, name);
             <span class="kw">let </span>result = future.<span class="kw">await</span>;
             <span class="comment">// drop clone of ctrl
-
             </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
                 <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
             } <span class="kw">else </span>{
                 <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
             }
-            <span class="comment">// drop ctrl
-        </span>});
-    }
 
-    <span class="kw">pub fn </span>spawn_oneshot_fn&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
-    <span class="kw">where
-        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">'static</span>,
-    {
-        <span class="comment">// move するデータを準備する
-        </span><span class="kw">let </span>name = name.to_string();
-
-        <span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
-            <span class="macro">info!</span>(<span class="string">"[{}] start (one-shot)"</span>, name);
-
-            <span class="kw">let </span>result = f.<span class="kw">await</span>;
-
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
-            } <span class="kw">else </span>{
-                <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
+            <span class="comment">// 次の "分" を狙って sleep する
+            // 目標は安全のため hh:mm:05 を狙う
+            </span><span class="kw">let </span>target_dt = next_min + CDuration::try_seconds(<span class="number">5</span>).unwrap();
+            <span class="comment">// タスクの実行に1分以上かかると負になるが、
+            // chrono::Duration は負数を許している
+            // その場合は 0 に補正する
+            </span><span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
+            <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
+            <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
+            <span class="macro">select! </span>{
+                <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) =&gt; {}
+                <span class="kw">_ </span>= ctrl_move.wait_cancel_rx() =&gt; {
+                    <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
+                    <span class="kw">return</span>;
+                }
             }
-            <span class="comment">// drop ctrl
-        </span>});
-    }
-
-    <span class="doccomment">/// 周期タスクを生成する。
-    ///
-    /// wakeup_list: 起動時刻。以下を満たさないと panic する。
-    /// * second 以下が 0 である。(分単位)
-    /// * 昇順ソート済みである。
-    ///
-    /// F: [Control] を引数に、T を返す関数。
-    /// T: Future&lt;Output = anyhow::Result&lt;()&gt; かつスレッド間移動可能。
-    ///
-    /// つまり、F は [Control] を引数に、anyhow::Result&lt;()&gt; を返す async function。
-    </span><span class="kw">pub fn </span>spawn_periodic_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, wakeup_list: <span class="kw-2">&amp;</span>[NaiveTime], f: F)
-    <span class="kw">where
-        </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
-        T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
-    {
-        <span class="comment">// move するデータを準備する
-        </span><span class="kw">let </span>name = name.to_string();
-        <span class="kw">let </span><span class="kw-2">mut </span>ctrl = <span class="self">self</span>.clone();
-
-        <span class="comment">// 空でなくソート済み、秒以下がゼロなのを確認後
-        // 今日のその時刻からなる NaiveDateTime に変換する
-        // TODO: is_sorted() がまだ unstable
-        </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">"time list is empty"</span>);
-        <span class="kw">let </span>sorted = wakeup_list.windows(<span class="number">2</span>).all(|t| t[<span class="number">0</span>] &lt;= t[<span class="number">1</span>]);
-        <span class="macro">assert!</span>(sorted, <span class="string">"time list is not sorted"</span>);
-        <span class="kw">let </span>today = Local::now().date_naive();
-        <span class="kw">let </span><span class="kw-2">mut </span>dt_list: Vec&lt;<span class="kw">_</span>&gt; = wakeup_list
-            .iter()
-            .map(|time| {
-                <span class="macro">assert_eq!</span>(time.second(), <span class="number">0</span>);
-                <span class="macro">assert_eq!</span>(time.nanosecond(), <span class="number">0</span>);
-                today.and_time(<span class="kw-2">*</span>time)
-            })
-            .collect();
-
-        <span class="comment">// wakeup time list を最初の LOG_LIMIT 個までログに出力する
-        </span><span class="kw">const </span>LOG_LIMIT: usize = <span class="number">5</span>;
-        <span class="kw">let </span>log_iter = wakeup_list.iter().take(LOG_LIMIT);
-        <span class="kw">let </span><span class="kw-2">mut </span>str = log_iter.enumerate().fold(String::new(), |sum, (i, v)| {
-            <span class="kw">let </span>str = <span class="kw">if </span>i == <span class="number">0 </span>{
-                <span class="macro">format!</span>(<span class="string">"{v}"</span>)
-            } <span class="kw">else </span>{
-                <span class="macro">format!</span>(<span class="string">", {v}"</span>)
-            };
-            sum + <span class="kw-2">&amp;</span>str
-        });
-        <span class="kw">if </span>wakeup_list.len() &gt; LOG_LIMIT {
-            str += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">", ... ({} items)"</span>, wakeup_list.len());
+            <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
         }
-        <span class="macro">info!</span>(<span class="string">"[{}] registered as a periodic task"</span>, name);
-        <span class="macro">info!</span>(<span class="string">"[{}] wakeup time: {}"</span>, name, str);
-
-        <span class="comment">// spawn async task
-        </span><span class="self">self</span>.internal.rt.spawn(<span class="kw">async move </span>{
-            <span class="kw">type </span>CDuration = chrono::Duration;
-            <span class="kw">type </span>TDuration = tokio::time::Duration;
-
-            <span class="kw">loop </span>{
-                <span class="comment">// 現在時刻を取得して分までに切り捨てる
-                </span><span class="kw">let </span>now = Local::now().naive_local();
-                <span class="kw">let </span>now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), <span class="number">0</span>).unwrap();
-                <span class="kw">let </span>next_min = now_hmd + CDuration::minutes(<span class="number">1</span>);
-                <span class="macro">trace!</span>(<span class="string">"[{}] periodic task check: {}"</span>, name, now_hmd);
-
-                <span class="comment">// 起動時刻リスト内で二分探索
-                </span><span class="kw">match </span>dt_list.binary_search(<span class="kw-2">&amp;</span>now_hmd) {
-                    <span class="prelude-val">Ok</span>(_ind) =&gt; {
-                        <span class="comment">// 一致するものを発見したので続行
-                        </span><span class="macro">trace!</span>(<span class="string">"[{}] hit in time list: {}"</span>, name, now_hmd);
-                    }
-                    <span class="prelude-val">Err</span>(ind) =&gt; {
-                        <span class="comment">// ind = insertion point
-                        </span><span class="macro">trace!</span>(<span class="string">"[{}] not found in time list: {}"</span>, name, now_hmd);
-                        <span class="comment">// 起きるべき時刻は dt_list[ind]
-                        </span><span class="kw">if </span>ind &lt; dt_list.len() {
-                            <span class="kw">let </span>target_dt = dt_list[ind] + CDuration::seconds(<span class="number">1</span>);
-                            <span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
-                            <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
-                            <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
-                            <span class="macro">select! </span>{
-                                <span class="kw">_ </span>= tokio::time::sleep(TDuration::from_secs(sleep_sec)) =&gt; {}
-                                <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
-                                    <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
-                                    <span class="kw">return</span>;
-                                }
-                            }
-
-                            <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
-                        } <span class="kw">else </span>{
-                            <span class="comment">// 一番後ろよりも現在時刻が後
-                            // 起動時刻リストをすべて1日ずつ後ろにずらす
-                            </span><span class="kw">for </span>dt <span class="kw">in </span>dt_list.iter_mut() {
-                                <span class="kw">let </span>tomorrow = dt.date() + CDuration::days(<span class="number">1</span>);
-                                <span class="kw">let </span>time = dt.time();
-                                <span class="kw-2">*</span>dt = tomorrow.and_time(time);
-                                <span class="macro">trace!</span>(<span class="string">"[{}] advance time list by 1 day"</span>, name);
-                            }
-                        }
-                        <span class="kw">continue</span>;
-                    }
-                }
-
-                <span class="comment">// ctrl を clone して future 内に move する
-                </span><span class="kw">let </span>future = f(ctrl.clone());
-                <span class="macro">info!</span>(<span class="string">"[{}] start (periodic)"</span>, name);
-                <span class="kw">let </span>result = future.<span class="kw">await</span>;
-                <span class="comment">// drop clone of ctrl
-                </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                    <span class="macro">error!</span>(<span class="string">"[{}] finish (error): {:?}"</span>, name, e);
-                } <span class="kw">else </span>{
-                    <span class="macro">info!</span>(<span class="string">"[{}] finish (success)"</span>, name);
-                }
-
-                <span class="comment">// 次の "分" を狙って sleep する
-                // 目標は安全のため hh:mm:05 を狙う
-                </span><span class="kw">let </span>target_dt = next_min + CDuration::seconds(<span class="number">5</span>);
-                <span class="comment">// タスクの実行に1分以上かかると負になるが、
-                // chrono::Duration は負数を許している
-                // その場合は 0 に補正する
-                </span><span class="kw">let </span>sleep_duration = target_dt - Local::now().naive_local();
-                <span class="kw">let </span>sleep_sec = sleep_duration.num_seconds().clamp(<span class="number">0</span>, i64::MAX) <span class="kw">as </span>u64;
-                <span class="macro">trace!</span>(<span class="string">"[{}] target: {}, sleep_sec: {}"</span>, name, target_dt, sleep_sec);
-                <span class="macro">select! </span>{
-                    <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) =&gt; {}
-                    <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
-                        <span class="macro">info!</span>(<span class="string">"[{}] cancel periodic task"</span>, name);
-                        <span class="kw">return</span>;
-                    }
-                }
-                <span class="macro">trace!</span>(<span class="string">"[{}] wake up"</span>, name);
-            }
-            <span class="comment">// drop ctrl
-        </span>});
-    }
+        <span class="comment">// drop ctrl
+    </span>});
 }
 
 <span class="kw">impl </span>TaskServer {
@@ -601,38 +600,37 @@
             .build()
             .unwrap();
 
-        <span class="kw">let </span>(cancel_tx, cancel_rx) = watch::channel(<span class="bool-val">false</span>);
+        <span class="comment">// tx は self へ move
+        // rx は root Control へ move
+        </span><span class="kw">let </span>(cancel_tx, cancel_rx) = watch::channel(<span class="bool-val">false</span>);
 
-        <span class="kw">let </span>internal = InternalControl { rt, sysmods };
-        <span class="kw">let </span>ctrl = Control {
-            internal: Arc::new(internal),
-            cancel_rx: <span class="prelude-val">Some</span>(cancel_rx),
+        <span class="kw">let </span>internal = Controller {
+            rt,
+            sysmods,
+            cancel_rx: std::sync::Mutex::new(<span class="prelude-val">Some</span>(cancel_rx)),
         };
+        <span class="kw">let </span>ctrl = Arc::new(internal);
 
         TaskServer { ctrl, cancel_tx }
     }
 
-    <span class="doccomment">/// [Control::spawn_oneshot_task] と同じ。
+    <span class="doccomment">/// [spawn_oneshot_task] を内蔵の [Self::ctrl] を使って呼び出す。
     </span><span class="kw">pub fn </span>spawn_oneshot_task&lt;F, T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, f: F)
     <span class="kw">where
         </span>F: Fn(Control) -&gt; T + Send + Sync + <span class="lifetime">'static</span>,
         T: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send,
     {
-        <span class="self">self</span>.ctrl.spawn_oneshot_task(name, f);
+        spawn_oneshot_task(<span class="kw-2">&amp;</span><span class="self">self</span>.ctrl, name, f);
     }
 
     <span class="doccomment">/// 実行を開始し、完了するまでブロックする。
     ///
-    /// self の所有権はを consume するため、一度しか実行できない。
-    </span><span class="kw">pub fn </span>run(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; RunResult {
-        <span class="comment">// async block へ move するためのコピーを作る
-        </span><span class="kw">let </span>ctrl = <span class="self">self</span>.ctrl.clone();
-        <span class="comment">// オリジナルの cancel_rx を self から奪って drop しておく
-        </span>drop(<span class="self">self</span>.ctrl.cancel_rx.take().unwrap());
-
-        <span class="self">self</span>.ctrl.internal.rt.block_on(<span class="kw">async move </span>{
+    /// self の所有権を consume するため、一度しか実行できない。
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>) -&gt; RunResult {
+        <span class="kw">let </span>ctrl = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.ctrl);
+        <span class="self">self</span>.ctrl.rt.block_on(<span class="kw">async move </span>{
             <span class="comment">// SystemModule 全体に on_start イベントを配送
-            </span>ctrl.internal.sysmods.on_start(<span class="kw-2">&amp;</span>ctrl).<span class="kw">await</span>;
+            </span>ctrl.sysmods.on_start(<span class="kw-2">&amp;</span>ctrl).<span class="kw">await</span>;
 
             <span class="comment">// この async block をシグナル処理に使う
             </span><span class="kw">let </span><span class="kw-2">mut </span>sigint = signal(SignalKind::interrupt()).unwrap();
@@ -658,10 +656,8 @@
             <span class="comment">// 値を true に設定して全タスクにキャンセルリクエストを通知する
             </span><span class="self">self</span>.cancel_tx.send_replace(<span class="bool-val">true</span>);
             <span class="comment">// 全タスク完了待ち
-            // この async block で持っている分の cancel_rx を ctrl ごと drop する
-            // オリジナルの self.ctrl.cancel_rx も drop 済みなので
-            // 残りは各 async task に clone された Control
-            </span>drop(ctrl);
+            // オリジナルの cancel_rx を self.ctrl から奪って drop しておく
+            </span>drop(ctrl.cancel_rx.lock().unwrap().take());
             <span class="comment">// 全 cancel_rx が drop されるまで待つ
             </span><span class="macro">info!</span>(<span class="string">"waiting for all tasks to be completed...."</span>);
             <span class="self">self</span>.cancel_tx.closed().<span class="kw">await</span>;
@@ -669,6 +665,7 @@
 
             run_result
         })
-    }
+        <span class="comment">// drop self (self.ctrl)
+    </span>}
 }
 </code></pre></div></section></main></body></html>

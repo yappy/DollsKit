@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -207,268 +208,18 @@
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
-<a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
-<a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a>
-<a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-<a href="#225" id="225">225</a>
-<a href="#226" id="226">226</a>
-<a href="#227" id="227">227</a>
-<a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
-<a href="#230" id="230">230</a>
-<a href="#231" id="231">231</a>
-<a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a>
-<a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
-<a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
-<a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
-<a href="#282" id="282">282</a>
-<a href="#283" id="283">283</a>
-<a href="#284" id="284">284</a>
-<a href="#285" id="285">285</a>
-<a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a>
-<a href="#290" id="290">290</a>
-<a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
-<a href="#308" id="308">308</a>
-<a href="#309" id="309">309</a>
-<a href="#310" id="310">310</a>
-<a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a>
-<a href="#326" id="326">326</a>
-<a href="#327" id="327">327</a>
-<a href="#328" id="328">328</a>
-<a href="#329" id="329">329</a>
-<a href="#330" id="330">330</a>
-<a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
-<a href="#340" id="340">340</a>
-<a href="#341" id="341">341</a>
-<a href="#342" id="342">342</a>
-<a href="#343" id="343">343</a>
-<a href="#344" id="344">344</a>
-<a href="#345" id="345">345</a>
-<a href="#346" id="346">346</a>
-<a href="#347" id="347">347</a>
-<a href="#348" id="348">348</a>
-<a href="#349" id="349">349</a>
-<a href="#350" id="350">350</a>
-<a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a>
-<a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
-<a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a>
-<a href="#364" id="364">364</a>
-<a href="#365" id="365">365</a>
-<a href="#366" id="366">366</a>
-<a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
-<a href="#426" id="426">426</a>
-<a href="#427" id="427">427</a>
-<a href="#428" id="428">428</a>
-<a href="#429" id="429">429</a>
-<a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
-<a href="#439" id="439">439</a>
-<a href="#440" id="440">440</a>
-<a href="#441" id="441">441</a>
-<a href="#442" id="442">442</a>
-<a href="#443" id="443">443</a>
-<a href="#444" id="444">444</a>
-<a href="#445" id="445">445</a>
-<a href="#446" id="446">446</a>
-<a href="#447" id="447">447</a>
-<a href="#448" id="448">448</a>
-<a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API - function.
 
-</span><span class="kw">use super</span>::{Function, ParameterElement, Parameters};
-
-<span class="kw">use </span><span class="kw">crate</span>::sysmod::health::{
-    get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
-};
-<span class="kw">use </span><span class="kw">crate</span>::utils::weather::{<span class="self">self</span>, ForecastRoot, OverviewForecast};
-<span class="kw">use crate</span>::{
-    sysmod::openai::{ChatMessage, Role},
-    utils::netutil,
-};
-
-<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>chrono::{DateTime, Local, Utc};
+</span><span class="kw">use </span><span class="kw">super</span>::basicfuncs;
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{ChatMessage, Role};
+<span class="kw">use </span>anyhow::bail;
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::{info, warn};
-<span class="kw">use </span>reqwest::Client;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-
-<span class="kw">use </span>std::{collections::HashMap, future::Future, pin::Pin, time::Duration};
+<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::ops::RangeBounds;
+<span class="kw">use </span>std::pin::Pin;
 
 <span class="doccomment">/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -477,14 +228,18 @@
 
 <span class="comment">// https://users.rust-lang.org/t/how-to-handle-a-vector-of-async-function-pointers/39804
 
-</span><span class="doccomment">/// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
+</span><span class="doccomment">/// OpenAI API json 定義の再エクスポート。
+</span><span class="kw">pub use </span><span class="kw">super</span>::Function;
+<span class="kw">pub use </span><span class="kw">super</span>::ParameterElement;
+<span class="kw">pub use </span><span class="kw">super</span>::Parameters;
+<span class="doccomment">/// sync fn で、async fn に引数を引き渡して呼び出しその Future を返す関数型。
 </span><span class="kw">pub type </span>FuncBodyAsync&lt;<span class="lifetime">'a</span>&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;String&gt;&gt; + Sync + Send + <span class="lifetime">'a</span>&gt;&gt;;
 <span class="doccomment">/// 関数の Rust 上での定義。
 ///
 /// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
 </span><span class="kw">pub type </span>FuncBody&lt;T&gt; = Box&lt;<span class="kw">dyn </span>Fn(T, <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Sync + Send&gt;;
-<span class="doccomment">/// 引数。文字列から文字列へのマップ。
-</span><span class="kw">pub type </span>FuncArgs = HashMap&lt;String, String&gt;;
+<span class="doccomment">/// 引数。文字列から Json value へのマップ。
+</span><span class="kw">pub type </span>FuncArgs = HashMap&lt;String, serde_json::value::Value&gt;;
 
 <span class="doccomment">/// 引数は JSON ソース文字列で与えられる。
 /// デシリアライズでパースするための構造体。
@@ -494,12 +249,12 @@
     </span>args: FuncArgs,
 }
 
-<span class="doccomment">/// 関数群の管理。
+<span class="doccomment">/// OpenAI function 群の管理テーブル。
 </span><span class="kw">pub struct </span>FunctionTable&lt;T&gt; {
     <span class="doccomment">/// OpenAI API に渡すためのリスト。
     </span>function_list: Vec&lt;Function&gt;,
     <span class="doccomment">/// 関数名から Rust 関数へのマップ。
-    </span>call_table: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, FuncBody&lt;T&gt;&gt;,
+    </span>call_table: HashMap&lt;String, FuncBody&lt;T&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
@@ -513,6 +268,32 @@
     <span class="doccomment">/// OpenAI API に渡すためのリストを取得する。
     </span><span class="kw">pub fn </span>function_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;Function&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.function_list
+    }
+
+    <span class="doccomment">/// 関数一覧のヘルプ文字列を生成する。
+    </span><span class="kw">pub fn </span>create_help(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>text = String::new();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>first = <span class="bool-val">true</span>;
+        <span class="kw">for </span>f <span class="kw">in </span><span class="self">self</span>.function_list.iter() {
+            <span class="kw">if </span>first {
+                first = <span class="bool-val">false</span>;
+            } <span class="kw">else </span>{
+                text.push(<span class="string">'\n'</span>);
+            }
+
+            text.push_str(<span class="kw-2">&amp;</span>f.name);
+
+            <span class="kw">let </span><span class="kw-2">mut </span>params: Vec&lt;<span class="kw">_</span>&gt; = f.parameters.properties.keys().cloned().collect();
+            params.sort();
+            text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"({})"</span>, params.join(<span class="string">", "</span>)));
+
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(desc) = <span class="kw-2">&amp;</span>f.description {
+                text.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\n    {}"</span>, desc));
+            }
+        }
+
+        text
     }
 
     <span class="doccomment">/// 関数を呼び出す。
@@ -562,341 +343,77 @@
         </span>func(ctx, args).<span class="kw">await</span>.map_err(|err| <span class="macro">anyhow!</span>(<span class="string">"Error: {err}"</span>))
     }
 
-    <span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, body: FuncBody&lt;T&gt;) {
+    <span class="doccomment">/// 関数を登録する。
+    </span><span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, body: FuncBody&lt;T&gt;) {
+        <span class="kw">let </span>name = function.name.clone();
         <span class="self">self</span>.function_list.push(function);
         <span class="self">self</span>.call_table.insert(name, Box::new(body));
     }
 
-    <span class="kw">pub fn </span>register_basic_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.register_get_version();
-        <span class="self">self</span>.register_get_cpu_status();
-        <span class="self">self</span>.register_get_current_datetime();
-        <span class="self">self</span>.register_request_url();
-        <span class="self">self</span>.register_get_weather_report();
+    <span class="doccomment">/// [basicfuncs] 以下のすべての基本的な関数を登録する。
+    </span><span class="kw">pub fn </span>register_basic_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        basicfuncs::register_all(<span class="self">self</span>);
     }
 }
 
-<span class="doccomment">/// args から引数名で検索し、値への参照を返す。
-/// 見つからない場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
-</span><span class="kw">pub fn </span>get_arg&lt;<span class="lifetime">'a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>String&gt; {
+<span class="doccomment">/// args から引数名で文字列値を取得する。
+/// 見つからない、または型が違う場合、いい感じのエラーメッセージの [anyhow::Error] を返す。
+</span><span class="kw">pub fn </span>get_arg_str&lt;<span class="lifetime">'a</span>&gt;(args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FuncArgs, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt; {
     <span class="kw">let </span>value = args.get(<span class="kw-2">&amp;</span>name.to_string());
-    value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} is required"</span>))
+    <span class="kw">let </span>value = value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} is required"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>value = value
+        .as_str()
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} must be string"</span>))<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(value)
 }
 
-<span class="comment">// =============================================================================
+<span class="doccomment">/// args から引数名で i64 を取得する。
+/// 見つからない、または変換に失敗した場合、または範囲外の場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+</span><span class="kw">pub fn </span>get_arg_i64&lt;R&gt;(args: <span class="kw-2">&amp;</span>FuncArgs, name: <span class="kw-2">&amp;</span>str, range: R) -&gt; <span class="prelude-ty">Result</span>&lt;i64&gt;
+<span class="kw">where
+    </span>R: RangeBounds&lt;i64&gt;,
+{
+    <span class="kw">let </span>value = args.get(<span class="kw-2">&amp;</span>name.to_string());
+    <span class="kw">let </span>value = value.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} is required"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>value = value
+        .as_i64()
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Error: Argument {name} must be integer"</span>))<span class="question-mark">?</span>;
 
-</span><span class="kw">fn </span>get_version_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_version(args))
-}
-
-<span class="kw">async fn </span>get_version(_args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">use </span><span class="kw">crate</span>::sys::version;
-
-    <span class="prelude-val">Ok</span>(version::version_info().to_string())
-}
-
-<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">fn </span>register_get_version(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">"get_version"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Get the version of the assistant program"</span>.to_string()),
-            parameters: Parameters {
-                type_: <span class="string">"object"</span>.to_string(),
-                properties: Default::default(),
-                required: Default::default(),
-            },
-        });
-        <span class="self">self</span>.call_table
-            .insert(<span class="string">"get_version"</span>, Box::new(get_version_sync));
-    }
-}
-
-<span class="comment">// =============================================================================
-</span><span class="kw">fn </span>get_cpu_status_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_cpu_status(args))
-}
-
-<span class="attr">#[derive(Serialize, Deserialize)]
-</span><span class="kw">struct </span>CpuStatus {
-    number_of_cores: u32,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
-    </span>current_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
-    </span>config_frequency: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
-    </span>throttle_status: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-}
-
-<span class="kw">async fn </span>get_cpu_status(_args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>number_of_cores = get_cpu_cores().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>current_frequency = get_current_freq()
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">"{} MHz"</span>, hz / <span class="number">1_000_000</span>));
-    <span class="kw">let </span>config_frequency = get_freq_conf()
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.map(|hz| <span class="macro">format!</span>(<span class="string">"{} MHz"</span>, hz / <span class="number">1_000_000</span>));
-    <span class="kw">let </span>throttle_status = get_throttle_status().<span class="kw">await</span><span class="question-mark">?</span>.map(|st| {
-        <span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[];
-        <span class="kw">if </span>st.contains(ThrottleFlags::UNDER_VOLTAGE) {
-            v.push(<span class="string">"Under Voltage"</span>.to_string());
-        }
-        <span class="kw">if </span>st.contains(ThrottleFlags::SOFT_TEMP_LIMIT) {
-            v.push(<span class="string">"Soft Throttled"</span>.to_string());
-        }
-        <span class="kw">if </span>st.contains(ThrottleFlags::THROTTLED) {
-            v.push(<span class="string">"Hard Throttled"</span>.to_string());
-        }
-        v
-    });
-
-    <span class="kw">let </span>obj = CpuStatus {
-        number_of_cores,
-        current_frequency,
-        config_frequency,
-        throttle_status,
-    };
-
-    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj)<span class="question-mark">?</span>)
-}
-
-<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">fn </span>register_get_cpu_status(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">"get_cpu_status"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Get the current status of assistant's CPU"</span>.to_string()),
-            parameters: Parameters {
-                type_: <span class="string">"object"</span>.to_string(),
-                properties: Default::default(),
-                required: Default::default(),
-            },
-        });
-        <span class="self">self</span>.call_table
-            .insert(<span class="string">"get_cpu_status"</span>, Box::new(get_cpu_status_sync));
-    }
-}
-
-<span class="comment">// =============================================================================
-</span><span class="kw">fn </span>get_current_datetime_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_current_datetime(args))
-}
-
-<span class="kw">async fn </span>get_current_datetime(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>tz = get_arg(args, <span class="string">"tz"</span>)<span class="question-mark">?</span>;
-    <span class="kw">match </span>tz.as_str() {
-        <span class="string">"JST" </span>=&gt; {
-            <span class="kw">let </span>dt: DateTime&lt;Local&gt; = Local::now();
-            <span class="prelude-val">Ok</span>(dt.to_string())
-        }
-        <span class="string">"UTC" </span>=&gt; {
-            <span class="kw">let </span>dt: DateTime&lt;Utc&gt; = Utc::now();
-            <span class="prelude-val">Ok</span>(dt.to_string())
-        }
-        <span class="kw">_ </span>=&gt; {
-            <span class="macro">bail!</span>(<span class="string">"Parameter tz must be JST or UTC"</span>)
-        }
-    }
-}
-
-<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">fn </span>register_get_current_datetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
-        properties.insert(
-            <span class="string">"tz"</span>.to_string(),
-            ParameterElement {
-                type_: <span class="string">"string"</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">"Time zone"</span>.to_string()),
-                enum_: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">"JST"</span>.to_string(), <span class="string">"UTC"</span>.to_string()]),
-            },
-        );
-        <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">"get_current_datetime"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Get the current date and time"</span>.to_string()),
-            parameters: Parameters {
-                type_: <span class="string">"object"</span>.to_string(),
-                properties,
-                required: <span class="macro">vec!</span>[<span class="string">"tz"</span>.to_string()],
-            },
-        });
-        <span class="self">self</span>.call_table
-            .insert(<span class="string">"get_current_datetime"</span>, Box::new(get_current_datetime_sync));
-    }
-}
-
-<span class="comment">// =============================================================================
-
-</span><span class="kw">fn </span>request_url_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(request_url(args))
-}
-
-<span class="kw">fn </span>compact_html(src: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">use </span>scraper::{Html, Selector};
-
-    <span class="kw">let </span>fragment = Html::parse_document(src);
-    <span class="comment">// CSS セレクタで body タグを選択
-    </span><span class="kw">let </span>selector = Selector::parse(<span class="string">"body"</span>).unwrap();
-    <span class="comment">// イテレータを返すが最初の1つだけを対象とする
-    </span><span class="kw">let </span>body = fragment
-        .select(<span class="kw-2">&amp;</span>selector)
-        .next()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"body not found"</span>))<span class="question-mark">?</span>;
-
-    <span class="comment">// 空白文字をまとめる
-    </span><span class="kw">let </span><span class="kw-2">mut </span>res = String::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>prev_space = <span class="bool-val">false</span>;
-    <span class="comment">// body 内のテキストノードを巡る
-    </span><span class="kw">for </span>text <span class="kw">in </span>body.text() {
-        <span class="kw">for </span>c <span class="kw">in </span>text.chars() {
-            <span class="kw">if </span>c.is_whitespace() {
-                <span class="kw">if </span>!prev_space {
-                    res.push(<span class="string">' '</span>);
-                }
-                prev_space = <span class="bool-val">true</span>;
-            } <span class="kw">else </span>{
-                res.push(c);
-                prev_space = <span class="bool-val">false</span>;
-            }
-        }
-    }
-
-    <span class="prelude-val">Ok</span>(res)
-}
-
-<span class="kw">async fn </span>request_url(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
-    <span class="kw">const </span>SIZE_MAX: usize = <span class="number">5 </span>* <span class="number">1024</span>;
-    <span class="kw">let </span>url = get_arg(args, <span class="string">"url"</span>)<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>client = Client::builder().timeout(TIMEOUT).build()<span class="question-mark">?</span>;
-    <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="kw">let </span>status = resp.status();
-    <span class="kw">if </span>status.is_success() {
-        <span class="kw">let </span>text = resp.text().<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="kw">let </span>text = compact_html(<span class="kw-2">&amp;</span>text)<span class="question-mark">?</span>;
-        <span class="comment">// SIZE_MAX バイトまで抜き出す
-        </span><span class="kw">if </span>text.len() &gt; SIZE_MAX {
-            <span class="kw">let </span><span class="kw-2">mut </span>end = <span class="number">0</span>;
-            <span class="kw">for </span>(i, _c) <span class="kw">in </span>text.char_indices() {
-                <span class="kw">if </span>i &lt; SIZE_MAX {
-                    end = i;
-                }
-            }
-            <span class="prelude-val">Ok</span>(text[<span class="number">0</span>..end].to_string())
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(text.to_string())
-        }
+    <span class="kw">if </span>range.contains(<span class="kw-2">&amp;</span>value) {
+        <span class="prelude-val">Ok</span>(value)
     } <span class="kw">else </span>{
-        <span class="macro">bail!</span>(
-            <span class="string">"{}, {}"</span>,
-            status.as_str(),
-            status.canonical_reason().unwrap_or(<span class="string">""</span>)
-        );
+        <span class="macro">bail!</span>(<span class="string">"Error: Out of range: {name}"</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">fn </span>register_request_url(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
-        properties.insert(
-            <span class="string">"url"</span>.to_string(),
-            ParameterElement {
-                type_: <span class="string">"string"</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">"URL to access"</span>.to_string()),
-                enum_: <span class="prelude-val">None</span>,
-            },
-        );
-        <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">"request_url"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Request HTTP GET"</span>.to_string()),
-            parameters: Parameters {
-                type_: <span class="string">"object"</span>.to_string(),
-                properties,
-                required: <span class="macro">vec!</span>[<span class="string">"url"</span>.to_string()],
-            },
-        });
-        <span class="self">self</span>.call_table
-            .insert(<span class="string">"request_url"</span>, Box::new(request_url_sync));
-    }
-}
-
-<span class="comment">// =============================================================================
-
-</span><span class="kw">fn </span>get_weather_report_sync&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_weather_report(args))
-}
-
-<span class="kw">async fn </span>get_weather_report(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
-    <span class="kw">let </span>area = get_arg(args, <span class="string">"area"</span>)<span class="question-mark">?</span>;
-
-    <span class="comment">// 引数の都市名をコードに変換
-    </span><span class="kw">let </span>code =
-        weather::office_name_to_code(area).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Invalid area: {}"</span>, area))<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>url1 = weather::url_overview_forecast(<span class="kw-2">&amp;</span>code);
-    <span class="kw">let </span>url2 = weather::url_forecast(<span class="kw-2">&amp;</span>code);
-    <span class="kw">let </span>client = Client::builder().timeout(TIMEOUT).build()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>fut1 = netutil::checked_get_url(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>url1);
-    <span class="kw">let </span>fut2 = netutil::checked_get_url(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>url2);
-    <span class="kw">let </span>(resp1, resp2) = <span class="macro">tokio::join!</span>(fut1, fut2);
-    <span class="kw">let </span>(s1, s2) = (resp1<span class="question-mark">?</span>, resp2<span class="question-mark">?</span>);
-
-    <span class="kw">let </span>ov: OverviewForecast = serde_json::from_str(<span class="kw-2">&amp;</span>s1)<span class="question-mark">?</span>;
-    <span class="kw">let </span>fc: ForecastRoot = serde_json::from_str(<span class="kw-2">&amp;</span>s2)<span class="question-mark">?</span>;
-    <span class="kw">let </span>obj = weather::weather_to_ai_readable(<span class="kw-2">&amp;</span>code, <span class="kw-2">&amp;</span>ov, <span class="kw-2">&amp;</span>fc)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj).unwrap())
-}
-
-<span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">fn </span>register_get_weather_report(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>area_list: Vec&lt;<span class="kw">_</span>&gt; = weather::offices()
-            .iter()
-            .map(|info| info.name.clone())
-            .collect();
-
-        <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
-        properties.insert(
-            <span class="string">"area"</span>.to_string(),
-            ParameterElement {
-                type_: <span class="string">"string"</span>.to_string(),
-                description: <span class="prelude-val">Some</span>(<span class="string">"Area name (city name, etc.)"</span>.to_string()),
-                enum_: <span class="prelude-val">Some</span>(area_list),
-            },
-        );
-        <span class="self">self</span>.function_list.push(Function {
-            name: <span class="string">"get_weather_report"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Get whether report data"</span>.to_string()),
-            parameters: Parameters {
-                type_: <span class="string">"object"</span>.to_string(),
-                properties,
-                required: <span class="macro">vec!</span>[<span class="string">"area"</span>.to_string()],
-            },
-        });
-        <span class="self">self</span>.call_table
-            .insert(<span class="string">"get_weather_report"</span>, Box::new(get_weather_report_sync));
-    }
-}
-
-<span class="comment">// =============================================================================
-
-</span><span class="attr">#[cfg(test)]
+<span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>parse_html() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">const </span>SRC: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">"CARGO_MANIFEST_DIR"</span>),
-            <span class="string">"/res/test/scraping/top.htm"
-        </span>));
+    </span><span class="kw">fn </span>function_args() {
+        <span class="kw">let </span><span class="kw-2">mut </span>args = FuncArgs::new();
+        args.insert(<span class="string">"keytest"</span>.to_string(), <span class="string">"ok"</span>.into());
+        args.insert(<span class="string">"int"</span>.to_string(), <span class="number">42</span>.into());
+        args.insert(<span class="string">"notint"</span>.to_string(), <span class="string">"abcde"</span>.into());
 
-        <span class="kw">let </span>res = compact_html(SRC)<span class="question-mark">?</span>;
-        <span class="macro">println!</span>(<span class="string">"{res}"</span>);
+        <span class="macro">assert!</span>(get_arg_str(<span class="kw-2">&amp;</span>args, <span class="string">"keytest"</span>).unwrap() == <span class="string">"ok"</span>);
+        <span class="macro">assert!</span>(get_arg_str(<span class="kw-2">&amp;</span>args, <span class="string">"unknown"</span>)
+            .unwrap_err()
+            .to_string()
+            .contains(<span class="string">"required"</span>));
 
-        <span class="prelude-val">Ok</span>(())
+        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..=<span class="number">42</span>).unwrap() == <span class="number">42</span>);
+        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"notint"</span>, <span class="number">1</span>..<span class="number">43</span>)
+            .unwrap_err()
+            .to_string()
+            .contains(<span class="string">"must be integer"</span>));
+        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..<span class="number">42</span>)
+            .unwrap_err()
+            .to_string()
+            .contains(<span class="string">"Out of range"</span>));
     }
 }
 </code></pre></div></section></main></body></html>

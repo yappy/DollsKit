@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Ast","Operation","RuntimeValue","Token"],"fn":["evaluate","evaluate_operation","lexical_analyze","parse_formula"],"struct":["Lexer","Parser","Position"],"type":["TokenWithPos"]};

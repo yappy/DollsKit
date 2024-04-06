@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/camera.rs`."><title>camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/camera.rs`."><title>camera.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -535,17 +536,20 @@
 <a href="#534" id="534">534</a>
 <a href="#535" id="535">535</a>
 <a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Raspberry Pi カメラ機能。
 //!
 //! 専用カメラを搭載した Raspberry Pi 以外の環境では撮影できない。
 //! [CameraConfig::fake_camera] 設定でフェイクできる。
 
 </span><span class="kw">use </span><span class="kw">super</span>::SystemModule;
-<span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
+<span class="kw">use </span><span class="kw">crate</span>::sys::{config, taskserver};
 <span class="kw">use </span>anyhow::{anyhow, bail, ensure, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>chrono::{Local, NaiveTime};
-<span class="kw">use </span>image::{imageops::FilterType, ImageOutputFormat};
+<span class="kw">use </span>image::{imageops::FilterType, ImageFormat};
 <span class="kw">use </span>log::{error, info, warn};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::{
@@ -849,9 +853,14 @@
         <span class="macro">info!</span>(<span class="string">"[camera] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.enabled {
             <span class="kw">if </span><span class="self">self</span>.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(<span class="string">"camera-auto"</span>, Camera::auto_task);
+                taskserver::spawn_oneshot_task(ctrl, <span class="string">"camera-auto"</span>, Camera::auto_task);
             } <span class="kw">else </span>{
-                ctrl.spawn_periodic_task(<span class="string">"camera-auto"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list, Camera::auto_task);
+                taskserver::spawn_periodic_task(
+                    ctrl,
+                    <span class="string">"camera-auto"</span>,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list,
+                    Camera::auto_task,
+                );
             }
         }
     }
@@ -944,8 +953,6 @@
 </span><span class="kw">const </span>THUMB_W: u32 = <span class="number">128</span>;
 <span class="doccomment">/// サムネイルの縦サイズ。
 </span><span class="kw">const </span>THUMB_H: u32 = <span class="number">96</span>;
-<span class="doccomment">/// サムネイルの jpeg クオリティ。
-</span><span class="kw">const </span>THUMB_Q: u8 = <span class="number">35</span>;
 
 <span class="doccomment">/// 写真撮影オプション。
 </span><span class="kw">pub struct </span>TakePicOption {
@@ -1035,7 +1042,7 @@
         </span><span class="kw">let </span>src = image::load_from_memory_with_format(<span class="kw-2">&amp;</span>buf, image::ImageFormat::Jpeg)<span class="question-mark">?</span>;
         <span class="kw">let </span>dst = src.resize_exact(opt.w, opt.h, FilterType::Nearest);
         <span class="kw">let </span><span class="kw-2">mut </span>output = Cursor::new(<span class="macro">vec!</span>[]);
-        dst.write_to(<span class="kw-2">&amp;mut </span>output, ImageOutputFormat::Jpeg(PIC_DEF_Q))<span class="question-mark">?</span>;
+        dst.write_to(<span class="kw-2">&amp;mut </span>output, ImageFormat::Jpeg)<span class="question-mark">?</span>;
 
         output.into_inner()
     };
@@ -1053,7 +1060,7 @@
     <span class="kw">let </span>dst = src.thumbnail(THUMB_W, THUMB_H);
 
     <span class="kw">let </span><span class="kw-2">mut </span>buf = Cursor::new(Vec::&lt;u8&gt;::new());
-    dst.write_to(<span class="kw-2">&amp;mut </span>buf, ImageOutputFormat::Jpeg(THUMB_Q))<span class="question-mark">?</span>;
+    dst.write_to(<span class="kw-2">&amp;mut </span>buf, ImageFormat::Jpeg)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(buf.into_inner())
 }
@@ -1067,7 +1074,7 @@
     <span class="kw">let </span>dst = src.resize_exact(w, h, FilterType::Nearest);
 
     <span class="kw">let </span><span class="kw-2">mut </span>buf = Cursor::new(Vec::&lt;u8&gt;::new());
-    dst.write_to(<span class="kw-2">&amp;mut </span>buf, ImageOutputFormat::Jpeg(PIC_DEF_Q))<span class="question-mark">?</span>;
+    dst.write_to(<span class="kw-2">&amp;mut </span>buf, ImageFormat::Jpeg)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(buf.into_inner())
 }

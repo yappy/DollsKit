@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["FUNCTION_TOKEN"],"fn":["compact_html","get_arg","get_cpu_status","get_cpu_status_sync","get_current_datetime","get_current_datetime_sync","get_version","get_version_sync","get_weather_report","get_weather_report_sync","request_url","request_url_sync"],"struct":["Args","CpuStatus","FunctionTable"],"type":["FuncArgs","FuncBody","FuncBodyAsync"]};
+window.SIDEBAR_ITEMS = {"constant":["FUNCTION_TOKEN"],"fn":["get_arg_i64","get_arg_str"],"struct":["Args","FunctionTable"],"type":["FuncArgs","FuncBody","FuncBodyAsync"]};

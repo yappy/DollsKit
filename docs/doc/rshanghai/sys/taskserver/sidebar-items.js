@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["RunResult"],"struct":["Control","InternalControl","TaskServer"],"type":["CancelRx","CancelTx"]};
+window.SIDEBAR_ITEMS = {"enum":["RunResult"],"fn":["spawn_oneshot_fn","spawn_oneshot_task","spawn_periodic_task"],"struct":["Controller","TaskServer"],"type":["CancelRx","CancelTx","Control"]};

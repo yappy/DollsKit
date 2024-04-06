@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["compact_html","get_weather_report","get_weather_report_pin","register_all","register_get_weather_report","register_request_url","request_url","request_url_pin"]};

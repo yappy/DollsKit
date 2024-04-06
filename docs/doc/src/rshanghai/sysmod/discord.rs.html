@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1028,37 +1029,171 @@
 <a href="#1027" id="1027">1027</a>
 <a href="#1028" id="1028">1028</a>
 <a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
+<a href="#1053" id="1053">1053</a>
+<a href="#1054" id="1054">1054</a>
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+<a href="#1059" id="1059">1059</a>
+<a href="#1060" id="1060">1060</a>
+<a href="#1061" id="1061">1061</a>
+<a href="#1062" id="1062">1062</a>
+<a href="#1063" id="1063">1063</a>
+<a href="#1064" id="1064">1064</a>
+<a href="#1065" id="1065">1065</a>
+<a href="#1066" id="1066">1066</a>
+<a href="#1067" id="1067">1067</a>
+<a href="#1068" id="1068">1068</a>
+<a href="#1069" id="1069">1069</a>
+<a href="#1070" id="1070">1070</a>
+<a href="#1071" id="1071">1071</a>
+<a href="#1072" id="1072">1072</a>
+<a href="#1073" id="1073">1073</a>
+<a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
+<a href="#1076" id="1076">1076</a>
+<a href="#1077" id="1077">1077</a>
+<a href="#1078" id="1078">1078</a>
+<a href="#1079" id="1079">1079</a>
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
+<a href="#1086" id="1086">1086</a>
+<a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
+<a href="#1090" id="1090">1090</a>
+<a href="#1091" id="1091">1091</a>
+<a href="#1092" id="1092">1092</a>
+<a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a>
+<a href="#1098" id="1098">1098</a>
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
+<a href="#1151" id="1151">1151</a>
+<a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
-</span><span class="kw">use </span><span class="kw">super</span>::camera::{take_a_pic, TakePicOption};
-<span class="kw">use </span><span class="kw">super</span>::openai::{function::FunctionTable, Role};
+</span><span class="kw">use </span><span class="kw">super</span>::openai::{function::FunctionTable, Role};
 <span class="kw">use </span><span class="kw">super</span>::SystemModule;
-<span class="kw">use </span><span class="kw">crate</span>::sys::version;
+
 <span class="kw">use </span><span class="kw">crate</span>::sys::{config, taskserver::Control};
+<span class="kw">use </span><span class="kw">crate</span>::sys::{taskserver, version};
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::camera::{<span class="self">self</span>, TakePicOption};
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::FUNCTION_TOKEN;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{<span class="self">self</span>, ChatMessage};
 <span class="kw">use </span><span class="kw">crate</span>::utils::chat_history::{<span class="self">self</span>, ChatHistory};
 <span class="kw">use </span><span class="kw">crate</span>::utils::netutil::HttpStatusError;
-<span class="kw">use </span>anyhow::{anyhow, ensure, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span><span class="kw">crate</span>::utils::playtools::dice::{<span class="self">self</span>};
+<span class="kw">use </span>::serenity::all::{CreateAttachment, FullEvent};
+<span class="kw">use </span>anyhow::{anyhow, bail, ensure, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>chrono::{NaiveTime, Utc};
 <span class="kw">use </span>log::{error, info, warn};
-<span class="kw">use </span>rand::Rng;
+
+<span class="kw">use </span>poise::{serenity_prelude <span class="kw">as </span>serenity, CreateReply, FrameworkContext};
+
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>serenity::async_trait;
-<span class="kw">use </span>serenity::builder::{CreateAttachment, CreateMessage};
-<span class="kw">use </span>serenity::framework::standard::macros::{command, group, help, hook};
-<span class="kw">use </span>serenity::framework::standard::{
-    help_commands, Args, CommandError, CommandGroup, CommandResult, Configuration, HelpOptions,
-};
-<span class="kw">use </span>serenity::http::{Http, MessagePagination};
+
+<span class="kw">use </span>serenity::http::MessagePagination;
 <span class="kw">use </span>serenity::model::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>serenity::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>serenity::{framework::StandardFramework, Client};
-<span class="kw">use </span>static_assertions::const_assert;
+<span class="kw">use </span>serenity::Client;
+
 <span class="kw">use </span>std::collections::{BTreeMap, HashSet};
 <span class="kw">use </span>std::fmt::Display;
+<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>time::Instant;
+
+<span class="kw">struct </span>PoiseData {
+    ctrl: Control,
+}
+<span class="kw">type </span>PoiseError = anyhow::Error;
+<span class="kw">type </span>PoiseContext&lt;<span class="lifetime">'a</span>&gt; = poise::Context&lt;<span class="lifetime">'a</span>, PoiseData, PoiseError&gt;;
 
 <span class="doccomment">/// メッセージの最大文字数。 (Unicode codepoint)
 </span><span class="kw">const </span>MSG_MAX_LEN: usize = <span class="number">2000</span>;
@@ -1076,11 +1211,12 @@
     </span>notif_channel: u64,
     <span class="doccomment">/// 自動削除機能の対象とするチャネル ID のリスト。
     </span>auto_del_chs: Vec&lt;u64&gt;,
+    <span class="doccomment">/// オーナーのユーザ ID。
+    /// Discord bot から得られるものは使わない。
+    </span>owner_ids: Vec&lt;u64&gt;,
     <span class="doccomment">/// パーミッションエラーメッセージ。
     /// オーナーのみ使用可能なコマンドを実行しようとした。
     </span>perm_err_msg: String,
-    <span class="doccomment">/// パーミッションエラーを強制的に発生させる。デバッグ用。
-    </span>force_perm_err: bool,
     <span class="doccomment">/// OpenAI プロンプト。
     </span><span class="attr">#[serde(default)]
     </span>prompt: DiscordPrompt,
@@ -1093,8 +1229,8 @@
             token: <span class="string">""</span>.to_string(),
             notif_channel: <span class="number">0</span>,
             auto_del_chs: Default::default(),
+            owner_ids: Default::default(),
             perm_err_msg: <span class="string">"バカジャネーノ"</span>.to_string(),
-            force_perm_err: <span class="bool-val">false</span>,
             prompt: Default::default(),
         }
     }
@@ -1129,7 +1265,7 @@
     </span>wakeup_list: Vec&lt;NaiveTime&gt;,
     <span class="doccomment">/// 現在有効な Discord Client コンテキスト。
     ///
-    /// 起動直後は None で、[Handler::cache_ready] イベントの度に置き換わる。
+    /// 起動直後は None で、[event_handler] イベントの度に置き換わる。
     </span>ctx: <span class="prelude-ty">Option</span>&lt;Context&gt;,
     <span class="doccomment">/// [Self::ctx] が None の間に発言しようとしたメッセージのキュー。
     ///
@@ -1157,7 +1293,8 @@
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>AutoDeleteConfig {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="doccomment">/// to_string 可能にする。
+    </span><span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">let </span>count_str = <span class="kw">if </span><span class="self">self</span>.keep_count != <span class="number">0 </span>{
             <span class="self">self</span>.keep_count.to_string()
         } <span class="kw">else </span>{
@@ -1185,10 +1322,10 @@
         <span class="kw">let </span>config = config::get(|cfg| cfg.discord.clone());
         <span class="kw">let </span>ai_config = config::get(|cfg| cfg.openai.clone());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>auto_del_congig = BTreeMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>auto_del_config = BTreeMap::new();
         <span class="kw">for </span><span class="kw-2">&amp;</span>ch <span class="kw">in </span><span class="kw-2">&amp;</span>config.auto_del_chs {
             <span class="macro">ensure!</span>(ch != <span class="number">0</span>);
-            auto_del_congig.insert(
+            auto_del_config.insert(
                 ChannelId::new(ch),
                 AutoDeleteConfig {
                     keep_count: <span class="number">0</span>,
@@ -1223,14 +1360,17 @@
             wakeup_list,
             ctx: <span class="prelude-val">None</span>,
             postponed_msgs: Default::default(),
-            auto_del_config: auto_del_congig,
+            auto_del_config,
             chat_history,
             chat_timeout: <span class="prelude-val">None</span>,
             func_table,
         })
     }
 
-    <span class="kw">pub async fn </span>say(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="doccomment">/// 発言を投稿する。
+    ///
+    /// 接続前の場合、接続後まで遅延する。
+    </span><span class="kw">pub async fn </span>say(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.config.enabled {
             <span class="macro">info!</span>(<span class="string">"[discord] disabled - msg: {}"</span>, msg);
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -1272,54 +1412,74 @@
 </span><span class="kw">async fn </span>discord_main(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>(config, wakeup_list) = {
         <span class="kw">let </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+
         (discord.config.clone(), discord.wakeup_list.clone())
     };
 
-    <span class="comment">// 自身の ID が on_mention 設定に必要なので別口で取得しておく
-    </span><span class="kw">let </span>http = Http::new(<span class="kw-2">&amp;</span>config.token);
-    <span class="kw">let </span>info = http.get_current_application_info().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>myid = UserId::new(info.id.get());
-    <span class="kw">let </span>ownerids = HashSet::from([info.owner.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"No owner"</span>))<span class="question-mark">?</span>.id]);
+    <span class="comment">// owner_ids を HashSet に変換 (0 は panic するので禁止)
+    </span><span class="kw">let </span><span class="kw-2">mut </span>owners = HashSet::new();
+    <span class="kw">for </span>id <span class="kw">in </span>config.owner_ids {
+        <span class="kw">if </span>id == <span class="number">0 </span>{
+            <span class="macro">bail!</span>(<span class="string">"owner id must not be 0"</span>);
+        }
+        owners.insert(UserId::new(id));
+    }
+    <span class="macro">info!</span>(<span class="string">"[discord] owners: {:?}"</span>, owners);
 
-    <span class="kw">let </span>framework = StandardFramework::new()
-        <span class="comment">// コマンド前後でのフック (ロギング用)
-        </span>.before(before_hook)
-        .after(after_hook)
-        .unrecognised_command(unrecognised_hook)
-        <span class="comment">// コマンドとヘルプの登録
-        </span>.group(<span class="kw-2">&amp;</span>GENERAL_GROUP)
-        .help(<span class="kw-2">&amp;</span>MY_HELP);
-    <span class="comment">// コマンドのプレフィクスはなし
-    // bot へのメンションをトリガとする
-    </span>framework.configure(
-        Configuration::new()
-            .prefix(<span class="string">""</span>)
-            .on_mention(<span class="prelude-val">Some</span>(myid))
-            .owners(ownerids.clone()),
-    );
+    <span class="kw">let </span>ctrl_for_setup = ctrl.clone();
+    <span class="kw">let </span>framework = poise::Framework::builder()
+        <span class="comment">// owner は手動で設定する
+        </span>.initialize_owners(<span class="bool-val">false</span>)
+        <span class="comment">// その他オプション
+        </span>.options(poise::FrameworkOptions {
+            on_error: |err| Box::pin(on_error(err)),
+            pre_command: |ctx| Box::pin(pre_command(ctx)),
+            post_command: |ctx| Box::pin(post_command(ctx)),
+            event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
+            <span class="comment">// prefix command
+            </span>prefix_options: poise::PrefixFrameworkOptions {
+                prefix: <span class="prelude-val">None</span>,
+                mention_as_prefix: <span class="bool-val">true</span>,
+                ..Default::default()
+            },
+            <span class="comment">// owner は手動で設定する (builder の方から設定されるようだがデフォルトが true なので念のためこちらも)
+            </span>initialize_owners: <span class="bool-val">false</span>,
+            owners,
+            <span class="comment">// コマンドリスト
+            </span>commands: command_list(),
+            ..Default::default()
+        })
+        <span class="comment">// ハンドラ
+        </span>.setup(|ctx, _ready, framework| {
+            <span class="comment">// 最初の ready イベントで呼ばれる
+            </span>Box::pin(<span class="kw">async move </span>{
+                <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl_for_setup.sysmods().discord.lock().<span class="kw">await</span>;
+                discord.ctx = <span class="prelude-val">Some</span>(ctx.clone());
+
+                <span class="macro">info!</span>(<span class="string">"[discord] register commands..."</span>);
+                poise::builtins::register_globally(ctx, <span class="kw-2">&amp;</span>framework.options().commands).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="macro">info!</span>(<span class="string">"[discord] register commands OK"</span>);
+
+                <span class="comment">// construct user data here (invoked when bot connects to Discord)
+                </span><span class="prelude-val">Ok</span>(PoiseData {
+                    ctrl: Arc::clone(<span class="kw-2">&amp;</span>ctrl_for_setup),
+                })
+            })
+        })
+        .build();
 
     <span class="comment">// クライアントの初期化
     </span><span class="kw">let </span>intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
     <span class="kw">let </span><span class="kw-2">mut </span>client = Client::builder(config.token.clone(), intents)
-        .event_handler(Handler)
         .framework(framework)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// グローバルデータの設定
-    </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>data = client.data.write().<span class="kw">await</span>;
-
-        data.insert::&lt;ControlData&gt;(ctrl.clone());
-        data.insert::&lt;ConfigData&gt;(config);
-        data.insert::&lt;OwnerData&gt;(ownerids);
-    }
-
     <span class="comment">// システムシャットダウンに対応してクライアントにシャットダウン要求を送る
     // 別タスクを立ち上げる
-    </span><span class="kw">let </span><span class="kw-2">mut </span>ctrl_for_cancel = ctrl.clone();
+    </span><span class="kw">let </span>ctrl_for_cancel = Arc::clone(<span class="kw-2">&amp;</span>ctrl);
     <span class="kw">let </span>shard_manager = client.shard_manager.clone();
-    ctrl.spawn_oneshot_fn(<span class="string">"discord-exit"</span>, <span class="kw">async move </span>{
-        ctrl_for_cancel.cancel_rx().changed().<span class="kw">await</span>.unwrap();
+    taskserver::spawn_oneshot_fn(<span class="kw-2">&amp;</span>ctrl, <span class="string">"discord-exit"</span>, <span class="kw">async move </span>{
+        ctrl_for_cancel.wait_cancel_rx().<span class="kw">await</span>;
         <span class="macro">info!</span>(<span class="string">"[discord-exit] recv cancel"</span>);
         shard_manager.shutdown_all().<span class="kw">await</span>;
         <span class="macro">info!</span>(<span class="string">"[discord-exit] shutdown_all ok"</span>);
@@ -1335,7 +1495,7 @@
     });
 
     <span class="comment">// 定期チェックタスクを立ち上げる
-    </span>ctrl.spawn_periodic_task(<span class="string">"discord-periodic"</span>, <span class="kw-2">&amp;</span>wakeup_list, periodic_main);
+    </span>taskserver::spawn_periodic_task(<span class="kw-2">&amp;</span>ctrl, <span class="string">"discord-periodic"</span>, <span class="kw-2">&amp;</span>wakeup_list, periodic_main);
 
     <span class="comment">// システムスタート
     </span>client.start().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1345,7 +1505,7 @@
 }
 
 <span class="doccomment">/// 文字数制限に気を付けつつ分割して送信する。
-</span><span class="kw">async fn </span>reply_long(msg: <span class="kw-2">&amp;</span>Message, ctx: <span class="kw-2">&amp;</span>Context, content: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+</span><span class="kw">async fn </span>reply_long(ctx: <span class="kw-2">&amp;</span>PoiseContext&lt;<span class="lifetime">'_</span>&gt;, content: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="comment">// mention 関連でのずれが少し怖いので余裕を持たせる
     </span><span class="kw">const </span>LEN: usize = MSG_MAX_LEN - <span class="number">128</span>;
 
@@ -1361,13 +1521,80 @@
             <span class="prelude-val">None </span>=&gt; (remain, <span class="bool-val">true</span>),
         };
         <span class="kw">if </span>!chunk.is_empty() {
-            msg.reply(ctx, chunk).<span class="kw">await</span><span class="question-mark">?</span>;
+            ctx.reply(chunk).<span class="kw">await</span><span class="question-mark">?</span>;
         }
         <span class="kw">if </span>fin {
             <span class="kw">break</span>;
         }
     }
     <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Markdown エスケープしながら Markdown 引用する。
+/// 文字数制限に気を付けつつ分割して送信する。
+</span><span class="kw">async fn </span>reply_long_mdquote(ctx: <span class="kw-2">&amp;</span>PoiseContext&lt;<span class="lifetime">'_</span>&gt;, content: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="comment">// mention 関連でのずれが少し怖いので余裕を持たせる
+    // 引用符の分も含める
+    </span><span class="kw">const </span>LEN: usize = MSG_MAX_LEN - <span class="number">128</span>;
+    <span class="kw">const </span>QUOTE_PRE: <span class="kw-2">&amp;</span>str = <span class="string">"```\n"</span>;
+    <span class="kw">const </span>QUOTE_PST: <span class="kw-2">&amp;</span>str = <span class="string">"\n```"</span>;
+    <span class="kw">const </span>SPECIALS: <span class="kw-2">&amp;</span>str = <span class="string">"\\`"</span>;
+
+    <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = String::from(QUOTE_PRE);
+    <span class="kw">for </span>c <span class="kw">in </span>content.chars() {
+        <span class="kw">if </span>count &gt;= LEN {
+            buf.push_str(QUOTE_PST);
+            ctx.reply(buf).<span class="kw">await</span><span class="question-mark">?</span>;
+
+            count = <span class="number">0</span>;
+            buf = String::from(QUOTE_PRE);
+        }
+        <span class="kw">if </span>SPECIALS.find(c).is_some() {
+            buf.push(<span class="string">'\\'</span>);
+        }
+        buf.push(c);
+        count += <span class="number">1</span>;
+    }
+    <span class="kw">if </span>!buf.is_empty() {
+        buf.push_str(QUOTE_PST);
+        ctx.reply(buf).<span class="kw">await</span><span class="question-mark">?</span>;
+    }
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// 分を (日, 時間, 分) に変換する。
+</span><span class="kw">fn </span>convert_duration(<span class="kw-2">mut </span>min: u32) -&gt; (u32, u32, u32) {
+    <span class="kw">let </span>day = min / (<span class="number">60 </span>* <span class="number">24</span>);
+    min %= <span class="number">60 </span>* <span class="number">24</span>;
+    <span class="kw">let </span>hour = min / <span class="number">60</span>;
+    min %= <span class="number">60</span>;
+
+    (day, hour, min)
+}
+
+<span class="doccomment">/// 日時分からなる文字列を分に変換する。
+///
+/// 例: 1d2h3m
+</span><span class="kw">fn </span>parse_duration(src: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>min = <span class="number">0u32</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
+    <span class="kw">for </span>c <span class="kw">in </span>src.chars() {
+        <span class="kw">if </span>c == <span class="string">'d' </span>|| c == <span class="string">'h' </span>|| c == <span class="string">'m' </span>{
+            <span class="kw">let </span>n: u32 = buf.parse()<span class="question-mark">?</span>;
+            <span class="kw">let </span>n = <span class="kw">match </span>c {
+                <span class="string">'d' </span>=&gt; n.saturating_mul(<span class="number">24 </span>* <span class="number">60</span>),
+                <span class="string">'h' </span>=&gt; n.saturating_mul(<span class="number">60</span>),
+                <span class="string">'m' </span>=&gt; n,
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
+            };
+            min = min.saturating_add(n);
+            buf.clear();
+        } <span class="kw">else </span>{
+            buf.push(c);
+        }
+    }
+    <span class="prelude-val">Ok</span>(min)
 }
 
 <span class="doccomment">/// チャネル内の全メッセージを取得し、フィルタ関数が true を返したものを
@@ -1472,292 +1699,280 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// コマンド開始前のフック。ロギング用。
-</span><span class="attr">#[hook]
-</span><span class="kw">async fn </span>before_hook(<span class="kw">_</span>: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, cmd_name: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    <span class="macro">info!</span>(<span class="string">"[discord] command {} by {}"</span>, cmd_name, msg.author.name);
+<span class="comment">//------------------------------------------------------------------------------
+// command
+// https://docs.rs/poise/latest/poise/macros/attr.command.html
+//------------------------------------------------------------------------------
 
-    <span class="bool-val">true
-</span>}
+</span><span class="kw">fn </span>command_list() -&gt; Vec&lt;poise::Command&lt;PoiseData, PoiseError&gt;&gt; {
+    <span class="macro">vec!</span>[
+        help(),
+        sysinfo(),
+        autodel(),
+        coin(),
+        dice(),
+        attack(),
+        camera(),
+        ai(),
+        aistatus(),
+        aiimg(),
+    ]
+}
 
-<span class="doccomment">/// コマンド完了後のフック。ロギング用。
-</span><span class="attr">#[hook]
-</span><span class="kw">async fn </span>after_hook(<span class="kw">_</span>: <span class="kw-2">&amp;</span>Context, <span class="kw">_</span>: <span class="kw-2">&amp;</span>Message, cmd_name: <span class="kw-2">&amp;</span>str, result: <span class="prelude-ty">Result</span>&lt;(), CommandError&gt;) {
-    <span class="kw">match </span>result {
-        <span class="prelude-val">Ok</span>(()) =&gt; {
-            <span class="macro">info!</span>(<span class="string">"[discord] command {} succeeded"</span>, cmd_name);
-        }
-        <span class="prelude-val">Err</span>(why) =&gt; {
-            <span class="macro">error!</span>(<span class="string">"[discord] error in {}: {:?}"</span>, cmd_name, why);
-        }
+<span class="doccomment">/// `help &lt;command&gt;` shows detailed command help.
+/// `help` shows all available commands briefly.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"General"</span>)]
+</span><span class="kw">pub async fn </span>help(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Command name"</span>] </span>command: <span class="prelude-ty">Option</span>&lt;String&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>extra_text = <span class="string">"
+New slash command style
+  /command params...
+Compatible style (you can use \"double quote\" to use spaces in a parameter)
+  @bot_name command params...
+
+Parameter help will be displayed if you start to type slash command.
+If you use old style,
+  @bot_name help command_name
+to show detailed command help.
+"</span>;
+    <span class="kw">let </span>config = poise::builtins::HelpConfiguration {
+        <span class="comment">// その人だけに見える返信にするかどうか
+        </span>ephemeral: <span class="bool-val">false</span>,
+        show_subcommands: <span class="bool-val">true</span>,
+        extra_text_at_bottom: extra_text,
+        ..Default::default()
     };
-}
-
-<span class="doccomment">/// コマンド認識不能時のフック。ロギング用。
-</span><span class="attr">#[hook]
-</span><span class="kw">async fn </span>unrecognised_hook(<span class="kw">_</span>: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, cmd_name: <span class="kw-2">&amp;</span>str) {
-    <span class="macro">warn!</span>(
-        <span class="string">"[discord] unknown command {} by {}"</span>,
-        cmd_name, msg.author.name
-    );
-}
-
-<span class="kw">impl </span>SystemModule <span class="kw">for </span>Discord {
-    <span class="doccomment">/// async 使用可能になってからの初期化。
-    ///
-    /// 設定有効ならば [discord_main] を spawn する。
-    </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
-        <span class="macro">info!</span>(<span class="string">"[discord] on_start"</span>);
-        <span class="kw">if </span><span class="self">self</span>.config.enabled {
-            ctrl.spawn_oneshot_task(<span class="string">"discord"</span>, discord_main);
-        }
-    }
-}
-
-<span class="kw">struct </span>ControlData;
-<span class="kw">impl </span>TypeMapKey <span class="kw">for </span>ControlData {
-    <span class="kw">type </span>Value = Control;
-}
-
-<span class="kw">struct </span>ConfigData;
-<span class="kw">impl </span>TypeMapKey <span class="kw">for </span>ConfigData {
-    <span class="kw">type </span>Value = DiscordConfig;
-}
-
-<span class="kw">struct </span>OwnerData;
-<span class="kw">impl </span>TypeMapKey <span class="kw">for </span>OwnerData {
-    <span class="kw">type </span>Value = HashSet&lt;UserId&gt;;
-}
-
-<span class="kw">struct </span>Handler;
-
-<span class="doccomment">/// Discord クライアントとしてのイベントハンドラ。
-</span><span class="attr">#[async_trait]
-</span><span class="kw">impl </span>EventHandler <span class="kw">for </span>Handler {
-    <span class="kw">async fn </span>ready(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Context, ready: Ready) {
-        <span class="macro">info!</span>(<span class="string">"[discord] connected as {}"</span>, ready.user.name);
-    }
-
-    <span class="kw">async fn </span>resume(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Context, <span class="kw">_</span>: ResumedEvent) {
-        <span class="macro">info!</span>(<span class="string">"[discord] resumed"</span>);
-    }
-
-    <span class="doccomment">/// このタイミングで [Discord::ctx] に ctx をクローンして保存する。
-    /// [Discord::postponed_msgs] があれば全て送信する。
-    </span><span class="kw">async fn </span>cache_ready(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: Context, guilds: Vec&lt;GuildId&gt;) {
-        <span class="macro">info!</span>(<span class="string">"[discord] cache ready - guild: {}"</span>, guilds.len());
-
-        <span class="kw">let </span>ctx_clone = ctx.clone();
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
-        <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-        discord.ctx = <span class="prelude-val">Some</span>(ctx_clone);
-
-        <span class="macro">info!</span>(
-            <span class="string">"[discord] send postponed msgs ({})"</span>,
-            discord.postponed_msgs.len()
-        );
-        <span class="kw">for </span>msg <span class="kw">in </span><span class="kw-2">&amp;</span>discord.postponed_msgs {
-            <span class="kw">let </span>ch = discord.config.notif_channel;
-            <span class="comment">// notif_channel が有効の場合しかキューされない
-            </span><span class="macro">assert_ne!</span>(<span class="number">0</span>, ch);
-
-            <span class="macro">info!</span>(<span class="string">"[discord] say msg: {}"</span>, msg);
-            <span class="kw">let </span>ch = ChannelId::new(ch);
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = ch.say(<span class="kw-2">&amp;</span>ctx, msg).<span class="kw">await </span>{
-                <span class="macro">error!</span>(<span class="string">"{:#?}"</span>, why);
-            }
-        }
-        discord.postponed_msgs.clear();
-    }
-}
-
-<span class="attr">#[help]
-</span><span class="kw">async fn </span>my_help(
-    context: <span class="kw-2">&amp;</span>Context,
-    msg: <span class="kw-2">&amp;</span>Message,
-    args: Args,
-    help_options: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>HelpOptions,
-    groups: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">'static </span>CommandGroup],
-    owners: HashSet&lt;UserId&gt;,
-) -&gt; CommandResult {
-    <span class="kw">let _ </span>= help_commands::with_embeds(context, msg, args, help_options, groups, owners).<span class="kw">await</span><span class="question-mark">?</span>;
+    poise::builtins::help(ctx, command.as_deref(), config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>owner_check(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
-    <span class="kw">let </span>(accept, errmsg) = {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>owners = data.get::&lt;OwnerData&gt;().unwrap();
-        <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
-        <span class="kw">let </span>accept = !config.force_perm_err &amp;&amp; owners.contains(<span class="kw-2">&amp;</span>msg.author.id);
-        <span class="kw">let </span>errmsg = config.perm_err_msg.clone();
-
-        (accept, errmsg)
-    };
-
-    <span class="kw">if </span>accept {
-        <span class="prelude-val">Ok</span>(())
-    } <span class="kw">else </span>{
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = msg.reply(ctx, errmsg).<span class="kw">await </span>{
-            <span class="macro">warn!</span>(<span class="string">"error on reply: {:#}"</span>, why);
-        }
-
-        <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"permission error"</span>).into())
-    }
-}
-
-<span class="attr">#[group]
-#[sub_groups(autodel)]
-#[commands(sysinfo, dice, delmsg, camera, attack, ai, aistatus, aireset, aiimg)]
-</span><span class="kw">struct </span>General;
-
-<span class="attr">#[command]
-#[description(<span class="string">"Print system information."</span>)]
-#[usage(<span class="string">""</span>)]
-#[example(<span class="string">""</span>)]
-</span><span class="kw">async fn </span>sysinfo(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
+<span class="doccomment">/// Show system information.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"General"</span>)]
+</span><span class="kw">async fn </span>sysinfo(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
     <span class="kw">let </span>ver_info: <span class="kw-2">&amp;</span>str = version::version_info();
-    msg.reply(ctx, ver_info).<span class="kw">await</span><span class="question-mark">?</span>;
+    ctx.reply(ver_info).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// ダイスの面数の最大値。
-</span><span class="kw">const </span>DICE_MAX: u64 = <span class="number">1u64 </span>&lt;&lt; <span class="number">56</span>;
-<span class="doccomment">/// ダイスの個数の最大値。
-</span><span class="kw">const </span>DICE_COUNT_MAX: u64 = <span class="number">100u64</span>;
-<span class="macro">const_assert!</span>(DICE_MAX &lt; u64::MAX / DICE_COUNT_MAX);
+<span class="kw">const </span>AUTODEL_INVALID_CH_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"Auto delete feature is not enabled for this channel.
+Please contact my owner."</span>;
 
-<span class="doccomment">/// ダイスロール機能のコア。
-///
-/// * `dice` - 何面のダイスを振るか。
-/// * `count` - 何個のダイスを振るか。
-</span><span class="kw">fn </span>dice_core(dice: u64, count: u64) -&gt; Vec&lt;u64&gt; {
-    <span class="macro">assert!</span>((<span class="number">1</span>..=DICE_MAX).contains(<span class="kw-2">&amp;</span>dice));
-    <span class="macro">assert!</span>((<span class="number">1</span>..=DICE_COUNT_MAX).contains(<span class="kw-2">&amp;</span>count));
-
-    <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-    <span class="kw">for _ in </span><span class="number">0</span>..count {
-        result.push(rng.gen_range(<span class="number">1</span>..=dice));
-    }
-
-    result
+<span class="attr">#[poise::command(
+    slash_command,
+    prefix_command,
+    category = <span class="string">"Auto Delete"</span>,
+    subcommands(<span class="string">"autodel_status"</span>, <span class="string">"autodel_set"</span>)
+)]
+</span><span class="kw">async fn </span>autodel(_ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="comment">// 親コマンドはスラッシュコマンドでは使用不可
+    </span><span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"Roll a dice with 1-**dice** faces **count** times."</span>)]
-#[description(<span class="string">"Default: dice=6, count=1"</span>)]
-#[usage(<span class="string">"[dice] [count]"</span>)]
-#[example(<span class="string">""</span>)]
-#[example(<span class="string">"6 2"</span>)]
-#[min_args(<span class="number">0</span>)]
-#[max_args(<span class="number">2</span>)]
-</span><span class="kw">async fn </span>dice(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, <span class="kw-2">mut </span>arg: Args) -&gt; CommandResult {
-    <span class="kw">let </span>d = <span class="kw">if </span>!arg.is_empty() { arg.single()<span class="question-mark">? </span>} <span class="kw">else </span>{ <span class="number">6u64 </span>};
-    <span class="kw">let </span>count = <span class="kw">if </span>!arg.is_empty() { arg.single()<span class="question-mark">? </span>} <span class="kw">else </span>{ <span class="number">1u64 </span>};
-    <span class="kw">if </span>!(<span class="number">1</span>..=DICE_MAX).contains(<span class="kw-2">&amp;</span>d) || !(<span class="number">1</span>..=DICE_COUNT_MAX).contains(<span class="kw-2">&amp;</span>count) {
-        msg.reply(
-            ctx,
-            <span class="macro">format!</span>(<span class="string">"Invalid parameter\n1 &lt;= dice &lt;= {DICE_MAX}, 1 &lt;= count &lt;= {DICE_COUNT_MAX}"</span>),
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="doccomment">/// Get the auto-delete status in this channel.
+</span><span class="attr">#[poise::command(
+    slash_command,
+    prefix_command,
+    category = <span class="string">"Auto Delete"</span>,
+    rename = <span class="string">"status"
+</span>)]
+</span><span class="kw">async fn </span>autodel_status(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>ch = ctx.channel_id();
+    <span class="kw">let </span>config = {
+        <span class="kw">let </span>data = ctx.data();
+        <span class="kw">let </span>discord = data.ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+
+        discord.auto_del_config.get(<span class="kw-2">&amp;</span>ch).copied()
+    };
+
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(config) = config {
+        ctx.reply(<span class="macro">format!</span>(<span class="string">"{config}"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        ctx.reply(AUTODEL_INVALID_CH_MSG).<span class="kw">await</span><span class="question-mark">?</span>;
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Enable/Disable/Config auto-delete feature in this channel.
+///
+/// "0 0" disables the feature.
+</span><span class="attr">#[poise::command(
+    slash_command,
+    prefix_command,
+    category = <span class="string">"Auto Delete"</span>,
+    rename = <span class="string">"set"
+</span>)]
+</span><span class="kw">async fn </span>autodel_set(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Delete old messages other than this count of newer ones (0: disable)"</span>]
+    </span>keep_count: u32,
+    <span class="attr">#[description = <span class="string">"Delete messages after this time (e.g. 1d, 3h, 30m, 1d23h59m, etc.) (0: disable)"</span>]
+    </span>keep_duration: String,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>ch = ctx.channel_id();
+    <span class="kw">let </span>keep_duration = parse_duration(<span class="kw-2">&amp;</span>keep_duration);
+    <span class="kw">if </span>keep_duration.is_err() {
+        ctx.reply(<span class="string">"keep_duration parse error."</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">return </span><span class="prelude-val">Ok</span>(());
     }
+    <span class="kw">let </span>keep_duration = keep_duration.unwrap();
 
-    <span class="kw">let </span>nums = dice_core(d, count);
-    <span class="kw">let </span>nums: Vec&lt;<span class="kw">_</span>&gt; = nums.iter().map(|n| n.to_string()).collect();
-    <span class="kw">let </span>buf = nums.join(<span class="string">", "</span>);
-    <span class="macro">assert!</span>(!buf.is_empty());
+    <span class="kw">let </span>msg = {
+        <span class="kw">let </span><span class="kw-2">mut </span>discord = ctx.data().ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
-    msg.reply(ctx, buf).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-}
-
-<span class="attr">#[command]
-#[description(<span class="string">"Delete messages other than the most recent N ones."</span>)]
-#[usage(<span class="string">"&lt;N&gt;"</span>)]
-#[example(<span class="string">"100"</span>)]
-#[num_args(<span class="number">1</span>)]
-</span><span class="kw">async fn </span>delmsg(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, <span class="kw-2">mut </span>arg: Args) -&gt; CommandResult {
-    owner_check(ctx, msg).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="kw">let </span>n: usize = arg.single()<span class="question-mark">?</span>;
-
-    <span class="comment">// id 昇順で後ろ n 個を残して他を消す
-    </span><span class="kw">let </span>(delcount, total) =
-        delete_msgs_in_channel(ctx, msg.channel_id, |_m, i, len| i + n &lt; len).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    msg.reply(ctx, <span class="macro">format!</span>(<span class="string">"{delcount}/{total} messages deleted"</span>))
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-}
-
-<span class="attr">#[command]
-#[description(<span class="string">"Take a picture."</span>)]
-#[usage(<span class="string">""</span>)]
-#[example(<span class="string">""</span>)]
-</span><span class="kw">async fn </span>camera(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
-    owner_check(ctx, msg).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="kw">let </span>pic = take_a_pic(TakePicOption::new()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>attachment = CreateAttachment::bytes(<span class="kw-2">&amp;</span>pic[..], <span class="string">"camera.jpg"</span>);
-    <span class="kw">let </span>cm = CreateMessage::new().add_file(attachment);
-    msg.channel_id.send_message(ctx, cm).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-}
-
-<span class="attr">#[command]
-#[description(<span class="string">"Let me say a message to the specified user."</span>)]
-#[usage(<span class="string">"here &lt;user&gt; &lt;msg&gt;"</span>)]
-#[usage(<span class="string">"&lt;channel&gt; &lt;user&gt; &lt;msg&gt;"</span>)]
-#[example(<span class="string">"12345 6789 hello"</span>)]
-#[num_args(<span class="number">3</span>)]
-</span><span class="kw">async fn </span>attack(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, <span class="kw-2">mut </span>arg: Args) -&gt; CommandResult {
-    owner_check(ctx, msg).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="kw">let </span>chstr: String = arg.single()<span class="question-mark">?</span>;
-    <span class="kw">let </span>ch = <span class="kw">if </span>chstr == <span class="string">"here" </span>{
-        msg.channel_id
-    } <span class="kw">else </span>{
-        ChannelId::new(chstr.parse::&lt;u64&gt;()<span class="question-mark">?</span>)
+        <span class="kw">let </span>config = discord.auto_del_config.get_mut(<span class="kw-2">&amp;</span>ch);
+        <span class="kw">match </span>config {
+            <span class="prelude-val">Some</span>(config) =&gt; {
+                config.keep_count = keep_count;
+                config.keep_dur_min = keep_duration;
+                <span class="macro">format!</span>(<span class="string">"OK\n{config}"</span>)
+            }
+            <span class="prelude-val">None </span>=&gt; AUTODEL_INVALID_CH_MSG.to_string(),
+        }
     };
-    <span class="kw">let </span>user = UserId::new(arg.single::&lt;u64&gt;()<span class="question-mark">?</span>);
-    <span class="kw">let </span>text: String = arg.single_quoted()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>cm = CreateMessage::new().content(<span class="macro">format!</span>(<span class="string">"{} {}"</span>, user.mention(), text));
-    ch.send_message(ctx, cm).<span class="kw">await</span><span class="question-mark">?</span>;
+    ctx.reply(msg).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"OpenAI chat assistant."</span>)]
-#[usage(<span class="string">"&lt;your message&gt;"</span>)]
-#[example(<span class="string">"Hello, what's your name?"</span>)]
-#[min_args(<span class="number">1</span>)]
-</span><span class="kw">async fn </span>ai(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, arg: Args) -&gt; CommandResult {
-    <span class="kw">let </span>chat_msg = arg.rest();
+<span class="doccomment">/// Flip coin(s).
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"Play Tools"</span>)]
+</span><span class="kw">async fn </span>coin(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Dice count (default=1)"</span>] </span>count: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>count = count.unwrap_or(<span class="number">1</span>);
 
-    <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-    <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
-    <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-    <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
+    <span class="kw">let </span>msg = <span class="kw">match </span>dice::roll(<span class="number">2</span>, count) {
+        <span class="prelude-val">Ok</span>(v) =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">format!</span>(<span class="string">"Flip {count} coin(s)\n"</span>);
+            buf.push(<span class="string">'['</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>first = <span class="bool-val">true</span>;
+            <span class="kw">for </span>n <span class="kw">in </span>v {
+                <span class="kw">if </span>first {
+                    first = <span class="bool-val">false</span>;
+                } <span class="kw">else </span>{
+                    buf.push(<span class="string">','</span>);
+                }
+                buf.push_str(<span class="kw">if </span>n == <span class="number">1 </span>{ <span class="string">"\"H\"" </span>} <span class="kw">else </span>{ <span class="string">"\"T\"" </span>});
+            }
+            buf.push(<span class="string">']'</span>);
+            buf
+        }
+        <span class="prelude-val">Err</span>(err) =&gt; err.to_string(),
+    };
+    ctx.reply(msg).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Roll dice.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"Play Tools"</span>)]
+</span><span class="kw">async fn </span>dice(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Face count (default=6)"</span>] </span>face: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="attr">#[description = <span class="string">"Dice count (default=1)"</span>] </span>count: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>face = face.unwrap_or(<span class="number">6</span>);
+    <span class="kw">let </span>count = count.unwrap_or(<span class="number">1</span>);
+
+    <span class="kw">let </span>msg = <span class="kw">match </span>dice::roll(face, count) {
+        <span class="prelude-val">Ok</span>(v) =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>buf = <span class="macro">format!</span>(<span class="string">"Roll {count} dice with {face} face(s)\n"</span>);
+            buf.push(<span class="string">'['</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>first = <span class="bool-val">true</span>;
+            <span class="kw">for </span>n <span class="kw">in </span>v {
+                <span class="kw">if </span>first {
+                    first = <span class="bool-val">false</span>;
+                } <span class="kw">else </span>{
+                    buf.push(<span class="string">','</span>);
+                }
+                buf.push_str(<span class="kw-2">&amp;</span>n.to_string());
+            }
+            buf.push(<span class="string">']'</span>);
+            buf
+        }
+        <span class="prelude-val">Err</span>(err) =&gt; err.to_string(),
+    };
+    ctx.reply(msg).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Order the assistant to say something.
+///
+/// You can specify target user(s).
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"Manipulation"</span>, owners_only)]
+</span><span class="kw">async fn </span>attack(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Target user"</span>] </span>target: <span class="prelude-ty">Option</span>&lt;UserId&gt;,
+    <span class="attr">#[description = <span class="string">"Chat message to be said"</span>]
+    #[min_length = <span class="number">1</span>]
+    #[max_length = <span class="number">1024</span>]
+    </span>chat_msg: String,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>text = <span class="kw">if let </span><span class="prelude-val">Some</span>(user) = target {
+        <span class="macro">format!</span>(<span class="string">"{} {}"</span>, user.mention(), chat_msg)
+    } <span class="kw">else </span>{
+        chat_msg
+    };
+
+    <span class="macro">info!</span>(<span class="string">"[discord] reply: {text}"</span>);
+    ctx.reply(text).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Take a picture.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"Manipulation"</span>, owners_only)]
+</span><span class="kw">async fn </span>camera(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    ctx.reply(<span class="string">"Taking a picture..."</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>pic = camera::take_a_pic(TakePicOption::new()).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>attach = CreateAttachment::bytes(<span class="kw-2">&amp;</span>pic[..], <span class="string">"camera.jpg"</span>);
+    ctx.send(
+        CreateReply::default()
+            .content(<span class="string">"camera.jpg"</span>)
+            .attachment(attach),
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// AI assistant.
+///
+/// The owner of the assistant will pay the usage fee for ChatGPT.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>)]
+</span><span class="kw">async fn </span>ai(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Chat message to AI assistant"</span>]
+    #[min_length = <span class="number">1</span>]
+    #[max_length = <span class="number">1024</span>]
+    </span>chat_msg: String,
+    <span class="attr">#[description = <span class="string">"Show internal details when AI calls a function. (default=False)"</span>]
+    </span>trace_function_call: <span class="prelude-ty">Option</span>&lt;bool&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>data = ctx.data();
+    <span class="kw">let </span><span class="kw-2">mut </span>discord = data.ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
     <span class="comment">// タイムアウト処理
     </span>discord.check_history_timeout();
 
+    <span class="comment">// そのまま引用返信
+    </span>reply_long_mdquote(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">&amp;</span>chat_msg).<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="comment">// 今回の発言をヒストリに追加 (システムメッセージ + 本体)
-    </span><span class="kw">let </span>sysmsg = config
+    </span><span class="kw">let </span>sysmsg = discord
+        .config
         .prompt
         .each
         .join(<span class="string">""</span>)
-        .replace(<span class="string">"${user}"</span>, <span class="kw-2">&amp;</span>msg.author.name);
+        .replace(<span class="string">"${user}"</span>, <span class="kw-2">&amp;</span>ctx.author().name);
     discord.chat_history.push({
         ChatMessage {
             role: Role::System,
@@ -1772,14 +1987,14 @@
     });
 
     <span class="kw">let </span>reply_msg = <span class="kw">loop </span>{
-        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+        <span class="kw">let </span>ai = data.ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
         <span class="comment">// 送信用リスト
         </span><span class="kw">let </span><span class="kw-2">mut </span>all_msgs = Vec::new();
         <span class="comment">// 先頭システムメッセージ
         </span>all_msgs.push(ChatMessage {
             role: Role::System,
-            content: <span class="prelude-val">Some</span>(config.prompt.pre.join(<span class="string">""</span>)),
+            content: <span class="prelude-val">Some</span>(discord.config.prompt.pre.join(<span class="string">""</span>)),
             ..Default::default()
         });
         <span class="comment">// それ以降 (ヒストリの中身全部) を追加
@@ -1799,6 +2014,17 @@
                     </span><span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
                     <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
                     <span class="kw">let </span>func_res = discord.func_table.call((), func_name, func_args).<span class="kw">await</span>;
+                    <span class="comment">// trace
+                    </span><span class="kw">if </span>trace_function_call.unwrap_or(<span class="bool-val">false</span>) {
+                        reply_long(
+                            <span class="kw-2">&amp;</span>ctx,
+                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(
+                                <span class="string">"function call: {func_name}\nparameters: {func_args}\nresult: {}"</span>,
+                                func_res.content.as_ref().unwrap()
+                            ),
+                        )
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
+                    }
                     <span class="comment">// function 応答を履歴に追加
                     </span>discord.chat_history.push(func_res);
                     <span class="comment">// continue
@@ -1822,20 +2048,21 @@
                 .content
                 .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"content required"</span>))<span class="question-mark">?</span>;
             <span class="macro">info!</span>(<span class="string">"[discord] openai reply: {text}"</span>);
-            reply_long(msg, ctx, <span class="kw-2">&amp;</span>text).<span class="kw">await</span><span class="question-mark">?</span>;
+            reply_long(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">&amp;</span>text).<span class="kw">await</span><span class="question-mark">?</span>;
 
             <span class="comment">// タイムアウト延長
             </span>discord.chat_timeout = <span class="prelude-val">Some</span>(
-                Instant::now() + Duration::from_secs(config.prompt.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>),
+                Instant::now()
+                    + Duration::from_secs(discord.config.prompt.history_timeout_min <span class="kw">as </span>u64 * <span class="number">60</span>),
             );
         }
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">error!</span>(<span class="string">"[discord] openai error: {:#?}"</span>, err);
             <span class="comment">// HTTP status が得られるタイプのエラーのみ discord 返信する
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.downcast_ref::&lt;HttpStatusError&gt;() {
-                <span class="macro">warn!</span>(<span class="string">"openai reply: {} {}"</span>, err.status, err.body);
+                <span class="macro">warn!</span>(<span class="string">"[discord] openai reply: {} {}"</span>, err.status, err.body);
                 <span class="kw">let </span>reply_msg = <span class="macro">format!</span>(<span class="string">"OpenAI API Error, HTTP Status: {}"</span>, err.status);
-                msg.reply(ctx, reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+                ctx.reply(reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
             }
         }
     }
@@ -1843,16 +2070,23 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"Get ai command status."</span>)]
-#[usage(<span class="string">""</span>)]
-#[example(<span class="string">""</span>)]
-</span><span class="kw">async fn </span>aistatus(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
+<span class="attr">#[poise::command(
+    slash_command,
+    prefix_command,
+    category = <span class="string">"AI"</span>,
+    subcommands(<span class="string">"aistatus_show"</span>, <span class="string">"aistatus_reset"</span>, <span class="string">"aistatus_funclist"</span>)
+)]
+</span><span class="kw">async fn </span>aistatus(_ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="comment">// 親コマンドはスラッシュコマンドでは使用不可
+    </span><span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Show AI chat history status.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>, rename = <span class="string">"show"</span>)]
+</span><span class="kw">async fn </span>aistatus_show(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
     <span class="kw">let </span>text = {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
+        <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>config = data.get::&lt;ConfigData&gt;().unwrap();
 
         discord.check_history_timeout();
         <span class="macro">format!</span>(
@@ -1860,152 +2094,197 @@
             discord.chat_history.len(),
             discord.chat_history.usage().<span class="number">0</span>,
             discord.chat_history.usage().<span class="number">1</span>,
-            config.prompt.history_timeout_min
+            discord.config.prompt.history_timeout_min
         )
     };
-    msg.reply(ctx, text).<span class="kw">await</span><span class="question-mark">?</span>;
+    ctx.reply(text).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"Clear ai command history."</span>)]
-#[usage(<span class="string">""</span>)]
-#[example(<span class="string">""</span>)]
-</span><span class="kw">async fn </span>aireset(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
+<span class="doccomment">/// Clear AI chat history status.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>, rename = <span class="string">"reset"</span>)]
+</span><span class="kw">async fn </span>aistatus_reset(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
     {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
+        <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
         discord.chat_history.clear();
     }
-    msg.reply(ctx, <span class="string">"OK"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    ctx.reply(<span class="string">"OK"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"OpenAI image generation."</span>)]
-#[usage(<span class="string">"&lt;prompt&gt;"</span>)]
-#[example(<span class="string">"A person who are returning home early from their office."</span>)]
-#[min_args(<span class="number">1</span>)]
-</span><span class="kw">async fn </span>aiimg(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, arg: Args) -&gt; CommandResult {
-    <span class="kw">let </span>prompt = arg.rest();
+<span class="doccomment">/// Show AI function list.
+/// You can request the assistant to call these functions.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>, rename = <span class="string">"funclist"</span>)]
+</span><span class="kw">async fn </span>aistatus_funclist(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">let </span>help = {
+        <span class="kw">let </span>discord = ctx.data().ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+
+        discord.func_table.create_help()
+    };
+    <span class="kw">let </span>text = <span class="macro">format!</span>(<span class="string">"```\n{help}\n```"</span>);
+    ctx.reply(text).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// AI image generation.
+</span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>)]
+</span><span class="kw">async fn </span>aiimg(
+    ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;,
+    <span class="attr">#[description = <span class="string">"Prompt string"</span>]
+    #[min_length = <span class="number">1</span>]
+    #[max_length = <span class="number">1024</span>]
+    </span>prompt: String,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="comment">// そのまま引用返信
+    </span>reply_long_mdquote(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">&amp;</span>prompt).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>img_url = {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
+        <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
         <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>resp = ai.generate_image(prompt, <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>resp = ai.generate_image(<span class="kw-2">&amp;</span>prompt, <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         resp.pop().ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"image array too short"</span>))<span class="question-mark">?
     </span>};
 
-    msg.reply(ctx, img_url).<span class="kw">await</span><span class="question-mark">?</span>;
+    ctx.reply(img_url).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attr">#[group]
-#[prefix = <span class="string">"autodel"</span>]
-#[commands(status, set)]
-</span><span class="kw">struct </span>AutoDel;
-
-<span class="kw">const </span>INVALID_CH_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"Auto delete feature is not enabled for this channel.
-Please contact my owner."</span>;
-
-<span class="kw">fn </span>convert_duration(<span class="kw-2">mut </span>min: u32) -&gt; (u32, u32, u32) {
-    <span class="kw">let </span>day = min / (<span class="number">60 </span>* <span class="number">24</span>);
-    min %= <span class="number">60 </span>* <span class="number">24</span>;
-    <span class="kw">let </span>hour = min / <span class="number">60</span>;
-    min %= <span class="number">60</span>;
-
-    (day, hour, min)
-}
-
-<span class="kw">fn </span>parse_duration(src: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>min = <span class="number">0u32</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
-    <span class="kw">for </span>c <span class="kw">in </span>src.chars() {
-        <span class="kw">if </span>c == <span class="string">'d' </span>|| c == <span class="string">'h' </span>|| c == <span class="string">'m' </span>{
-            <span class="kw">let </span>n: u32 = buf.parse()<span class="question-mark">?</span>;
-            <span class="kw">let </span>n = <span class="kw">match </span>c {
-                <span class="string">'d' </span>=&gt; n.saturating_mul(<span class="number">24 </span>* <span class="number">60</span>),
-                <span class="string">'h' </span>=&gt; n.saturating_mul(<span class="number">60</span>),
-                <span class="string">'m' </span>=&gt; n,
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
-            };
-            min = min.saturating_add(n);
-            buf.clear();
-        } <span class="kw">else </span>{
-            buf.push(c);
+<span class="kw">impl </span>SystemModule <span class="kw">for </span>Discord {
+    <span class="doccomment">/// async 使用可能になってからの初期化。
+    ///
+    /// 設定有効ならば [discord_main] を spawn する。
+    </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
+        <span class="macro">info!</span>(<span class="string">"[discord] on_start"</span>);
+        <span class="kw">if </span><span class="self">self</span>.config.enabled {
+            taskserver::spawn_oneshot_task(ctrl, <span class="string">"discord"</span>, discord_main);
         }
     }
-    <span class="prelude-val">Ok</span>(min)
 }
 
-<span class="attr">#[command]
-#[description(<span class="string">"Get the auto-delete feature status in this channel."</span>)]
-#[usage(<span class="string">""</span>)]
-#[example(<span class="string">""</span>)]
-</span><span class="kw">async fn </span>status(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message) -&gt; CommandResult {
-    <span class="kw">let </span>ch = msg.channel_id;
-    <span class="kw">let </span>config = {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
-        <span class="kw">let </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-
-        discord.auto_del_config.get(<span class="kw-2">&amp;</span>ch).copied()
-    };
-
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(config) = config {
-        msg.reply(ctx, <span class="macro">format!</span>(<span class="string">"{config}"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
-    } <span class="kw">else </span>{
-        msg.reply(ctx, INVALID_CH_MSG).<span class="kw">await</span><span class="question-mark">?</span>;
-    }
-
-    <span class="prelude-val">Ok</span>(())
+<span class="doccomment">/// Poise イベントハンドラ。
+</span><span class="kw">async fn </span>pre_command(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="macro">info!</span>(
+        <span class="string">"[discord] command {} from {:?} {:?}"</span>,
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or(<span class="string">"?"</span>)
+    );
+    <span class="macro">info!</span>(<span class="string">"[discord] {:?}"</span>, ctx.invocation_string());
 }
 
-<span class="attr">#[command]
-#[description(
-    <span class="string">r#"Enable/Disable/Config auto-delete feature in this channel.
-"0 0" disables the feature."#
-</span>)]
-#[usage(<span class="string">"&lt;keep_count&gt; &lt;keep_duration&gt;"</span>)]
-#[example(<span class="string">"0 0"</span>)]
-#[example(<span class="string">"100 1d"</span>)]
-#[example(<span class="string">"200 12h"</span>)]
-#[example(<span class="string">"300 1d23h59m"</span>)]
-#[num_args(<span class="number">2</span>)]
-</span><span class="comment">// disabled in Direct Message
-</span><span class="attr">#[only_in(<span class="string">"guild"</span>)]
-</span><span class="kw">async fn </span>set(ctx: <span class="kw-2">&amp;</span>Context, msg: <span class="kw-2">&amp;</span>Message, <span class="kw-2">mut </span>arg: Args) -&gt; CommandResult {
-    <span class="kw">let </span>keep_count: u32 = arg.single()<span class="question-mark">?</span>;
-    <span class="kw">let </span>keep_duration: String = arg.single()<span class="question-mark">?</span>;
-    <span class="kw">let </span>keep_duration: u32 = parse_duration(<span class="kw-2">&amp;</span>keep_duration)<span class="question-mark">?</span>;
-    <span class="kw">let </span>ch = msg.channel_id;
+<span class="kw">async fn </span>post_command(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="macro">info!</span>(
+        <span class="string">"[discord] command {} from {:?} {:?} OK"</span>,
+        ctx.command().name,
+        ctx.author().name,
+        ctx.author().global_name.as_deref().unwrap_or(<span class="string">"?"</span>)
+    );
+}
 
-    {
-        <span class="kw">let </span>data = ctx.data.read().<span class="kw">await</span>;
-        <span class="kw">let </span>ctrl = data.get::&lt;ControlData&gt;().unwrap();
-        <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
-
-        <span class="kw">let </span>config = discord.auto_del_config.get_mut(<span class="kw-2">&amp;</span>ch);
-        <span class="kw">match </span>config {
-            <span class="prelude-val">Some</span>(config) =&gt; {
-                config.keep_count = keep_count;
-                config.keep_dur_min = keep_duration;
-                msg.reply(ctx, <span class="macro">format!</span>(<span class="string">"OK\n{config}"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
-            }
-            <span class="prelude-val">None </span>=&gt; {
-                msg.reply(ctx, INVALID_CH_MSG).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="doccomment">/// Poise イベントハンドラ。
+///
+/// [poise::builtins::on_error] のままでまずい部分を自分でやる。
+</span><span class="kw">async fn </span>on_error(error: poise::FrameworkError&lt;<span class="lifetime">'_</span>, PoiseData, PoiseError&gt;) {
+    <span class="comment">// エラーを返していないはずのものは panic にする
+    </span><span class="kw">match </span>error {
+        poise::FrameworkError::Setup { error, .. } =&gt; {
+            <span class="macro">panic!</span>(<span class="string">"Failed on setup: {:#?}"</span>, error)
+        }
+        poise::FrameworkError::EventHandler { error, .. } =&gt; {
+            <span class="macro">panic!</span>(<span class="string">"Failed on eventhandler: {:#?}"</span>, error)
+        }
+        poise::FrameworkError::Command { error, ctx, .. } =&gt; {
+            <span class="macro">error!</span>(
+                <span class="string">"[discord] error in command `{}`: {:#?}"</span>,
+                ctx.command().name,
+                error
+            );
+        }
+        poise::FrameworkError::NotAnOwner { ctx, .. } =&gt; {
+            <span class="kw">let </span>errmsg = ctx
+                .data()
+                .ctrl
+                .sysmods()
+                .discord
+                .lock()
+                .<span class="kw">await
+                </span>.config
+                .perm_err_msg
+                .clone();
+            <span class="macro">info!</span>(<span class="string">"[discord] not an owner: {}"</span>, ctx.author());
+            <span class="macro">info!</span>(<span class="string">"[discord] reply: {errmsg}"</span>);
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = ctx.reply(errmsg).<span class="kw">await </span>{
+                <span class="macro">error!</span>(<span class="string">"[discord] reply error: {:#?}"</span>, why)
             }
         }
-    };
+        poise::FrameworkError::UnknownInteraction { interaction, .. } =&gt; {
+            <span class="macro">warn!</span>(
+                <span class="string">"[discord] received unknown interaction \"{}\""</span>,
+                interaction.data.name
+            );
+        }
+        error =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = poise::builtins::on_error(error).<span class="kw">await </span>{
+                <span class="macro">error!</span>(<span class="string">"[discord] error while handling error: {:#?}"</span>, why)
+            }
+        }
+    }
+}
 
-    <span class="prelude-val">Ok</span>(())
+<span class="doccomment">/// Serenity の全イベントハンドラ。
+///
+/// Poise のコンテキストが渡されるので、Serenity ではなく Poise の
+/// FrameworkOptions 経由で設定する。
+</span><span class="kw">async fn </span>event_handler(
+    ctx: <span class="kw-2">&amp;</span>Context,
+    ev: <span class="kw-2">&amp;</span>FullEvent,
+    _fctx: FrameworkContext&lt;<span class="lifetime">'_</span>, PoiseData, PoiseError&gt;,
+    data: <span class="kw-2">&amp;</span>PoiseData,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="kw">match </span>ev {
+        FullEvent::Ready { data_about_bot } =&gt; {
+            <span class="macro">info!</span>(<span class="string">"[discord] connected as {}"</span>, data_about_bot.user.name);
+            <span class="prelude-val">Ok</span>(())
+        }
+        FullEvent::Resume { event: <span class="kw">_ </span>} =&gt; {
+            <span class="macro">info!</span>(<span class="string">"[discord] resumed"</span>);
+            <span class="prelude-val">Ok</span>(())
+        }
+        FullEvent::CacheReady { guilds } =&gt; {
+            <span class="comment">// このタイミングで [Discord::ctx] に ctx をクローンして保存する。
+            </span><span class="macro">info!</span>(<span class="string">"[discord] cache ready - guild: {}"</span>, guilds.len());
+
+            <span class="kw">let </span><span class="kw-2">mut </span>discord = data.ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+            <span class="kw">let </span>ctx_clone = ctx.clone();
+            discord.ctx = <span class="prelude-val">Some</span>(ctx_clone);
+
+            <span class="macro">info!</span>(
+                <span class="string">"[discord] send postponed msgs ({})"</span>,
+                discord.postponed_msgs.len()
+            );
+            <span class="kw">for </span>msg <span class="kw">in </span><span class="kw-2">&amp;</span>discord.postponed_msgs {
+                <span class="kw">let </span>ch = discord.config.notif_channel;
+                <span class="comment">// notif_channel が有効の場合しかキューされない
+                </span><span class="macro">assert_ne!</span>(<span class="number">0</span>, ch);
+
+                <span class="macro">info!</span>(<span class="string">"[discord] say msg: {}"</span>, msg);
+                <span class="kw">let </span>ch = ChannelId::new(ch);
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = ch.say(<span class="kw-2">&amp;</span>ctx, msg).<span class="kw">await </span>{
+                    <span class="macro">error!</span>(<span class="string">"{:#?}"</span>, why);
+                }
+            }
+            discord.postponed_msgs.clear();
+            <span class="prelude-val">Ok</span>(())
+        }
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()),
+    }
 }
 
 <span class="attr">#[cfg(test)]
@@ -2018,30 +2297,6 @@ Please contact my owner."</span>;
         </span><span class="kw">let </span>obj: DiscordPrompt = Default::default();
         <span class="macro">assert_ne!</span>(obj.pre.len(), <span class="number">0</span>);
         <span class="macro">assert_ne!</span>(obj.each.len(), <span class="number">0</span>);
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>dice_6_many_times() {
-        <span class="kw">let </span><span class="kw-2">mut </span>result = dice_core(<span class="number">6</span>, DICE_COUNT_MAX);
-        <span class="macro">assert_eq!</span>(result.len(), DICE_COUNT_MAX <span class="kw">as </span>usize);
-
-        <span class="comment">// 100 回も振れば 1..=6 が 1 回ずつは出る
-        </span>result.sort();
-        <span class="kw">for </span>x <span class="kw">in </span><span class="number">1</span>..=<span class="number">6 </span>{
-            <span class="macro">assert!</span>(result.binary_search(<span class="kw-2">&amp;</span>x).is_ok());
-        }
-    }
-
-    <span class="attr">#[test]
-    #[should_panic]
-    </span><span class="kw">fn </span>dice_invalid_dice() {
-        <span class="kw">let _ </span>= dice_core(DICE_MAX + <span class="number">1</span>, <span class="number">1</span>);
-    }
-
-    <span class="attr">#[test]
-    #[should_panic]
-    </span><span class="kw">fn </span>dice_invalid_count() {
-        <span class="kw">let _ </span>= dice_core(<span class="number">6</span>, DICE_COUNT_MAX + <span class="number">1</span>);
     }
 
     <span class="attr">#[test]

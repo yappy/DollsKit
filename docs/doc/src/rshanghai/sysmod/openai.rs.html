@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai.rs`."><title>openai.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai.rs`."><title>openai.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -502,9 +503,60 @@
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
 <a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API.
 
-</span><span class="kw">pub mod </span>function;
+</span><span class="kw">mod </span>basicfuncs;
+<span class="kw">pub mod </span>function;
 
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::sync::OnceLock;
@@ -520,8 +572,11 @@
 <span class="kw">use </span>log::warn;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">const </span>CONN_TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
-<span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
+<span class="doccomment">/// HTTP 通信のタイムアウト。
+/// これを設定しないと無限待ちになる危険性がある。
+</span><span class="kw">const </span>CONN_TIMEOUT: Duration = Duration::from_secs(<span class="number">10</span>);
+<span class="doccomment">/// AI 応答待ちのタイムアウト。
+</span><span class="kw">const </span>TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
 
 <span class="doccomment">/// &lt;https://platform.openai.com/docs/api-reference/chat/create&gt;
 </span><span class="kw">const </span>URL_CHAT: <span class="kw-2">&amp;</span>str = <span class="string">"https://api.openai.com/v1/chat/completions"</span>;
@@ -571,7 +626,10 @@
 <span class="doccomment">/// トークン数制限のうち出力用に予約する割合。
 </span><span class="kw">const </span>OUTPUT_RESERVED_RATIO: f32 = <span class="number">0.2</span>;
 
-<span class="kw">pub fn </span>get_model_info(model: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>ModelInfo&gt; {
+<span class="doccomment">/// [MODEL_LIST] からモデル名で [ModelInfo] を検索する。
+///
+/// HashMap で検索する。
+</span><span class="kw">pub fn </span>get_model_info(model: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>ModelInfo&gt; {
     <span class="kw">static </span>MAP: OnceLock&lt;HashMap&lt;<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>ModelInfo&gt;&gt; = OnceLock::new();
 
     <span class="kw">let </span>map = MAP.get_or_init(|| {
@@ -588,11 +646,14 @@
         .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Model not found: {model}"</span>))
 }
 
-<span class="kw">pub fn </span>get_output_reserved_token(info: <span class="kw-2">&amp;</span>ModelInfo) -&gt; usize {
+<span class="doccomment">/// 出力用に予約するトークン数を計算する。
+</span><span class="kw">pub fn </span>get_output_reserved_token(info: <span class="kw-2">&amp;</span>ModelInfo) -&gt; usize {
     (info.token_limit <span class="kw">as </span>f32 * OUTPUT_RESERVED_RATIO) <span class="kw">as </span>usize
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 会話メッセージ。
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>ChatMessage {
     <span class="doccomment">/// "system", "user", "assistant", or "function"
     </span><span class="kw">pub </span>role: Role,
@@ -605,7 +666,9 @@
     </span><span class="kw">pub </span>function_call: <span class="prelude-ty">Option</span>&lt;FunctionCall&gt;,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// [ChatMessage] に設定されるロール。
+</span><span class="attr">#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = <span class="string">"lowercase"</span>)]
 </span><span class="kw">pub enum </span>Role {
     <span class="attr">#[default]
@@ -615,27 +678,35 @@
     Function,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// function 呼び出し。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>FunctionCall {
     <span class="kw">pub </span>name: String,
     <span class="kw">pub </span>arguments: String,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// トークン消費量。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Usage {
     <span class="kw">pub </span>prompt_tokens: u32,
     <span class="kw">pub </span>completion_tokens: u32,
     <span class="kw">pub </span>total_tokens: u32,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 応答案。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Choice {
     <span class="kw">pub </span>index: u32,
     <span class="kw">pub </span>message: ChatMessage,
     <span class="kw">pub </span>finish_reason: String,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 会話応答データ。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>ChatResponse {
     <span class="kw">pub </span>id: String,
     <span class="kw">pub </span>object: String,
@@ -645,7 +716,11 @@
     <span class="kw">pub </span>choices: Vec&lt;Choice&gt;,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// function パラメータ定義。
+///
+/// &lt;https://json-schema.org/understanding-json-schema&gt;
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>ParameterElement {
     <span class="doccomment">/// e.g. "string"
     </span><span class="attr">#[serde(rename = <span class="string">"type"</span>)]
@@ -655,9 +730,15 @@
     <span class="attr">#[serde(rename = <span class="string">"enum"</span>)]
     #[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
     </span><span class="kw">pub </span>enum_: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
+    </span><span class="kw">pub </span>minumum: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
+    </span><span class="kw">pub </span>maximum: <span class="prelude-ty">Option</span>&lt;i64&gt;,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// function パラメータ定義。
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Parameters {
     <span class="doccomment">/// "object"
     </span><span class="attr">#[serde(rename = <span class="string">"type"</span>)]
@@ -666,7 +747,9 @@
     <span class="kw">pub </span>required: Vec&lt;String&gt;,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// function 定義。
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Function {
     <span class="kw">pub </span>name: String,
     <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
@@ -674,7 +757,9 @@
     <span class="kw">pub </span>parameters: Parameters,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 会話リクエスト。
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>ChatRequest {
     model: String,
     messages: Vec&lt;ChatMessage&gt;,
@@ -695,7 +780,9 @@
     </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
-<span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 画像生成リクエスト。
+</span><span class="attr">#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>ImageGenRequest {
     <span class="doccomment">/// A text description of the desired image(s).
     /// The maximum length is 1000 characters.
@@ -719,14 +806,18 @@
     </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
-<span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 画像生成のフォーマット。
+</span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = <span class="string">"snake_case"</span>)]
 </span><span class="kw">enum </span>ResponseFormat {
     Url,
     B64Json,
 }
 
-<span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 画像生成のサイズ。
+</span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = <span class="string">"snake_case"</span>)]
 </span><span class="kw">enum </span>ImageSize {
     <span class="attr">#[serde(rename = <span class="string">"256x256"</span>)]
@@ -737,13 +828,17 @@
     </span>X1024,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 画像生成レスポンス。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>ImageGenResponse {
     created: u64,
     data: Vec&lt;Image&gt;,
 }
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="doccomment">/// OpenAI API JSON 定義。
+/// 画像データ。
+</span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">struct </span>Image {
     b64_json: <span class="prelude-ty">Option</span>&lt;String&gt;,
     url: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -771,14 +866,16 @@
     }
 }
 
-<span class="kw">pub struct </span>OpenAi {
+<span class="doccomment">/// OpenAI システムモジュール。
+</span><span class="kw">pub struct </span>OpenAi {
     config: OpenAiConfig,
     model: String,
     client: reqwest::Client,
 }
 
 <span class="kw">impl </span>OpenAi {
-    <span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    <span class="doccomment">/// コンストラクタ。
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">info!</span>(<span class="string">"[openai] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.openai.clone());
@@ -823,7 +920,8 @@
         <span class="bool-val">false
     </span>}
 
-    <span class="kw">pub async fn </span>chat(<span class="kw-2">&amp;</span><span class="self">self</span>, msgs: Vec&lt;ChatMessage&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+    <span class="doccomment">/// OpenAI Chat API を使用する。
+    </span><span class="kw">pub async fn </span>chat(<span class="kw-2">&amp;</span><span class="self">self</span>, msgs: Vec&lt;ChatMessage&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
         <span class="kw">let </span>key = <span class="kw-2">&amp;</span><span class="self">self</span>.config.api_key;
         <span class="kw">let </span>body = ChatRequest {
             model: <span class="self">self</span>.model.clone(),
@@ -863,7 +961,8 @@
         <span class="prelude-val">Ok</span>(text)
     }
 
-    <span class="kw">pub async fn </span>chat_with_function(
+    <span class="doccomment">/// OpenAI Chat API を fcuntion call 機能付きで使用する。
+    </span><span class="kw">pub async fn </span>chat_with_function(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         msgs: <span class="kw-2">&amp;</span>[ChatMessage],
         funcs: <span class="kw-2">&amp;</span>[Function],
@@ -903,7 +1002,8 @@
         <span class="prelude-val">Ok</span>(msg.clone())
     }
 
-    <span class="kw">pub async fn </span>generate_image(<span class="kw-2">&amp;</span><span class="self">self</span>, prompt: <span class="kw-2">&amp;</span>str, n: u8) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;String&gt;&gt; {
+    <span class="doccomment">/// OpenAI Image Generation API を使用する。
+    </span><span class="kw">pub async fn </span>generate_image(<span class="kw-2">&amp;</span><span class="self">self</span>, prompt: <span class="kw-2">&amp;</span>str, n: u8) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;String&gt;&gt; {
         <span class="kw">let </span>key = <span class="kw-2">&amp;</span><span class="self">self</span>.config.api_key;
         <span class="kw">let </span>body = ImageGenRequest {
             prompt: prompt.to_string(),
@@ -934,6 +1034,7 @@
             <span class="kw">let </span>url = img.url.as_ref().ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"url is required"</span>))<span class="question-mark">?</span>;
             result.push(url.to_string());
         }
+        <span class="macro">info!</span>(<span class="string">"[openai] image gen OK: {:?}"</span>, result);
 
         <span class="prelude-val">Ok</span>(result)
     }

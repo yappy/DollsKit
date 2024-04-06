@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -605,11 +606,28 @@
 <a href="#604" id="604">604</a>
 <a href="#605" id="605">605</a>
 <a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! 定期ヘルスチェック機能。
 
 </span><span class="kw">use </span><span class="kw">super</span>::SystemModule;
-<span class="kw">use </span><span class="kw">crate</span>::sys::config;
 <span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
+<span class="kw">use </span><span class="kw">crate</span>::sys::{config, taskserver};
 <span class="kw">use </span>anyhow::{anyhow, ensure, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>bitflags::bitflags;
 <span class="kw">use </span>chrono::{DateTime, Local, NaiveTime};
@@ -741,11 +759,11 @@
 
     <span class="doccomment">/// [Self::tweet_task] のエントリ関数。
     /// モジュールをロックしてメソッド呼び出しを行う。
-    </span><span class="kw">async fn </span>tweet_task_entry(<span class="kw-2">mut </span>ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">async fn </span>tweet_task_entry(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// check_task を先に実行する (可能性を高める) ために遅延させる
         </span><span class="macro">select! </span>{
             <span class="kw">_ </span>= tokio::time::sleep(tokio::time::Duration::from_secs(<span class="number">5</span>)) =&gt; {}
-            <span class="kw">_ </span>= ctrl.cancel_rx().changed() =&gt; {
+            <span class="kw">_ </span>= ctrl.wait_cancel_rx() =&gt; {
                 <span class="macro">info!</span>(<span class="string">"[health-tweet] task cancel"</span>);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
@@ -763,15 +781,17 @@
         <span class="macro">info!</span>(<span class="string">"[health] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.enabled {
             <span class="kw">if </span><span class="self">self</span>.config.debug_exec_once {
-                ctrl.spawn_oneshot_task(<span class="string">"health-check"</span>, Health::check_task_entry);
-                ctrl.spawn_oneshot_task(<span class="string">"health-tweet"</span>, Health::tweet_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, <span class="string">"health-check"</span>, Health::check_task_entry);
+                taskserver::spawn_oneshot_task(ctrl, <span class="string">"health-tweet"</span>, Health::tweet_task_entry);
             } <span class="kw">else </span>{
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     <span class="string">"health-check"</span>,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list_check,
                     Health::check_task_entry,
                 );
-                ctrl.spawn_periodic_task(
+                taskserver::spawn_periodic_task(
+                    ctrl,
                     <span class="string">"health-tweet"</span>,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.wakeup_list_tweet,
                     Health::tweet_task_entry,
@@ -986,8 +1006,7 @@
     })
 }
 
-<span class="doccomment">/// [CpuTemp] を計測する。
-/// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
+<span class="doccomment">/// CPU 温度 (正確には違うかもしれない。ボード上の何らかの温度センサの値。) を取得する。
 ///
 /// _/sys/class/thermal/thermal_zone0/temp_ による。
 /// デバイスファイルが存在しない場合は [None] を返して成功扱いとする。
@@ -1016,7 +1035,10 @@
     }
 }
 
-<span class="kw">pub async fn </span>get_cpu_cores() -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
+<span class="doccomment">/// CPU 論理コア数を取得する。
+///
+/// nproc コマンドを使用する。
+</span><span class="kw">pub async fn </span>get_cpu_cores() -&gt; <span class="prelude-ty">Result</span>&lt;u32&gt; {
     <span class="kw">let </span>output = Command::new(<span class="string">"nproc"</span>).output().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">ensure!</span>(output.status.success(), <span class="string">"nproc command failed"</span>);
 
@@ -1025,7 +1047,11 @@
     <span class="prelude-val">Ok</span>(stdout.trim().parse()<span class="question-mark">?</span>)
 }
 
-<span class="kw">pub async fn </span>get_current_freq() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
+<span class="doccomment">/// CPU クロック周波数を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
+</span><span class="kw">pub async fn </span>get_current_freq() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
     <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>)
         .arg(<span class="string">"measure_clock "</span>)
         .arg(<span class="string">"arm"</span>)
@@ -1055,7 +1081,12 @@
     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(actual))
 }
 
-<span class="kw">pub async fn </span>get_freq_conf() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
+<span class="doccomment">/// CPU クロック周波数の設定値を取得する。
+/// 実際の周波数は発熱によるスロットリングによりこれより低くなる可能性がある。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
+</span><span class="kw">pub async fn </span>get_freq_conf() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u64&gt;&gt; {
     <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>)
         .arg(<span class="string">"get_config"</span>)
         .arg(<span class="string">"arm_freq"</span>)
@@ -1109,7 +1140,11 @@
     }
 }
 
-<span class="kw">pub async fn </span>get_throttle_status() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ThrottleFlags&gt;&gt; {
+<span class="doccomment">/// CPU スロットリング状態を取得する。
+///
+/// Raspberry Pi vcgencmd コマンドを使用する。
+/// 存在しない環境ではエラーではなく None を返す。
+</span><span class="kw">pub async fn </span>get_throttle_status() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ThrottleFlags&gt;&gt; {
     <span class="kw">let </span>result = Command::new(<span class="string">"vcgencmd"</span>).arg(<span class="string">"get_throttled"</span>).output().<span class="kw">await</span>;
     <span class="kw">let </span>output = <span class="kw">match </span>result {
         <span class="prelude-val">Ok</span>(output) =&gt; output,
