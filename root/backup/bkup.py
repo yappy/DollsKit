@@ -2,6 +2,8 @@
 
 import argparse
 import datetime
+import getpass
+import platform
 import pathlib
 import subprocess
 import shutil
@@ -94,7 +96,7 @@ def main():
 	parser = argparse.ArgumentParser(description="Auto backup script")
 	parser.add_argument("src", help="backup source root")
 	parser.add_argument("dst", help="backup destination root")
-	parser.add_argument("--tag", action="store", default="bkup", help="prefix for archive file")
+	parser.add_argument("--tag", action="store", help="prefix for archive file")
 	parser.add_argument("--mount-check", action="store", help="check if the specified path is a mountpoint")
 	parser.add_argument("--keep-count", type=int, help="keep compressed files and delete the others")
 	parser.add_argument("--reserved-size", type=int, help="delete old compressed files to allocate free area (GiB)")
@@ -104,13 +106,19 @@ def main():
 	parser.add_argument("-n", "--dry-run", action="store_true", help="rsync dry-run")
 	args = parser.parse_args()
 
+	user = getpass.getuser()
+	host = platform.node()
 	dt_now = datetime.datetime.now()
 	dt_str = dt_now.strftime('%Y%m%d_%H%M%S')
+	tag = ""
+	if args.tag is not None:
+		tag = "_" + args.tag + "_"
 
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
 	rsync_dst = dst / "latest"
-	ar_dst = dst / f"{args.tag}_{dt_str}.tar.bz2"
+	ar_dst = dst / f"{tag}_{dt_str}.tar.bz2"
+	ar_dst = dst / f"{user}_{host}{tag}{dt_str}.tar.bz2"
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
 	print(f"SRC: {src}")

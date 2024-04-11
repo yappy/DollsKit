@@ -17,7 +17,7 @@ echo ---------------------------------------------------------------------------
 
 # web files
 python3 ${ROOT}/bkup.py \
---tag wpbkup \
+--tag wp \
 --mount-check ${BKUP_ROOT} \
 --keep-count 30 \
 --db wordpress \
