@@ -1,6 +1,8 @@
-# USB メモリのセットアップ
+# 追加ストレージ
 
-## USB メモリの確認
+USB メモリ、HDD、SSD 等
+
+## ストレージデバイスの確認
 
 ```sh
 dmesg
@@ -13,7 +15,7 @@ fdisk -l
 
 ## パーティションの削除、再作成 (初期化時のみ)
 
-買ってきたものは多分 fat32 のパーティションが1つ存在する。
+USB メモリの場合、買ってきたものは多分 fat32 のパーティションが1つ存在する。
 
 ```sh
 fdisk /dev/sd[a]
@@ -40,7 +42,17 @@ blkid
 ## マウントポイントの作成 (バックアップ復旧時も)
 
 ```sh
-mkdir /media/usbbkup
+mkdir /mnt/bkup
+```
+
+本運用前にパーミッションに注意する。
+
+## お試しマウント
+
+```sh
+mount /mnt/bkup /dev/sd[a][1]
+df -Th
+umount /mnt/bkup
 ```
 
 ## 起動時 (または mount -a 時) に USB メモリをマウント
@@ -52,7 +64,7 @@ mkdir /media/usbbkup
 ```text
 PARTUUID=6c586e13-01  /boot           vfat    defaults          0       2
 PARTUUID=6c586e13-02  /               ext4    defaults,noatime  0       1
-UUID=<uuid>           /media/usbbkup  ext4    defaults,noatime,nofail 0 0
+UUID=<uuid>           /mnt/bkup       ext4    defaults,noatime,nofail 0 0
 ```
 
 1. デバイス。
@@ -84,7 +96,7 @@ mountpoint <path>
 ## 取り外すとき
 
 ```sh
-umount /media/usbbkup
+umount /mnt/bkup
 ```
 
 ## つけなおしたとき
@@ -92,7 +104,7 @@ umount /media/usbbkup
 ```sh
 mount -a
 # or
-mount /media/usbbkup
+mount /mnt/bkup
 ```
 
 ## マウント状態の確認(ファイルシステムタイプつき)
@@ -100,6 +112,14 @@ mount /media/usbbkup
 ```sh
 df -T
 ```
+
+## 設定例
+
+* 1 TB SSD
+  * 256 GB: /mnt/localbkup
+    * このマシンの自動バックアップ
+  * 256 GB: /mnt/cloud
+  * 512 GB: /mnt/backup
 
 ## 廃棄 (※作業時注意)
 
