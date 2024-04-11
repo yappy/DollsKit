@@ -5,7 +5,7 @@
 # Link from:
 # /etc/cron.weekly/
 
-SCRIPT_DIR=$(realpath $(dirname $0))
+SCRIPT_DIR=$(dirname $(realpath $0))
 ROOT=${SCRIPT_DIR}/../backup
 BKUP_ROOT=/mnt/localbkup
 LOG=/root/bkup.log
