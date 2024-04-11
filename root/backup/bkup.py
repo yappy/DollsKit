@@ -57,9 +57,10 @@ def dump_db(rsync_dst, dump_command, db, dry_run):
 		print("skip by dry-run")
 		return
 
-	cmd = [dump_command, "--databases", db]
 	dst_sql = rsync_dst / "db.sql"
 	with dst_sql.open(mode="wb") as fout:
+		os.fchmod(fout, 0o600)
+		cmd = [dump_command, "--databases", db]
 		exec(cmd, fout)
 	print()
 
@@ -84,12 +85,10 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -c: Create new.
 	# -f: Specify file name.
 	# --preserve-permissions(-p) and --same-owner are default for superuser
-	old_umask = os.umask(0o077)
-	try:
+	with rsync_dst.open(mode="wb") as fout:
+		os.fchmod(fout, 0o600)
 		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
 		exec(cmd)
-	finally:
-		os.umask(old_umask)
 	print()
 
 def main():
