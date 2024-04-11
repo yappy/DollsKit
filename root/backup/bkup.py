@@ -59,7 +59,7 @@ def dump_db(rsync_dst, dump_command, db, dry_run):
 
 	dst_sql = rsync_dst / "db.sql"
 	with dst_sql.open(mode="wb") as fout:
-		os.fchmod(fout, 0o600)
+		os.fchmod(fout.fileno(), 0o600)
 		cmd = [dump_command, "--databases", db]
 		exec(cmd, fout)
 	print()
@@ -86,7 +86,7 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -f: Specify file name.
 	# --preserve-permissions(-p) and --same-owner are default for superuser
 	with rsync_dst.open(mode="wb") as fout:
-		os.fchmod(fout, 0o600)
+		os.fchmod(fout.fileno(), 0o600)
 		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
 		exec(cmd)
 	print()
