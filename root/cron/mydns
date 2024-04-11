@@ -4,7 +4,7 @@
 # user:pass
 # permission recommended: 400
 
-# Copy to:
+# Link from:
 # /etc/cron.daily/
 
 CRED=`cat /root/mydns`

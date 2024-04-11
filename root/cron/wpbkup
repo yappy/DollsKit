@@ -2,12 +2,12 @@
 
 # Automatic backup script
 #
-# Copy to:
-# /etc/cron.daily/
-# Clone this repository to:
-# /root/DollsKit
+# Link from:
+# /etc/cron.weekly/
 
-ROOT=/root/DollsKit/root/backup
+SCRIPT_DIR=$(realpath $(dirname $0))
+ROOT=${SCRIPT_DIR}/../backup
+BKUP_ROOT=/mnt/localbkup
 LOG=/root/wpbkup.log
 DB=wordpress
 
@@ -18,8 +18,8 @@ echo ---------------------------------------------------------------------------
 # web files
 python3 ${ROOT}/bkup.py \
 --tag wpbkup \
---mount-check /media/usbbkup \
+--mount-check ${BKUP_ROOT} \
 --keep-count 30 \
 --db wordpress \
-/var/www/html/wp/ /media/usbbkup/wp \
+/var/www/html/wp/ ${BKUP_ROOT}/wp \
 >> ${LOG} 2>&1

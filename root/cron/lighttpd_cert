@@ -2,7 +2,7 @@
 
 # Reload the updated certificate file
 #
-# Copy to:
+# Link from:
 # /etc/cron.weekly/
 
 /usr/sbin/service lighttpd force-reload
