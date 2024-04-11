@@ -85,7 +85,7 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -c: Create new.
 	# -f: Specify file name.
 	# --preserve-permissions(-p) and --same-owner are default for superuser
-	with rsync_dst.open(mode="wb") as fout:
+	with ar_dst.open(mode="wb") as fout:
 		os.fchmod(fout.fileno(), 0o600)
 		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
 		exec(cmd)
