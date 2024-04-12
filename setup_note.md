@@ -711,3 +711,77 @@ REST API が 404 になるらしい。
 ```
 
 バグのような気もするし、そのうち直るのかもしれない…。
+
+## pCloud
+
+買い切りのクラウドストレージ。
+
+### Linux CLI client のビルド
+
+スマホも含めて各 OS のクライアントがダウンロード可能だが、
+Linux - CLI のコマンドライン版を求めると github へ案内され
+CMake, C++, boost を使った高難度ステージへ案内される。
+
+<https://github.com/pcloudcom/console-client>
+
+注意: Google account ログイン等からアカウントを作るとパスワードが設定されない。
+それだとこのツールでログインできない。
+旧パスワードを空にするとエラーにされて、パスワードの変更もできない。
+セキュリティ設定画面から google 2段階認証っぽいのを押すと
+パスワードを設定するよう言われて設定できた、気がする。
+
+必要なもの
+
+* README.md を読む
+  * 不親切な部分を自力で補完する力が必要。
+* git clone, status, clean -fxd
+  * ビルド中に盛大に汚れるので make で何が起きたか `git status` で確認する。
+  * `git reset --hard` で変更されたファイルを git 管理の状態に戻せる。
+  * `git clean -fxd` で git 管理外のファイルを削除し初期状態に戻せる。
+* `make` は遅いので `make -j4` 等でコア数くらいに並列化する。
+* 多分最初はエラーが出るので README.md 内 apt install 例からそれっぽいものを探して
+  インストールする。
+  * libboost-system-dev libboost-program-options-dev libfuse-dev libudev-dev
+  あたり。
+* Build steps を要約すると以下の通り。
+  * lib/pclsync/ を `make -j4 fs`
+    * raspi だと `-mtune=core2` がないと言われて死ぬ。
+    これは最適化(チューニング)オプションで特定のアーキテクチャ向けに最適化するが、
+    `-mtune=native` で自身の環境に合わせられるのでそうすればいいと思う。
+    てかなんで core2 ？
+    いつの時代に作られたんだ…？
+    PC ならビルドは通るが本当は `-mtune=native` にした方がよいと思う。
+    今 core2 じゃないし。。
+  * lib/mbedtls/ を `cmake .` `make -j4`
+* 最後に pCloudCC/ まで戻って `cmake .` `make -j4`
+  * その後の `sudo make install` でアンインストール不能の破壊的インストールが嫌なら
+  代わりに README.md の下の方にある `debuild -i -us -uc -b` を行う。
+  Debian package (*.deb) 形式となり、apt で install/uninstall できる。
+  * どこでやるか書いてないが `debian/` ディレクトリのある pCloudCC/ の下。
+    最後の `cmake` と同じ。
+  * debuild コマンドのインストールは `sudo apt install devscripts`。
+  * なお、`cmake . && make` 成功後だと失敗する。
+    `make clean` しても直らないので `git reset --hard && git clean -fxd` する。
+  * なお、`debuild` だとライブラリ不足でエラーが起きた場合に非常にわかりづらい。
+    `cmake . && make` が成功することを確認してからリセットして `debuild` する。
+    なんやねん。
+  * 一つ上のリポジトリトップに .deb パッケージができているので、`./` 始点の
+    相対パスを指定し apt でインストールできる。
+    `apt install ./pcloudcc_<version>_<arch>.deb`
+  * アンインストールも apt で OK。
+    `sudo apt remove pcloudcc`
+* コマンドは `pcloudcc`。使い方は README.md または --help オプション。
+
+### 使い方
+
+`pcloudcc -u <user> -p`
+ユーザ名は多分メールアドレス。
+-p をつけなくてもパスワードを求められる気がするが、つけると最初に求められる気がする。
+
+`pcloudcc -u <user> -p -s`
+-s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存される。
+root で行うときは `sudo -sE` 等で $HOME を継承しないよう注意。
+
+マウントポイントのデフォルトは `~/pCloudDrive`。
+-m で変更できるっぽい。
+どこかに行った場合は `df` で確認。
