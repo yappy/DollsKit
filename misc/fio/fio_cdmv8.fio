@@ -4,7 +4,7 @@
 ioengine=libaio
 size=1g
 direct=1
-loops=1
+loops=5
 
 [Seq1MQ8T1-Read]
 bs=1m
