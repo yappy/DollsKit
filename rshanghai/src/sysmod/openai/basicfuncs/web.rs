@@ -177,6 +177,23 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::Value;
+
+    #[tokio::test]
+    #[ignore]
+    // cargo test parse_real_html -- --ignored --nocapture
+    async fn parse_real_html() -> Result<()> {
+        let mut args = FuncArgs::new();
+        args.insert(
+            "url".into(),
+            Value::String("https://www.google.co.jp/".into()),
+        );
+
+        let text = request_url(&args).await?;
+        println!("{}", text);
+
+        Ok(())
+    }
 
     #[test]
     fn parse_html() -> Result<()> {
