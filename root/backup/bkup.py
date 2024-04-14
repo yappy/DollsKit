@@ -12,6 +12,8 @@ import os
 
 RSYNC_DIR_NAME = "backup"
 LATEST_SLINK_NAME = "latest"
+ARCHIVE_EXT = "tar.bz2"
+ARCHIVE_CMD = "bzip2 -9"
 
 def exec(cmd, fout=None):
 	print(f"EXEC: {' '.join(cmd)}")
@@ -25,7 +27,7 @@ def mount_check(dst):
 	print()
 
 def delete_old_files(dst, keep_count):
-	files = glob.glob(str(dst) + "/*.tar.bz2")
+	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
 
@@ -37,7 +39,7 @@ def delete_old_files(dst, keep_count):
 	print("Deleting old files completed")
 
 def allocate_size(dst, reserved_size):
-	files = glob.glob(str(dst) + "/*.tar.bz2")
+	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
 	print(f"Old files: {files}")
@@ -90,7 +92,11 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# --preserve-permissions(-p) and --same-owner are default for superuser.
 	with ar_dst.open(mode="wb") as fout:
 		os.fchmod(fout.fileno(), 0o600)
-		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
+		cmd = [
+			"tar",
+			"-C", str(rsync_dst),
+			"-I", ARCHIVE_CMD,
+			"-cf", str(ar_dst), "."]
 		exec(cmd)
 	print()
 
@@ -130,7 +136,7 @@ def main():
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
 	rsync_dst = dst / RSYNC_DIR_NAME
-	ar_name = f"{user}_{host}{tag}{dt_str}.tar.bz2"
+	ar_name = f"{user}_{host}{tag}{dt_str}.{ARCHIVE_EXT}"
 	ar_dst = dst / ar_name
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
