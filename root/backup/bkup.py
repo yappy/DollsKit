@@ -13,7 +13,6 @@ import os
 RSYNC_DIR_NAME = "backup"
 LATEST_SLINK_NAME = "latest"
 ARCHIVE_EXT = "tar.bz2"
-ARCHIVE_CMD = "bzip2 -9"
 
 def exec(cmd, fout=None):
 	print(f"EXEC: {' '.join(cmd)}")
@@ -95,8 +94,7 @@ def archive(rsync_dst, ar_dst, dry_run):
 		cmd = [
 			"tar",
 			"-C", str(rsync_dst),
-			"-I", ARCHIVE_CMD,
-			"-cf", str(ar_dst), "."]
+			"-acf", str(ar_dst), "."]
 		exec(cmd)
 	print()
 
