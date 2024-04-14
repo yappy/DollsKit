@@ -774,14 +774,64 @@ CMake, C++, boost を使った高難度ステージへ案内される。
 
 ### 使い方
 
-`pcloudcc -u <user> -p`
+```sh
+pcloudcc -u <user> -p`
+```
+
 ユーザ名は多分メールアドレス。
 -p をつけなくてもパスワードを求められる気がするが、つけると最初に求められる気がする。
 
-`pcloudcc -u <user> -p -s`
--s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存される。
+```sh
+pcloudcc -u <user> -p -s
+```
+
+-s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存され、
+次回以降に不要になる。
 root で行うときは `sudo -sE` 等で $HOME を継承しないよう注意。
 
-マウントポイントのデフォルトは `~/pCloudDrive`。
--m で変更できるっぽい。
+マウントポイントのデフォルトは `~/pCloudDrive`。-m で変更できる。
 どこかに行った場合は `df` で確認。
+**バックアップ対象に含めないよう注意。**
+**ディレクトリが存在しない場合自動で作成されるが、パーミッションに注意。**
+
+```sh
+pcloudcc -u <user> -d
+```
+
+-d でデーモン起動。
+
+### screen 内で自動起動
+
+デーモン起動もよいが、コンソールに通信内容が表示されるので、
+screen 内で動かしておくのもよいかもしれない。
+
+```sh
+screen -S <session_name> -dm pcloudcc -u <user> -p -s`
+```
+
+```sh
+screen -ls
+screen -r <session_name>
+```
+
+cron の `@reboot` 指定を使うと起動時に起動できる。
+`/etc/cron.d/` にファイルを置くと自動で認識される。
+ファイル名にドットが含まれると無視されるので注意。
+パーミッションは周りに合わせて 644 にすること。
+
+`man 8 cron` によると、`/etc/cron.d/` は非推奨で、
+`/etc/crontab` を使えとのことだが、まあ普通に便利なので…。
+おそらく Debian 固有実装であるのと、インストールパッケージが置きに来る場所なので
+名前が被るとまずい、あたりが理由かと思われる。
+
+```sh
+# /etc/cron.d/pcloud
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+HOME=/root
+
+MP=/mnt/pcloud
+PCUSER=<MAIL>
+
+@reboot root mkdir -p $MP && chmod 700 $MP && screen -S pcloudcc -dm pcloudcc -u $PCUSER pcloud -m /mnt/pcloud
+```
