@@ -100,8 +100,8 @@ def symlink(dst, ar_filename, dry_run):
 		print("skip by dry-run")
 		return
 
-	print(f"symlink {str(linkpath)} to {ar_filename}")
 	linkpath = dst / LATEST_SLINK_NAME
+	print(f"symlink {str(linkpath)} to {ar_filename}")
 	linkpath.symlink_to(ar_filename)
 	print()
 
