@@ -10,8 +10,11 @@ import shutil
 import glob
 import os
 
+RSYNC_DIR_NAME = "backup"
+LATEST_SLINK_NAME = "latest"
+
 def exec(cmd, fout=None):
-	print(f"EXEC: {cmd}")
+	print(f"EXEC: {' '.join(cmd)}")
 	if fout is not None:
 		print("(stdout is redirected)")
 	subprocess.run(cmd, check=True, stdout=fout)
@@ -84,11 +87,22 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -a: Use archive suffix to determine the compression program.
 	# -c: Create new.
 	# -f: Specify file name.
-	# --preserve-permissions(-p) and --same-owner are default for superuser
+	# --preserve-permissions(-p) and --same-owner are default for superuser.
 	with ar_dst.open(mode="wb") as fout:
 		os.fchmod(fout.fileno(), 0o600)
 		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
 		exec(cmd)
+	print()
+
+def symlink(dst, ar_filename, dry_run):
+	print("symlink...")
+	if dry_run:
+		print("skip by dry-run")
+		return
+
+	print(f"symlink {str(linkpath)} to {ar_filename}")
+	linkpath = dst / LATEST_SLINK_NAME
+	linkpath.symlink_to(ar_filename)
 	print()
 
 def main():
@@ -115,9 +129,9 @@ def main():
 
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
-	rsync_dst = dst / "latest"
-	ar_dst = dst / f"{tag}_{dt_str}.tar.bz2"
-	ar_dst = dst / f"{user}_{host}{tag}{dt_str}.tar.bz2"
+	rsync_dst = dst / RSYNC_DIR_NAME
+	ar_name = f"{user}_{host}{tag}{dt_str}.tar.bz2"
+	ar_dst = dst / ar_name
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
 	print(f"SRC: {src}")
@@ -142,13 +156,15 @@ def main():
 		delete_old_files(dst, args.keep_count)
 	if args.reserved_size is not None:
 		allocate_size(dst, args.reserved_size << 30)
-	# rsync latest/
+	# rsync src/ to RSYNC_DIR_NAME/
 	rsync(src, rsync_dst, ex_list, args.dry_run)
 	# DB dump (removed by rsync. should do after rsync.)
 	if args.db is not None:
 		dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
 	# tar
 	archive(rsync_dst, ar_dst, args.dry_run)
+	# symlink
+	symlink(dst, ar_name, args.dry_run)
 
 	print("OK!")
 

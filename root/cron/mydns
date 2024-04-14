@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 # Create a file: /root/mydns
 # user:pass
