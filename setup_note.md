@@ -792,7 +792,6 @@ root で行うときは `sudo -sE` 等で $HOME を継承しないよう注意�
 マウントポイントのデフォルトは `~/pCloudDrive`。-m で変更できる。
 どこかに行った場合は `df` で確認。
 **バックアップ対象に含めないよう注意。**
-**ディレクトリが存在しない場合自動で作成されるが、パーミッションに注意。**
 
 ```sh
 pcloudcc -u <user> -d
@@ -833,5 +832,5 @@ HOME=/root
 MP=/mnt/pcloud
 PCUSER=<MAIL>
 
-@reboot root mkdir -p $MP && chmod 700 $MP && screen -S pcloudcc -dm pcloudcc -u $PCUSER pcloud -m /mnt/pcloud
+@reboot root screen -S pcloudcc -dm pcloudcc -u $PCUSER pcloud -m /mnt/pcloud
 ```

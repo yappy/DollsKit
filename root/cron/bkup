@@ -14,7 +14,7 @@ echo ---------------------------------------------------------------------------
 date -R >> ${LOG}
 echo -------------------------------------------------------------------------------- >> ${LOG}
 
-python3 ${ROOT}/bkup.py \
+python3 ${ROOT}/bkup_local.py \
 --tag full \
 --mount-check ${BKUP_ROOT} \
 --reserved-size 30 \

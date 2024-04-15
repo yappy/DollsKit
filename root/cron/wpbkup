@@ -16,7 +16,7 @@ date -R >> ${LOG}
 echo -------------------------------------------------------------------------------- >> ${LOG}
 
 # web files
-python3 ${ROOT}/bkup.py \
+python3 ${ROOT}/bkup_local.py \
 --tag wp \
 --mount-check ${BKUP_ROOT} \
 --keep-count 30 \
