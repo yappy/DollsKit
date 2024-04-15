@@ -14,18 +14,18 @@ RSYNC_DIR_NAME = "backup"
 LATEST_SLINK_NAME = "latest"
 ARCHIVE_EXT = "tar.bz2"
 
-def exec(cmd, fout=None):
+def exec(cmd: list[str], fout=None):
 	print(f"EXEC: {' '.join(cmd)}")
 	if fout is not None:
 		print("(stdout is redirected)")
 	subprocess.run(cmd, check=True, stdout=fout)
 
-def mount_check(dst):
+def mount_check(dst: pathlib.Path):
 	print("Destination mount check...")
 	exec(["mountpoint", str(dst)])
 	print()
 
-def delete_old_files(dst, keep_count):
+def delete_old_files(dst: pathlib.Path, keep_count: int):
 	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
@@ -37,7 +37,7 @@ def delete_old_files(dst, keep_count):
 		file.unlink()
 	print("Deleting old files completed")
 
-def allocate_size(dst, reserved_size):
+def allocate_size(dst: pathlib.Path, reserved_size: int):
 	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
@@ -55,7 +55,7 @@ def allocate_size(dst, reserved_size):
 		file.unlink()
 	print("Allocating free area completed")
 
-def dump_db(rsync_dst, dump_command, db, dry_run):
+def dump_db(rsync_dst: pathlib.Path, dump_command: str, db: str, dry_run: bool):
 	print("DB dump...")
 	if dry_run:
 		print("skip by dry-run")
@@ -68,7 +68,7 @@ def dump_db(rsync_dst, dump_command, db, dry_run):
 		exec(cmd, fout)
 	print()
 
-def rsync(src, rsync_dst, ex_list, dry_run):
+def rsync(src: pathlib.Path, rsync_dst: pathlib.Path, ex_list: list[str], dry_run: bool):
 	print ("rsync...")
 	cmd = ["rsync", "-aur", "--stats", "--delete"]
 	for ex in ex_list:
@@ -79,7 +79,7 @@ def rsync(src, rsync_dst, ex_list, dry_run):
 	exec(cmd)
 	print()
 
-def archive(rsync_dst, ar_dst, dry_run):
+def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, dry_run: bool):
 	print("tar...")
 	if dry_run:
 		print("skip by dry-run")
@@ -98,7 +98,7 @@ def archive(rsync_dst, ar_dst, dry_run):
 		exec(cmd)
 	print()
 
-def symlink(dst, ar_filename, dry_run):
+def symlink(dst: pathlib.Path, ar_filename: str, dry_run: bool):
 	print("symlink...")
 	if dry_run:
 		print("skip by dry-run")
@@ -106,6 +106,7 @@ def symlink(dst, ar_filename, dry_run):
 
 	linkpath = dst / LATEST_SLINK_NAME
 	print(f"symlink {str(linkpath)} to {ar_filename}")
+	linkpath.unlink(missing_ok=True)
 	linkpath.symlink_to(ar_filename)
 	print()
 
