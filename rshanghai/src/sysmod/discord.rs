@@ -29,7 +29,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
-use time::Instant;
+use std::time::Instant;
 
 struct PoiseData {
     ctrl: Control,
