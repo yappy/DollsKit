@@ -5,7 +5,7 @@ use crate::sysmod::openai::function::{
 };
 use crate::utils::netutil;
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use reqwest::Client;
 use std::{collections::HashMap, time::Duration};
 
@@ -132,8 +132,12 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     let (resp1, resp2) = tokio::join!(fut1, fut2);
     let (s1, s2) = (resp1?, resp2?);
 
-    let ov: OverviewForecast = serde_json::from_str(&s1)?;
-    let fc: ForecastRoot = serde_json::from_str(&s2)?;
+    let ov: OverviewForecast = serde_json::from_str(&s1).with_context(||{
+        format!("OverviewForecast parse error: {s1}")
+    })?;
+    let fc: ForecastRoot = serde_json::from_str(&s2).with_context(||{
+        format!("ForecastRoot parse error: {s2}")
+    })?;
     let obj = weather::weather_to_ai_readable(&code, &ov, &fc)?;
 
     Ok(serde_json::to_string(&obj).unwrap())
@@ -204,6 +208,22 @@ mod tests {
 
         let res = compact_html(SRC)?;
         println!("{res}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[ignore]
+    // cargo test weather_report -- --ignored --nocapture
+    async fn weather_report() -> Result<()> {
+        let mut args = FuncArgs::new();
+        args.insert(
+            "area".into(),
+            Value::String("広島県".into()),
+        );
+
+        let text = get_weather_report(&args).await?;
+        println!("{}", text);
 
         Ok(())
     }

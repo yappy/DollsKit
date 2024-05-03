@@ -499,6 +499,13 @@ mod tests {
         let obj: ForecastRoot = serde_json::from_str(src)?;
         assert_eq!("横浜地方気象台", obj[0].publishing_office);
 
+        let src = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/weather/forecast_340000.json"
+        ));
+        let obj: ForecastRoot = serde_json::from_str(src)?;
+        assert_eq!("横浜地方気象台", obj[0].publishing_office);
+
         Ok(())
     }
 
