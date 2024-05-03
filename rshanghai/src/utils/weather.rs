@@ -184,6 +184,8 @@ pub enum AreaData {
         weather_codes: Vec<String>,
         weathers: Vec<String>,
         winds: Vec<String>,
+        // 海がない地方がある
+        #[serde(default)]
         waves: Vec<String>,
     },
     /// 今日から6時間ごと、5回分
@@ -504,7 +506,7 @@ mod tests {
             "/res/test/weather/forecast_340000.json"
         ));
         let obj: ForecastRoot = serde_json::from_str(src)?;
-        assert_eq!("横浜地方気象台", obj[0].publishing_office);
+        assert_eq!("広島地方気象台", obj[0].publishing_office);
 
         Ok(())
     }
