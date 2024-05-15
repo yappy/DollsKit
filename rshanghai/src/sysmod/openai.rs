@@ -44,12 +44,6 @@ pub struct ModelInfo {
 const MODEL_LIST: &[ModelInfo] = &[
     ModelInfo {
         name: "gpt-3.5-turbo",
-        token_limit: 4096,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-3.5-turbo-16k",
         token_limit: 16385,
         year: 2021,
         month: 9,
@@ -65,6 +59,18 @@ const MODEL_LIST: &[ModelInfo] = &[
         token_limit: 32768,
         year: 2021,
         month: 9,
+    },
+    ModelInfo {
+        name: "gpt-4-turbo",
+        token_limit: 128000,
+        year: 2023,
+        month: 12,
+    },
+    ModelInfo {
+        name: "gpt-4o",
+        token_limit: 128000,
+        year: 2023,
+        month: 12,
     },
 ];
 
@@ -500,8 +506,8 @@ mod tests {
     #[tokio::test]
     #[serial(openai)]
     #[ignore]
-    // cargo test openai -- --ignored --nocapture
-    async fn openai() {
+    // cargo test assistant -- --ignored --nocapture
+    async fn assistant() {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
@@ -509,7 +515,7 @@ mod tests {
         let msgs = vec![
             ChatMessage {
                 role: Role::System,
-                content: Some("あなたの名前は上海人形で、あなたはやっぴー(yappy)の人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string()),
+                content: Some("あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string()),
                 ..Default::default()
             },
             ChatMessage {
