@@ -1,12 +1,14 @@
 //! Web アクセス関連。
 
 use crate::sysmod::openai::function::{
-    get_arg_str, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
+    Parameters,
 };
 use crate::utils::netutil;
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
 use anyhow::{anyhow, bail, Context, Result};
 use reqwest::Client;
+use std::sync::Arc;
 use std::{collections::HashMap, time::Duration};
 
 /// このモジュールの関数をすべて登録する。
@@ -84,7 +86,7 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     }
 }
 
-fn request_url_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn request_url_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
@@ -141,7 +143,7 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&obj).unwrap())
 }
 
-fn get_weather_report_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn get_weather_report_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_weather_report(args))
 }
 

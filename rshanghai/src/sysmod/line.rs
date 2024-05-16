@@ -1,7 +1,7 @@
 //! LINE API。
 
 use super::openai::{
-    function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
+    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
     ParameterElement,
 };
 use super::SystemModule;
@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::Debug,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -112,7 +113,7 @@ impl Line {
         assert!(reserved < model_info.token_limit);
         let chat_history = ChatHistory::new(model_info.token_limit - reserved);
 
-        let mut func_table = FunctionTable::new();
+        let mut func_table = FunctionTable::new(model_info.clone());
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
 
@@ -435,7 +436,11 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
     );
 }
 
-fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
+fn draw_picture_sync(
+    _bctx: Arc<BasicContext>,
+    ctx: FunctionContext,
+    args: &FuncArgs,
+) -> FuncBodyAsync {
     Box::pin(draw_picture(ctx, args))
 }
 

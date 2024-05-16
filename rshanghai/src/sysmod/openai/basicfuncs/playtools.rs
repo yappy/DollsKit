@@ -1,11 +1,13 @@
 //! システム情報取得。
 
 use crate::sysmod::openai::function::{
-    get_arg_i64, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_i64, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
+    Parameters,
 };
 use crate::utils::playtools::dice;
 use anyhow::Result;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -42,7 +44,7 @@ async fn flip_coin(args: &FuncArgs) -> Result<String> {
     Ok(text)
 }
 
-fn flip_coin_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn flip_coin_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(flip_coin(args))
 }
 
@@ -82,7 +84,7 @@ async fn role_dice(args: &FuncArgs) -> Result<String> {
     Ok(format!("{:?}", result))
 }
 
-fn role_dice_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn role_dice_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(role_dice(args))
 }
 

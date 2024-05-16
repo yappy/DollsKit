@@ -28,6 +28,7 @@ const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 
 /// モデル情報。
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct ModelInfo {
     pub name: &'static str,
     /// トークン数制限。入力と出力を全て合わせた値。
