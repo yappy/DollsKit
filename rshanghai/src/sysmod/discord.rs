@@ -194,7 +194,7 @@ impl Discord {
         info!("[discord] {reserved:6} reserved");
         info!("[discord] {:6} chat history", chat_limit);
 
-        let mut func_table = FunctionTable::new(model_info.clone());
+        let mut func_table = FunctionTable::new(*model_info);
         func_table.register_basic_functions();
 
         Ok(Self {

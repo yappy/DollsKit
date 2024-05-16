@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
-pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>, ctx: Arc<BasicContext>) {
+pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_get_model(func_table);
     register_get_version(func_table);
     register_get_cpu_status(func_table);

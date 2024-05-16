@@ -157,7 +157,7 @@ impl<T: 'static> FunctionTable<T> {
 
     /// [basicfuncs] 以下のすべての基本的な関数を登録する。
     pub fn register_basic_functions(&mut self) {
-        basicfuncs::register_all(self, Arc::clone(&self.basic_context));
+        basicfuncs::register_all(self);
     }
 }
 

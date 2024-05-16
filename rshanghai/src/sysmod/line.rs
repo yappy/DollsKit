@@ -113,7 +113,7 @@ impl Line {
         assert!(reserved < model_info.token_limit);
         let chat_history = ChatHistory::new(model_info.token_limit - reserved);
 
-        let mut func_table = FunctionTable::new(model_info.clone());
+        let mut func_table = FunctionTable::new(*model_info);
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
 
