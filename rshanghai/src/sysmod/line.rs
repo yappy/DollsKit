@@ -11,7 +11,7 @@ use crate::{
         taskserver::{self, Control},
     },
     sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
-    utils::chat_history::{self, ChatHistory},
+    utils::chat_history::ChatHistory,
 };
 
 use anyhow::{anyhow, bail, ensure, Result};
@@ -103,15 +103,20 @@ impl Line {
         // トークン上限を算出
         // Function 定義 + 前文 + (使用可能上限) + 出力
         let model_info = openai::get_model_info(&ai_config.model)?;
+        let mut chat_history = ChatHistory::new(model_info.name);
+        assert!(chat_history.get_total_limit() == model_info.token_limit);
         let pre_token: usize = config
             .prompt
             .pre
             .iter()
-            .map(|text| chat_history::token_count(text))
+            .map(|text| chat_history.token_count(text))
             .sum();
         let reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
-        assert!(reserved < model_info.token_limit);
-        let chat_history = ChatHistory::new(model_info.token_limit - reserved);
+        chat_history.reserve_tokens(reserved);
+        info!("[line] OpenAI token limit");
+        info!("[line] {:6} total", model_info.token_limit);
+        info!("[line] {reserved:6} reserved");
+        info!("[line] {:6} chat history", chat_history.usage().1);
 
         let mut func_table = FunctionTable::new(*model_info);
         func_table.register_basic_functions();

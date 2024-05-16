@@ -2,13 +2,16 @@
 
 use crate::sysmod::openai::ChatMessage;
 
-use std::{collections::VecDeque, sync::OnceLock};
-use tiktoken_rs::{cl100k_base, CoreBPE};
-
-static CORE: OnceLock<CoreBPE> = OnceLock::new();
+use std::collections::VecDeque;
+use tiktoken_rs::CoreBPE;
 
 /// 会話履歴管理。
 pub struct ChatHistory {
+    /// トークナイザ。
+    core: CoreBPE,
+
+    /// トークン数。
+    total_token_limit: usize,
     /// トークン数合計上限。
     token_limit: usize,
     /// 現在のトークン数合計。
@@ -28,13 +31,26 @@ struct Element {
 impl ChatHistory {
     /// コンストラクタ。
     ///
-    /// * `token_limit` - トークン数上限。
-    pub fn new(token_limit: usize) -> Self {
+    /// * `model` - OpenAI API モデル名。
+    pub fn new(model: &str) -> Self {
+        let core = tiktoken_rs::get_bpe_from_model(model).unwrap();
+        let total_token_limit = tiktoken_rs::model::get_context_size(model);
+
         Self {
-            token_limit,
+            core,
+            total_token_limit,
+            token_limit: total_token_limit,
             token_count: 0,
             history: Default::default(),
         }
+    }
+
+    /// トークン数合計上限を減らす。
+    pub fn reserve_tokens(&mut self, token_count: usize) {
+        if self.token_limit < token_count {
+            panic!("Invalid reserve size");
+        }
+        self.token_limit -= token_count;
     }
 
     /// ヒストリの最後にエントリを追加する。
@@ -43,10 +59,10 @@ impl ChatHistory {
     /// 1エントリでサイズを超えてしまっている場合、超えないように内容をトリムする。
     pub fn push(&mut self, mut msg: ChatMessage) {
         let count = if let Some(text) = &msg.content {
-            let tokens = tokenize(text);
+            let tokens = self.tokenize(text);
             let count = tokens.len();
             if count > self.token_limit {
-                let trimmed = decode(&tokens[0..self.token_limit]);
+                let trimmed = self.decode(&tokens[0..self.token_limit]);
                 msg.content = Some(trimmed);
 
                 self.token_limit
@@ -85,34 +101,30 @@ impl ChatHistory {
         self.history.len()
     }
 
+    /// トークン制限総量を返す。
+    pub fn get_total_limit(&self) -> usize {
+        self.total_token_limit
+    }
+
     /// 現在のトークン数使用量を (usage / total) のタプルで返す。
     pub fn usage(&self) -> (usize, usize) {
         (self.token_count, self.token_limit)
     }
-}
 
-/// トークン化ライブラリを初期化する。
-fn init_core() -> CoreBPE {
-    cl100k_base().unwrap()
-}
+    /// 文章をトークン化する。
+    fn tokenize(&self, text: &str) -> Vec<usize> {
+        self.core.encode_with_special_tokens(text)
+    }
 
-/// 文章をトークン化する。
-fn tokenize(text: &str) -> Vec<usize> {
-    let bpe = CORE.get_or_init(init_core);
+    /// 文章のトークン数を数える。
+    pub fn token_count(&self, text: &str) -> usize {
+        self.tokenize(text).len()
+    }
 
-    bpe.encode_with_special_tokens(text)
-}
-
-/// 文章のトークン数を数える。
-pub fn token_count(text: &str) -> usize {
-    tokenize(text).len()
-}
-
-/// トークン列から文字列に復元する。
-fn decode(tokens: &[usize]) -> String {
-    let bpe = CORE.get_or_init(init_core);
-
-    bpe.decode(tokens.to_vec()).unwrap()
+    /// トークン列から文字列に復元する。
+    fn decode(&self, tokens: &[usize]) -> String {
+        self.core.decode(tokens.to_vec()).unwrap()
+    }
 }
 
 #[cfg(test)]
@@ -121,10 +133,10 @@ mod tests {
 
     #[test]
     fn token() {
-        let bpe = cl100k_base().unwrap();
-        let tokens = bpe.encode_with_special_tokens("This is a sentence   with spaces");
+        let hist = ChatHistory::new("gpt-4");
+        let count = hist.token_count("This is a sentence   with spaces");
 
         // https://platform.openai.com/tokenizer
-        assert_eq!(7, tokens.len());
+        assert_eq!(7, count);
     }
 }
