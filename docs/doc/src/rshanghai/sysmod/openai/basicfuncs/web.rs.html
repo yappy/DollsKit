@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/web.rs`."><title>web.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.1 (7cf61ebde 2024-03-27)" data-channel="1.77.1" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/web.rs`."><title>web.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -210,15 +210,34 @@
 <a href="#208" id="208">208</a>
 <a href="#209" id="209">209</a>
 <a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Web アクセス関連。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::{
-    get_arg_str, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
+    Parameters,
 };
 <span class="kw">use </span><span class="kw">crate</span>::utils::netutil;
 <span class="kw">use </span><span class="kw">crate</span>::utils::weather::{<span class="self">self</span>, ForecastRoot, OverviewForecast};
-<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{anyhow, bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>reqwest::Client;
+<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::{collections::HashMap, time::Duration};
 
 <span class="doccomment">/// このモジュールの関数をすべて登録する。
@@ -296,7 +315,7 @@
     }
 }
 
-<span class="kw">fn </span>request_url_pin&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+<span class="kw">fn </span>request_url_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
     Box::pin(request_url(args))
 }
 
@@ -344,14 +363,16 @@
     <span class="kw">let </span>(resp1, resp2) = <span class="macro">tokio::join!</span>(fut1, fut2);
     <span class="kw">let </span>(s1, s2) = (resp1<span class="question-mark">?</span>, resp2<span class="question-mark">?</span>);
 
-    <span class="kw">let </span>ov: OverviewForecast = serde_json::from_str(<span class="kw-2">&amp;</span>s1)<span class="question-mark">?</span>;
-    <span class="kw">let </span>fc: ForecastRoot = serde_json::from_str(<span class="kw-2">&amp;</span>s2)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ov: OverviewForecast =
+        serde_json::from_str(<span class="kw-2">&amp;</span>s1).with_context(|| <span class="macro">format!</span>(<span class="string">"OverviewForecast parse error: {s1}"</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>fc: ForecastRoot =
+        serde_json::from_str(<span class="kw-2">&amp;</span>s2).with_context(|| <span class="macro">format!</span>(<span class="string">"ForecastRoot parse error: {s2}"</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span>obj = weather::weather_to_ai_readable(<span class="kw-2">&amp;</span>code, <span class="kw-2">&amp;</span>ov, <span class="kw-2">&amp;</span>fc)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj).unwrap())
 }
 
-<span class="kw">fn </span>get_weather_report_pin&lt;T&gt;(_ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
+<span class="kw">fn </span>get_weather_report_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
     Box::pin(get_weather_report(args))
 }
 
@@ -416,6 +437,19 @@
 
         <span class="kw">let </span>res = compact_html(SRC)<span class="question-mark">?</span>;
         <span class="macro">println!</span>(<span class="string">"{res}"</span>);
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="attr">#[tokio::test]
+    #[ignore]
+    </span><span class="comment">// cargo test weather_report -- --ignored --nocapture
+    </span><span class="kw">async fn </span>weather_report() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>args = FuncArgs::new();
+        args.insert(<span class="string">"area"</span>.into(), Value::String(<span class="string">"広島県"</span>.into()));
+
+        <span class="kw">let </span>text = get_weather_report(<span class="kw-2">&amp;</span>args).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">"{}"</span>, text);
 
         <span class="prelude-val">Ok</span>(())
     }

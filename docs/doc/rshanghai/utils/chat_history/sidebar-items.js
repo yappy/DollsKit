@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["decode","init_core","token_count","tokenize"],"static":["CORE"],"struct":["ChatHistory","Element"]};
+window.SIDEBAR_ITEMS = {"struct":["ChatHistory","Element"]};
