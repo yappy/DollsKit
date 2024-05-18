@@ -1,7 +1,7 @@
 //! LINE API。
 
 use super::openai::{
-    function::{self, FuncArgs, FuncBodyAsync, FunctionTable},
+    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
     ParameterElement,
 };
 use super::SystemModule;
@@ -11,7 +11,7 @@ use crate::{
         taskserver::{self, Control},
     },
     sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
-    utils::chat_history::{self, ChatHistory},
+    utils::chat_history::ChatHistory,
 };
 
 use anyhow::{anyhow, bail, ensure, Result};
@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::Debug,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -102,17 +103,22 @@ impl Line {
         // トークン上限を算出
         // Function 定義 + 前文 + (使用可能上限) + 出力
         let model_info = openai::get_model_info(&ai_config.model)?;
+        let mut chat_history = ChatHistory::new(model_info.name);
+        assert!(chat_history.get_total_limit() == model_info.token_limit);
         let pre_token: usize = config
             .prompt
             .pre
             .iter()
-            .map(|text| chat_history::token_count(text))
+            .map(|text| chat_history.token_count(text))
             .sum();
         let reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
-        assert!(reserved < model_info.token_limit);
-        let chat_history = ChatHistory::new(model_info.token_limit - reserved);
+        chat_history.reserve_tokens(reserved);
+        info!("[line] OpenAI token limit");
+        info!("[line] {:6} total", model_info.token_limit);
+        info!("[line] {reserved:6} reserved");
+        info!("[line] {:6} chat history", chat_history.usage().1);
 
-        let mut func_table = FunctionTable::new();
+        let mut func_table = FunctionTable::new(*model_info);
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
 
@@ -435,7 +441,11 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
     );
 }
 
-fn draw_picture_sync(ctx: FunctionContext, args: &FuncArgs) -> FuncBodyAsync {
+fn draw_picture_sync(
+    _bctx: Arc<BasicContext>,
+    ctx: FunctionContext,
+    args: &FuncArgs,
+) -> FuncBodyAsync {
     Box::pin(draw_picture(ctx, args))
 }
 

@@ -184,6 +184,8 @@ pub enum AreaData {
         weather_codes: Vec<String>,
         weathers: Vec<String>,
         winds: Vec<String>,
+        // 海がない地方がある
+        #[serde(default)]
         waves: Vec<String>,
     },
     /// 今日から6時間ごと、5回分
@@ -414,13 +416,19 @@ fn edit_distance(a: &str, b: &str) -> Result<u32> {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs::{self, File},
+        io::Write,
+    };
+
     use super::*;
     use reqwest::Client;
+    use serde_json::Value;
 
     #[tokio::test]
     #[ignore]
-    // cargo test office_list -- --ignored --nocapture
-    async fn office_list() -> Result<()> {
+    // cargo test weather_test_json -- --ignored --nocapture
+    async fn weather_test_json() -> Result<()> {
         let olist = offices();
         println!("Office count: {}", olist.len());
         let client = Client::new();
@@ -431,7 +439,14 @@ mod tests {
             );
             let resp = client.get(url).send().await?;
             if resp.status().is_success() {
-                //println!("{}", resp.text().await?);
+                let mut file = File::create(format!(
+                    "{}/res/test/weather/overview_forecast/{}.json",
+                    env!("CARGO_MANIFEST_DIR"),
+                    info.code
+                ))?;
+                let value: Value = serde_json::from_str(&resp.text().await?)?;
+                let text = serde_json::to_string_pretty(&value)? + "\n";
+                file.write_all(text.as_bytes())?;
             } else {
                 println!("overview_forecast not found: {:?}", info);
             }
@@ -442,7 +457,14 @@ mod tests {
             );
             let resp = client.get(url).send().await?;
             if resp.status().is_success() {
-                //println!("{}", resp.text().await?);
+                let mut file = File::create(format!(
+                    "{}/res/test/weather/forecast/{}.json",
+                    env!("CARGO_MANIFEST_DIR"),
+                    info.code
+                ))?;
+                let value: Value = serde_json::from_str(&resp.text().await?)?;
+                let text = serde_json::to_string_pretty(&value)? + "\n";
+                file.write_all(text.as_bytes())?;
             } else {
                 println!("forecast not found: {:?}", info);
             }
@@ -453,7 +475,14 @@ mod tests {
             );
             let resp = client.get(url).send().await?;
             if resp.status().is_success() {
-                //println!("{}", resp.text().await?);
+                let mut file = File::create(format!(
+                    "{}/res/test/weather/overview_week/{}.json",
+                    env!("CARGO_MANIFEST_DIR"),
+                    info.code
+                ))?;
+                let value: Value = serde_json::from_str(&resp.text().await?)?;
+                let text = serde_json::to_string_pretty(&value)? + "\n";
+                file.write_all(text.as_bytes())?;
             } else {
                 println!("overview_week not found: {:?}", info);
             }
@@ -464,40 +493,36 @@ mod tests {
 
     #[test]
     fn parse_overview_forecast() -> Result<()> {
-        let src = include_str!(concat!(
+        let ents = fs::read_dir(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/overview_forecast_130000.json"
-        ));
-        let obj: OverviewForecast = serde_json::from_str(src)?;
-        assert_eq!("気象庁", obj.publishing_office);
-        assert_eq!("東京都", obj.target_area);
+            "/res/test/weather/overview_forecast"
+        ))?;
 
-        let src = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/overview_forecast_140000.json"
-        ));
-        let obj: OverviewForecast = serde_json::from_str(src)?;
-        assert_eq!("横浜地方気象台", obj.publishing_office);
-        assert_eq!("神奈川県", obj.target_area);
+        let mut count = 0;
+        for ent in ents {
+            let src = fs::read_to_string(ent?.path())?;
+            let _: OverviewForecast = serde_json::from_str(&src)?;
+            count += 1;
+        }
+        assert!(count > 40);
 
         Ok(())
     }
 
     #[test]
     fn parse_forecast() -> Result<()> {
-        let src = include_str!(concat!(
+        let ents = fs::read_dir(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/forecast_130000.json"
-        ));
-        let obj: ForecastRoot = serde_json::from_str(src)?;
-        assert_eq!("気象庁", obj[0].publishing_office);
+            "/res/test/weather/forecast"
+        ))?;
 
-        let src = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/forecast_140000.json"
-        ));
-        let obj: ForecastRoot = serde_json::from_str(src)?;
-        assert_eq!("横浜地方気象台", obj[0].publishing_office);
+        let mut count = 0;
+        for ent in ents {
+            let src = fs::read_to_string(ent?.path())?;
+            let _: ForecastRoot = serde_json::from_str(&src)?;
+            count += 1;
+        }
+        assert!(count > 40);
 
         Ok(())
     }
@@ -516,12 +541,12 @@ mod tests {
     fn ai_readable() -> Result<()> {
         let src = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/overview_forecast_130000.json"
+            "/res/test/weather/overview_forecast/130000.json"
         ));
         let ov: OverviewForecast = serde_json::from_str(src)?;
         let src = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/res/test/weather/forecast_130000.json"
+            "/res/test/weather/forecast/130000.json"
         ));
         let fcr: ForecastRoot = serde_json::from_str(src)?;
 
