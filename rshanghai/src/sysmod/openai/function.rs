@@ -1,6 +1,6 @@
 //! OpenAI API - function.
 
-use super::basicfuncs;
+use super::{basicfuncs, ModelInfo};
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
 use anyhow::{anyhow, Result};
@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::ops::RangeBounds;
 use std::pin::Pin;
+use std::sync::Arc;
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -26,8 +27,8 @@ pub use super::Parameters;
 pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync + Send + 'a>>;
 /// 関数の Rust 上での定義。
 ///
-/// 引数は T, [FuncArgs] で、返り値は文字列の async fn。
-pub type FuncBody<T> = Box<dyn Fn(T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
+/// 引数は [BasicContext], T, [FuncArgs] で、返り値は文字列の async fn。
+pub type FuncBody<T> = Box<dyn Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
 /// 引数。文字列から Json value へのマップ。
 pub type FuncArgs = HashMap<String, serde_json::value::Value>;
 
@@ -39,19 +40,30 @@ pub struct Args {
     args: FuncArgs,
 }
 
+/// 標準で関数に提供されるコンテキスト情報。
+#[derive(Debug, Clone, Serialize)]
+pub struct BasicContext {
+    pub model: ModelInfo,
+}
+
 /// OpenAI function 群の管理テーブル。
 pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
     call_table: HashMap<String, FuncBody<T>>,
+
+    basic_context: Arc<BasicContext>,
 }
 
 impl<T: 'static> FunctionTable<T> {
-    pub fn new() -> Self {
+    pub fn new(model: ModelInfo) -> Self {
+        let basic_context = BasicContext { model };
+
         Self {
             function_list: Default::default(),
             call_table: Default::default(),
+            basic_context: Arc::new(basic_context),
         }
     }
 
@@ -130,7 +142,10 @@ impl<T: 'static> FunctionTable<T> {
             .ok_or_else(|| anyhow!("Error: Function {func_name} not found"))?;
 
         // call body
-        func(ctx, args).await.map_err(|err| anyhow!("Error: {err}"))
+        let bctx = Arc::clone(&self.basic_context);
+        func(bctx, ctx, args)
+            .await
+            .map_err(|err| anyhow!("Error: {err}"))
     }
 
     /// 関数を登録する。

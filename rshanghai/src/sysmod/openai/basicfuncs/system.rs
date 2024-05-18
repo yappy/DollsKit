@@ -4,18 +4,45 @@ use crate::sysmod::health::{
     get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
 };
 use crate::sysmod::openai::function::{
-    get_arg_str, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
+    Parameters,
 };
 use anyhow::{bail, Result};
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
+    register_get_model(func_table);
     register_get_version(func_table);
     register_get_cpu_status(func_table);
     register_get_current_datetime(func_table);
+}
+
+/// モデル情報取得。
+async fn get_model(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result<String> {
+    Ok(serde_json::to_string(&bctx.model).unwrap())
+}
+
+fn get_model_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+    Box::pin(get_model(bctx, args))
+}
+
+fn register_get_model<T: 'static>(func_table: &mut FunctionTable<T>) {
+    func_table.register_function(
+        Function {
+            name: "get_model".to_string(),
+            description: Some("Get GPT model info of the assistant".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        },
+        Box::new(get_model_pin),
+    );
 }
 
 /// バージョン情報取得。
@@ -25,7 +52,7 @@ async fn get_version(_args: &FuncArgs) -> Result<String> {
     Ok(version::version_info().to_string())
 }
 
-fn get_version_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn get_version_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_version(args))
 }
 
@@ -33,7 +60,7 @@ fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
             name: "get_version".to_string(),
-            description: Some("Get version of this assistant program".to_string()),
+            description: Some("Get version of the assistant program".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties: Default::default(),
@@ -88,7 +115,7 @@ async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&obj)?)
 }
 
-fn get_cpu_status_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn get_cpu_status_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     Box::pin(get_cpu_status(args))
 }
 
@@ -125,7 +152,11 @@ async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
     }
 }
 
-fn get_current_datetime_pin<T>(_ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn get_current_datetime_pin<T>(
+    _bctx: Arc<BasicContext>,
+    _ctx: T,
+    args: &FuncArgs,
+) -> FuncBodyAsync {
     Box::pin(get_current_datetime(args))
 }
 
