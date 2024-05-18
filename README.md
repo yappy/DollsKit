@@ -117,6 +117,12 @@ crontab < cron.txt
 cargo test
 ```
 
+## ドキュメントのビルド
+
+```sh
+cargo doc --no-deps
+```
+
 ## CI
 
 GitHub Actions で自動ビルドを行っています。
