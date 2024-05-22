@@ -192,17 +192,17 @@ struct HistoryEntry {
 
 /// CPU 情報。
 #[derive(Debug, Clone, Copy)]
-struct CpuInfo {
+pub struct CpuInfo {
     /// 全コア合計の使用率。
-    cpu_percent_total: f64,
+    pub cpu_percent_total: f64,
     /// CPU 温度 (℃)。
     /// 取得できなかった場合は [None]。
-    temp: Option<f64>,
+    pub temp: Option<f64>,
 }
 
 /// メモリ使用率。
 #[derive(Debug, Clone, Copy)]
-struct MemInfo {
+pub struct MemInfo {
     /// メモリ総量 (MiB)。
     total_mib: f64,
     /// 利用可能メモリ量 (MiB)。
@@ -211,7 +211,7 @@ struct MemInfo {
 
 /// ディスク使用率。
 #[derive(Debug, Clone, Copy)]
-struct DiskInfo {
+pub struct DiskInfo {
     /// ディスク総量 (GiB)。
     total_gib: f64,
     /// 利用可能ディスクサイズ (GiB)。
@@ -221,7 +221,7 @@ struct DiskInfo {
 /// [CpuInfo] を計測する。
 ///
 /// _/proc/stat_ による。
-async fn get_cpu_info() -> Result<CpuInfo> {
+pub async fn get_cpu_info() -> Result<CpuInfo> {
     let buf = tokio::fs::read("/proc/stat").await?;
     let text = String::from_utf8_lossy(&buf);
 
@@ -294,7 +294,7 @@ async fn get_cpu_info() -> Result<CpuInfo> {
 /// [MemInfo] を計測する。
 ///
 /// `free` コマンドによる。
-async fn get_mem_info() -> Result<MemInfo> {
+pub async fn get_mem_info() -> Result<MemInfo> {
     let mut cmd = Command::new("free");
     let output = cmd.output().await?;
     ensure!(output.status.success(), "free command failed");
@@ -333,7 +333,7 @@ async fn get_mem_info() -> Result<MemInfo> {
 /// [DiskInfo] を計測する。
 ///
 /// `df` コマンドによる。
-async fn get_disk_info() -> Result<DiskInfo> {
+pub async fn get_disk_info() -> Result<DiskInfo> {
     let mut cmd = Command::new("df");
     let output = cmd.output().await?;
     ensure!(output.status.success(), "df command failed");
@@ -388,7 +388,7 @@ async fn get_disk_info() -> Result<DiskInfo> {
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
-async fn get_cpu_temp() -> Result<Option<f64>> {
+pub async fn get_cpu_temp() -> Result<Option<f64>> {
     let result = tokio::fs::read("/sys/class/thermal/thermal_zone0/temp").await;
     match result {
         Ok(buf) => {
