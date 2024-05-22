@@ -558,6 +558,7 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
         ai(),
         aistatus(),
         aiimg(),
+        aispeech(),
     ]
 }
 
@@ -775,7 +776,7 @@ async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
 
     let pic = camera::take_a_pic(TakePicOption::new()).await?;
 
-    let attach = CreateAttachment::bytes(&pic[..], "camera.jpg");
+    let attach = CreateAttachment::bytes(pic, "camera.jpg");
     ctx.send(
         CreateReply::default()
             .content("camera.jpg")
@@ -994,6 +995,69 @@ async fn aiimg(
     };
 
     ctx.reply(img_url).await?;
+
+    Ok(())
+}
+
+#[derive(poise::ChoiceParameter)]
+enum SpeechModelChoice {
+    #[name = "speed"]
+    Tts1,
+    #[name = "quality"]
+    Tts1Hd,
+}
+
+#[derive(poise::ChoiceParameter)]
+enum SpeechVoiceChoice {
+    Alloy,
+    Echo,
+    Fable,
+    Onyx,
+    Nova,
+    Shimmer,
+}
+
+/// AI text to speech.
+#[poise::command(slash_command, prefix_command, category = "AI")]
+async fn aispeech(
+    ctx: PoiseContext<'_>,
+    #[description = "text to say"]
+    #[min_length = 1]
+    #[max_length = 4096]
+    input: String,
+    #[description = "voice (default to Nova)"] voice: Option<SpeechVoiceChoice>,
+    #[description = "0.25 <= speed <= 4.00 (default to 1.0)"]
+    #[min = 0.25]
+    #[max = 4.0]
+    speed: Option<f32>,
+    #[description = "model (default to speed)"] model: Option<SpeechModelChoice>,
+) -> Result<(), PoiseError> {
+    let model = model.map_or(openai::SpeechModel::Tts1, |model| match model {
+        SpeechModelChoice::Tts1 => openai::SpeechModel::Tts1,
+        SpeechModelChoice::Tts1Hd => openai::SpeechModel::Tts1Hd,
+    });
+    let voice = voice.map_or(openai::SpeechVoice::Nova, |voice| match voice {
+        SpeechVoiceChoice::Alloy => openai::SpeechVoice::Alloy,
+        SpeechVoiceChoice::Echo => openai::SpeechVoice::Echo,
+        SpeechVoiceChoice::Fable => openai::SpeechVoice::Fable,
+        SpeechVoiceChoice::Onyx => openai::SpeechVoice::Onyx,
+        SpeechVoiceChoice::Nova => openai::SpeechVoice::Nova,
+        SpeechVoiceChoice::Shimmer => openai::SpeechVoice::Shimmer,
+    });
+
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &input).await?;
+
+    let audio_bin = {
+        let ctrl = &ctx.data().ctrl;
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        ai.text_to_speech(model, &input, voice, Some(openai::SpeechFormat::Mp3), speed)
+            .await?
+    };
+
+    let attach = CreateAttachment::bytes(audio_bin, "speech.mp3");
+    ctx.send(CreateReply::default().attachment(attach)).await?;
 
     Ok(())
 }

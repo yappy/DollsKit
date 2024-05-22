@@ -535,7 +535,10 @@ impl OpenAi {
             ..Default::default()
         };
 
-        info!("[openai] image gen request: {}", serde_json::to_string(&body)?);
+        info!(
+            "[openai] image gen request: {}",
+            serde_json::to_string(&body)?
+        );
         if !self.config.enabled {
             warn!("[openai] skip because openai feature is disabled");
             bail!("openai is disabled");
@@ -591,7 +594,10 @@ impl OpenAi {
             speed,
         };
 
-        info!("[openai] create speech request: {}", serde_json::to_string(&body)?);
+        info!(
+            "[openai] create speech request: {}",
+            serde_json::to_string(&body)?
+        );
         if !self.config.enabled {
             warn!("[openai] skip because openai feature is disabled");
             bail!("openai is disabled");
