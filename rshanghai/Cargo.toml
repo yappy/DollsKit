@@ -14,18 +14,18 @@ panic = 'abort'
 [dependencies]
 # Error handling
 anyhow = "1.0.86"
-thiserror = "1.0.61"
+thiserror = "1.0.63"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.3.0"
 # Bit flags
-bitflags = "2.5.0"
+bitflags = "2.6.0"
 
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
-log = "0.4.21"
+log = "0.4.22"
 # Logging (concrete layer)
 simplelog = "0.12.2"
 # Daemon util
@@ -34,14 +34,14 @@ daemonize = "0.5.0"
 time = "0.3.36"
 chrono = { version = "0.4.38", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
-serde_with = { version = "3.8.1", features = ["json"] }
+serde = { version = "1.0.209", features = ["derive"] }
+serde_json = "1.0.128"
+serde_with = { version = "3.9.0", features = ["json"] }
 # TOML
-toml = "0.8.13"
+toml = "0.8.19"
 
 # Async
-tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.15"
 
 # HTTP client
@@ -58,18 +58,18 @@ sha1 = "0.10.6"
 sha2 = "0.10.8"
 
 # HTTP server
-actix-web = "4.6.0"
-actix-multipart = "0.6.1"
+actix-web = "4.9.0"
+actix-multipart = "0.6.2"
 # Discord
 serenity = "0.12.2"
 poise = "0.6.1"
 
 # Image convert
-image = "0.25.1"
+image = "0.25.2"
 # Font
 rusttype="0.9.3"
 # Scraping
-scraper = "0.19.0"
+scraper = "0.19.1"
 # ChatGPT tokenizer
 tiktoken-rs = "0.5.9"
 
@@ -80,4 +80,4 @@ hex-literal = "0.4.1"
 
 [build-dependencies]
 # Version info
-vergen = { version = "8.3.1", features = ["git", "gitcl", "cargo"] }
+vergen = { version = "8.3.2", features = ["git", "gitcl", "cargo"] }
