@@ -91,7 +91,9 @@ async fn index_post_main(payload: &mut Multipart, ctrl: web::Data<Control>) -> W
         info!("Upload: multipart/form-data entry");
 
         // content_disposition からファイル名を取得、チェック
-        let cont_disp = field.content_disposition();
+        let cont_disp = field
+            .content_disposition()
+            .ok_or_else(|| ActixError::new("Content-Disposition required", 400))?;
         let fname = cont_disp.get_filename();
         let fname = check_file_name(fname)?;
         info!("Upload: filename: {fname}");
