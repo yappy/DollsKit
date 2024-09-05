@@ -69,7 +69,7 @@ image = "0.25.2"
 # Font
 rusttype="0.9.3"
 # Scraping
-scraper = "0.19.1"
+scraper = "0.20.0"
 # ChatGPT tokenizer
 tiktoken-rs = "0.5.9"
 
