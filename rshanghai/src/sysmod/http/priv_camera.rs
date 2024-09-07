@@ -103,7 +103,7 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
 /// * `page_by` - start からいくつ画像を表示するか。
 /// * `title` - タイトル。
 /// * `commands` - POST の "cmd" パラメータで送られる値とラジオボタンに
-/// 添えるラベルからなるタプルの配列
+///   添えるラベルからなるタプルの配列
 fn create_pic_list_page(
     pic_list: &BTreeMap<String, PicEntry>,
     img_path_dir: &str,

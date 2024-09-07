@@ -236,9 +236,9 @@ fn verify_signature(signature: &str, channel_secret: &str, body: &str) -> Result
 /// 署名検証後の POST request 処理本体。
 async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
     // JSON parse
-    let req = serde_json::from_str::<WebHookRequest>(json_body).map_err(|err| {
-        error!("[line] Json parse error: {json_body}");
-        err
+    let req = serde_json::from_str::<WebHookRequest>(json_body).inspect_err(|err| {
+        error!("[line] Json parse error: {err}");
+        error!("[line] {json_body}");
     })?;
     info!("{:?}", req);
 

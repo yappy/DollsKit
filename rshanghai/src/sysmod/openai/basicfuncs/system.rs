@@ -1,7 +1,8 @@
 //! システム情報取得。
 
 use crate::sysmod::health::{
-    get_cpu_cores, get_current_freq, get_freq_conf, get_throttle_status, ThrottleFlags,
+    get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf, get_throttle_status,
+    ThrottleFlags,
 };
 use crate::sysmod::openai::function::{
     get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
@@ -74,21 +75,26 @@ fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
 #[derive(Serialize, Deserialize)]
 struct CpuStatus {
     number_of_cores: u32,
+    cpu_usage_percent: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     current_frequency: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    config_frequency: Option<String>,
+    original_frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature_celsius: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     throttle_status: Option<Vec<String>>,
 }
 
 /// CPU 使用率情報取得。
 async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
+    let cpu_info = get_cpu_info().await?;
+
     let number_of_cores = get_cpu_cores().await?;
     let current_frequency = get_current_freq()
         .await?
         .map(|hz| format!("{} MHz", hz / 1_000_000));
-    let config_frequency = get_freq_conf()
+    let original_frequency = get_freq_conf()
         .await?
         .map(|hz| format!("{} MHz", hz / 1_000_000));
     let throttle_status = get_throttle_status().await?.map(|st| {
@@ -107,8 +113,10 @@ async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
 
     let obj = CpuStatus {
         number_of_cores,
+        cpu_usage_percent: cpu_info.cpu_percent_total,
         current_frequency,
-        config_frequency,
+        original_frequency,
+        temperature_celsius: cpu_info.temp,
         throttle_status,
     };
 

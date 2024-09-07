@@ -12,6 +12,7 @@ use crate::sys::config;
 use crate::sys::taskserver::Control;
 use crate::utils::netutil;
 
+use anyhow::ensure;
 use anyhow::{anyhow, bail, Result};
 use log::info;
 use log::warn;
@@ -26,6 +27,7 @@ const TIMEOUT: Duration = Duration::from_secs(60);
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
+const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
 
 /// モデル情報。
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -234,6 +236,8 @@ struct ChatRequest {
 
 /// OpenAI API JSON 定義。
 /// 画像生成リクエスト。
+///
+/// <https://platform.openai.com/docs/api-reference/images>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct ImageGenRequest {
     /// A text description of the desired image(s).
@@ -295,6 +299,73 @@ struct Image {
     b64_json: Option<String>,
     url: Option<String>,
 }
+
+/// OpenAI API JSON 定義。
+/// 音声生成リクエスト。
+///
+///<https://platform.openai.com/docs/api-reference/audio/createSpeech>
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct SpeechRequest {
+    /// One of the available TTS models: tts-1 or tts-1-hd
+    model: SpeechModel,
+    /// The text to generate audio for.
+    /// The maximum length is 4096 characters.
+    input: String,
+    /// The voice to use when generating the audio.
+    /// Supported voices are alloy, echo, fable, onyx, nova, and shimmer.
+    /// Previews of the voices are available in the Text to speech guide.
+    voice: SpeechVoice,
+    /// The format to audio in.
+    /// Supported formats are mp3, opus, aac, flac, wav, and pcm.
+    /// Defaults to mp3
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<SpeechFormat>,
+    /// The speed of the generated audio.
+    /// Select a value from 0.25 to 4.0. 1.0 is the default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    speed: Option<f32>,
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeechModel {
+    /// The latest text to speech model, optimized for speed.
+    #[serde(rename = "tts-1")]
+    #[default]
+    Tts1,
+    /// The latest text to speech model, optimized for quality.
+    #[serde(rename = "tts-1-hd")]
+    Tts1Hd,
+}
+
+pub const SPEECH_INPUT_MAX: usize = 4096;
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeechVoice {
+    #[default]
+    Alloy,
+    Echo,
+    Fable,
+    Onyx,
+    Nova,
+    Shimmer,
+}
+
+#[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeechFormat {
+    #[default]
+    Mp3,
+    OpuS,
+    Aac,
+    Flac,
+    Wav,
+    Pcm,
+}
+
+pub const SPEECH_SPEED_MIN: f32 = 0.25;
+pub const SPEECH_SPEED_MAX: f32 = 4.0;
 
 /// OpenAI 設定データ。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -464,7 +535,10 @@ impl OpenAi {
             ..Default::default()
         };
 
-        info!("[openai] image gen request: {:?}", body);
+        info!(
+            "[openai] image gen request: {}",
+            serde_json::to_string(&body)?
+        );
         if !self.config.enabled {
             warn!("[openai] skip because openai feature is disabled");
             bail!("openai is disabled");
@@ -489,6 +563,57 @@ impl OpenAi {
         info!("[openai] image gen OK: {:?}", result);
 
         Ok(result)
+    }
+
+    /// OpenAI Create Speech API を使用する。
+    pub async fn text_to_speech(
+        &self,
+        model: SpeechModel,
+        input: &str,
+        voice: SpeechVoice,
+        response_format: Option<SpeechFormat>,
+        speed: Option<f32>,
+    ) -> Result<Vec<u8>> {
+        ensure!(
+            input.len() <= SPEECH_INPUT_MAX,
+            "input length limit is {SPEECH_INPUT_MAX} characters"
+        );
+        if let Some(speed) = speed {
+            ensure!(
+                (SPEECH_SPEED_MIN..=SPEECH_SPEED_MAX).contains(&speed),
+                "speed must be {SPEECH_SPEED_MIN} .. {SPEECH_SPEED_MAX}"
+            );
+        }
+
+        let key = &self.config.api_key;
+        let body = SpeechRequest {
+            model,
+            input: input.to_string(),
+            voice,
+            response_format,
+            speed,
+        };
+
+        info!(
+            "[openai] create speech request: {}",
+            serde_json::to_string(&body)?
+        );
+        if !self.config.enabled {
+            warn!("[openai] skip because openai feature is disabled");
+            bail!("openai is disabled");
+        }
+
+        let resp = self
+            .client
+            .post(URL_AUDIO_SPEECH)
+            .header("Authorization", format!("Bearer {key}"))
+            .json(&body)
+            .send()
+            .await?;
+
+        let bin = netutil::check_http_resp_bin(resp).await?;
+
+        Ok(bin)
     }
 }
 
@@ -554,6 +679,34 @@ mod tests {
             .generate_image("Rasberry Pi の上に乗っている管理人形", 1)
             .await?;
         assert_eq!(1, res.len());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial(openai)]
+    #[ignore]
+    // cargo test test_to_sppech -- --ignored --nocapture
+    async fn test_to_sppech() -> Result<()> {
+        let src = std::fs::read_to_string("config.toml").unwrap();
+        let _unset = config::set(toml::from_str(&src).unwrap());
+
+        let ai = OpenAi::new().unwrap();
+        let res = ai
+            .text_to_speech(
+                SpeechModel::Tts1,
+                "こんにちは、かんりにんぎょうです。",
+                SpeechVoice::Nova,
+                Some(SpeechFormat::Mp3),
+                Some(1.0),
+            )
+            .await?;
+
+        assert!(!res.is_empty());
+        let size = res.len();
+        const PATH: &str = "speech.mp3";
+        std::fs::write(PATH, res)?;
+        println!("Wrote to: {PATH} ({} bytes)", size);
 
         Ok(())
     }

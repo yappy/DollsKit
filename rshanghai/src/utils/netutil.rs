@@ -35,7 +35,7 @@ pub async fn check_http_resp(resp: reqwest::Response) -> Result<String> {
 
 /// HTTP status が成功 (200 台) でなければ Err に変換する。
 ///
-/// 成功ならば response body を文字列に変換して返す。
+/// 成功ならば response body をバイト列に変換して返す。
 #[allow(unused)]
 pub async fn check_http_resp_bin(resp: reqwest::Response) -> Result<Vec<u8>> {
     let status = resp.status();
