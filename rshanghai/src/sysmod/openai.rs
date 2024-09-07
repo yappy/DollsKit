@@ -4,7 +4,7 @@ mod basicfuncs;
 pub mod function;
 
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 use std::time::Duration;
 
 use super::SystemModule;
@@ -84,9 +84,7 @@ const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 ///
 /// HashMap で検索する。
 pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
-    static MAP: OnceLock<HashMap<&str, &ModelInfo>> = OnceLock::new();
-
-    let map = MAP.get_or_init(|| {
+    static MAP: LazyLock<HashMap<&str, &ModelInfo>> = LazyLock::new(|| {
         let mut map = HashMap::new();
         for info in MODEL_LIST.iter() {
             map.insert(info.name, info);
@@ -95,7 +93,7 @@ pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
         map
     });
 
-    map.get(model)
+    MAP.get(model)
         .copied()
         .ok_or_else(|| anyhow!("Model not found: {model}"))
 }
