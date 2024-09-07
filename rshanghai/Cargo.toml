@@ -76,8 +76,8 @@ tiktoken-rs = "0.5.9"
 [dev-dependencies]
 # Concurrent test control
 serial_test = "3.1.1"
+# Hex literal for test
 hex-literal = "0.4.1"
 
 [build-dependencies]
-# Version info
-vergen = { version = "8.3.2", features = ["git", "gitcl", "cargo"] }
+anyhow = "1.0.87"
