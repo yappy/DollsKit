@@ -60,11 +60,7 @@ fn command(program: &str, args: &[&str], def: &[&str]) -> Vec<String> {
 
 fn git_info() {
     // get relative path to .git/HEAD file
-    let git_head_path = command(
-        "git",
-        &["rev-parse", "--git-path", "HEAD"],
-        &[""],
-    );
+    let git_head_path = command("git", &["rev-parse", "--git-path", "HEAD"], &[""]);
     // rerun if .git/HEAD is changed
     println!("cargo::rerun-if-changed={}", git_head_path[0]);
 
