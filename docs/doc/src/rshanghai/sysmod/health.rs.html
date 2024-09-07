@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../rshanghai/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/health.rs`."><title>health.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.1 (3f5fd8dd4 2024-08-06)" data-channel="1.80.1" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -817,17 +815,17 @@
 
 <span class="doccomment">/// CPU 情報。
 </span><span class="attr">#[derive(Debug, Clone, Copy)]
-</span><span class="kw">struct </span>CpuInfo {
+</span><span class="kw">pub struct </span>CpuInfo {
     <span class="doccomment">/// 全コア合計の使用率。
-    </span>cpu_percent_total: f64,
+    </span><span class="kw">pub </span>cpu_percent_total: f64,
     <span class="doccomment">/// CPU 温度 (℃)。
     /// 取得できなかった場合は [None]。
-    </span>temp: <span class="prelude-ty">Option</span>&lt;f64&gt;,
+    </span><span class="kw">pub </span>temp: <span class="prelude-ty">Option</span>&lt;f64&gt;,
 }
 
 <span class="doccomment">/// メモリ使用率。
 </span><span class="attr">#[derive(Debug, Clone, Copy)]
-</span><span class="kw">struct </span>MemInfo {
+</span><span class="kw">pub struct </span>MemInfo {
     <span class="doccomment">/// メモリ総量 (MiB)。
     </span>total_mib: f64,
     <span class="doccomment">/// 利用可能メモリ量 (MiB)。
@@ -836,7 +834,7 @@
 
 <span class="doccomment">/// ディスク使用率。
 </span><span class="attr">#[derive(Debug, Clone, Copy)]
-</span><span class="kw">struct </span>DiskInfo {
+</span><span class="kw">pub struct </span>DiskInfo {
     <span class="doccomment">/// ディスク総量 (GiB)。
     </span>total_gib: f64,
     <span class="doccomment">/// 利用可能ディスクサイズ (GiB)。
@@ -846,7 +844,7 @@
 <span class="doccomment">/// [CpuInfo] を計測する。
 ///
 /// _/proc/stat_ による。
-</span><span class="kw">async fn </span>get_cpu_info() -&gt; <span class="prelude-ty">Result</span>&lt;CpuInfo&gt; {
+</span><span class="kw">pub async fn </span>get_cpu_info() -&gt; <span class="prelude-ty">Result</span>&lt;CpuInfo&gt; {
     <span class="kw">let </span>buf = tokio::fs::read(<span class="string">"/proc/stat"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>text = String::from_utf8_lossy(<span class="kw-2">&amp;</span>buf);
 
@@ -919,7 +917,7 @@
 <span class="doccomment">/// [MemInfo] を計測する。
 ///
 /// `free` コマンドによる。
-</span><span class="kw">async fn </span>get_mem_info() -&gt; <span class="prelude-ty">Result</span>&lt;MemInfo&gt; {
+</span><span class="kw">pub async fn </span>get_mem_info() -&gt; <span class="prelude-ty">Result</span>&lt;MemInfo&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">"free"</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">ensure!</span>(output.status.success(), <span class="string">"free command failed"</span>);
@@ -958,7 +956,7 @@
 <span class="doccomment">/// [DiskInfo] を計測する。
 ///
 /// `df` コマンドによる。
-</span><span class="kw">async fn </span>get_disk_info() -&gt; <span class="prelude-ty">Result</span>&lt;DiskInfo&gt; {
+</span><span class="kw">pub async fn </span>get_disk_info() -&gt; <span class="prelude-ty">Result</span>&lt;DiskInfo&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>cmd = Command::new(<span class="string">"df"</span>);
     <span class="kw">let </span>output = cmd.output().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">ensure!</span>(output.status.success(), <span class="string">"df command failed"</span>);
@@ -1013,7 +1011,7 @@
 /// Linux 汎用のようだが少なくとも WSL2 では存在しない。
 /// RasPi only で `vcgencmd measure_temp` という手もあるが、
 /// 人が読みやすい代わりにパースが難しくなるのでデバイスファイルの方を使う。
-</span><span class="kw">async fn </span>get_cpu_temp() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;f64&gt;&gt; {
+</span><span class="kw">pub async fn </span>get_cpu_temp() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;f64&gt;&gt; {
     <span class="kw">let </span>result = tokio::fs::read(<span class="string">"/sys/class/thermal/thermal_zone0/temp"</span>).<span class="kw">await</span>;
     <span class="kw">match </span>result {
         <span class="prelude-val">Ok</span>(buf) =&gt; {
