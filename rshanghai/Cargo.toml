@@ -13,8 +13,8 @@ panic = 'abort'
 
 [dependencies]
 # Error handling
-anyhow = "1.0.87"
-thiserror = "1.0.63"
+anyhow = "1.0.93"
+thiserror = "1.0.69"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
@@ -34,14 +34,14 @@ daemonize = "0.5.0"
 time = "0.3.36"
 chrono = { version = "0.4.38", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
-serde_with = { version = "3.9.0", features = ["json"] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+serde_with = { version = "3.11.0", features = ["json"] }
 # TOML
 toml = "0.8.19"
 
 # Async
-tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.41.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.16"
 
 # HTTP client
@@ -61,11 +61,11 @@ sha2 = "0.10.8"
 actix-web = "4.9.0"
 actix-multipart = "0.7.2"
 # Discord
-serenity = "0.12.2"
+serenity = "0.12.4"
 poise = "0.6.1"
 
 # Image convert
-image = "0.25.2"
+image = "0.25.5"
 # Font
 rusttype="0.9.3"
 # Scraping
@@ -75,9 +75,9 @@ tiktoken-rs = "0.5.9"
 
 [dev-dependencies]
 # Concurrent test control
-serial_test = "3.1.1"
+serial_test = "3.2.0"
 # Hex literal for test
 hex-literal = "0.4.1"
 
 [build-dependencies]
-anyhow = "1.0.87"
+anyhow = "1.0.93"
