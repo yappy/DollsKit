@@ -715,8 +715,80 @@ REST API が 404 になるらしい。
 ## pCloud
 
 買い切りのクラウドストレージ。
+生涯 (会社が潰れるまで) 使い続けられるらしい。
 
-### Linux CLI client のビルド
+### rclone
+
+<https://rclone.org/>
+
+クラウドストレージ全般に対応したコマンドラインツール。
+Go 製。
+暗号化した状態で保存もできるらしい。
+
+#### インストール
+
+<https://rclone.org/downloads/>\
+<https://rclone.org/install/>
+
+```sh
+sudo -v ; curl https://rclone.org/install.sh | sudo bash
+```
+
+例によってシェルスクリプトの実行がどうかと思う場合はマニュアル操作で行う。
+CPU に合わせて AMD64 (PC) or ARM64 (RasPi) を選択。
+Debian/Raspbian なら *.deb パッケージを選ぶと管理が楽。
+`sudo apt install ./xxx.deb` のように `./` で始まるパスを書けば
+apt からインストールできる。
+
+#### remote の追加
+
+```sh
+rclone config
+```
+
+1. New remote
+1. Enter name for new remote. リモート設定に名前を付ける。
+  設定完了後にコマンドライン上で毎回指定することになる。
+1. Pcloud
+1. Leave blank normally. と言われたら空のままで。
+1. Say Y if the machine running rclone has a web browser you can use.
+  多分ウェブブラウザの使えるマシン上で認証して、設定をコピーするのが楽。
+  GUI 環境のある PC でここに Y と答える。
+1. WSL だとブラウザが開けず `http://127.0.0.1:53682/...` へアクセスしろと
+  言われるので、ブラウザで開く。
+1. ブラウザから pcloud にログインしたことがあれば認証通るはず。
+1. ここまで行う、または GUI 環境がない場合は `~/.config/rclone/rclone.conf` の
+  内容を認証できているマシンからコピーしてくる。
+
+OAuth とかの認証のため、ウェブブラウザがないとしんどい。
+GUI のある PC にも rclone をインストールし、ウェブブラウザから認証して
+アクセストークンを入手する。
+設定ファイル `~/.config/rclone/rclone.conf` にアクセストークンが書かれているので、
+CUI 環境での設定ファイルにコピーするのが多分楽。
+
+#### 使い方
+
+リモートのパスは `<remote>:<path/to/file_or_dir>` のように、
+設定でつけた名前をコロンの前に指定する。
+パスは `/` で始めないことを推奨。
+ルートを指定したい場合は空文字列で OK。
+ごく一部のサービス相手では最初を `/` で始めるか始めないかで、
+ルートからのパスかホームディレクトリからのパスかを使い分けられる。
+
+```sh
+# ls (--max-depth 1 をつけないと再帰的に全エントリを列挙する)
+rclone ls remote:
+# ls -l っぽいもの (同上)
+rclone lsl remote:
+# ディレクトリのみ列挙する (-R で再帰的に列挙)
+rclone lsd remote:
+# ファイルのみ列挙する (同上)
+rclone lsf remote:
+# JSON フォーマットで出力する (同上)
+rclone lsjson remote:
+```
+
+### Linux CLI client のビルド (rclone があれば不要？)
 
 スマホも含めて各 OS のクライアントがダウンロード可能だが、
 Linux - CLI のコマンドライン版を求めると github へ案内され
@@ -772,16 +844,65 @@ CMake, C++, boost を使った高難度ステージへ案内される。
     `sudo apt remove pcloudcc`
 * コマンドは `pcloudcc`。使い方は README.md または --help オプション。
 
-### 使い方
+#### 使い方
 
-`pcloudcc -u <user> -p`
+```sh
+pcloudcc -u <user> -p`
+```
+
 ユーザ名は多分メールアドレス。
 -p をつけなくてもパスワードを求められる気がするが、つけると最初に求められる気がする。
 
-`pcloudcc -u <user> -p -s`
--s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存される。
+```sh
+pcloudcc -u <user> -p -s
+```
+
+-s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存され、
+次回以降に不要になる。
 root で行うときは `sudo -sE` 等で $HOME を継承しないよう注意。
 
-マウントポイントのデフォルトは `~/pCloudDrive`。
--m で変更できるっぽい。
+マウントポイントのデフォルトは `~/pCloudDrive`。-m で変更できる。
 どこかに行った場合は `df` で確認。
+**バックアップ対象に含めないよう注意。**
+
+```sh
+pcloudcc -u <user> -d
+```
+
+-d でデーモン起動。
+
+#### screen 内で自動起動
+
+デーモン起動もよいが、コンソールに通信内容が表示されるので、
+screen 内で動かしておくのもよいかもしれない。
+
+```sh
+screen -S <session_name> -dm pcloudcc -u <user> -p -s`
+```
+
+```sh
+screen -ls
+screen -r <session_name>
+```
+
+cron の `@reboot` 指定を使うと起動時に起動できる。
+`/etc/cron.d/` にファイルを置くと自動で認識される。
+ファイル名にドットが含まれると無視されるので注意。
+パーミッションは周りに合わせて 644 にすること。
+
+`man 8 cron` によると、`/etc/cron.d/` は非推奨で、
+`/etc/crontab` を使えとのことだが、まあ普通に便利なので…。
+おそらく Debian 固有実装であるのと、インストールパッケージが置きに来る場所なので
+名前が被るとまずい、あたりが理由かと思われる。
+
+```sh
+# /etc/cron.d/pcloud
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+HOME=/root
+
+MP=/mnt/pcloud
+PCUSER=<MAIL>
+
+@reboot root screen -S pcloudcc -dm pcloudcc -u $PCUSER pcloud -m /mnt/pcloud
+```

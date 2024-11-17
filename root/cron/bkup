@@ -1,22 +1,23 @@
-#!/bin/sh
+#!/bin/sh -e
 
 # Automatic backup script
 #
-# Copy to:
+# Link from:
 # /etc/cron.weekly/
-# Clone this repository to:
-# /root/DollsKit
 
-ROOT=/root/DollsKit/root/backup
+SCRIPT_DIR=$(dirname $(realpath $0))
+ROOT=${SCRIPT_DIR}/../backup
+BKUP_ROOT=/mnt/localbkup
 LOG=/root/bkup.log
 
 echo -------------------------------------------------------------------------------- >> ${LOG}
 date -R >> ${LOG}
 echo -------------------------------------------------------------------------------- >> ${LOG}
 
-python3 ${ROOT}/bkup.py \
---mount-check /media/usbbkup \
+python3 ${ROOT}/bkup_local.py \
+--tag full \
+--mount-check ${BKUP_ROOT} \
 --reserved-size 30 \
 --exclude-from ${ROOT}/bkup_exclude.txt \
-/ /media/usbbkup/full \
+/ ${BKUP_ROOT}/full \
 >> ${LOG} 2>&1
