@@ -1,19 +1,22 @@
 # CA (認証局) の構築と証明書の発行
+
 openssl が入っていないなら入れる。
 CA.pl というスクリプトがインストールされているのでそれを使う。
 (トラブルが起きやすく、中身は大したことをしていないので、
 実際のところは中身を読んで openssl コマンドを手で打つのがおすすめなのかもしれない。)
 `man ca.pl` に公式ドキュメントが存在する。
 
-```
+```txt
 /usr/lib/ssl/misc/CA.pl
 /usr/lib/ssl/openssl.cnf
 ```
 
 ## CA の構築
+
 CA の生成は少しだけ複雑なので頼ってもいいかもしれない。
 パスフレーズなしにするには以下のようにする。
-```
+
+```sh
 ./CA.pl -newca -extra-req "-nodes"
 ```
 
@@ -29,9 +32,11 @@ CA の生成は少しだけ複雑なので頼ってもいいかもしれない�
   これに自分で署名したものが cacert.pem。
 
 ## キーペアの生成と CSR の作成
-```
+
+```sh
 ./CA.pl -newreq-nodes
 ```
+
 こちらもプロンプトに従っていろいろ入力する。
 何も入れずに Enter するとデフォルト値になる。
 空文字列にしたい場合は "." と入力する。
@@ -42,32 +47,39 @@ CA の生成は少しだけ複雑なので頼ってもいいかもしれない�
   * 対応する公開鍵に対する CSR。これに CA で署名する。
 
 ## 署名
-```
+
+```sh
 ./CA.pl -sign
 ```
+
 再度証明書の内容が表示されるので OK ならば CA の秘密鍵で署名する。
 
 ## 形式変換
-```
+
+```sh
 ./CA.pl -pkcs12
 ```
+
 ブラウザ等で簡単にインポートできる形式に変換する。
 これをお相手に渡す。
 
 ## Revoke
-```
+
+```sh
 ./CA.pl -revoke <certfile>
 ```
 
 ## CRL 発行
-```
+
+```sh
 ./CA.pl -crl
 ```
 
-# lighttpd への設定
-https://redmine.lighttpd.net/projects/lighttpd/wiki/Docs
+## lighttpd への設定
 
-```
+<https://redmine.lighttpd.net/projects/lighttpd/wiki/Docs>
+
+```sh
 # 10-ssl.conf
 $SERVER["socket"] == "0.0.0.0:443" {
   # TLS を有効にする
@@ -96,7 +108,8 @@ $SERVER["socket"] == "0.0.0.0:443" {
 
 なんか設定サンプルにしか書かれていないが、このようにすると一部のアドレスのみ
 ssl のクライアント認証ができていない場合に 403 にできる。
-```
+
+```txt
 # 05-auth.conf
 auth.require = ( "/house/" =>
   (
@@ -107,6 +120,7 @@ auth.require = ( "/house/" =>
 )
 ```
 
-# 推奨暗号および鍵長の目安
+## 推奨暗号および鍵長の目安
+
 デジタル庁, 総務省, 経済産業省
-https://www.cryptrec.go.jp/list.html
+<https://www.cryptrec.go.jp/list.html>

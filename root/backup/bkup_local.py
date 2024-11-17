@@ -2,25 +2,31 @@
 
 import argparse
 import datetime
+import getpass
+import platform
 import pathlib
 import subprocess
 import shutil
 import glob
 import os
 
-def exec(cmd, fout=None):
-	print(f"EXEC: {cmd}")
+RSYNC_DIR_NAME = "backup"
+LATEST_SLINK_NAME = "latest"
+ARCHIVE_EXT = "tar.bz2"
+
+def exec(cmd: list[str], fout=None):
+	print(f"EXEC: {' '.join(cmd)}")
 	if fout is not None:
 		print("(stdout is redirected)")
 	subprocess.run(cmd, check=True, stdout=fout)
 
-def mount_check(dst):
+def mount_check(dst: pathlib.Path):
 	print("Destination mount check...")
 	exec(["mountpoint", str(dst)])
 	print()
 
-def delete_old_files(dst, keep_count):
-	files = glob.glob(str(dst) + "/*.tar.bz2")
+def delete_old_files(dst: pathlib.Path, keep_count: int):
+	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
 
@@ -31,8 +37,8 @@ def delete_old_files(dst, keep_count):
 		file.unlink()
 	print("Deleting old files completed")
 
-def allocate_size(dst, reserved_size):
-	files = glob.glob(str(dst) + "/*.tar.bz2")
+def allocate_size(dst: pathlib.Path, reserved_size: int):
+	files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
 	files.sort()
 	files = list(map(pathlib.Path, files))
 	print(f"Old files: {files}")
@@ -49,19 +55,20 @@ def allocate_size(dst, reserved_size):
 		file.unlink()
 	print("Allocating free area completed")
 
-def dump_db(rsync_dst, dump_command, db, dry_run):
+def dump_db(rsync_dst: pathlib.Path, dump_command: str, db: str, dry_run: bool):
 	print("DB dump...")
 	if dry_run:
 		print("skip by dry-run")
 		return
 
-	cmd = [dump_command, "--databases", db]
 	dst_sql = rsync_dst / "db.sql"
 	with dst_sql.open(mode="wb") as fout:
+		os.fchmod(fout.fileno(), 0o600)
+		cmd = [dump_command, "--databases", db]
 		exec(cmd, fout)
 	print()
 
-def rsync(src, rsync_dst, ex_list, dry_run):
+def rsync(src: pathlib.Path, rsync_dst: pathlib.Path, ex_list: list[str], dry_run: bool):
 	print ("rsync...")
 	cmd = ["rsync", "-aur", "--stats", "--delete"]
 	for ex in ex_list:
@@ -72,7 +79,7 @@ def rsync(src, rsync_dst, ex_list, dry_run):
 	exec(cmd)
 	print()
 
-def archive(rsync_dst, ar_dst, dry_run):
+def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, dry_run: bool):
 	print("tar...")
 	if dry_run:
 		print("skip by dry-run")
@@ -81,20 +88,33 @@ def archive(rsync_dst, ar_dst, dry_run):
 	# -a: Use archive suffix to determine the compression program.
 	# -c: Create new.
 	# -f: Specify file name.
-	# --preserve-permissions(-p) and --same-owner are default for superuser
-	old_umask = os.umask(0o077)
-	try:
-		cmd = ["tar", "-C", str(rsync_dst), "-acf", str(ar_dst), "."]
+	# --preserve-permissions(-p) and --same-owner are default for superuser.
+	with ar_dst.open(mode="wb") as fout:
+		os.fchmod(fout.fileno(), 0o600)
+		cmd = [
+			"tar",
+			"-C", str(rsync_dst),
+			"-acf", str(ar_dst), "."]
 		exec(cmd)
-	finally:
-		os.umask(old_umask)
+	print()
+
+def symlink(dst: pathlib.Path, ar_filename: str, dry_run: bool):
+	print("symlink...")
+	if dry_run:
+		print("skip by dry-run")
+		return
+
+	linkpath = dst / LATEST_SLINK_NAME
+	print(f"symlink {str(linkpath)} to {ar_filename}")
+	linkpath.unlink(missing_ok=True)
+	linkpath.symlink_to(ar_filename)
 	print()
 
 def main():
 	parser = argparse.ArgumentParser(description="Auto backup script")
 	parser.add_argument("src", help="backup source root")
 	parser.add_argument("dst", help="backup destination root")
-	parser.add_argument("--tag", action="store", default="bkup", help="prefix for archive file")
+	parser.add_argument("--tag", action="store", help="prefix for archive file")
 	parser.add_argument("--mount-check", action="store", help="check if the specified path is a mountpoint")
 	parser.add_argument("--keep-count", type=int, help="keep compressed files and delete the others")
 	parser.add_argument("--reserved-size", type=int, help="delete old compressed files to allocate free area (GiB)")
@@ -104,13 +124,19 @@ def main():
 	parser.add_argument("-n", "--dry-run", action="store_true", help="rsync dry-run")
 	args = parser.parse_args()
 
+	user = getpass.getuser()
+	host = platform.node()
 	dt_now = datetime.datetime.now()
 	dt_str = dt_now.strftime('%Y%m%d_%H%M%S')
+	tag = ""
+	if args.tag is not None:
+		tag = "_" + args.tag + "_"
 
 	src = pathlib.Path(args.src).resolve()
 	dst = pathlib.Path(args.dst).resolve()
-	rsync_dst = dst / "latest"
-	ar_dst = dst / f"{args.tag}_{dt_str}.tar.bz2"
+	rsync_dst = dst / RSYNC_DIR_NAME
+	ar_name = f"{user}_{host}{tag}{dt_str}.{ARCHIVE_EXT}"
+	ar_dst = dst / ar_name
 	ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
 	print(f"Date: {dt_str}")
 	print(f"SRC: {src}")
@@ -135,13 +161,15 @@ def main():
 		delete_old_files(dst, args.keep_count)
 	if args.reserved_size is not None:
 		allocate_size(dst, args.reserved_size << 30)
-	# rsync latest/
+	# rsync src/ to RSYNC_DIR_NAME/
 	rsync(src, rsync_dst, ex_list, args.dry_run)
 	# DB dump (removed by rsync. should do after rsync.)
 	if args.db is not None:
 		dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
 	# tar
 	archive(rsync_dst, ar_dst, args.dry_run)
+	# symlink
+	symlink(dst, ar_name, args.dry_run)
 
 	print("OK!")
 
