@@ -112,7 +112,7 @@ impl ChatHistory {
     }
 
     /// 文章をトークン化する。
-    fn tokenize(&self, text: &str) -> Vec<usize> {
+    fn tokenize(&self, text: &str) -> Vec<u32> {
         self.core.encode_with_special_tokens(text)
     }
 
@@ -122,7 +122,7 @@ impl ChatHistory {
     }
 
     /// トークン列から文字列に復元する。
-    fn decode(&self, tokens: &[usize]) -> String {
+    fn decode(&self, tokens: &[u32]) -> String {
         self.core.decode(tokens.to_vec()).unwrap()
     }
 }
