@@ -15,7 +15,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::OnceLock,
+    sync::LazyLock,
 };
 
 /// <https://www.jma.go.jp/bosai/common/const/area.json>
@@ -60,8 +60,8 @@ pub struct JmaOfficeInfo {
     pub office_name: String,
 }
 
-static OFFICE_LIST: OnceLock<Vec<JmaOfficeInfo>> = OnceLock::new();
-static WEATHER_CODE_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
+static OFFICE_LIST: LazyLock<Vec<JmaOfficeInfo>> = LazyLock::new(office_list);
+static WEATHER_CODE_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(weather_code_map);
 
 fn office_list() -> Vec<JmaOfficeInfo> {
     let root: JmaAreaDef = serde_json::from_str(JMA_AREA_JSON).unwrap();
@@ -80,13 +80,12 @@ fn office_list() -> Vec<JmaOfficeInfo> {
 }
 
 pub fn offices() -> &'static Vec<JmaOfficeInfo> {
-    OFFICE_LIST.get_or_init(office_list)
+    &OFFICE_LIST
 }
 
 pub fn office_name_to_code(name: &str) -> Option<String> {
-    let list = OFFICE_LIST.get_or_init(office_list);
-
-    list.iter()
+    offices()
+        .iter()
         .find(|&info| info.name == name)
         .map(|info| info.code.to_string())
 }
@@ -105,8 +104,8 @@ fn weather_code_map() -> HashMap<String, String> {
 }
 
 pub fn weather_code_to_string(code: &str) -> Result<&str> {
-    let map = WEATHER_CODE_MAP.get_or_init(weather_code_map);
-    map.get(code)
+    WEATHER_CODE_MAP
+        .get(code)
         .map(String::as_str)
         .ok_or_else(|| anyhow!("Weather code not found: {code}"))
 }

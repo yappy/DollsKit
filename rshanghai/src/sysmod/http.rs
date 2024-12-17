@@ -16,8 +16,8 @@ use actix_web::{http::header::ContentType, HttpResponse, Responder};
 use actix_web::{web, HttpResponseBuilder};
 use anyhow::{anyhow, Result};
 use log::{error, info};
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use serenity::http::StatusCode;
 use std::fmt::Display;
 use std::sync::Arc;
 
