@@ -13,8 +13,8 @@ panic = 'abort'
 
 [dependencies]
 # Error handling
-anyhow = "1.0.87"
-thiserror = "1.0.63"
+anyhow = "1.0.94"
+thiserror = "2.0.7"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
@@ -31,21 +31,21 @@ simplelog = "0.12.2"
 # Daemon util
 daemonize = "0.5.0"
 # Time for log
-time = "0.3.36"
-chrono = { version = "0.4.38", features = ["clock", "iana-time-zone", "std"] }
+time = "0.3.37"
+chrono = { version = "0.4.39", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
-serde_with = { version = "3.9.0", features = ["json"] }
+serde = { version = "1.0.216", features = ["derive"] }
+serde_json = "1.0.133"
+serde_with = { version = "3.11.0", features = ["json"] }
 # TOML
 toml = "0.8.19"
 
 # Async
-tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
-tokio-stream = "0.1.16"
+tokio = { version = "1.42.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio-stream = "0.1.17"
 
 # HTTP client
-reqwest = { version = "0.11.27", features = ["json"] }
+reqwest = { version = "0.12.9", features = ["json", "multipart"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
@@ -61,23 +61,23 @@ sha2 = "0.10.8"
 actix-web = "4.9.0"
 actix-multipart = "0.7.2"
 # Discord
-serenity = "0.12.2"
+serenity = "0.12.4"
 poise = "0.6.1"
 
 # Image convert
-image = "0.25.2"
+image = "0.25.5"
 # Font
 rusttype="0.9.3"
 # Scraping
-scraper = "0.20.0"
+scraper = "0.22.0"
 # ChatGPT tokenizer
-tiktoken-rs = "0.5.9"
+tiktoken-rs = "0.6.0"
 
 [dev-dependencies]
 # Concurrent test control
-serial_test = "3.1.1"
+serial_test = "3.2.0"
+# Hex literal for test
 hex-literal = "0.4.1"
 
 [build-dependencies]
-# Version info
-vergen = { version = "8.3.2", features = ["git", "gitcl", "cargo"] }
+anyhow = "1.0.94"

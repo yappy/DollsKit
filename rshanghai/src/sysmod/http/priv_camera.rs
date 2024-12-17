@@ -10,8 +10,8 @@ use crate::{
 use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
 use anyhow::{anyhow, bail, Result};
 use log::error;
-use reqwest::StatusCode;
 use serde::Deserialize;
+use serenity::http::StatusCode;
 use std::{cmp, collections::BTreeMap};
 use tokio::{fs::File, io::AsyncReadExt};
 
