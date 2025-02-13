@@ -51,7 +51,7 @@ percent-encoding = "2.3.1"
 # BASE64
 base64 = "0.22.1"
 # RNG
-rand = "0.8.5"
+rand = "0.9.0"
 # HMAC
 hmac = "0.12.1"
 sha1 = "0.10.6"

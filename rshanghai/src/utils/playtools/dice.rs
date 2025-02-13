@@ -28,9 +28,9 @@ pub fn roll(face: u64, count: u32) -> Result<Vec<u64>> {
     );
 
     let mut result = vec![];
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _ in 0..count {
-        result.push(rng.gen_range(1..=face));
+        result.push(rng.random_range(1..=face));
     }
 
     Ok(result)
