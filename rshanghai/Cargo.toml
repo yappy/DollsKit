@@ -13,19 +13,19 @@ panic = 'abort'
 
 [dependencies]
 # Error handling
-anyhow = "1.0.94"
-thiserror = "2.0.7"
+anyhow = "1.0.95"
+thiserror = "2.0.11"
 # Static assert
 static_assertions = "1.1.0"
 # Compiler version
 rustc_version_runtime = "0.3.0"
 # Bit flags
-bitflags = "2.6.0"
+bitflags = "2.8.0"
 
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
-log = "0.4.22"
+log = "0.4.25"
 # Logging (concrete layer)
 simplelog = "0.12.2"
 # Daemon util
@@ -34,18 +34,18 @@ daemonize = "0.5.0"
 time = "0.3.37"
 chrono = { version = "0.4.39", features = ["clock", "iana-time-zone", "std"] }
 # Json
-serde = { version = "1.0.216", features = ["derive"] }
-serde_json = "1.0.133"
-serde_with = { version = "3.11.0", features = ["json"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+serde_with = { version = "3.12.0", features = ["json"] }
 # TOML
-toml = "0.8.19"
+toml = "0.8.20"
 
 # Async
-tokio = { version = "1.42.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.43.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
 
 # HTTP client
-reqwest = { version = "0.12.9", features = ["json", "multipart"] }
+reqwest = { version = "0.12.12", features = ["json", "multipart"] }
 # URL encode
 percent-encoding = "2.3.1"
 # BASE64
@@ -80,4 +80,4 @@ serial_test = "3.2.0"
 hex-literal = "0.4.1"
 
 [build-dependencies]
-anyhow = "1.0.94"
+anyhow = "1.0.95"
