@@ -78,6 +78,8 @@ tiktoken-rs = "0.6.0"
 serial_test = "3.2.0"
 # Hex literal for test
 hex-literal = "0.4.1"
+# Temporary file
+tempfile = "3.16.0"
 
 [build-dependencies]
 anyhow = "1.0.95"

@@ -1,6 +1,7 @@
 //! OpenAI API - function.
 
 use super::{basicfuncs, ModelInfo};
+use crate::sys::config;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
 use anyhow::{anyhow, Result};
@@ -9,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
 use std::ops::RangeBounds;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -44,6 +46,7 @@ pub struct Args {
 #[derive(Debug, Clone, Serialize)]
 pub struct BasicContext {
     pub model: ModelInfo,
+    pub storage_dir: Option<PathBuf>,
 }
 
 /// OpenAI function 群の管理テーブル。
@@ -57,14 +60,30 @@ pub struct FunctionTable<T> {
 }
 
 impl<T: 'static> FunctionTable<T> {
-    pub fn new(model: ModelInfo) -> Self {
-        let basic_context = BasicContext { model };
+    pub fn new(model: ModelInfo, storage_dir_name: Option<&str>) -> Self {
+        // openai config でディレクトリが指定されており、かつ、
+        // この関数にストレージディレクトリ名が指定されている場合、Some
+        let storage_dir = if let Some(storage_dir_name) = storage_dir_name {
+            let dir = config::get(|c| c.openai.storage_dir.clone());
+            if !dir.is_empty() {
+                Some(Path::new(&dir).join(storage_dir_name))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let basic_context = BasicContext { model, storage_dir };
 
         Self {
             function_list: Default::default(),
             call_table: Default::default(),
             basic_context: Arc::new(basic_context),
         }
+    }
+
+    pub fn basic_context(&self) -> &BasicContext {
+        &self.basic_context
     }
 
     /// OpenAI API に渡すためのリストを取得する。

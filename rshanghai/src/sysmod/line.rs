@@ -118,7 +118,7 @@ impl Line {
         info!("[line] {reserved:6} reserved");
         info!("[line] {:6} chat history", chat_history.usage().1);
 
-        let mut func_table = FunctionTable::new(*model_info);
+        let mut func_table = FunctionTable::new(*model_info, Some("line"));
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
 

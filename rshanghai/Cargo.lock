@@ -2687,6 +2687,7 @@ dependencies = [
  "sha2",
  "simplelog",
  "static_assertions",
+ "tempfile",
  "thiserror 2.0.11",
  "tiktoken-rs",
  "time",

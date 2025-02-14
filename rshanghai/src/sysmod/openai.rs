@@ -375,6 +375,9 @@ pub struct OpenAiConfig {
     /// 使用するモデル名。
     /// [MODEL_LIST] から選択。
     pub model: String,
+    /// ストレージディレクトリ。
+    /// 空文字列だと機能を無効にする。
+    pub storage_dir: String,
 }
 
 impl Default for OpenAiConfig {
@@ -383,6 +386,7 @@ impl Default for OpenAiConfig {
             enabled: false,
             api_key: "".to_string(),
             model: MODEL_LIST.first().unwrap().name.to_string(),
+            storage_dir: "./aimemory".to_string(),
         }
     }
 }
@@ -415,6 +419,11 @@ impl OpenAi {
             "[openai] selected: model: {}, token_limit: {}",
             info.name, info.token_limit
         );
+
+        if !config.storage_dir.is_empty() {
+            info!("[openai] mkdir: {}", config.storage_dir);
+            std::fs::create_dir_all(&config.storage_dir)?;
+        }
 
         let client = reqwest::Client::builder()
             .connect_timeout(CONN_TIMEOUT)
