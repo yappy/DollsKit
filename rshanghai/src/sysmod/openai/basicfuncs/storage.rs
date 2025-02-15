@@ -215,9 +215,12 @@ mod tests {
         let json_src = r#"{"user1": []}"#;
         writeln!(f.as_file(), "{json_src}")?;
 
-        let note = load_file(f.path()).await?;
-        assert_eq!(note.map.len(), 1);
-        assert!(note.map.contains_key("user1"));
+        {
+            let _lock = rlock_file().await;
+            let note = load_file(f.path()).await?;
+            assert_eq!(note.map.len(), 1);
+            assert!(note.map.contains_key("user1"));
+        }
 
         Ok(())
     }
