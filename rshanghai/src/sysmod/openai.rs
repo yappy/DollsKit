@@ -46,34 +46,28 @@ pub struct ModelInfo {
 /// <https://openai.com/pricing>
 const MODEL_LIST: &[ModelInfo] = &[
     ModelInfo {
-        name: "gpt-3.5-turbo",
-        token_limit: 16385,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4",
-        token_limit: 8192,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4-32k",
-        token_limit: 32768,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4-turbo",
-        token_limit: 128000,
-        year: 2023,
-        month: 12,
+        name: "gpt-4o-mini",
+        token_limit: 16384,
+        year: 2024,
+        month: 7,
     },
     ModelInfo {
         name: "gpt-4o",
         token_limit: 128000,
+        year: 2024,
+        month: 8,
+    },
+    ModelInfo {
+        name: "gpt-4",
+        token_limit: 8192,
         year: 2023,
-        month: 12,
+        month: 6,
+    },
+    ModelInfo {
+        name: "gpt-4-turbo",
+        token_limit: 128000,
+        year: 2024,
+        month: 4,
     },
 ];
 
