@@ -47,7 +47,7 @@ fn register_calculate<T: 'static>(func_table: &mut FunctionTable<T>) {
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties,
-                required: Default::default(),
+                required: vec!["formula".to_string()],
             },
         },
         Box::new(calculate_pin),
