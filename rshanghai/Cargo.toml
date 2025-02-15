@@ -68,8 +68,6 @@ poise = "0.6.1"
 image = "0.25.5"
 # Font
 rusttype="0.9.3"
-# Scraping
-scraper = "0.22.0"
 # ChatGPT tokenizer
 tiktoken-rs = "0.6.0"
 

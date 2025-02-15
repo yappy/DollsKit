@@ -17,44 +17,11 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_get_weather_report(func_table);
 }
 
-/// HTML から無駄な文字を削除してデータ量を減らす。
-fn compact_html(src: &str) -> Result<String> {
-    use scraper::{Html, Selector};
-
-    let fragment = Html::parse_document(src);
-    // CSS セレクタで body タグを選択
-    let selector = Selector::parse("body").unwrap();
-    // イテレータを返すが最初の1つだけを対象とする
-    let body = fragment
-        .select(&selector)
-        .next()
-        .ok_or_else(|| anyhow!("body not found"))?;
-
-    // 空白文字をまとめる
-    let mut res = String::new();
-    let mut prev_space = false;
-    // body 内のテキストノードを巡る
-    for text in body.text() {
-        for c in text.chars() {
-            if c.is_whitespace() {
-                if !prev_space {
-                    res.push(' ');
-                }
-                prev_space = true;
-            } else {
-                res.push(c);
-                prev_space = false;
-            }
-        }
-    }
-
-    Ok(res)
-}
 
 /// URL に対して GET リクエストを行い結果を文字列で返す。
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
-    const SIZE_MAX: usize = 5 * 1024;
+    const SIZE_MAX: usize = 8 * 1024;
     let url = get_arg_str(args, "url")?;
 
     let client = Client::builder().timeout(TIMEOUT).build()?;
@@ -64,7 +31,6 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     if status.is_success() {
         let text = resp.text().await?;
 
-        let text = compact_html(&text)?;
         // SIZE_MAX バイトまで抜き出す
         if text.len() > SIZE_MAX {
             let mut end = 0;
@@ -195,19 +161,6 @@ mod tests {
 
         let text = request_url(&args).await?;
         println!("{}", text);
-
-        Ok(())
-    }
-
-    #[test]
-    fn parse_html() -> Result<()> {
-        const SRC: &str = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/res/test/scraping/top.htm"
-        ));
-
-        let res = compact_html(SRC)?;
-        println!("{res}");
 
         Ok(())
     }
