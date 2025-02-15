@@ -212,6 +212,30 @@ where
     }
 }
 
+/// args から引数名で i64 を取得する。
+/// 見つからない場合は None を返す。
+/// 変換に失敗した場合、または範囲外の場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_arg_i64_opt<R>(args: &FuncArgs, name: &str, range: R) -> Result<Option<i64>>
+where
+    R: RangeBounds<i64>,
+{
+    let value = args.get(&name.to_string());
+    if value.is_none() {
+        return Ok(None);
+    }
+    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
+    let value = value
+        .as_i64()
+        .ok_or_else(|| anyhow!("Error: Argument {name} must be integer"))?;
+
+    if range.contains(&value) {
+        Ok(Some(value))
+    } else {
+        bail!("Error: Out of range: {name}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,6 +259,16 @@ mod tests {
             .to_string()
             .contains("must be integer"));
         assert!(get_arg_i64(&args, "int", 1..42)
+            .unwrap_err()
+            .to_string()
+            .contains("Out of range"));
+
+        assert!(get_arg_i64_opt(&args, "int", 1..=42).unwrap() == Some(42));
+        assert!(get_arg_i64_opt(&args, "notint", 1..43)
+            .unwrap_err()
+            .to_string()
+            .contains("must be integer"));
+        assert!(get_arg_i64_opt(&args, "int", 1..42)
             .unwrap_err()
             .to_string()
             .contains("Out of range"));

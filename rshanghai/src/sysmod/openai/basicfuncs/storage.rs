@@ -1,5 +1,7 @@
 use crate::sysmod::openai::{
-    function::{get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
+    function::{
+        get_arg_i64_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable,
+    },
     Function, ParameterElement, Parameters,
 };
 use anyhow::{ensure, Result};
@@ -13,6 +15,7 @@ use std::{
 const NOTE_FILE_NAME: &str = "note.json";
 const NOTE_COUNT_MAX: usize = 8;
 const NOTE_LENGTH_MAX: usize = 256;
+const NOTE_LENGTH_MAX_I64: i64 = NOTE_LENGTH_MAX as i64;
 
 /// このモジュールの関数をすべて登録する。
 ///
@@ -20,9 +23,59 @@ const NOTE_LENGTH_MAX: usize = 256;
 /// 設定されている場合のみ登録される。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     if func_table.basic_context().storage_dir.is_some() {
-        register_save(func_table);
         register_load(func_table);
+        register_save(func_table);
+        register_delete(func_table);
     }
+}
+
+/// ストレージからノートを読み込む。
+async fn load(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
+    let user = get_arg_str(args, "user")?.to_string();
+
+    tokio::fs::create_dir_all(&storage_dir).await?;
+    let path = storage_dir.join(NOTE_FILE_NAME);
+    let json = {
+        let _lock = rlock_file().await;
+
+        let note = load_file(&path).await.unwrap_or_default();
+        note.map.get(&user).map_or_else(
+            || serde_json::to_string(&VecDeque::<String>::new()),
+            serde_json::to_string,
+        )?
+    };
+
+    Ok(json)
+}
+
+fn load_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+    let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
+    Box::pin(load(storage_dir, args))
+}
+
+fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
+    let mut properties = HashMap::new();
+    properties.insert(
+        "user".to_string(),
+        ParameterElement {
+            type_: "string".to_string(),
+            description: Some("user name".to_string()),
+            ..Default::default()
+        },
+    );
+
+    func_table.register_function(
+        Function {
+            name: "note_load".to_string(),
+            description: Some("Load note from permanent storage".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: vec!["user".to_string()],
+            },
+        },
+        Box::new(load_pin),
+    );
 }
 
 /// ストレージにノートを保存する。
@@ -110,31 +163,60 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
     );
 }
 
-/// ストレージからノートを読み込む。
-async fn load(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
+/// ストレージからノートを部分削除する
+async fn delete(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
     let user = get_arg_str(args, "user")?.to_string();
+    let index = get_arg_i64_opt(args, "index", 0..NOTE_LENGTH_MAX_I64)?;
 
     tokio::fs::create_dir_all(&storage_dir).await?;
+    let mut deleted = vec![];
     let path = storage_dir.join(NOTE_FILE_NAME);
-    let json = {
-        let _lock = rlock_file().await;
+    {
+        let _lock = wlock_file().await;
 
-        let note = load_file(&path).await.unwrap_or_default();
-        note.map.get(&user).map_or_else(
-            || serde_json::to_string(&VecDeque::<String>::new()),
-            serde_json::to_string,
-        )?
+        let mut note = load_file(&path).await.unwrap_or_default();
+        if !note.map.contains_key(&user) {
+            note.map.insert(user.clone(), VecDeque::new());
+        }
+        let list = note.map.get_mut(&user).unwrap();
+
+        if let Some(index) = index {
+            if let Some(elem) = list.remove(index as usize) {
+                deleted.push(elem);
+            }
+        } else {
+            while let Some(elem) = list.pop_front() {
+                deleted.push(elem);
+            }
+        }
+
+        save_file(&path, &note).await?;
+    }
+
+    #[derive(Serialize)]
+    struct FuncResult {
+        result: &'static str,
+        deleted: Vec<NoteElement>,
+    }
+    let result_str = if deleted.is_empty() {
+        "Error: No data deleted"
+    } else {
+        "OK"
+    };
+    let result = FuncResult {
+        result: result_str,
+        deleted,
     };
 
-    Ok(json)
+    Ok(serde_json::to_string(&result)?)
 }
 
-fn load_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+fn delete_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
     let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
-    Box::pin(load(storage_dir, args))
+    Box::pin(delete(storage_dir, args))
 }
 
-fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
+fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
         "user".to_string(),
@@ -144,18 +226,31 @@ fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
             ..Default::default()
         },
     );
+    properties.insert(
+        "index".to_string(),
+        ParameterElement {
+            type_: "integer".to_string(),
+            description: Some(
+                "Data index to be deleted (0-origin). If omitted, all data will be deleted."
+                    .to_string(),
+            ),
+            minumum: Some(0),
+            maximum: Some(NOTE_LENGTH_MAX_I64 - 1),
+            ..Default::default()
+        },
+    );
 
     func_table.register_function(
         Function {
-            name: "note_load".to_string(),
-            description: Some("Load note from permanent storage".to_string()),
+            name: "note_delete".to_string(),
+            description: Some("Delete note".to_string()),
             parameters: Parameters {
                 type_: "object".to_string(),
                 properties,
-                required: vec!["user".to_string()],
+                required: vec!["user".to_string(), "content".to_string()],
             },
         },
-        Box::new(load_pin),
+        Box::new(delete_pin),
     );
 }
 
