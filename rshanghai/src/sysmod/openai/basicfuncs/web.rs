@@ -17,7 +17,6 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_get_weather_report(func_table);
 }
 
-
 /// URL に対して GET リクエストを行い結果を文字列で返す。
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
