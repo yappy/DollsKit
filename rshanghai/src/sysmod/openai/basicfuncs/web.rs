@@ -17,6 +17,40 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_get_weather_report(func_table);
 }
 
+/// HTML から無駄な文字を削除してデータ量を減らす。
+fn compact_html(src: &str) -> Result<String> {
+    use scraper::Node;
+    use ego_tree::NodeRef;
+
+    fn visit(result: &mut Vec<String>, cur: &NodeRef<Node>) {
+        static IGNORE_LIST: &[&str] = &["script", "style", "noscript"];
+
+        for child in cur.children() {
+            match child.value() {
+                Node::Element(elem) => {
+                    let tagname = elem.name().to_ascii_lowercase();
+                    if !IGNORE_LIST.iter().any(|&x| x == tagname) {
+                        visit(result, &child);
+                    }
+                }
+                Node::Text(text) => {
+                    for word in text.split_whitespace() {
+                        result.push(word.to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let html = scraper::Html::parse_document(&src);
+    let root = html.root_element();
+    let mut buf = vec![];
+    visit(&mut buf, &root);
+
+    Ok(buf.join(" "))
+}
+
 /// URL に対して GET リクエストを行い結果を文字列で返す。
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
@@ -30,6 +64,7 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     if status.is_success() {
         let text = resp.text().await?;
 
+        let text = compact_html(&text)?;
         // SIZE_MAX バイトまで抜き出す
         if text.len() > SIZE_MAX {
             let mut end = 0;
@@ -160,6 +195,26 @@ mod tests {
 
         let text = request_url(&args).await?;
         println!("{}", text);
+
+        Ok(())
+    }
+
+    #[test]
+    fn parse_html() -> Result<()> {
+        const SRC1: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/scraping/top.htm"
+        ));
+        let res = compact_html(SRC1)?;
+        println!("{res}");
+
+
+        const SRC2: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/scraping/ikkyu.html"
+        ));
+        let res = compact_html(SRC2)?;
+        println!("{res}");
 
         Ok(())
     }
