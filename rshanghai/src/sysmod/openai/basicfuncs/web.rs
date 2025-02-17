@@ -19,8 +19,8 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// HTML から無駄な文字を削除してデータ量を減らす。
 fn compact_html(src: &str) -> Result<String> {
-    use scraper::Node;
     use ego_tree::NodeRef;
+    use scraper::Node;
 
     fn visit(result: &mut Vec<String>, cur: &NodeRef<Node>) {
         static IGNORE_LIST: &[&str] = &["script", "style", "noscript"];
@@ -43,7 +43,7 @@ fn compact_html(src: &str) -> Result<String> {
         }
     }
 
-    let html = scraper::Html::parse_document(&src);
+    let html = scraper::Html::parse_document(src);
     let root = html.root_element();
     let mut buf = vec![];
     visit(&mut buf, &root);
@@ -207,7 +207,6 @@ mod tests {
         ));
         let res = compact_html(SRC1)?;
         println!("{res}");
-
 
         const SRC2: &str = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
