@@ -258,19 +258,32 @@ impl Line {
         }
     }
 
+    /// [Self::replymulti] のシンプル版。
+    /// 文字列が長すぎるならば分割して送信する。
+    #[allow(dead_code)]
+    pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
+        let texts = [text];
+
+        self.reply_multi(reply_token, &texts).await
+    }
+
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-reply-message>
     ///
     /// <https://developers.line.biz/ja/docs/messaging-api/text-character-count/>
-    pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
-        ensure!(!text.is_empty(), "text must not be empty");
-
-        let messages: Vec<_> = split_message(text)
-            .iter()
-            .map(|&chunk| Message::Text {
+    ///
+    /// `texts` のそれぞれについて、長すぎるならば分割し、
+    /// 文字列メッセージ配列として送信する。
+    /// 配列の最大サイズは 5。
+    pub async fn reply_multi(&self, reply_token: &str, texts: &[&str]) -> Result<ReplyResp> {
+        let mut messages = Vec::new();
+        for text in texts {
+            ensure!(!text.is_empty(), "text must not be empty");
+            let splitted = split_message(text);
+            messages.extend(splitted.iter().map(|&chunk| Message::Text {
                 text: chunk.to_string(),
-            })
-            .collect();
-        ensure!(messages.len() <= 5, "text too long: {}", text.len());
+            }));
+        }
+        ensure!(messages.len() <= 5, "text too long: {}", texts.len());
 
         let req = ReplyReq {
             reply_token: reply_token.to_string(),
