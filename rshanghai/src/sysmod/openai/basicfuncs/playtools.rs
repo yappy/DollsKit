@@ -1,8 +1,8 @@
 //! システム情報取得。
 
 use crate::sysmod::openai::function::{
-    get_arg_i64, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    get_arg_i64, get_arg_i64_opt, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
+    ParameterElement, Parameters,
 };
 use crate::utils::playtools::dice;
 use anyhow::Result;
@@ -26,7 +26,7 @@ const FACE_MAX: i64 = 100;
 
 /// コインを投げる。
 async fn flip_coin(args: &FuncArgs) -> Result<String> {
-    let count: i64 = get_arg_i64(args, "count", COUNT_MIN..=COUNT_MAX)?;
+    let count: i64 = get_arg_i64_opt(args, "count", COUNT_MIN..=COUNT_MAX)?.unwrap_or(1);
     let result = dice::roll(2_u64, count as u32)?;
 
     let mut text = String::from("[");
@@ -77,8 +77,8 @@ fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// サイコロを振る。
 async fn role_dice(args: &FuncArgs) -> Result<String> {
-    let face: i64 = get_arg_i64(args, "face", FACE_MIN..=FACE_MAX)?;
-    let count: i64 = get_arg_i64(args, "count", COUNT_MIN..=COUNT_MAX)?;
+    let face = get_arg_i64_opt(args, "face", FACE_MIN..=FACE_MAX)?.unwrap_or(6);
+    let count = get_arg_i64_opt(args, "count", COUNT_MIN..=COUNT_MAX)?.unwrap_or(1);
     let result = dice::roll(face as u64, count as u32)?;
 
     Ok(format!("{:?}", result))
