@@ -1,7 +1,7 @@
 //! システム情報取得。
 
 use crate::sysmod::openai::function::{
-    get_arg_i64, get_arg_i64_opt, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
+    get_arg_i64_opt, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
     ParameterElement, Parameters,
 };
 use crate::utils::playtools::dice;

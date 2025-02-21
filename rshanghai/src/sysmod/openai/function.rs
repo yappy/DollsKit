@@ -290,8 +290,8 @@ mod tests {
             .to_string()
             .contains("required"));
 
-        assert_eq!(get_arg_bool(&args, "bool_f",).unwrap(), false);
-        assert_eq!(get_arg_bool(&args, "bool_t",).unwrap(), true);
+        assert!(!get_arg_bool(&args, "bool_f",).unwrap());
+        assert!(get_arg_bool(&args, "bool_t",).unwrap());
         assert!(get_arg_bool(&args, "str")
             .unwrap_err()
             .to_string()
