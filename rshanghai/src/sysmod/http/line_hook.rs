@@ -388,6 +388,17 @@ async fn on_text_message(
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = line.func_table.call(ctx, func_name, func_args).await;
+                    // debug trace
+                    if line.func_table.debug_mode() {
+                        line.reply(
+                            reply_token,
+                            &format!(
+                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
+                                func_res.content.as_ref().unwrap()
+                            ),
+                        )
+                        .await?;
+                    }
                     // function 応答を履歴に追加
                     line.chat_history.push(func_res);
                     // continue
