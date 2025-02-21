@@ -460,7 +460,7 @@ impl Twitter {
                     if match_hit {
                         info!("FIND: {:?}", tw);
                         // 配列からリプライをランダムに1つ選ぶ
-                        let rnd_idx = rand::thread_rng().gen_range(0..msgs.len());
+                        let rnd_idx = rand::rng().random_range(0..msgs.len());
                         reply_buf.push(Reply {
                             to_tw_id: tw.id.clone(),
                             to_user_id: tw.author_id.as_ref().unwrap().clone(),
@@ -1033,8 +1033,8 @@ fn create_oauth_field(consumer_key: &str, access_token: &str) -> KeyValue {
     // 暗号学的安全性が必要か判断がつかないので安全な方にしておく
     // Twitter によるとランダムな英数字なら何でもいいらしいが、例に挙げられている
     // 32byte の乱数を BASE64 にして英数字のみを残したものとする
-    let mut rng = rand::thread_rng();
-    let rnd32: [u8; 32] = rng.gen();
+    let mut rng = rand::rng();
+    let rnd32: [u8; 32] = rng.random();
     let rnd32_str = general_purpose::STANDARD.encode(rnd32);
     let mut nonce_str = "".to_string();
     for c in rnd32_str.chars() {

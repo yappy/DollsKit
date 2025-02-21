@@ -46,34 +46,28 @@ pub struct ModelInfo {
 /// <https://openai.com/pricing>
 const MODEL_LIST: &[ModelInfo] = &[
     ModelInfo {
-        name: "gpt-3.5-turbo",
-        token_limit: 16385,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4",
-        token_limit: 8192,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4-32k",
-        token_limit: 32768,
-        year: 2021,
-        month: 9,
-    },
-    ModelInfo {
-        name: "gpt-4-turbo",
-        token_limit: 128000,
-        year: 2023,
-        month: 12,
+        name: "gpt-4o-mini",
+        token_limit: 16384,
+        year: 2024,
+        month: 7,
     },
     ModelInfo {
         name: "gpt-4o",
         token_limit: 128000,
+        year: 2024,
+        month: 8,
+    },
+    ModelInfo {
+        name: "gpt-4",
+        token_limit: 8192,
         year: 2023,
-        month: 12,
+        month: 6,
+    },
+    ModelInfo {
+        name: "gpt-4-turbo",
+        token_limit: 128000,
+        year: 2024,
+        month: 4,
     },
 ];
 
@@ -375,6 +369,9 @@ pub struct OpenAiConfig {
     /// 使用するモデル名。
     /// [MODEL_LIST] から選択。
     pub model: String,
+    /// ストレージディレクトリ。
+    /// 空文字列だと機能を無効にする。
+    pub storage_dir: String,
 }
 
 impl Default for OpenAiConfig {
@@ -383,6 +380,7 @@ impl Default for OpenAiConfig {
             enabled: false,
             api_key: "".to_string(),
             model: MODEL_LIST.first().unwrap().name.to_string(),
+            storage_dir: "./aimemory".to_string(),
         }
     }
 }
@@ -415,6 +413,11 @@ impl OpenAi {
             "[openai] selected: model: {}, token_limit: {}",
             info.name, info.token_limit
         );
+
+        if !config.storage_dir.is_empty() {
+            info!("[openai] mkdir: {}", config.storage_dir);
+            std::fs::create_dir_all(&config.storage_dir)?;
+        }
 
         let client = reqwest::Client::builder()
             .connect_timeout(CONN_TIMEOUT)

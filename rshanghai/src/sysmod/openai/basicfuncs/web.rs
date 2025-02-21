@@ -19,42 +19,42 @@ pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// HTML から無駄な文字を削除してデータ量を減らす。
 fn compact_html(src: &str) -> Result<String> {
-    use scraper::{Html, Selector};
+    use ego_tree::NodeRef;
+    use scraper::Node;
 
-    let fragment = Html::parse_document(src);
-    // CSS セレクタで body タグを選択
-    let selector = Selector::parse("body").unwrap();
-    // イテレータを返すが最初の1つだけを対象とする
-    let body = fragment
-        .select(&selector)
-        .next()
-        .ok_or_else(|| anyhow!("body not found"))?;
+    fn visit(result: &mut Vec<String>, cur: &NodeRef<Node>) {
+        static IGNORE_LIST: &[&str] = &["script", "style", "noscript"];
 
-    // 空白文字をまとめる
-    let mut res = String::new();
-    let mut prev_space = false;
-    // body 内のテキストノードを巡る
-    for text in body.text() {
-        for c in text.chars() {
-            if c.is_whitespace() {
-                if !prev_space {
-                    res.push(' ');
+        for child in cur.children() {
+            match child.value() {
+                Node::Element(elem) => {
+                    let tagname = elem.name().to_ascii_lowercase();
+                    if !IGNORE_LIST.iter().any(|&x| x == tagname) {
+                        visit(result, &child);
+                    }
                 }
-                prev_space = true;
-            } else {
-                res.push(c);
-                prev_space = false;
+                Node::Text(text) => {
+                    for word in text.split_whitespace() {
+                        result.push(word.to_string());
+                    }
+                }
+                _ => {}
             }
         }
     }
 
-    Ok(res)
+    let html = scraper::Html::parse_document(src);
+    let root = html.root_element();
+    let mut buf = vec![];
+    visit(&mut buf, &root);
+
+    Ok(buf.join(" "))
 }
 
 /// URL に対して GET リクエストを行い結果を文字列で返す。
 async fn request_url(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
-    const SIZE_MAX: usize = 5 * 1024;
+    const SIZE_MAX: usize = 8 * 1024;
     let url = get_arg_str(args, "url")?;
 
     let client = Client::builder().timeout(TIMEOUT).build()?;
@@ -201,12 +201,18 @@ mod tests {
 
     #[test]
     fn parse_html() -> Result<()> {
-        const SRC: &str = include_str!(concat!(
+        const SRC1: &str = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/res/test/scraping/top.htm"
         ));
+        let res = compact_html(SRC1)?;
+        println!("{res}");
 
-        let res = compact_html(SRC)?;
+        const SRC2: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/res/test/scraping/ikkyu.html"
+        ));
+        let res = compact_html(SRC2)?;
         println!("{res}");
 
         Ok(())

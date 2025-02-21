@@ -33,12 +33,14 @@ fn cmdline_str(program: &str, args: &[&str]) -> String {
     cmdline
 }
 
-fn command_raw(program: &str, args: &[&str]) -> Result<String> {
+fn command_raw(program: &str, args: &[&str], warn_on: bool) -> Result<String> {
     let output = Command::new(program).args(args).output()?;
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
-        warn_lines(&String::from_utf8_lossy(&output.stderr));
+        if warn_on {
+            warn_lines(&String::from_utf8_lossy(&output.stderr));
+        }
         if let Some(code) = output.status.code() {
             bail!("{program}: exit code = {code}");
         } else {
@@ -47,22 +49,42 @@ fn command_raw(program: &str, args: &[&str]) -> Result<String> {
     }
 }
 
-fn command(program: &str, args: &[&str], def: &[&str]) -> Vec<String> {
-    match command_raw(program, args) {
+fn command_with_default(program: &str, args: &[&str], def: &[&str], warn_on: bool) -> Vec<String> {
+    match command_raw(program, args, warn_on) {
         Ok(stdout) => stdout.lines().map(|s| s.to_string()).collect(),
         Err(err) => {
-            warn(&format!("command error: {}", cmdline_str(program, args)));
-            warn_lines(&err.to_string());
+            if warn_on {
+                warn(&format!("command error: {}", cmdline_str(program, args)));
+                warn_lines(&err.to_string());
+            }
+
             def.iter().map(|s| s.to_string()).collect()
         }
     }
 }
 
+fn command(program: &str, args: &[&str], def: &[&str]) -> Vec<String> {
+    command_with_default(program, args, def, true)
+}
+
+fn command_no_warn(program: &str, args: &[&str], def: &[&str]) -> Vec<String> {
+    command_with_default(program, args, def, false)
+}
+
+fn rerun_by_git_refs(name: &str) {
+    // get relative path to the file of <name>, then add to rerun_if_changed
+    let git_refs_path = command("git", &["rev-parse", "--git-path", name], &[""]);
+    println!("cargo::rerun-if-changed={}", git_refs_path[0]);
+
+    // if it is a symbolic ref, resolve link by 1.
+    let next = command_no_warn("git", &["symbolic-ref", name], &[]);
+    if !next.is_empty() {
+        rerun_by_git_refs(&next[0]);
+    }
+}
+
 fn git_info() {
-    // get relative path to .git/HEAD file
-    let git_head_path = command("git", &["rev-parse", "--git-path", "HEAD"], &[""]);
-    // rerun if .git/HEAD is changed
-    println!("cargo::rerun-if-changed={}", git_head_path[0]);
+    rerun_by_git_refs("HEAD");
 
     let val = command(
         "git",

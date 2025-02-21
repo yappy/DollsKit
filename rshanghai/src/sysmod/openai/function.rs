@@ -1,6 +1,7 @@
 //! OpenAI API - function.
 
 use super::{basicfuncs, ModelInfo};
+use crate::sys::config;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
 use anyhow::{anyhow, Result};
@@ -9,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
 use std::ops::RangeBounds;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -44,6 +46,7 @@ pub struct Args {
 #[derive(Debug, Clone, Serialize)]
 pub struct BasicContext {
     pub model: ModelInfo,
+    pub storage_dir: Option<PathBuf>,
 }
 
 /// OpenAI function 群の管理テーブル。
@@ -57,14 +60,30 @@ pub struct FunctionTable<T> {
 }
 
 impl<T: 'static> FunctionTable<T> {
-    pub fn new(model: ModelInfo) -> Self {
-        let basic_context = BasicContext { model };
+    pub fn new(model: ModelInfo, storage_dir_name: Option<&str>) -> Self {
+        // openai config でディレクトリが指定されており、かつ、
+        // この関数にストレージディレクトリ名が指定されている場合、Some
+        let storage_dir = if let Some(storage_dir_name) = storage_dir_name {
+            let dir = config::get(|c| c.openai.storage_dir.clone());
+            if !dir.is_empty() {
+                Some(Path::new(&dir).join(storage_dir_name))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let basic_context = BasicContext { model, storage_dir };
 
         Self {
             function_list: Default::default(),
             call_table: Default::default(),
             basic_context: Arc::new(basic_context),
         }
+    }
+
+    pub fn basic_context(&self) -> &BasicContext {
+        &self.basic_context
     }
 
     /// OpenAI API に渡すためのリストを取得する。
@@ -193,6 +212,30 @@ where
     }
 }
 
+/// args から引数名で i64 を取得する。
+/// 見つからない場合は None を返す。
+/// 変換に失敗した場合、または範囲外の場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_arg_i64_opt<R>(args: &FuncArgs, name: &str, range: R) -> Result<Option<i64>>
+where
+    R: RangeBounds<i64>,
+{
+    let value = args.get(&name.to_string());
+    if value.is_none() {
+        return Ok(None);
+    }
+    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
+    let value = value
+        .as_i64()
+        .ok_or_else(|| anyhow!("Error: Argument {name} must be integer"))?;
+
+    if range.contains(&value) {
+        Ok(Some(value))
+    } else {
+        bail!("Error: Out of range: {name}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -216,6 +259,16 @@ mod tests {
             .to_string()
             .contains("must be integer"));
         assert!(get_arg_i64(&args, "int", 1..42)
+            .unwrap_err()
+            .to_string()
+            .contains("Out of range"));
+
+        assert!(get_arg_i64_opt(&args, "int", 1..=42).unwrap() == Some(42));
+        assert!(get_arg_i64_opt(&args, "notint", 1..43)
+            .unwrap_err()
+            .to_string()
+            .contains("must be integer"));
+        assert!(get_arg_i64_opt(&args, "int", 1..42)
             .unwrap_err()
             .to_string()
             .contains("Out of range"));
