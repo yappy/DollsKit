@@ -34,7 +34,6 @@ const MSG_SPLIT_LEN: usize = 5000 - 128;
 /// Discord 設定データ。toml 設定に対応する。
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct LineConfig {
-    // TODO
     /// 機能を有効化するなら true。
     enabled: bool,
     /// アクセストークン。Developer Portal で入手できる。

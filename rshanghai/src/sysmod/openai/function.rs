@@ -12,6 +12,7 @@ use std::future::Future;
 use std::ops::RangeBounds;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
@@ -43,19 +44,32 @@ pub struct Args {
 }
 
 /// 標準で関数に提供されるコンテキスト情報。
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct BasicContext {
+    /// モデル情報。
     pub model: ModelInfo,
+    /// 永続化データストレージの場所。
     pub storage_dir: Option<PathBuf>,
+    /// デバッグモード。
+    /// 標準関数から変更されるが、自動でトレースは行われない。
+    /// 関数呼び出し側で制御が必要。
+    pub debug_mode: AtomicBool,
 }
 
-/// OpenAI function 群の管理テーブル。
+/// OpenAI function の管理テーブル。
+///
+/// [BasicContext] は標準で関数に渡されるコンテキスト情報で、
+/// コンストラクタで初期化され、[Self] はそれへの参照を保持する。
+///
+/// *T* は追加のコンテキスト情報の型。
+/// 標準以外の関数を追加する場合に使用可能。
+/// [Self::call] に渡したのものがそのまま関数に引き渡される。
 pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
     call_table: HashMap<String, FuncBody<T>>,
-
+    /// [BasicContext] への参照。
     basic_context: Arc<BasicContext>,
 }
 
@@ -73,7 +87,11 @@ impl<T: 'static> FunctionTable<T> {
         } else {
             None
         };
-        let basic_context = BasicContext { model, storage_dir };
+        let basic_context = BasicContext {
+            model,
+            storage_dir,
+            debug_mode: AtomicBool::new(false),
+        };
 
         Self {
             function_list: Default::default(),
@@ -84,6 +102,10 @@ impl<T: 'static> FunctionTable<T> {
 
     pub fn basic_context(&self) -> &BasicContext {
         &self.basic_context
+    }
+
+    pub fn debug_mode(&self) -> bool {
+        self.basic_context.debug_mode.load(Ordering::SeqCst)
     }
 
     /// OpenAI API に渡すためのリストを取得する。
@@ -192,13 +214,35 @@ pub fn get_arg_str<'a>(args: &'a FuncArgs, name: &str) -> Result<&'a str> {
     Ok(value)
 }
 
-/// args から引数名で i64 を取得する。
-/// 見つからない、または変換に失敗した場合、または範囲外の場合、
+/// args から引数名で bool を取得する。
+/// 見つからない、または型が違う場合、
 /// いい感じのエラーメッセージの [anyhow::Error] を返す。
-pub fn get_arg_i64<R>(args: &FuncArgs, name: &str, range: R) -> Result<i64>
-where
-    R: RangeBounds<i64>,
-{
+pub fn get_arg_bool(args: &FuncArgs, name: &str) -> Result<bool> {
+    let value = args.get(&name.to_string());
+    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
+    let value = value
+        .as_bool()
+        .ok_or_else(|| anyhow!("Error: Argument {name} must be boolean"))?;
+
+    Ok(value)
+}
+
+/// args から引数名で bool を取得する。
+/// 見つからない場合は None を返す。
+/// 型が違う場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_arg_bool_opt(args: &FuncArgs, name: &str) -> Result<Option<bool>> {
+    if args.get(&name.to_string()).is_none() {
+        Ok(None)
+    } else {
+        get_arg_bool(args, name).map(Some)
+    }
+}
+
+/// args から引数名で i64 を取得する。
+/// 見つからない、または型が違う場合、または範囲外の場合、
+/// いい感じのエラーメッセージの [anyhow::Error] を返す。
+pub fn get_arg_i64(args: &FuncArgs, name: &str, range: impl RangeBounds<i64>) -> Result<i64> {
     let value = args.get(&name.to_string());
     let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
     let value = value
@@ -216,23 +260,15 @@ where
 /// 見つからない場合は None を返す。
 /// 変換に失敗した場合、または範囲外の場合、
 /// いい感じのエラーメッセージの [anyhow::Error] を返す。
-pub fn get_arg_i64_opt<R>(args: &FuncArgs, name: &str, range: R) -> Result<Option<i64>>
-where
-    R: RangeBounds<i64>,
-{
-    let value = args.get(&name.to_string());
-    if value.is_none() {
-        return Ok(None);
-    }
-    let value = value.ok_or_else(|| anyhow!("Error: Argument {name} is required"))?;
-    let value = value
-        .as_i64()
-        .ok_or_else(|| anyhow!("Error: Argument {name} must be integer"))?;
-
-    if range.contains(&value) {
-        Ok(Some(value))
+pub fn get_arg_i64_opt(
+    args: &FuncArgs,
+    name: &str,
+    range: impl RangeBounds<i64>,
+) -> Result<Option<i64>> {
+    if args.get(&name.to_string()).is_none() {
+        Ok(None)
     } else {
-        bail!("Error: Out of range: {name}")
+        get_arg_i64(args, name, range).map(Some)
     }
 }
 
@@ -243,18 +279,38 @@ mod tests {
     #[test]
     fn function_args() {
         let mut args = FuncArgs::new();
-        args.insert("keytest".to_string(), "ok".into());
+        args.insert("str".to_string(), "ok".into());
+        args.insert("bool_f".to_string(), false.into());
+        args.insert("bool_t".to_string(), true.into());
         args.insert("int".to_string(), 42.into());
-        args.insert("notint".to_string(), "abcde".into());
 
-        assert!(get_arg_str(&args, "keytest").unwrap() == "ok");
-        assert!(get_arg_str(&args, "unknown")
+        assert_eq!(get_arg_str(&args, "str").unwrap(), "ok");
+        assert!(get_arg_str(&args, "not_found")
             .unwrap_err()
             .to_string()
             .contains("required"));
 
-        assert!(get_arg_i64(&args, "int", 1..=42).unwrap() == 42);
-        assert!(get_arg_i64(&args, "notint", 1..43)
+        assert_eq!(get_arg_bool(&args, "bool_f",).unwrap(), false);
+        assert_eq!(get_arg_bool(&args, "bool_t",).unwrap(), true);
+        assert!(get_arg_bool(&args, "str")
+            .unwrap_err()
+            .to_string()
+            .contains("must be boolean"));
+        assert!(get_arg_bool(&args, "not_found")
+            .unwrap_err()
+            .to_string()
+            .contains("required"));
+
+        assert_eq!(get_arg_bool_opt(&args, "bool_f").unwrap(), Some(false));
+        assert_eq!(get_arg_bool_opt(&args, "bool_t").unwrap(), Some(true));
+        assert!(get_arg_bool_opt(&args, "str")
+            .unwrap_err()
+            .to_string()
+            .contains("must be boolean"));
+        assert_eq!(get_arg_bool_opt(&args, "not_found").unwrap(), None);
+
+        assert_eq!(get_arg_i64(&args, "int", 1..=42).unwrap(), 42);
+        assert!(get_arg_i64(&args, "str", 1..43)
             .unwrap_err()
             .to_string()
             .contains("must be integer"));
@@ -262,9 +318,14 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("Out of range"));
+        assert!(get_arg_i64(&args, "not_found", 1..42)
+            .unwrap_err()
+            .to_string()
+            .contains("required"));
 
-        assert!(get_arg_i64_opt(&args, "int", 1..=42).unwrap() == Some(42));
-        assert!(get_arg_i64_opt(&args, "notint", 1..43)
+        assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
+        assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
+        assert!(get_arg_i64_opt(&args, "str", 1..43)
             .unwrap_err()
             .to_string()
             .contains("must be integer"));
@@ -272,5 +333,6 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("Out of range"));
+        assert_eq!(get_arg_i64_opt(&args, "not_found", 1..42).unwrap(), None);
     }
 }
