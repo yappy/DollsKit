@@ -24,7 +24,7 @@ const FACE_MIN: i64 = 1;
 /// ダイスの面数の最大値。
 const FACE_MAX: i64 = 100;
 
-/// サイコロを振る。
+/// コインを投げる。
 async fn flip_coin(args: &FuncArgs) -> Result<String> {
     let count: i64 = get_arg_i64(args, "count", COUNT_MIN..=COUNT_MAX)?;
     let result = dice::roll(2_u64, count as u32)?;
