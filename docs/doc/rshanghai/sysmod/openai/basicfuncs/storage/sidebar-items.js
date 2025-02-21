@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NOTE_COUNT_MAX","NOTE_FILE_NAME","NOTE_LENGTH_MAX","NOTE_LENGTH_MAX_I64"],"fn":["delete","delete_pin","load","load_file","load_pin","register_all","register_delete","register_load","register_save","rlock_file","save","save_file","save_pin","wlock_file"],"static":["LOCK"],"struct":["AssistantNote","NoteElement"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["register_all"],"mod":["math","playtools","system","web"]};
+window.SIDEBAR_ITEMS = {"fn":["register_all"],"mod":["math","playtools","storage","system","web"]};
