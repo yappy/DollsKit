@@ -10,6 +10,8 @@ yappy家の管理プログラム
 
 <https://yappy.github.io/DollsKit/>
 
+(ドキュメントのソースは `docs/` 以下)
+
 ## ソースの入手
 
 ```sh

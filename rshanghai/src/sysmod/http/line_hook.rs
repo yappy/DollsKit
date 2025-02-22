@@ -344,6 +344,7 @@ async fn on_text_message(
         prompt
     };
 
+    let mut func_trace = String::new();
     let reply_msg = loop {
         let mut line = ctrl.sysmods().line.lock().await;
         let ai = ctrl.sysmods().openai.lock().await;
@@ -388,6 +389,16 @@ async fn on_text_message(
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = line.func_table.call(ctx, func_name, func_args).await;
+                    // debug trace
+                    if line.func_table.debug_mode() {
+                        if !func_trace.is_empty() {
+                            func_trace.push('\n');
+                        }
+                        func_trace += &format!(
+                            "function call: {func_name}\nparameters: {func_args}\nresult: {}",
+                            func_res.content.as_ref().unwrap()
+                        );
+                    }
                     // function 応答を履歴に追加
                     line.chat_history.push(func_res);
                     // continue
@@ -408,13 +419,20 @@ async fn on_text_message(
     {
         let mut line = ctrl.sysmods().line.lock().await;
 
+        let mut msgs: Vec<&str> = Vec::new();
+        if !func_trace.is_empty() {
+            msgs.push(&func_trace);
+        }
         match reply_msg {
             Ok(reply_msg) => {
                 let text = reply_msg
                     .content
                     .ok_or_else(|| anyhow!("content required"))?;
-                info!("[line] openai reply: {text}");
-                line.reply(reply_token, &text).await?;
+                msgs.push(&text);
+                for msg in msgs.iter() {
+                    info!("[line] openai reply: {msg}");
+                }
+                line.reply_multi(reply_token, &msgs).await?;
 
                 // タイムアウト延長
                 line.chat_timeout = Some(
@@ -428,7 +446,11 @@ async fn on_text_message(
                 } else {
                     prompt.error_msg
                 };
-                line.reply(reply_token, &errmsg).await?;
+                msgs.push(&errmsg);
+                for msg in msgs.iter() {
+                    info!("[line] openai reply: {msg}");
+                }
+                line.reply_multi(reply_token, &msgs).await?;
             }
         }
     }

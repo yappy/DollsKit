@@ -857,8 +857,8 @@ async fn ai(
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
                     let func_res = discord.func_table.call((), func_name, func_args).await;
-                    // trace
-                    if trace_function_call.unwrap_or(false) {
+                    // debug trace
+                    if discord.func_table.debug_mode() || trace_function_call.unwrap_or(false) {
                         reply_long(
                             &ctx,
                             &format!(

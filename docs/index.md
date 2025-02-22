@@ -1,9 +1,22 @@
 # yappy 家の管理システム
 
-工事中！
+## ノート
+
+* Raspberry Pi
+  * [Raspberry Pi セットアップ](./note/setup_pi.md)
+  * [Raspberry Pi バックアップからの復旧](./note/recovery.md)
+* Rust
+  * [Rust ツール類](./note/rust_tools.md)
+  * [Rust テクニカルノート](./note/rust_technote.md)
+* Twitter (旧情報)
+  * [Twitter API ノート](./note/twitter.md)
 
 ## 管理プログラム
 
+<!--
+  docs/doc/ は GitHub Ations から生成される。
+  .github/workflows/doc.yml 参照
+-->
 [ドキュメント](./doc/rshanghai/index.html)
 
 ### タスクサーバ

@@ -5,21 +5,83 @@ use crate::sysmod::health::{
     ThrottleFlags,
 };
 use crate::sysmod::openai::function::{
-    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    get_arg_bool_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
+    ParameterElement, Parameters,
 };
 use anyhow::{bail, Result};
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
+    register_debug_mode(func_table);
     register_get_model(func_table);
     register_get_version(func_table);
     register_get_cpu_status(func_table);
     register_get_current_datetime(func_table);
+}
+
+/// デバッグモード取得/設定。
+async fn debug_mode(bctx: Arc<BasicContext>, args: &FuncArgs) -> Result<String> {
+    let enabled = get_arg_bool_opt(args, "enabled")?;
+
+    #[derive(Serialize)]
+    struct FuncResult {
+        current: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        previous: Option<bool>,
+    }
+
+    let result = if let Some(enabled) = enabled {
+        let old = bctx.debug_mode.swap(enabled, Ordering::SeqCst);
+
+        FuncResult {
+            current: enabled,
+            previous: Some(old),
+        }
+    } else {
+        let current = bctx.debug_mode.load(Ordering::SeqCst);
+
+        FuncResult {
+            current,
+            previous: None,
+        }
+    };
+
+    Ok(serde_json::to_string(&result).unwrap())
+}
+
+fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
+    let mut properties = HashMap::new();
+    properties.insert(
+        "enabled".to_string(),
+        ParameterElement {
+            type_: "boolean".to_string(),
+            description: Some(
+                "New value. If not specified, just get the current value.".to_string(),
+            ),
+            ..Default::default()
+        },
+    );
+
+    fn debug_mode_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
+        Box::pin(debug_mode(bctx, args))
+    }
+    func_table.register_function(
+        Function {
+            name: "debug_mode".to_string(),
+            description: Some("Get/Set debug mode of function calls".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties,
+                required: Default::default(),
+            },
+        },
+        Box::new(debug_mode_pin),
+    );
 }
 
 /// モデル情報取得。
