@@ -504,7 +504,19 @@
 <a href="#503" id="503">503</a>
 <a href="#504" id="504">504</a>
 <a href="#505" id="505">505</a>
-<a href="#506" id="506">506</a></pre></div><pre class="rust"><code><span class="doccomment">//! LINE API。
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a></pre></div><pre class="rust"><code><span class="doccomment">//! LINE API。
 
 </span><span class="kw">use </span><span class="kw">super</span>::openai::{
     function::{<span class="self">self</span>, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
@@ -540,8 +552,7 @@
 <span class="doccomment">/// Discord 設定データ。toml 設定に対応する。
 </span><span class="attr">#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>LineConfig {
-    <span class="comment">// TODO
-    </span><span class="doccomment">/// 機能を有効化するなら true。
+    <span class="doccomment">/// 機能を有効化するなら true。
     </span>enabled: bool,
     <span class="doccomment">/// アクセストークン。Developer Portal で入手できる。
     </span>token: String,
@@ -765,19 +776,32 @@
         }
     }
 
+    <span class="doccomment">/// [Self::replymulti] のシンプル版。
+    /// 文字列が長すぎるならば分割して送信する。
+    </span><span class="attr">#[allow(dead_code)]
+    </span><span class="kw">pub async fn </span>reply(<span class="kw-2">&amp;</span><span class="self">self</span>, reply_token: <span class="kw-2">&amp;</span>str, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ReplyResp&gt; {
+        <span class="kw">let </span>texts = [text];
+
+        <span class="self">self</span>.reply_multi(reply_token, <span class="kw-2">&amp;</span>texts).<span class="kw">await
+    </span>}
+
     <span class="doccomment">/// &lt;https://developers.line.biz/ja/reference/messaging-api/#send-reply-message&gt;
     ///
     /// &lt;https://developers.line.biz/ja/docs/messaging-api/text-character-count/&gt;
-    </span><span class="kw">pub async fn </span>reply(<span class="kw-2">&amp;</span><span class="self">self</span>, reply_token: <span class="kw-2">&amp;</span>str, text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ReplyResp&gt; {
-        <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">"text must not be empty"</span>);
-
-        <span class="kw">let </span>messages: Vec&lt;<span class="kw">_</span>&gt; = split_message(text)
-            .iter()
-            .map(|<span class="kw-2">&amp;</span>chunk| Message::Text {
+    ///
+    /// `texts` のそれぞれについて、長すぎるならば分割し、
+    /// 文字列メッセージ配列として送信する。
+    /// 配列の最大サイズは 5。
+    </span><span class="kw">pub async fn </span>reply_multi(<span class="kw-2">&amp;</span><span class="self">self</span>, reply_token: <span class="kw-2">&amp;</span>str, texts: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Result</span>&lt;ReplyResp&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>messages = Vec::new();
+        <span class="kw">for </span>text <span class="kw">in </span>texts {
+            <span class="macro">ensure!</span>(!text.is_empty(), <span class="string">"text must not be empty"</span>);
+            <span class="kw">let </span>splitted = split_message(text);
+            messages.extend(splitted.iter().map(|<span class="kw-2">&amp;</span>chunk| Message::Text {
                 text: chunk.to_string(),
-            })
-            .collect();
-        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">"text too long: {}"</span>, text.len());
+            }));
+        }
+        <span class="macro">ensure!</span>(messages.len() &lt;= <span class="number">5</span>, <span class="string">"text too long: {}"</span>, texts.len());
 
         <span class="kw">let </span>req = ReplyReq {
             reply_token: reply_token.to_string(),

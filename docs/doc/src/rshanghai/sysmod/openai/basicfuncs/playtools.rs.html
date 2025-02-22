@@ -129,8 +129,8 @@
 <a href="#128" id="128">128</a></pre></div><pre class="rust"><code><span class="doccomment">//! システム情報取得。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::{
-    get_arg_i64, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    get_arg_i64_opt, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
+    ParameterElement, Parameters,
 };
 <span class="kw">use </span><span class="kw">crate</span>::utils::playtools::dice;
 <span class="kw">use </span>anyhow::Result;
@@ -154,7 +154,7 @@
 
 <span class="doccomment">/// コインを投げる。
 </span><span class="kw">async fn </span>flip_coin(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>count: i64 = get_arg_i64(args, <span class="string">"count"</span>, COUNT_MIN..=COUNT_MAX)<span class="question-mark">?</span>;
+    <span class="kw">let </span>count: i64 = get_arg_i64_opt(args, <span class="string">"count"</span>, COUNT_MIN..=COUNT_MAX)<span class="question-mark">?</span>.unwrap_or(<span class="number">1</span>);
     <span class="kw">let </span>result = dice::roll(<span class="number">2_u64</span>, count <span class="kw">as </span>u32)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>text = String::from(<span class="string">"["</span>);
@@ -205,8 +205,8 @@
 
 <span class="doccomment">/// サイコロを振る。
 </span><span class="kw">async fn </span>role_dice(args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="kw">let </span>face: i64 = get_arg_i64(args, <span class="string">"face"</span>, FACE_MIN..=FACE_MAX)<span class="question-mark">?</span>;
-    <span class="kw">let </span>count: i64 = get_arg_i64(args, <span class="string">"count"</span>, COUNT_MIN..=COUNT_MAX)<span class="question-mark">?</span>;
+    <span class="kw">let </span>face = get_arg_i64_opt(args, <span class="string">"face"</span>, FACE_MIN..=FACE_MAX)<span class="question-mark">?</span>.unwrap_or(<span class="number">6</span>);
+    <span class="kw">let </span>count = get_arg_i64_opt(args, <span class="string">"count"</span>, COUNT_MIN..=COUNT_MAX)<span class="question-mark">?</span>.unwrap_or(<span class="number">1</span>);
     <span class="kw">let </span>result = dice::roll(face <span class="kw">as </span>u64, count <span class="kw">as </span>u32)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">"{:?}"</span>, result))

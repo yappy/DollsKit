@@ -2077,8 +2077,8 @@ Please contact my owner."</span>;
                     </span><span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
                     <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
                     <span class="kw">let </span>func_res = discord.func_table.call((), func_name, func_args).<span class="kw">await</span>;
-                    <span class="comment">// trace
-                    </span><span class="kw">if </span>trace_function_call.unwrap_or(<span class="bool-val">false</span>) {
+                    <span class="comment">// debug trace
+                    </span><span class="kw">if </span>discord.func_table.debug_mode() || trace_function_call.unwrap_or(<span class="bool-val">false</span>) {
                         reply_long(
                             <span class="kw-2">&amp;</span>ctx,
                             <span class="kw-2">&amp;</span><span class="macro">format!</span>(
