@@ -766,7 +766,7 @@ GUI のある PC にも rclone をインストールし、ウェブブラウザ�
 設定ファイル `~/.config/rclone/rclone.conf` にアクセストークンが書かれているので、
 CUI 環境での設定ファイルにコピーするのが多分楽。
 
-#### 使い方
+#### rclone 使い方
 
 リモートのパスは `<remote>:<path/to/file_or_dir>` のように、
 設定でつけた名前をコロンの前に指定する。
@@ -788,7 +788,7 @@ rclone lsf remote:
 rclone lsjson remote:
 ```
 
-### Linux CLI client のビルド (rclone があれば不要？)
+### Linux CLI client のビルド
 
 スマホも含めて各 OS のクライアントがダウンロード可能だが、
 Linux - CLI のコマンドライン版を求めると github へ案内され
@@ -796,11 +796,8 @@ CMake, C++, boost を使った高難度ステージへ案内される。
 
 <https://github.com/pcloudcom/console-client>
 
-注意: Google account ログイン等からアカウントを作るとパスワードが設定されない。
-それだとこのツールでログインできない。
-旧パスワードを空にするとエラーにされて、パスワードの変更もできない。
-セキュリティ設定画面から google 2段階認証っぽいのを押すと
-パスワードを設定するよう言われて設定できた、気がする。
+ビルドの難度がやたら高い上に、何だか不安定な気がする以上に
+rclone がよく出来すぎているため、**rclone があれば不要**と思われる。
 
 必要なもの
 
@@ -843,66 +840,3 @@ CMake, C++, boost を使った高難度ステージへ案内される。
   * アンインストールも apt で OK。
     `sudo apt remove pcloudcc`
 * コマンドは `pcloudcc`。使い方は README.md または --help オプション。
-
-#### 使い方
-
-```sh
-pcloudcc -u <user> -p`
-```
-
-ユーザ名は多分メールアドレス。
--p をつけなくてもパスワードを求められる気がするが、つけると最初に求められる気がする。
-
-```sh
-pcloudcc -u <user> -p -s
-```
-
--s をつけると `~/.pcloud/` 以下のデータベースファイルにパスワードが保存され、
-次回以降に不要になる。
-root で行うときは `sudo -sE` 等で $HOME を継承しないよう注意。
-
-マウントポイントのデフォルトは `~/pCloudDrive`。-m で変更できる。
-どこかに行った場合は `df` で確認。
-**バックアップ対象に含めないよう注意。**
-
-```sh
-pcloudcc -u <user> -d
-```
-
--d でデーモン起動。
-
-#### screen 内で自動起動
-
-デーモン起動もよいが、コンソールに通信内容が表示されるので、
-screen 内で動かしておくのもよいかもしれない。
-
-```sh
-screen -S <session_name> -dm pcloudcc -u <user> -p -s`
-```
-
-```sh
-screen -ls
-screen -r <session_name>
-```
-
-cron の `@reboot` 指定を使うと起動時に起動できる。
-`/etc/cron.d/` にファイルを置くと自動で認識される。
-ファイル名にドットが含まれると無視されるので注意。
-パーミッションは周りに合わせて 644 にすること。
-
-`man 8 cron` によると、`/etc/cron.d/` は非推奨で、
-`/etc/crontab` を使えとのことだが、まあ普通に便利なので…。
-おそらく Debian 固有実装であるのと、インストールパッケージが置きに来る場所なので
-名前が被るとまずい、あたりが理由かと思われる。
-
-```sh
-# /etc/cron.d/pcloud
-
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-HOME=/root
-
-MP=/mnt/pcloud
-PCUSER=<MAIL>
-
-@reboot root screen -S pcloudcc -dm pcloudcc -u $PCUSER pcloud -m /mnt/pcloud
-```
