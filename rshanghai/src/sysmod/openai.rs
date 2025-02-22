@@ -163,7 +163,7 @@ struct ChatResponse {
 }
 
 /// OpenAI API JSON 定義。
-/// function パラメータ定義。
+/// function パラメータ定義 (JSON Schema)。
 ///
 /// <https://json-schema.org/understanding-json-schema>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
