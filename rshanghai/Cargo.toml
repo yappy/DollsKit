@@ -69,7 +69,7 @@ image = "0.25.5"
 # Font
 rusttype="0.9.3"
 # Scraping
-scraper = "0.22.0"
+scraper = "0.23.1"
 ego-tree = "0.10.0"
 # ChatGPT tokenizer
 tiktoken-rs = "0.6.0"
@@ -78,7 +78,7 @@ tiktoken-rs = "0.6.0"
 # Concurrent test control
 serial_test = "3.2.0"
 # Hex literal for test
-hex-literal = "0.4.1"
+hex-literal = "1.0.0"
 # Temporary file
 tempfile = "3.19.1"
 
