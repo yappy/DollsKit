@@ -1,8 +1,8 @@
 //! 計算関連。
 
 use crate::sysmod::openai::function::{
-    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str,
 };
 use crate::utils::parser;
 use anyhow::Result;

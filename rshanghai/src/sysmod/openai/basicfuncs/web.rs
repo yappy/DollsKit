@@ -1,12 +1,12 @@
 //! Web アクセス関連。
 
 use crate::sysmod::openai::function::{
-    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_str,
 };
 use crate::utils::netutil;
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use reqwest::Client;
 use std::sync::Arc;
 use std::{collections::HashMap, time::Duration};

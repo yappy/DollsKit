@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::process::Command;
 
 // `cargo build -vv` to debug this.

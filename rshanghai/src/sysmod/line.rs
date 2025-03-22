@@ -1,20 +1,20 @@
 //! LINE API。
 
-use super::openai::{
-    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
-    ParameterElement,
-};
 use super::SystemModule;
+use super::openai::{
+    ParameterElement,
+    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
+};
 use crate::{
     sys::{
         config,
         taskserver::{self, Control},
     },
-    sysmod::openai::{self, function::FUNCTION_TOKEN, Function, Parameters},
+    sysmod::openai::{self, Function, Parameters, function::FUNCTION_TOKEN},
     utils::chat_history::ChatHistory,
 };
 
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{Result, anyhow, bail, ensure};
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

@@ -1,19 +1,19 @@
 //! システム情報取得。
 
 use crate::sysmod::health::{
-    get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf, get_throttle_status,
-    ThrottleFlags,
+    ThrottleFlags, get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf,
+    get_throttle_status,
 };
 use crate::sysmod::openai::function::{
-    get_arg_bool_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
-    ParameterElement, Parameters,
+    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_bool_opt, get_arg_str,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {

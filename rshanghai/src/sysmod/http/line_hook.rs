@@ -13,9 +13,9 @@ use crate::{
     },
     utils::netutil,
 };
-use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
-use anyhow::{anyhow, bail, ensure, Result};
-use base64::{engine::general_purpose, Engine};
+use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
+use anyhow::{Result, anyhow, bail, ensure};
+use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 

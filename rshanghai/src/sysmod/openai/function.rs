@@ -1,10 +1,10 @@
 //! OpenAI API - function.
 
-use super::{basicfuncs, ModelInfo};
+use super::{ModelInfo, basicfuncs};
 use crate::sys::config;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,8 +12,8 @@ use std::future::Future;
 use std::ops::RangeBounds;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -285,54 +285,72 @@ mod tests {
         args.insert("int".to_string(), 42.into());
 
         assert_eq!(get_arg_str(&args, "str").unwrap(), "ok");
-        assert!(get_arg_str(&args, "not_found")
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_str(&args, "not_found")
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert!(!get_arg_bool(&args, "bool_f",).unwrap());
         assert!(get_arg_bool(&args, "bool_t",).unwrap());
-        assert!(get_arg_bool(&args, "str")
-            .unwrap_err()
-            .to_string()
-            .contains("must be boolean"));
-        assert!(get_arg_bool(&args, "not_found")
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_bool(&args, "str")
+                .unwrap_err()
+                .to_string()
+                .contains("must be boolean")
+        );
+        assert!(
+            get_arg_bool(&args, "not_found")
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert_eq!(get_arg_bool_opt(&args, "bool_f").unwrap(), Some(false));
         assert_eq!(get_arg_bool_opt(&args, "bool_t").unwrap(), Some(true));
-        assert!(get_arg_bool_opt(&args, "str")
-            .unwrap_err()
-            .to_string()
-            .contains("must be boolean"));
+        assert!(
+            get_arg_bool_opt(&args, "str")
+                .unwrap_err()
+                .to_string()
+                .contains("must be boolean")
+        );
         assert_eq!(get_arg_bool_opt(&args, "not_found").unwrap(), None);
 
         assert_eq!(get_arg_i64(&args, "int", 1..=42).unwrap(), 42);
-        assert!(get_arg_i64(&args, "str", 1..43)
-            .unwrap_err()
-            .to_string()
-            .contains("must be integer"));
-        assert!(get_arg_i64(&args, "int", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("Out of range"));
-        assert!(get_arg_i64(&args, "not_found", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_i64(&args, "str", 1..43)
+                .unwrap_err()
+                .to_string()
+                .contains("must be integer")
+        );
+        assert!(
+            get_arg_i64(&args, "int", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("Out of range")
+        );
+        assert!(
+            get_arg_i64(&args, "not_found", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
         assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
-        assert!(get_arg_i64_opt(&args, "str", 1..43)
-            .unwrap_err()
-            .to_string()
-            .contains("must be integer"));
-        assert!(get_arg_i64_opt(&args, "int", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("Out of range"));
+        assert!(
+            get_arg_i64_opt(&args, "str", 1..43)
+                .unwrap_err()
+                .to_string()
+                .contains("must be integer")
+        );
+        assert!(
+            get_arg_i64_opt(&args, "int", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("Out of range")
+        );
         assert_eq!(get_arg_i64_opt(&args, "not_found", 1..42).unwrap(), None);
     }
 }

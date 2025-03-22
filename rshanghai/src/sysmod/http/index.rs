@@ -1,7 +1,7 @@
 use super::HttpConfig;
 use super::{github, line_hook, upload};
 use crate::sys::{taskserver::Control, version};
-use actix_web::{http::header::ContentType, web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, http::header::ContentType, web};
 use chrono::Local;
 use std::sync::atomic::{AtomicU32, Ordering};
 

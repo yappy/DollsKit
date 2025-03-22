@@ -3,7 +3,7 @@
 use super::SystemModule;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{Result, anyhow, ensure};
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
 use log::info;

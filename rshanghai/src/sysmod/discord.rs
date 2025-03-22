@@ -1,7 +1,7 @@
 //! Discord クライアント (bot) 機能。
 
-use super::openai::{function::FunctionTable, Role};
 use super::SystemModule;
+use super::openai::{Role, function::FunctionTable};
 
 use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
@@ -12,18 +12,18 @@ use crate::utils::chat_history::ChatHistory;
 use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
 use ::serenity::all::{CreateAttachment, FullEvent};
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
 
-use poise::{serenity_prelude as serenity, CreateReply, FrameworkContext};
+use poise::{CreateReply, FrameworkContext, serenity_prelude as serenity};
 
 use serde::{Deserialize, Serialize};
 
+use serenity::Client;
 use serenity::http::MessagePagination;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use serenity::Client;
 
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;

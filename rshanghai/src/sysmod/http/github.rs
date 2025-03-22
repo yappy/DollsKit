@@ -9,8 +9,8 @@ use crate::{
     sys::taskserver::{self, Control},
     utils::netutil,
 };
-use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
-use anyhow::{anyhow, Result};
+use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
+use anyhow::{Result, anyhow};
 use log::{error, info};
 use serde_json::Value;
 
@@ -171,7 +171,10 @@ mod tests {
         ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
-        assert_eq!(msg, "Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6");
+        assert_eq!(
+            msg,
+            "Pushed to Github: refs/heads/rust\nhttps://github.com/yappy/DollsKit/compare/ac61a0d5b3e5...2faf7b5f1bb6"
+        );
     }
 
     #[test]
@@ -196,6 +199,9 @@ mod tests {
         ));
         let msg = create_msg_from_json(jsonstr).unwrap();
 
-        assert_eq!(msg, "Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000");
+        assert_eq!(
+            msg,
+            "Pushed to Github: refs/heads/newbranch\nhttps://github.com/yappy/DollsKit/compare/9591d010ba32...000000000000"
+        );
     }
 }

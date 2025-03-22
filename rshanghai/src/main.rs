@@ -9,7 +9,7 @@ mod utils;
 use anyhow::Result;
 use daemonize::Daemonize;
 use getopts::Options;
-use log::{error, info, LevelFilter};
+use log::{LevelFilter, error, info};
 use simplelog::format_description;
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,

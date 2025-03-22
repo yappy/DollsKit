@@ -13,7 +13,7 @@ use crate::sys::taskserver::Control;
 use crate::utils::netutil;
 
 use anyhow::ensure;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, anyhow, bail};
 use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};

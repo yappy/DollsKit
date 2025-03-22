@@ -7,7 +7,7 @@ use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
 use tokio::select;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::watch;
 
 /// システムシャットダウン開始通知送信側 (単数)

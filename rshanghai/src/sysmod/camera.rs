@@ -6,9 +6,9 @@
 use super::SystemModule;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{Local, NaiveTime};
-use image::{imageops::FilterType, ImageFormat};
+use image::{ImageFormat, imageops::FilterType};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{

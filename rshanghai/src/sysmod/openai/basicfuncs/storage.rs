@@ -1,10 +1,10 @@
 use crate::sysmod::openai::{
-    function::{
-        get_arg_i64_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable,
-    },
     Function, ParameterElement, Parameters,
+    function::{
+        BasicContext, FuncArgs, FuncBodyAsync, FunctionTable, get_arg_i64_opt, get_arg_str,
+    },
 };
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},

@@ -1,7 +1,7 @@
 //! Twitter 機能。
 
-use super::openai::ChatMessage;
 use super::SystemModule;
+use super::openai::ChatMessage;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
 use crate::sysmod::openai::Role;
@@ -9,7 +9,7 @@ use crate::utils::graphics::FontRenderer;
 use crate::utils::netutil;
 
 use anyhow::Result;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};

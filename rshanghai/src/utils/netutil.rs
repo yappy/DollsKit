@@ -1,8 +1,8 @@
 //! URL encoding や SHA 計算等のユーティリティ。
 //!
-use anyhow::{anyhow, Context, Result};
-use hmac::{digest::CtOutput, Mac, SimpleHmac};
-use percent_encoding::{utf8_percent_encode, AsciiSet};
+use anyhow::{Context, Result, anyhow};
+use hmac::{Mac, SimpleHmac, digest::CtOutput};
+use percent_encoding::{AsciiSet, utf8_percent_encode};
 use reqwest::Client;
 use serde::Deserialize;
 use sha1::Sha1;
