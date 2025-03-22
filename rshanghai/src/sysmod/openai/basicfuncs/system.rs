@@ -86,7 +86,16 @@ fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// モデル情報取得。
 async fn get_model(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result<String> {
-    Ok(serde_json::to_string(&bctx.model).unwrap())
+    let model = bctx
+        .ctrl
+        .sysmods()
+        .openai
+        .lock()
+        .await
+        .model_info_online()
+        .await?;
+
+    Ok(serde_json::to_string(&model).unwrap())
 }
 
 fn get_model_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {

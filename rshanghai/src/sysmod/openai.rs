@@ -5,7 +5,7 @@ pub mod function;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use super::SystemModule;
 use crate::sys::config;
@@ -23,20 +23,42 @@ use serde::{Deserialize, Serialize};
 const CONN_TIMEOUT: Duration = Duration::from_secs(10);
 /// AI 応答待ちのタイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(60);
+/// モデル情報更新間隔。
+/// 24 時間に一度更新する。
+const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
+fn url_model(model: &str) -> String {
+    format!("https://api.openai.com/v1/models{model}")
+}
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
 
 /// モデル情報。
+/// API からは得られない、ドキュメントにのみある情報。
 #[derive(Debug, Clone, Copy, Serialize)]
-pub struct ModelInfo {
+pub struct OfflineModelInfo {
     pub name: &'static str,
-    /// トークン数制限。入力と出力を全て合わせた値。
-    pub token_limit: usize,
-    pub year: u16,
-    pub month: u16,
+    /// 総トークン数制限。入力と出力その他コントロールトークン全てを合わせた値。
+    pub context_window: usize,
+    /// 最大出力トークン数。
+    pub max_output_tokens: usize,
+}
+
+/// モデル情報。
+/// API から得られるデータ。時々でよいので再取得する必要がある。
+#[derive(Debug, Clone, Serialize)]
+pub struct OnlineModelInfo {
+    last_update: SystemTime,
+    info: Model,
+}
+
+/// [OfflineModelInfo] + (Online) [Model]。
+#[derive(Debug, Clone, Serialize)]
+pub struct ModelInfo {
+    pub offline: OfflineModelInfo,
+    pub online: Model,
 }
 
 /// モデル情報。一番上がデフォルト。
@@ -44,41 +66,41 @@ pub struct ModelInfo {
 /// <https://platform.openai.com/docs/models>
 ///
 /// <https://openai.com/pricing>
-const MODEL_LIST: &[ModelInfo] = &[
-    ModelInfo {
+const MODEL_LIST: &[OfflineModelInfo] = &[
+    OfflineModelInfo {
         name: "gpt-4o-mini",
-        token_limit: 16384,
-        year: 2024,
-        month: 7,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4o",
-        token_limit: 128000,
-        year: 2024,
-        month: 8,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4",
-        token_limit: 8192,
-        year: 2023,
-        month: 6,
+        context_window: 8192,
+        max_output_tokens: 8192,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4-turbo",
-        token_limit: 128000,
-        year: 2024,
-        month: 4,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
 ];
 
-/// トークン数制限のうち出力用に予約する割合。
+/// `max_output_tokens` をギリギリまで攻めると危ないので、少し余裕を持たせる。
+const MAX_OUTPUT_TOKENS_FACTOR: f32 = 1.05;
+
+/// `context_window` のうち出力用に予約する割合 (まともに決まっていない場合用)。
+/// `max_output_tokens` が意味をなしていない gpt-4 で適当に決めるための値。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 
 /// [MODEL_LIST] からモデル名で [ModelInfo] を検索する。
 ///
 /// HashMap で検索する。
-pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
-    static MAP: LazyLock<HashMap<&str, &ModelInfo>> = LazyLock::new(|| {
+fn get_offline_model_info(model: &str) -> Result<&OfflineModelInfo> {
+    static MAP: LazyLock<HashMap<&str, &OfflineModelInfo>> = LazyLock::new(|| {
         let mut map = HashMap::new();
         for info in MODEL_LIST.iter() {
             map.insert(info.name, info);
@@ -92,9 +114,18 @@ pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
         .ok_or_else(|| anyhow!("Model not found: {model}"))
 }
 
-/// 出力用に予約するトークン数を計算する。
-pub fn get_output_reserved_token(info: &ModelInfo) -> usize {
-    (info.token_limit as f32 * OUTPUT_RESERVED_RATIO) as usize
+/// OpenAI API JSON 定義。
+/// モデル情報。
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct Model {
+    /// The model identifier, which can be referenced in the API endpoints.
+    id: String,
+    /// The Unix timestamp (in seconds) when the model was created.
+    created: u64,
+    /// The object type, which is always "model".
+    object: String,
+    ///The organization that owns the model.
+    owned_by: String,
 }
 
 /// OpenAI API JSON 定義。
@@ -388,8 +419,10 @@ impl Default for OpenAiConfig {
 /// OpenAI システムモジュール。
 pub struct OpenAi {
     config: OpenAiConfig,
-    model: String,
     client: reqwest::Client,
+    model_name: &'static str,
+    model_info_offline: OfflineModelInfo,
+    model_info_online: Option<OnlineModelInfo>,
 }
 
 impl OpenAi {
@@ -402,16 +435,16 @@ impl OpenAi {
         info!("[openai] OpenAI model list START");
         for info in MODEL_LIST.iter() {
             info!(
-                "[openai] name: \"{}\", token_limit: {}",
-                info.name, info.token_limit
+                "[openai] name: \"{}\", context_window: {}",
+                info.name, info.context_window
             );
         }
         info!("[openai] OpenAI model list END");
 
-        let info = get_model_info(&config.model)?;
+        let info = get_offline_model_info(&config.model)?;
         info!(
             "[openai] selected: model: {}, token_limit: {}",
-            info.name, info.token_limit
+            info.name, info.context_window
         );
 
         if !config.storage_dir.is_empty() {
@@ -426,9 +459,55 @@ impl OpenAi {
 
         Ok(OpenAi {
             config: config.clone(),
-            model: info.name.to_string(),
             client,
+            model_name: info.name,
+            model_info_offline: *info,
+            model_info_online: None,
         })
+    }
+
+    pub fn model_name(&self) -> &str {
+        self.model_name
+    }
+
+    pub fn model_info_offline(&self) -> OfflineModelInfo {
+        self.model_info_offline
+    }
+
+    pub async fn model_info_online(&mut self) -> Result<Model> {
+        let cur = &self.model_info_online;
+        let update = if let Some(info) = cur {
+            let now = SystemTime::now();
+            let elapsed = now.duration_since(info.last_update).unwrap_or_default();
+
+            elapsed > MODEL_INFO_UPDATE_INTERVAL
+        } else {
+            true
+        };
+
+        if update {
+            let info = self.get_online_model_info().await?;
+            let newval = OnlineModelInfo {
+                last_update: SystemTime::now(),
+                info: info.clone(),
+            };
+            self.model_info_online.insert(newval);
+
+            Ok(info)
+        } else {
+            Ok(cur.as_ref().unwrap().info.clone())
+        }
+    }
+
+    /// 出力用に予約するトークン数を計算する。
+    /// 基本的に max_output_tokens に余裕を持たせた値を使うが、
+    /// それが意味をなしていない旧モデルの場合は context_window のうち一定割合とする。
+    pub fn get_output_reserved_token(&self) -> usize {
+        let info = self.model_info_offline();
+        let v1 = (info.max_output_tokens as f32 * MAX_OUTPUT_TOKENS_FACTOR) as usize;
+        let v2 = (info.context_window as f32 * OUTPUT_RESERVED_RATIO) as usize;
+
+        v1.min(v2)
     }
 
     /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
@@ -444,20 +523,45 @@ impl OpenAi {
         false
     }
 
+    async fn get_online_model_info(&self) -> Result<Model> {
+        let key = &self.config.api_key;
+        let model = self.model_name;
+
+        info!("[openai] model request");
+        self.check_enabled();
+
+        let resp = self
+            .client
+            .get(url_model(model))
+            .header("Authorization", format!("Bearer {key}"))
+            .send()
+            .await?;
+
+        let json_str = netutil::check_http_resp(resp).await?;
+
+        netutil::convert_from_json::<Model>(&json_str)
+    }
+
+    fn check_enabled(&self) -> Result<()> {
+        if !self.config.enabled {
+            warn!("[openai] skip because openai feature is disabled");
+            bail!("openai is disabled");
+        }
+
+        Ok(())
+    }
+
     /// OpenAI Chat API を使用する。
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: self.model.clone(),
+            model: self.model_name.to_string(),
             messages: msgs,
             ..Default::default()
         };
 
         info!("[openai] chat request: {:?}", body);
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
+        self.check_enabled();
 
         let resp = self
             .client
@@ -493,17 +597,14 @@ impl OpenAi {
     ) -> Result<ChatMessage> {
         let key = &self.config.api_key;
         let body = ChatRequest {
-            model: self.model.clone(),
+            model: self.model_name.to_string(),
             messages: msgs.to_vec(),
             functions: Some(funcs.to_vec()),
             ..Default::default()
         };
 
         info!("[openai] chat request with function: {:?}", body);
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
+        self.check_enabled();
 
         let resp = self
             .client
@@ -540,10 +641,7 @@ impl OpenAi {
             "[openai] image gen request: {}",
             serde_json::to_string(&body)?
         );
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
+        self.check_enabled();
 
         let resp = self
             .client
@@ -599,10 +697,7 @@ impl OpenAi {
             "[openai] create speech request: {}",
             serde_json::to_string(&body)?
         );
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
+        self.check_enabled();
 
         let resp = self
             .client

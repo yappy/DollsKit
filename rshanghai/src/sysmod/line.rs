@@ -2,6 +2,10 @@
 
 use super::SystemModule;
 use super::openai::{
+    OpenAi, ParameterElement,
+    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
+};
+use super::openai::{
     ParameterElement,
     function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
 };
@@ -71,7 +75,6 @@ impl Default for LinePrompt {
 }
 
 pub struct FunctionContext {
-    pub ctrl: Control,
     /// userId, groupIdm or roomId
     pub reply_to: String,
 }
@@ -97,23 +100,22 @@ impl Line {
         info!("[line] initialize");
 
         let config = config::get(|cfg| cfg.line.clone());
-        let ai_config = config::get(|cfg| cfg.openai.clone());
 
         // トークン上限を算出
         // Function 定義 + 前文 + (使用可能上限) + 出力
-        let model_info = openai::get_model_info(&ai_config.model)?;
+        let model_info = openai::model_info_offline();
         let mut chat_history = ChatHistory::new(model_info.name);
-        assert!(chat_history.get_total_limit() == model_info.token_limit);
+        assert!(chat_history.get_total_limit() == model_info.context_window);
         let pre_token: usize = config
             .prompt
             .pre
             .iter()
             .map(|text| chat_history.token_count(text))
             .sum();
-        let reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
+        let reserved = FUNCTION_TOKEN + pre_token + openai.get_output_reserved_token();
         chat_history.reserve_tokens(reserved);
         info!("[line] OpenAI token limit");
-        info!("[line] {:6} total", model_info.token_limit);
+        info!("[line] {:6} total", model_info.context_window);
         info!("[line] {reserved:6} reserved");
         info!("[line] {:6} chat history", chat_history.usage().1);
 

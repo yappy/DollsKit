@@ -31,7 +31,6 @@ pub struct Controller {
 }
 
 pub type Control = Arc<Controller>;
-//pub type WeakControl = Weak<Controller>;
 
 /// [TaskServer::run] の返す実行終了種別。
 pub enum RunResult {
