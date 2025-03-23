@@ -1,9 +1,8 @@
 //! OpenAI API - function.
 
-use super::{Model, basicfuncs};
-use super::{ModelInfo, basicfuncs};
+use super::basicfuncs;
 use crate::sys::config;
-use crate::sys::taskserver::{Control, Controller};
+use crate::sys::taskserver::Control;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
 use anyhow::{Result, anyhow};

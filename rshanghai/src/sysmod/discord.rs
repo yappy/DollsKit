@@ -11,7 +11,6 @@ use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::ChatHistory;
 use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
-use ::serenity::all::{CreateAttachment, FullEvent};
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -21,11 +20,11 @@ use poise::{CreateReply, FrameworkContext, serenity_prelude as serenity};
 use serde::{Deserialize, Serialize};
 
 use serenity::Client;
+use serenity::all::{CreateAttachment, FullEvent};
 use serenity::http::MessagePagination;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
-use std::cell::OnceCell;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
@@ -227,7 +226,11 @@ impl Discord {
         self.chat_history.as_mut().unwrap()
     }
 
-    fn func_table(&mut self) -> &mut FunctionTable<()> {
+    fn func_table(&self) -> &FunctionTable<()> {
+        self.func_table.as_ref().unwrap()
+    }
+
+    fn func_table_mut(&mut self) -> &mut FunctionTable<()> {
         self.func_table.as_mut().unwrap()
     }
 
@@ -1002,7 +1005,7 @@ async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let help = {
         let discord = ctx.data().ctrl.sysmods().discord.lock().await;
 
-        discord.func_table.create_help()
+        discord.func_table().create_help()
     };
     let text = format!("```\n{help}\n```");
     ctx.reply(text).await?;
