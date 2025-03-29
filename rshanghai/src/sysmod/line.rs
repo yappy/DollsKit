@@ -159,8 +159,9 @@ impl Line {
 }
 
 impl SystemModule for Line {
-    fn on_start(&self, _ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[line] on_start");
+        ctrl.block_on(self.init_openai(ctrl))
     }
 }
 

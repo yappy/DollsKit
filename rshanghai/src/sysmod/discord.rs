@@ -236,9 +236,11 @@ impl Discord {
         self.func_table.as_ref().unwrap()
     }
 
+    /*
     fn func_table_mut(&mut self) -> &mut FunctionTable<()> {
-        self.func_table.as_mut().unwrap()
-    }
+           self.func_table.as_mut().unwrap()
+       }
+    */
 
     /// 発言を投稿する。
     ///
@@ -1111,7 +1113,7 @@ impl SystemModule for Discord {
     /// async 使用可能になってからの初期化。
     ///
     /// 設定有効ならば [discord_main] を spawn する。
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[discord] on_start");
         if self.config.enabled {
             taskserver::spawn_oneshot_task(ctrl, "discord", discord_main);

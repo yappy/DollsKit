@@ -54,6 +54,10 @@ impl Controller {
         &self.sysmods
     }
 
+    pub fn block_on<F: Future>(&self, future: F) -> F::Output {
+        self.rt.block_on(future)
+    }
+
     /// キャンセル通知を待つ。
     pub async fn wait_cancel_rx(&self) {
         // mutex をロックして Receiver を取得し、その clone を作る

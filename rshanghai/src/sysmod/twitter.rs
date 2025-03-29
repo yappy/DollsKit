@@ -992,7 +992,7 @@ impl Twitter {
 }
 
 impl SystemModule for Twitter {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {

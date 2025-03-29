@@ -714,7 +714,7 @@ impl OpenAi {
 }
 
 impl SystemModule for OpenAi {
-    fn on_start(&self, _ctrl: &Control) {
+    fn on_start(&mut self, _ctrl: &Control) {
         info!("[openai] on_start");
     }
 }
