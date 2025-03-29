@@ -158,7 +158,7 @@ impl ActixError {
 
 impl actix_web::error::ResponseError for ActixError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        error!("HTTP error by Error: {}", self.status.to_string());
+        error!("HTTP error by Error: {}", self.status);
         error!("{:#}", self.err);
 
         HttpResponse::build(self.status)
