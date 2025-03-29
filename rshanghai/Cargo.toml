@@ -25,13 +25,13 @@ bitflags = "2.9.0"
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
-log = "0.4.26"
+log = "0.4.27"
 # Logging (concrete layer)
 simplelog = "0.12.2"
 # Daemon util
 daemonize = "0.5.0"
 # Time for log
-time = "0.3.40"
+time = "0.3.41"
 chrono = { version = "0.4.40", features = ["clock", "iana-time-zone", "std"] }
 # Json
 serde = { version = "1.0.219", features = ["derive"] }
@@ -65,7 +65,7 @@ serenity = "0.12.4"
 poise = "0.6.1"
 
 # Image convert
-image = "0.25.5"
+image = "0.25.6"
 # Font
 rusttype="0.9.3"
 # Scraping
