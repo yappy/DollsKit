@@ -2,10 +2,6 @@
 
 use super::SystemModule;
 use super::openai::{
-    OpenAi, ParameterElement,
-    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
-};
-use super::openai::{
     ParameterElement,
     function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
 };
@@ -80,6 +76,8 @@ pub struct FunctionContext {
 }
 
 /// LINE システムモジュール。
+///
+/// [Option] は遅延初期化。
 pub struct Line {
     /// 設定データ。
     pub config: LineConfig,
@@ -87,51 +85,60 @@ pub struct Line {
     client: reqwest::Client,
 
     /// ai コマンドの会話履歴。
-    pub chat_history: ChatHistory,
+    pub chat_history: Option<ChatHistory>,
     /// [Self::chat_history] の有効期限。
     pub chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
-    pub func_table: FunctionTable<FunctionContext>,
+    pub func_table: Option<FunctionTable<FunctionContext>>,
 }
 
 impl Line {
     /// コンストラクタ。
     pub fn new() -> Result<Self> {
         info!("[line] initialize");
-
         let config = config::get(|cfg| cfg.line.clone());
+        let client = Client::builder().timeout(TIMEOUT).build()?;
 
+        Ok(Self {
+            config,
+            client,
+            chat_history: None,
+            chat_timeout: None,
+            func_table: None,
+        })
+    }
+
+    async fn init_openai(&mut self, ctrl: &Control) {
         // トークン上限を算出
         // Function 定義 + 前文 + (使用可能上限) + 出力
-        let model_info = openai::model_info_offline();
+        let (model_info, reserved) = {
+            let openai = ctrl.sysmods().openai.lock().await;
+
+            (
+                openai.model_info_offline(),
+                openai.get_output_reserved_token(),
+            )
+        };
+
         let mut chat_history = ChatHistory::new(model_info.name);
         assert!(chat_history.get_total_limit() == model_info.context_window);
-        let pre_token: usize = config
+        let pre_token: usize = self
+            .config
             .prompt
             .pre
             .iter()
             .map(|text| chat_history.token_count(text))
             .sum();
-        let reserved = FUNCTION_TOKEN + pre_token + openai.get_output_reserved_token();
+        let reserved = FUNCTION_TOKEN + pre_token + reserved;
         chat_history.reserve_tokens(reserved);
         info!("[line] OpenAI token limit");
         info!("[line] {:6} total", model_info.context_window);
         info!("[line] {reserved:6} reserved");
         info!("[line] {:6} chat history", chat_history.usage().1);
 
-        let mut func_table = FunctionTable::new(*model_info, Some("line"));
+        let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("line"));
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
-
-        let client = Client::builder().timeout(TIMEOUT).build()?;
-
-        Ok(Self {
-            config,
-            client,
-            chat_history,
-            chat_timeout: None,
-            func_table,
-        })
     }
 }
 

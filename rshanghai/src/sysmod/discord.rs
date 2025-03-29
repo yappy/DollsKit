@@ -100,6 +100,8 @@ impl Default for DiscordPrompt {
 }
 
 /// Discord システムモジュール。
+///
+/// [Option] は遅延初期化。
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,

@@ -383,7 +383,6 @@ async fn on_text_message(
                         } => bail!("Source::Room is not supported"),
                     };
                     let ctx = FunctionContext {
-                        ctrl: ctrl.clone(),
                         reply_to: reply_to.to_string(),
                     };
                     let func_name = &reply.function_call.as_ref().unwrap().name;
