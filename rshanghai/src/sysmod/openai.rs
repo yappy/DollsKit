@@ -29,7 +29,7 @@ const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 
 /// <https://platform.openai.com/docs/api-reference/chat/create>
 fn url_model(model: &str) -> String {
-    format!("https://api.openai.com/v1/models{model}")
+    format!("https://api.openai.com/v1/models/{model}")
 }
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
@@ -488,6 +488,7 @@ impl OpenAi {
         };
 
         if update {
+            info!("[openai] update model info");
             let info = self.get_online_model_info().await?;
             let newval = OnlineModelInfo {
                 last_update: SystemTime::now(),
@@ -497,6 +498,7 @@ impl OpenAi {
 
             Ok(info)
         } else {
+            info!("[openai] skip to update model info");
             Ok(cur.as_ref().unwrap().info.clone())
         }
     }
