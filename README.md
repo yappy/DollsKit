@@ -34,6 +34,10 @@ cargo build
 
 Stable 版の Rust 環境があればビルドできるはず。
 
+### リンクの高速化
+
+[rust_tools.md](./docs/note/rust_tools.md) を参照。
+
 ## 管理プログラムの実行開始
 
 ### 仮実行
@@ -57,6 +61,8 @@ cp config_default.toml config.toml
 ```
 
 ### フォント
+
+※Twitter bot 向けの機能なので現在は有効にしても動作しません。
 
 デフォルト設定で指定されているフォントファイルは以下でインストールできます。
 
