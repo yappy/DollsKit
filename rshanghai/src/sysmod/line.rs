@@ -10,7 +10,7 @@ use crate::{
         config,
         taskserver::{self, Control},
     },
-    sysmod::openai::{self, Function, Parameters, function::FUNCTION_TOKEN},
+    sysmod::openai::{Function, Parameters, function::FUNCTION_TOKEN},
     utils::chat_history::ChatHistory,
 };
 
@@ -140,6 +140,22 @@ impl Line {
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
     }
+
+    pub fn chat_history(&mut self) -> &ChatHistory {
+        self.chat_history.as_ref().unwrap()
+    }
+
+    pub fn chat_history_mut(&mut self) -> &mut ChatHistory {
+        self.chat_history.as_mut().unwrap()
+    }
+
+    pub fn func_table(&self) -> &FunctionTable<FunctionContext> {
+        self.func_table.as_ref().unwrap()
+    }
+
+    pub fn func_table_mut(&mut self) -> &mut FunctionTable<FunctionContext> {
+        self.func_table.as_mut().unwrap()
+    }
 }
 
 impl SystemModule for Line {
@@ -261,7 +277,7 @@ impl Line {
 
         if let Some(timeout) = self.chat_timeout {
             if now > timeout {
-                self.chat_history.clear();
+                self.chat_history_mut().clear();
                 self.chat_timeout = None;
             }
         }
@@ -463,20 +479,24 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
 }
 
 fn draw_picture_sync(
-    _bctx: Arc<BasicContext>,
+    bctx: Arc<BasicContext>,
     ctx: FunctionContext,
     args: &FuncArgs,
 ) -> FuncBodyAsync {
-    Box::pin(draw_picture(ctx, args))
+    Box::pin(draw_picture(bctx, ctx, args))
 }
 
-async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
+async fn draw_picture(
+    bctx: Arc<BasicContext>,
+    ctx: FunctionContext,
+    args: &FuncArgs,
+) -> Result<String> {
     let keywords = function::get_arg_str(args, "keywords")?.to_string();
 
-    let ctrl = ctx.ctrl.clone();
+    let ctrl = bctx.ctrl.clone();
     taskserver::spawn_oneshot_fn(&ctrl, "line_draw_picture", async move {
         let url = {
-            let ai = ctx.ctrl.sysmods().openai.lock().await;
+            let ai = bctx.ctrl.sysmods().openai.lock().await;
 
             ai.generate_image(&keywords, 1)
                 .await?
@@ -484,7 +504,7 @@ async fn draw_picture(ctx: FunctionContext, args: &FuncArgs) -> Result<String> {
                 .ok_or_else(|| anyhow!("parse error"))?
         };
         {
-            let line = ctx.ctrl.sysmods().line.lock().await;
+            let line = bctx.ctrl.sysmods().line.lock().await;
             line.push_image_message(&ctx.reply_to, &url).await?;
         }
         Ok(())

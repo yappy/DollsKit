@@ -224,7 +224,11 @@ impl Discord {
         self.func_table.insert(func_table);
     }
 
-    fn chat_history(&mut self) -> &mut ChatHistory {
+    fn chat_history(&mut self) -> &ChatHistory {
+        self.chat_history.as_ref().unwrap()
+    }
+
+    fn chat_history_mut(&mut self) -> &mut ChatHistory {
         self.chat_history.as_mut().unwrap()
     }
 
@@ -268,7 +272,7 @@ impl Discord {
 
         if let Some(timeout) = self.chat_timeout {
             if now > timeout {
-                self.chat_history().clear();
+                self.chat_history_mut().clear();
                 self.chat_timeout = None;
             }
         }
@@ -844,14 +848,14 @@ async fn ai(
         .each
         .join("")
         .replace("${user}", &ctx.author().name);
-    discord.chat_history().push({
+    discord.chat_history_mut().push({
         ChatMessage {
             role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
-    discord.chat_history().push(ChatMessage {
+    discord.chat_history_mut().push(ChatMessage {
         role: Role::User,
         content: Some(chat_msg.to_string()),
         ..Default::default()
@@ -885,7 +889,7 @@ async fn ai(
         match &reply_msg {
             Ok(reply) => {
                 // 応答を履歴に追加
-                discord.chat_history().push(reply.clone());
+                discord.chat_history_mut().push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
@@ -910,7 +914,7 @@ async fn ai(
                         .await?;
                     }
                     // function 応答を履歴に追加
-                    discord.chat_history().push(func_res);
+                    discord.chat_history_mut().push(func_res);
                     // continue
                 } else {
                     // 通常の応答が返ってきた
@@ -993,7 +997,7 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         let ctrl = &ctx.data().ctrl;
         let mut discord = ctrl.sysmods().discord.lock().await;
 
-        discord.chat_history().clear();
+        discord.chat_history_mut().clear();
     }
     ctx.reply("OK").await?;
 
