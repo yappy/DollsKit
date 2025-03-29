@@ -347,7 +347,6 @@ async fn on_text_message(
     let mut func_trace = String::new();
     let reply_msg = loop {
         let mut line = ctrl.sysmods().line.lock().await;
-        let ai = ctrl.sysmods().openai.lock().await;
 
         // 送信用リスト
         let mut all_msgs = Vec::new();
@@ -357,14 +356,17 @@ async fn on_text_message(
             content: Some(prompt.pre.join("")),
             ..Default::default()
         });
-        // それ以降 (ヒストリの中身全部) を追加
-        for m in line.chat_history(ctrl).await.iter() {
-            all_msgs.push(m.clone());
-        }
-        // ChatGPT API
-        let reply_msg = ai
-            .chat_with_function(&all_msgs, line.func_table(ctrl).await.function_list())
-            .await;
+        let reply_msg = {
+            let ai = ctrl.sysmods().openai.lock().await;
+
+            // それ以降 (ヒストリの中身全部) を追加
+            for m in line.chat_history(ctrl).await.iter() {
+                all_msgs.push(m.clone());
+            }
+            // ChatGPT API
+            ai.chat_with_function(&all_msgs, line.func_table(ctrl).await.function_list())
+                .await
+        };
         match &reply_msg {
             Ok(reply) => {
                 // 応答を履歴に追加

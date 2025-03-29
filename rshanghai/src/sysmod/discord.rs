@@ -866,8 +866,6 @@ async fn ai(
     let pre = discord.config.prompt.pre.join("");
     // AI 返答まで関数呼び出しを繰り返す
     let reply_msg = loop {
-        let ai = data.ctrl.sysmods().openai.lock().await;
-
         // 送信用リスト
         let mut all_msgs = Vec::new();
         // 先頭システムメッセージ
@@ -882,12 +880,14 @@ async fn ai(
         }
 
         // ChatGPT API
-        let reply_msg = ai
-            .chat_with_function(
+        let reply_msg = {
+            let ai = data.ctrl.sysmods().openai.lock().await;
+            ai.chat_with_function(
                 &all_msgs,
                 discord.func_table.as_ref().unwrap().function_list(),
             )
-            .await;
+            .await
+        };
         match &reply_msg {
             Ok(reply) => {
                 // 応答を履歴に追加
