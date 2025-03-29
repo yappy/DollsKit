@@ -141,10 +141,8 @@ where
 
     // 空でなくソート済み、秒以下がゼロなのを確認後
     // 今日のその時刻からなる NaiveDateTime に変換する
-    // TODO: is_sorted() がまだ unstable
     assert!(!wakeup_list.is_empty(), "time list is empty");
-    let sorted = wakeup_list.windows(2).all(|t| t[0] <= t[1]);
-    assert!(sorted, "time list is not sorted");
+    assert!(wakeup_list.is_sorted(), "time list is not sorted");
     let today = Local::now().date_naive();
     let mut dt_list: Vec<_> = wakeup_list
         .iter()
