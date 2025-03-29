@@ -109,6 +109,10 @@ impl Line {
     }
 
     async fn init_openai(&mut self, ctrl: &Control) {
+        if self.chat_history.is_some() && self.func_table.is_some() {
+            return;
+        }
+
         // トークン上限を算出
         // Function 定義 + 前文 + (使用可能上限) + 出力
         let (model_info, reserved) = {
@@ -139,29 +143,35 @@ impl Line {
         let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("line"));
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
+
+        let _ = self.chat_history.insert(chat_history);
+        let _ = self.func_table.insert(func_table);
     }
 
-    pub fn chat_history(&mut self) -> &ChatHistory {
+    pub async fn chat_history(&mut self, ctrl: &Control) -> &ChatHistory {
+        self.init_openai(ctrl).await;
         self.chat_history.as_ref().unwrap()
     }
 
-    pub fn chat_history_mut(&mut self) -> &mut ChatHistory {
+    pub async fn chat_history_mut(&mut self, ctrl: &Control) -> &mut ChatHistory {
+        self.init_openai(ctrl).await;
         self.chat_history.as_mut().unwrap()
     }
 
-    pub fn func_table(&self) -> &FunctionTable<FunctionContext> {
+    pub async fn func_table(&mut self, ctrl: &Control) -> &FunctionTable<FunctionContext> {
+        self.init_openai(ctrl).await;
         self.func_table.as_ref().unwrap()
     }
 
-    pub fn func_table_mut(&mut self) -> &mut FunctionTable<FunctionContext> {
+    pub async fn func_table_mut(&mut self, ctrl: &Control) -> &mut FunctionTable<FunctionContext> {
+        self.init_openai(ctrl).await;
         self.func_table.as_mut().unwrap()
     }
 }
 
 impl SystemModule for Line {
-    fn on_start(&mut self, ctrl: &Control) {
+    fn on_start(&mut self, _ctrl: &Control) {
         info!("[line] on_start");
-        ctrl.block_on(self.init_openai(ctrl))
     }
 }
 
@@ -273,12 +283,12 @@ impl Line {
     }
 
     /// [Self::chat_history] にタイムアウトを適用する。
-    pub fn check_history_timeout(&mut self) {
+    pub async fn check_history_timeout(&mut self, ctrl: &Control) {
         let now = Instant::now();
 
         if let Some(timeout) = self.chat_timeout {
             if now > timeout {
-                self.chat_history_mut().clear();
+                self.chat_history_mut(ctrl).await.clear();
                 self.chat_timeout = None;
             }
         }

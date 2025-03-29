@@ -20,7 +20,7 @@ type CancelRx = watch::Receiver<bool>;
 /// インスタンスは1つだけ生成され、[Arc] により共有される。
 pub struct Controller {
     /// Tokio ランタイム。
-    rt: tokio::runtime::Runtime,
+    pub rt: tokio::runtime::Runtime,
     /// 全システムモジュールのリスト。
     sysmods: SystemModules,
     /// システムシャットダウン時、true が設定送信される。
@@ -52,10 +52,6 @@ impl Controller {
     /// [crate::sysmod::SystemModule] リストへの参照を取得する。
     pub fn sysmods(&self) -> &SystemModules {
         &self.sysmods
-    }
-
-    pub fn block_on<F: Future>(&self, future: F) -> F::Output {
-        self.rt.block_on(future)
     }
 
     /// キャンセル通知を待つ。
