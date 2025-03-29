@@ -5,7 +5,7 @@ use crate::sysmod::health::{
     get_throttle_status,
 };
 use crate::sysmod::openai::function::{
-    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
+    BasicContext, FuncArgs, Function, FunctionTable, ParameterElement, Parameters,
     get_arg_bool_opt, get_arg_str,
 };
 use anyhow::{Result, bail};
@@ -67,9 +67,6 @@ fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
         },
     );
 
-    fn debug_mode_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-        Box::pin(debug_mode(bctx, args))
-    }
     func_table.register_function(
         Function {
             name: "debug_mode".to_string(),
@@ -80,7 +77,7 @@ fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(debug_mode_pin),
+        |bctx, _ctx, args| Box::pin(debug_mode(bctx, args)),
     );
 }
 
@@ -89,10 +86,6 @@ async fn get_model(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result<String> 
     let model = bctx.ctrl.sysmods().openai.lock().await.model_info().await?;
 
     Ok(serde_json::to_string(&model).unwrap())
-}
-
-fn get_model_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_model(bctx, args))
 }
 
 fn register_get_model<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -106,7 +99,7 @@ fn register_get_model<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(get_model_pin),
+        |bctx, _ctx, args| Box::pin(get_model(bctx, args)),
     );
 }
 
@@ -115,10 +108,6 @@ async fn get_version(_args: &FuncArgs) -> Result<String> {
     use crate::sys::version;
 
     Ok(version::version_info().to_string())
-}
-
-fn get_version_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_version(args))
 }
 
 fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -132,7 +121,7 @@ fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(get_version_pin),
+        |_, _, args| Box::pin(get_version(args)),
     );
 }
 
@@ -187,10 +176,6 @@ async fn get_cpu_status(_args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&obj)?)
 }
 
-fn get_cpu_status_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_cpu_status(args))
-}
-
 fn register_get_cpu_status<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
@@ -202,7 +187,7 @@ fn register_get_cpu_status<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(get_cpu_status_pin),
+        |_, _, args| Box::pin(get_cpu_status(args)),
     );
 }
 
@@ -222,14 +207,6 @@ async fn get_current_datetime(args: &FuncArgs) -> Result<String> {
             bail!("Parameter tz must be JST or UTC")
         }
     }
-}
-
-fn get_current_datetime_pin<T>(
-    _bctx: Arc<BasicContext>,
-    _ctx: T,
-    args: &FuncArgs,
-) -> FuncBodyAsync {
-    Box::pin(get_current_datetime(args))
 }
 
 fn register_get_current_datetime<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -254,6 +231,6 @@ fn register_get_current_datetime<T: 'static>(func_table: &mut FunctionTable<T>) 
                 required: vec!["tz".to_string()],
             },
         },
-        Box::new(get_current_datetime_pin),
+        |_, _, args| Box::pin(get_current_datetime(args)),
     );
 }

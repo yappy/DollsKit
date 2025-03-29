@@ -1,13 +1,11 @@
 //! 計算関連。
 
 use crate::sysmod::openai::function::{
-    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
-    get_arg_str,
+    FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
 use crate::utils::parser;
 use anyhow::Result;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -23,10 +21,6 @@ async fn calculate(args: &FuncArgs) -> Result<String> {
     let result = parser::evaluate(ast)?;
 
     Ok(result.to_string())
-}
-
-fn calculate_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(calculate(args))
 }
 
 fn register_calculate<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -50,6 +44,6 @@ fn register_calculate<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["formula".to_string()],
             },
         },
-        Box::new(calculate_pin),
+        |_, _, args| Box::pin(calculate(args)),
     );
 }

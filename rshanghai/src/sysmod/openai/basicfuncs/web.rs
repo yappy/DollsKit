@@ -1,14 +1,12 @@
 //! Web アクセス関連。
 
 use crate::sysmod::openai::function::{
-    BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement, Parameters,
-    get_arg_str,
+    FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
 use crate::utils::netutil;
 use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
 use anyhow::{Context, Result, anyhow, bail};
 use reqwest::Client;
-use std::sync::Arc;
 use std::{collections::HashMap, time::Duration};
 
 /// このモジュールの関数をすべて登録する。
@@ -86,10 +84,6 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     }
 }
 
-fn request_url_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(request_url(args))
-}
-
 fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -112,7 +106,7 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["url".to_string()],
             },
         },
-        Box::new(request_url_pin),
+        |_, _, args| Box::pin(request_url(args)),
     );
 }
 
@@ -143,10 +137,6 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&obj).unwrap())
 }
 
-fn get_weather_report_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(get_weather_report(args))
-}
-
 fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
     let area_list: Vec<_> = weather::offices()
         .iter()
@@ -174,7 +164,7 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["area".to_string()],
             },
         },
-        Box::new(get_weather_report_pin),
+        |_, _, args| Box::pin(get_weather_report(args)),
     );
 }
 

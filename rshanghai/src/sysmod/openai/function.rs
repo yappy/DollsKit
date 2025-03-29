@@ -32,7 +32,7 @@ pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync 
 /// 関数の Rust 上での定義。
 ///
 /// 引数は [BasicContext], T, [FuncArgs] で、返り値は文字列の async fn。
-pub type FuncBody<T> = Box<dyn Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
+pub type FuncBody<T> = dyn Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Sync + Send;
 /// 引数。文字列から Json value へのマップ。
 pub type FuncArgs = HashMap<String, serde_json::value::Value>;
 
@@ -68,7 +68,7 @@ pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
-    call_table: HashMap<String, FuncBody<T>>,
+    call_table: HashMap<String, Box<FuncBody<T>>>,
     /// [BasicContext] への参照。
     basic_context: Arc<BasicContext>,
 }
@@ -190,7 +190,11 @@ impl<T: 'static> FunctionTable<T> {
     }
 
     /// 関数を登録する。
-    pub fn register_function(&mut self, function: Function, body: FuncBody<T>) {
+    pub fn register_function(
+        &mut self,
+        function: Function,
+        body: impl Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Send + Sync + 'static,
+    ) {
         let name = function.name.clone();
         self.function_list.push(function);
         self.call_table.insert(name, Box::new(body));
