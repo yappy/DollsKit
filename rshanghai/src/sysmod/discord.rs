@@ -220,8 +220,8 @@ impl Discord {
         let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("discord"));
         func_table.register_basic_functions();
 
-        self.chat_history.insert(chat_history);
-        self.func_table.insert(func_table);
+        let _ = self.chat_history.insert(chat_history);
+        let _ = self.func_table.insert(func_table);
     }
 
     fn chat_history(&mut self) -> &ChatHistory {

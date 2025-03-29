@@ -466,9 +466,11 @@ impl OpenAi {
         })
     }
 
+    /*
     pub fn model_name(&self) -> &str {
         self.model_name
     }
+    */
 
     pub fn model_info_offline(&self) -> OfflineModelInfo {
         self.model_info_offline
@@ -491,7 +493,7 @@ impl OpenAi {
                 last_update: SystemTime::now(),
                 info: info.clone(),
             };
-            self.model_info_online.insert(newval);
+            let _ = self.model_info_online.insert(newval);
 
             Ok(info)
         } else {
@@ -528,7 +530,7 @@ impl OpenAi {
         let model = self.model_name;
 
         info!("[openai] model request");
-        self.check_enabled();
+        self.check_enabled()?;
 
         let resp = self
             .client
@@ -561,7 +563,7 @@ impl OpenAi {
         };
 
         info!("[openai] chat request: {:?}", body);
-        self.check_enabled();
+        self.check_enabled()?;
 
         let resp = self
             .client
@@ -604,7 +606,7 @@ impl OpenAi {
         };
 
         info!("[openai] chat request with function: {:?}", body);
-        self.check_enabled();
+        self.check_enabled()?;
 
         let resp = self
             .client
@@ -641,7 +643,7 @@ impl OpenAi {
             "[openai] image gen request: {}",
             serde_json::to_string(&body)?
         );
-        self.check_enabled();
+        self.check_enabled()?;
 
         let resp = self
             .client
@@ -697,7 +699,7 @@ impl OpenAi {
             "[openai] create speech request: {}",
             serde_json::to_string(&body)?
         );
-        self.check_enabled();
+        self.check_enabled()?;
 
         let resp = self
             .client
