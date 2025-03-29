@@ -14,6 +14,7 @@ use crate::utils::netutil;
 
 use anyhow::ensure;
 use anyhow::{Result, anyhow, bail};
+use chrono::TimeZone;
 use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
@@ -27,13 +28,22 @@ const TIMEOUT: Duration = Duration::from_secs(60);
 /// 24 時間に一度更新する。
 const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 
-/// <https://platform.openai.com/docs/api-reference/chat/create>
+/// <https://platform.openai.com/docs/api-reference/models/retrieve>
 fn url_model(model: &str) -> String {
     format!("https://api.openai.com/v1/models/{model}")
 }
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
+
+/// [OfflineModelInfo] + [OnlineModelInfo]
+#[derive(Debug, Clone, Serialize)]
+pub struct ModelInfo {
+    #[serde(flatten)]
+    offline: OfflineModelInfo,
+    #[serde(flatten)]
+    online: OnlineModelInfo,
+}
 
 /// モデル情報。
 /// API からは得られない、ドキュメントにのみある情報。
@@ -44,21 +54,6 @@ pub struct OfflineModelInfo {
     pub context_window: usize,
     /// 最大出力トークン数。
     pub max_output_tokens: usize,
-}
-
-/// モデル情報。
-/// API から得られるデータ。時々でよいので再取得する必要がある。
-#[derive(Debug, Clone, Serialize)]
-pub struct OnlineModelInfo {
-    last_update: SystemTime,
-    info: Model,
-}
-
-/// [OfflineModelInfo] + (Online) [Model]。
-#[derive(Debug, Clone, Serialize)]
-pub struct ModelInfo {
-    pub offline: OfflineModelInfo,
-    pub online: Model,
 }
 
 /// モデル情報。一番上がデフォルト。
@@ -96,7 +91,7 @@ const MAX_OUTPUT_TOKENS_FACTOR: f32 = 1.05;
 /// `max_output_tokens` が意味をなしていない gpt-4 で適当に決めるための値。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 
-/// [MODEL_LIST] からモデル名で [ModelInfo] を検索する。
+/// [MODEL_LIST] からモデル名で [OfflineModelInfo] を検索する。
 ///
 /// HashMap で検索する。
 fn get_offline_model_info(model: &str) -> Result<&OfflineModelInfo> {
@@ -114,10 +109,18 @@ fn get_offline_model_info(model: &str) -> Result<&OfflineModelInfo> {
         .ok_or_else(|| anyhow!("Model not found: {model}"))
 }
 
+/// モデル情報。
+/// API から得られるデータ。時々でよいので再取得する必要がある。
+#[derive(Debug, Clone, Serialize)]
+pub struct CachedModelInfo {
+    last_update: SystemTime,
+    info: OnlineModelInfo,
+}
+
 /// OpenAI API JSON 定義。
 /// モデル情報。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct Model {
+struct Model {
     /// The model identifier, which can be referenced in the API endpoints.
     id: String,
     /// The Unix timestamp (in seconds) when the model was created.
@@ -126,6 +129,23 @@ pub struct Model {
     object: String,
     ///The organization that owns the model.
     owned_by: String,
+}
+
+/// [Model] から必要なもののみ抜き出して読めるデータに変換したもの。
+#[derive(Default, Clone, Debug, Serialize)]
+pub struct OnlineModelInfo {
+    created: String,
+}
+
+impl OnlineModelInfo {
+    fn from(model: Model) -> Self {
+        let dt_str = chrono::Local
+            .timestamp_opt(model.created as i64, 0)
+            .single()
+            .map_or_else(|| "?".into(), |dt| dt.to_rfc3339());
+
+        Self { created: dt_str }
+    }
 }
 
 /// OpenAI API JSON 定義。
@@ -422,7 +442,7 @@ pub struct OpenAi {
     client: reqwest::Client,
     model_name: &'static str,
     model_info_offline: OfflineModelInfo,
-    model_info_online: Option<OnlineModelInfo>,
+    model_info_online: Option<CachedModelInfo>,
 }
 
 impl OpenAi {
@@ -472,11 +492,18 @@ impl OpenAi {
     }
     */
 
+    pub async fn model_info(&mut self) -> Result<ModelInfo> {
+        let offline = self.model_info_offline();
+        let online = self.model_info_online().await?;
+
+        Ok(ModelInfo { offline, online })
+    }
+
     pub fn model_info_offline(&self) -> OfflineModelInfo {
         self.model_info_offline
     }
 
-    pub async fn model_info_online(&mut self) -> Result<Model> {
+    pub async fn model_info_online(&mut self) -> Result<OnlineModelInfo> {
         let cur = &self.model_info_online;
         let update = if let Some(info) = cur {
             let now = SystemTime::now();
@@ -490,7 +517,8 @@ impl OpenAi {
         if update {
             info!("[openai] update model info");
             let info = self.get_online_model_info().await?;
-            let newval = OnlineModelInfo {
+            let info = OnlineModelInfo::from(info);
+            let newval = CachedModelInfo {
                 last_update: SystemTime::now(),
                 info: info.clone(),
             };
