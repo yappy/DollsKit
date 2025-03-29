@@ -152,7 +152,7 @@ impl Health {
 }
 
 impl SystemModule for Health {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {

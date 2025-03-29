@@ -1,7 +1,8 @@
 //! OpenAI API - function.
 
-use super::{ModelInfo, basicfuncs};
+use super::basicfuncs;
 use crate::sys::config;
+use crate::sys::taskserver::Control;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
 use anyhow::{Result, anyhow};
@@ -44,10 +45,9 @@ pub struct Args {
 }
 
 /// 標準で関数に提供されるコンテキスト情報。
-#[derive(Debug, Serialize)]
 pub struct BasicContext {
-    /// モデル情報。
-    pub model: ModelInfo,
+    /// システムハンドル。
+    pub ctrl: Control,
     /// 永続化データストレージの場所。
     pub storage_dir: Option<PathBuf>,
     /// デバッグモード。
@@ -74,7 +74,7 @@ pub struct FunctionTable<T> {
 }
 
 impl<T: 'static> FunctionTable<T> {
-    pub fn new(model: ModelInfo, storage_dir_name: Option<&str>) -> Self {
+    pub fn new(ctrl: Control, storage_dir_name: Option<&str>) -> Self {
         // openai config でディレクトリが指定されており、かつ、
         // この関数にストレージディレクトリ名が指定されている場合、Some
         let storage_dir = if let Some(storage_dir_name) = storage_dir_name {
@@ -88,7 +88,7 @@ impl<T: 'static> FunctionTable<T> {
             None
         };
         let basic_context = BasicContext {
-            model,
+            ctrl,
             storage_dir,
             debug_mode: AtomicBool::new(false),
         };

@@ -11,7 +11,6 @@ use crate::sysmod::openai::{self, ChatMessage};
 use crate::utils::chat_history::ChatHistory;
 use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
-use ::serenity::all::{CreateAttachment, FullEvent};
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -21,6 +20,7 @@ use poise::{CreateReply, FrameworkContext, serenity_prelude as serenity};
 use serde::{Deserialize, Serialize};
 
 use serenity::Client;
+use serenity::all::{CreateAttachment, FullEvent};
 use serenity::http::MessagePagination;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
@@ -100,6 +100,8 @@ impl Default for DiscordPrompt {
 }
 
 /// Discord システムモジュール。
+///
+/// [Option] は遅延初期化。
 pub struct Discord {
     /// 設定データ。
     config: DiscordConfig,
@@ -118,11 +120,11 @@ pub struct Discord {
     auto_del_config: BTreeMap<ChannelId, AutoDeleteConfig>,
 
     /// ai コマンドの会話履歴。
-    chat_history: ChatHistory,
+    chat_history: Option<ChatHistory>,
     /// [Self::chat_history] の有効期限。
     chat_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
-    func_table: FunctionTable<()>,
+    func_table: Option<FunctionTable<()>>,
 }
 
 /// 自動削除設定。チャネルごとに保持される。
@@ -162,7 +164,6 @@ impl Discord {
         info!("[discord] initialize");
 
         let config = config::get(|cfg| cfg.discord.clone());
-        let ai_config = config::get(|cfg| cfg.openai.clone());
 
         let mut auto_del_config = BTreeMap::new();
         for &ch in &config.auto_del_chs {
@@ -176,38 +177,70 @@ impl Discord {
             );
         }
 
-        // トークン上限を算出
-        // Function 定義 + 前文 + (使用可能上限) + 出力
-        let model_info = openai::get_model_info(&ai_config.model)?;
-        let mut chat_history = ChatHistory::new(model_info.name);
-        assert!(chat_history.get_total_limit() == model_info.token_limit);
-        let pre_token: usize = config
-            .prompt
-            .pre
-            .iter()
-            .map(|text| chat_history.token_count(text))
-            .sum();
-        let reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
-        chat_history.reserve_tokens(reserved);
-        info!("[discord] OpenAI token limit");
-        info!("[discord] {:6} total", model_info.token_limit);
-        info!("[discord] {reserved:6} reserved");
-        info!("[discord] {:6} chat history", chat_history.usage().1);
-
-        let mut func_table = FunctionTable::new(*model_info, Some("discord"));
-        func_table.register_basic_functions();
-
         Ok(Self {
             config,
             wakeup_list,
             ctx: None,
             postponed_msgs: Default::default(),
             auto_del_config,
-            chat_history,
+            chat_history: None,
             chat_timeout: None,
-            func_table,
+            func_table: None,
         })
     }
+
+    async fn init_openai(&mut self, ctrl: &Control) {
+        // トークン上限を算出
+        // Function 定義 + 前文 + (使用可能上限) + 出力
+        let (model_info, reserved) = {
+            let openai = ctrl.sysmods().openai.lock().await;
+
+            (
+                openai.model_info_offline(),
+                openai.get_output_reserved_token(),
+            )
+        };
+
+        let mut chat_history = ChatHistory::new(model_info.name);
+        assert!(chat_history.get_total_limit() == model_info.context_window);
+        let pre_token: usize = self
+            .config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history.token_count(text))
+            .sum();
+        let reserved = FUNCTION_TOKEN + pre_token + reserved;
+        chat_history.reserve_tokens(reserved);
+        info!("[discord] OpenAI token limit");
+        info!("[discord] {:6} total", model_info.context_window);
+        info!("[discord] {reserved:6} reserved");
+        info!("[discord] {:6} chat history", chat_history.usage().1);
+
+        let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("discord"));
+        func_table.register_basic_functions();
+
+        let _ = self.chat_history.insert(chat_history);
+        let _ = self.func_table.insert(func_table);
+    }
+
+    fn chat_history(&mut self) -> &ChatHistory {
+        self.chat_history.as_ref().unwrap()
+    }
+
+    fn chat_history_mut(&mut self) -> &mut ChatHistory {
+        self.chat_history.as_mut().unwrap()
+    }
+
+    fn func_table(&self) -> &FunctionTable<()> {
+        self.func_table.as_ref().unwrap()
+    }
+
+    /*
+    fn func_table_mut(&mut self) -> &mut FunctionTable<()> {
+           self.func_table.as_mut().unwrap()
+       }
+    */
 
     /// 発言を投稿する。
     ///
@@ -241,7 +274,7 @@ impl Discord {
 
         if let Some(timeout) = self.chat_timeout {
             if now > timeout {
-                self.chat_history.clear();
+                self.chat_history_mut().clear();
                 self.chat_timeout = None;
             }
         }
@@ -253,7 +286,8 @@ impl Discord {
 /// [Discord::on_start] から spawn される。
 async fn discord_main(ctrl: Control) -> Result<()> {
     let (config, wakeup_list) = {
-        let discord = ctrl.sysmods().discord.lock().await;
+        let mut discord = ctrl.sysmods().discord.lock().await;
+        discord.init_openai(&ctrl).await;
 
         (discord.config.clone(), discord.wakeup_list.clone())
     };
@@ -816,49 +850,62 @@ async fn ai(
         .each
         .join("")
         .replace("${user}", &ctx.author().name);
-    discord.chat_history.push({
+    discord.chat_history_mut().push({
         ChatMessage {
             role: Role::System,
             content: Some(sysmsg),
             ..Default::default()
         }
     });
-    discord.chat_history.push(ChatMessage {
+    discord.chat_history_mut().push(ChatMessage {
         role: Role::User,
         content: Some(chat_msg.to_string()),
         ..Default::default()
     });
 
+    let pre = discord.config.prompt.pre.join("");
+    // AI 返答まで関数呼び出しを繰り返す
     let reply_msg = loop {
-        let ai = data.ctrl.sysmods().openai.lock().await;
-
         // 送信用リスト
         let mut all_msgs = Vec::new();
         // 先頭システムメッセージ
         all_msgs.push(ChatMessage {
             role: Role::System,
-            content: Some(discord.config.prompt.pre.join("")),
+            content: Some(pre.clone()),
             ..Default::default()
         });
         // それ以降 (ヒストリの中身全部) を追加
-        for m in discord.chat_history.iter() {
+        for m in discord.chat_history().iter() {
             all_msgs.push(m.clone());
         }
+
         // ChatGPT API
-        let reply_msg = ai
-            .chat_with_function(&all_msgs, discord.func_table.function_list())
-            .await;
+        let reply_msg = {
+            let ai = data.ctrl.sysmods().openai.lock().await;
+            ai.chat_with_function(
+                &all_msgs,
+                discord.func_table.as_ref().unwrap().function_list(),
+            )
+            .await
+        };
         match &reply_msg {
             Ok(reply) => {
                 // 応答を履歴に追加
-                discord.chat_history.push(reply.clone());
+                discord.chat_history_mut().push(reply.clone());
                 if reply.function_call.is_some() {
                     // function call が返ってきた
                     let func_name = &reply.function_call.as_ref().unwrap().name;
                     let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = discord.func_table.call((), func_name, func_args).await;
+                    let func_res = discord
+                        .func_table
+                        .as_ref()
+                        .unwrap()
+                        .call((), func_name, func_args)
+                        .await;
                     // debug trace
-                    if discord.func_table.debug_mode() || trace_function_call.unwrap_or(false) {
+                    if discord.func_table.as_ref().unwrap().debug_mode()
+                        || trace_function_call.unwrap_or(false)
+                    {
                         reply_long(
                             &ctx,
                             &format!(
@@ -869,7 +916,7 @@ async fn ai(
                         .await?;
                     }
                     // function 応答を履歴に追加
-                    discord.chat_history.push(func_res);
+                    discord.chat_history_mut().push(func_res);
                     // continue
                 } else {
                     // 通常の応答が返ってきた
@@ -934,9 +981,9 @@ async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         discord.check_history_timeout();
         format!(
             "History: {}\nToken: {} / {}, Timeout: {} min",
-            discord.chat_history.len(),
-            discord.chat_history.usage().0,
-            discord.chat_history.usage().1,
+            discord.chat_history().len(),
+            discord.chat_history().usage().0,
+            discord.chat_history().usage().1,
             discord.config.prompt.history_timeout_min
         )
     };
@@ -952,7 +999,7 @@ async fn aistatus_reset(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
         let ctrl = &ctx.data().ctrl;
         let mut discord = ctrl.sysmods().discord.lock().await;
 
-        discord.chat_history.clear();
+        discord.chat_history_mut().clear();
     }
     ctx.reply("OK").await?;
 
@@ -966,7 +1013,7 @@ async fn aistatus_funclist(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     let help = {
         let discord = ctx.data().ctrl.sysmods().discord.lock().await;
 
-        discord.func_table.create_help()
+        discord.func_table().create_help()
     };
     let text = format!("```\n{help}\n```");
     ctx.reply(text).await?;
@@ -1066,7 +1113,7 @@ impl SystemModule for Discord {
     /// async 使用可能になってからの初期化。
     ///
     /// 設定有効ならば [discord_main] を spawn する。
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[discord] on_start");
         if self.config.enabled {
             taskserver::spawn_oneshot_task(ctrl, "discord", discord_main);

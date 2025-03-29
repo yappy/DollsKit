@@ -308,7 +308,7 @@ impl SystemModule for Camera {
     /// async 使用可能になってからの初期化。
     ///
     /// 設定有効ならば [Self::auto_task] を spawn する。
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {

@@ -128,7 +128,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
 }
 
 impl SystemModule for HttpServer {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[http] on_start");
         if self.config.enabled {
             taskserver::spawn_oneshot_task(ctrl, "http", http_main_task);
