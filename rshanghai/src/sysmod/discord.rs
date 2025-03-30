@@ -881,7 +881,7 @@ async fn ai(
 
         // ChatGPT API
         let reply_msg = {
-            let ai = data.ctrl.sysmods().openai.lock().await;
+            let mut ai = data.ctrl.sysmods().openai.lock().await;
             ai.chat_with_function(
                 &all_msgs,
                 discord.func_table.as_ref().unwrap().function_list(),
@@ -1035,7 +1035,7 @@ async fn aiimg(
 
     let img_url = {
         let ctrl = &ctx.data().ctrl;
-        let ai = ctrl.sysmods().openai.lock().await;
+        let mut ai = ctrl.sysmods().openai.lock().await;
 
         let mut resp = ai.generate_image(&prompt, 1).await?;
         resp.pop().ok_or_else(|| anyhow!("image array too short"))?
@@ -1097,7 +1097,7 @@ async fn aispeech(
 
     let audio_bin = {
         let ctrl = &ctx.data().ctrl;
-        let ai = ctrl.sysmods().openai.lock().await;
+        let mut ai = ctrl.sysmods().openai.lock().await;
 
         ai.text_to_speech(model, &input, voice, Some(openai::SpeechFormat::Mp3), speed)
             .await?

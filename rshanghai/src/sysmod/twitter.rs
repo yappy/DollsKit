@@ -565,7 +565,7 @@ impl Twitter {
             // 結果に追加する
             // エラーはログのみ出して追加をしない
             {
-                let ai = ctrl.sysmods().openai.lock().await;
+                let mut ai = ctrl.sysmods().openai.lock().await;
                 match ai.chat(msgs).await {
                     Ok(resp) => reply_buf.push(Reply {
                         to_tw_id: tw.id.clone(),

@@ -499,7 +499,7 @@ async fn draw_picture(
     let ctrl = bctx.ctrl.clone();
     taskserver::spawn_oneshot_fn(&ctrl, "line_draw_picture", async move {
         let url = {
-            let ai = bctx.ctrl.sysmods().openai.lock().await;
+            let mut ai = bctx.ctrl.sysmods().openai.lock().await;
 
             ai.generate_image(&keywords, 1)
                 .await?

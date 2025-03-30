@@ -5,14 +5,14 @@ pub mod function;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
 use crate::utils::netutil;
 
-use anyhow::ensure;
+use anyhow::{Context, ensure};
 use anyhow::{Result, anyhow, bail};
 use chrono::TimeZone;
 use log::info;
@@ -146,6 +146,87 @@ impl OnlineModelInfo {
             .map_or_else(|| "?".into(), |dt| dt.to_rfc3339());
 
         Self { created: dt_str }
+    }
+}
+
+/// Rate Limit 情報。
+///
+/// HTTP レスポンスヘッダに含まれる。
+#[derive(Debug, Clone, Copy)]
+struct RateLimit {
+    timestamp: Instant,
+    limit_requests: u32,
+    limit_tokens: u32,
+    remaining_requests: u32,
+    remaining_tokens: u32,
+    reset_requests: Duration,
+    reset_tokens: Duration,
+}
+
+impl RateLimit {
+    fn from(resp: &reqwest::Response) -> Result<Self> {
+        let timestamp = Instant::now();
+        let headers = resp.headers();
+
+        let to_u32 = |key| -> Result<u32> {
+            headers
+                .get(key)
+                .ok_or_else(|| anyhow!("not found: {key}"))?
+                .to_str()?
+                .parse::<u32>()
+                .context("parse u32")
+        };
+        let to_secs_f64 = |key| -> Result<f64> {
+            let s = headers
+                .get(key)
+                .ok_or_else(|| anyhow!("not found: {key}"))?
+                .to_str()?;
+
+            Self::to_secs_f64(s)
+        };
+
+        let limit_requests = to_u32("x-ratelimit-limit-requests")?;
+        let limit_tokens = to_u32("x-ratelimit-limit-tokens")?;
+        let remaining_requests = to_u32("x-ratelimit-remaining-requests")?;
+        let remaining_tokens = to_u32("x-ratelimit-remaining-tokens")?;
+        let reset_requests = to_secs_f64("x-ratelimit-reset-requests")?;
+        let reset_tokens = to_secs_f64("x-ratelimit-reset-tokens")?;
+
+        Ok(Self {
+            timestamp,
+            limit_requests,
+            limit_tokens,
+            remaining_requests,
+            remaining_tokens,
+            reset_requests: Duration::from_secs_f64(reset_requests),
+            reset_tokens: Duration::from_secs_f64(reset_tokens),
+        })
+    }
+
+    /// サンプルには "6m0s" と書かれているが、
+    /// 実際には "30.828s" のように小数が来ている。
+    fn to_secs_f64(s: &str) -> Result<f64> {
+        let mut sum = 0.0;
+        let mut buf = String::new();
+        for c in s.chars() {
+            let scale: u32 = match c {
+                'h' => 60 * 60,
+                'm' => 60,
+                's' => 1,
+                _ => {
+                    buf.push(c);
+                    0
+                }
+            };
+            if scale > 0 {
+                let num = buf.parse::<f64>()?;
+                buf.clear();
+                sum += num * scale as f64;
+            }
+        }
+        ensure!(buf.is_empty(), "unexpected format: {}", s);
+
+        Ok(sum)
     }
 }
 
@@ -441,9 +522,12 @@ impl Default for OpenAiConfig {
 pub struct OpenAi {
     config: OpenAiConfig,
     client: reqwest::Client,
+
     model_name: &'static str,
     model_info_offline: OfflineModelInfo,
     model_info_online: Option<CachedModelInfo>,
+
+    rate_limit: Option<RateLimit>,
 }
 
 impl OpenAi {
@@ -484,6 +568,7 @@ impl OpenAi {
             model_name: info.name,
             model_info_offline: *info,
             model_info_online: None,
+            rate_limit: None,
         })
     }
 
@@ -599,7 +684,7 @@ impl OpenAi {
     /// HTTP Header に付与されるメタ情報をログに記録する。
     /// <https://platform.openai.com/docs/api-reference/debugging-requests>
     async fn post_json(
-        &self,
+        &mut self,
         url: &str,
         body: &(impl Serialize + std::fmt::Debug),
     ) -> Result<Response> {
@@ -624,12 +709,16 @@ impl OpenAi {
         Self::log_header(&resp, "openai-organization");
         Self::log_header(&resp, "openai-processing-ms");
         Self::log_header(&resp, "openai-version");
-        Self::log_header(&resp, "x-ratelimit-limit-requests");
-        Self::log_header(&resp, "x-ratelimit-limit-tokens");
-        Self::log_header(&resp, "x-ratelimit-remaining-requests");
-        Self::log_header(&resp, "x-ratelimit-remaining-tokens");
-        Self::log_header(&resp, "x-ratelimit-reset-requests");
-        Self::log_header(&resp, "x-ratelimit-reset-tokens");
+
+        match RateLimit::from(&resp) {
+            Ok(rate_limit) => {
+                info!("[openai] rate limit: {:?}", rate_limit);
+                self.rate_limit = Some(rate_limit);
+            }
+            Err(err) => {
+                warn!("[openai] could not get rate limit: {err}");
+            }
+        }
 
         Ok(resp)
     }
@@ -637,7 +726,7 @@ impl OpenAi {
     /// [post_json] の結果を文字列として返す。
     /// HTTP エラーも含めてエラーにする。
     async fn post_json_text(
-        &self,
+        &mut self,
         url: &str,
         body: &(impl Serialize + std::fmt::Debug),
     ) -> Result<String> {
@@ -651,7 +740,7 @@ impl OpenAi {
     /// [post_json] の結果をバイナリとして返す。
     /// HTTP エラーも含めてエラーにする。
     async fn post_json_bin(
-        &self,
+        &mut self,
         url: &str,
         body: &(impl Serialize + std::fmt::Debug),
     ) -> Result<Vec<u8>> {
@@ -663,7 +752,7 @@ impl OpenAi {
     }
 
     /// OpenAI Chat API を使用する。
-    pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
+    pub async fn chat(&mut self, msgs: Vec<ChatMessage>) -> Result<String> {
         info!("[openai] chat request");
 
         let body = ChatRequest {
@@ -692,7 +781,7 @@ impl OpenAi {
 
     /// OpenAI Chat API を fcuntion call 機能付きで使用する。
     pub async fn chat_with_function(
-        &self,
+        &mut self,
         msgs: &[ChatMessage],
         funcs: &[Function],
     ) -> Result<ChatMessage> {
@@ -719,7 +808,7 @@ impl OpenAi {
     }
 
     /// OpenAI Image Generation API を使用する。
-    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
+    pub async fn generate_image(&mut self, prompt: &str, n: u8) -> Result<Vec<String>> {
         info!("[openai] image gen request");
 
         let body = ImageGenRequest {
@@ -744,7 +833,7 @@ impl OpenAi {
 
     /// OpenAI Create Speech API を使用する。
     pub async fn text_to_speech(
-        &self,
+        &mut self,
         model: SpeechModel,
         input: &str,
         voice: SpeechVoice,
@@ -790,6 +879,23 @@ mod tests {
     use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
 
+    #[test]
+    fn test_parse_resettime() {
+        const EPS: f64 = 1e-10;
+
+        let s = "6m0s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert_eq!(360.0, v);
+
+        let s = "30.828s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert!((30.828 - v).abs() < EPS);
+
+        let s = "1h2m3s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert_eq!((3600 + 120 + 3) as f64, v);
+    }
+
     #[tokio::test]
     #[serial(openai)]
     #[ignore]
@@ -798,7 +904,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let msgs = vec![
             ChatMessage {
                 role: Role::System,
@@ -835,7 +941,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let res = ai
             .generate_image("Rasberry Pi の上に乗っている管理人形", 1)
             .await?;
@@ -852,7 +958,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let res = ai
             .text_to_speech(
                 SpeechModel::Tts1,

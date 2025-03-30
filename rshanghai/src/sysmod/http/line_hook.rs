@@ -357,7 +357,7 @@ async fn on_text_message(
             ..Default::default()
         });
         let reply_msg = {
-            let ai = ctrl.sysmods().openai.lock().await;
+            let mut ai = ctrl.sysmods().openai.lock().await;
 
             // それ以降 (ヒストリの中身全部) を追加
             for m in line.chat_history(ctrl).await.iter() {
