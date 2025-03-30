@@ -643,7 +643,7 @@ impl OpenAi {
     ) -> Result<String> {
         let resp = self.post_json(url, body).await?;
         let text = netutil::check_http_resp(resp).await?;
-        info!("[openai] {text}");
+        info!("[openai] text received: len={}", text.len());
 
         Ok(text)
     }
