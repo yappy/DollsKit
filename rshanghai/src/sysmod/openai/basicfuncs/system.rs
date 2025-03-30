@@ -8,7 +8,7 @@ use crate::sysmod::openai::function::{
     BasicContext, FuncArgs, Function, FunctionTable, ParameterElement, Parameters,
     get_arg_bool_opt, get_arg_str,
 };
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -19,6 +19,7 @@ use std::sync::atomic::Ordering;
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_debug_mode(func_table);
     register_get_model(func_table);
+    register_get_rate_limit(func_table);
     register_get_version(func_table);
     register_get_cpu_status(func_table);
     register_get_current_datetime(func_table);
@@ -100,6 +101,39 @@ fn register_get_model<T: 'static>(func_table: &mut FunctionTable<T>) {
             },
         },
         |bctx, _ctx, args| Box::pin(get_model(bctx, args)),
+    );
+}
+
+/// レートリミット情報取得。
+async fn get_rate_limit(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result<String> {
+    let exp = bctx
+        .ctrl
+        .sysmods()
+        .openai
+        .lock()
+        .await
+        .get_expected_rate_limit();
+
+    exp.ok_or_else(|| anyhow!("No data")).map(|exp| {
+        format!(
+            "Remaining\nRequests: {} / {}\nTokens: {} / {}",
+            exp.remaining_requests, exp.limit_requests, exp.remaining_tokens, exp.limit_tokens,
+        )
+    })
+}
+
+fn register_get_rate_limit<T: 'static>(func_table: &mut FunctionTable<T>) {
+    func_table.register_function(
+        Function {
+            name: "get_rate_limit".to_string(),
+            description: Some("Get rate limit info of GPT usage".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        },
+        |bctx, _ctx, args| Box::pin(get_rate_limit(bctx, args)),
     );
 }
 

@@ -163,18 +163,27 @@ struct RateLimit {
     reset_tokens: Duration,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ExpectedRateLimit {
+    limit_requests: u32,
+    limit_tokens: u32,
+    remaining_requests: u32,
+    remaining_tokens: u32,
+}
+
 impl RateLimit {
     fn from(resp: &reqwest::Response) -> Result<Self> {
         let timestamp = Instant::now();
         let headers = resp.headers();
 
         let to_u32 = |key| -> Result<u32> {
-            headers
+            let s = headers
                 .get(key)
                 .ok_or_else(|| anyhow!("not found: {key}"))?
-                .to_str()?
-                .parse::<u32>()
-                .context("parse u32")
+                .to_str()?;
+
+            s.parse::<u32>()
+                .with_context(|| format!("parse u32 failed: {s}"))
         };
         let to_secs_f64 = |key| -> Result<f64> {
             let s = headers
@@ -182,7 +191,7 @@ impl RateLimit {
                 .ok_or_else(|| anyhow!("not found: {key}"))?
                 .to_str()?;
 
-            Self::to_secs_f64(s)
+            Self::to_secs_f64(s).with_context(|| format!("parse f64 secs failed: {s}"))
         };
 
         let limit_requests = to_u32("x-ratelimit-limit-requests")?;
@@ -205,28 +214,85 @@ impl RateLimit {
 
     /// サンプルには "6m0s" と書かれているが、
     /// 実際には "30.828s" のように小数が来ている。
+    /// また、"120ms" とかもある。
     fn to_secs_f64(s: &str) -> Result<f64> {
         let mut sum = 0.0;
-        let mut buf = String::new();
+
+        let unit_to_scale = |unit: &str| -> Result<f64> {
+            let scale = match unit {
+                "ns" => 0.000_000_001,
+                "us" => 0.000_001,
+                "ms" => 0.001,
+                "s" => 1.0,
+                "m" => 60.0,
+                "h" => 3600.0,
+                "d" => 86400.0,
+                _ => bail!("unknown unit: {unit}"),
+            };
+            Ok(scale)
+        };
+
+        let mut numbuf = String::new();
+        let mut unitbuf = String::new();
         for c in s.chars() {
-            let scale: u32 = match c {
-                'h' => 60 * 60,
-                'm' => 60,
-                's' => 1,
+            match c {
+                '0'..'9' | '.' => {
+                    if !unitbuf.is_empty() {
+                        let num = numbuf.parse::<f64>()?;
+                        let scale = unit_to_scale(&unitbuf)?;
+                        sum += num * scale as f64;
+                        numbuf.clear();
+                        unitbuf.clear();
+                    }
+                    numbuf.push(c);
+                }
                 _ => {
-                    buf.push(c);
-                    0
+                    unitbuf.push(c);
                 }
             };
-            if scale > 0 {
-                let num = buf.parse::<f64>()?;
-                buf.clear();
-                sum += num * scale as f64;
-            }
         }
-        ensure!(buf.is_empty(), "unexpected format: {}", s);
+        if !unitbuf.is_empty() {
+            let num = numbuf.parse::<f64>()?;
+            let scale = unit_to_scale(&unitbuf)?;
+            sum += num * scale as f64;
+            numbuf.clear();
+            unitbuf.clear();
+        }
+        ensure!(numbuf.is_empty(), "unexpected format: {}", s);
 
         Ok(sum)
+    }
+
+    fn calc_expected_current(&self) -> ExpectedRateLimit {
+        let now = Instant::now();
+        let elapsed_secs = (now - self.timestamp).as_secs_f64();
+
+        let remaining_requests = if self.reset_requests.as_secs_f64() >= elapsed_secs {
+            self.limit_requests
+        } else {
+            let vreq = (self.limit_requests - self.remaining_requests) as f64
+                / self.reset_requests.as_secs_f64();
+            let remaining_requests = self.remaining_requests as f64 + vreq * elapsed_secs;
+
+            (remaining_requests as u32).min(self.limit_requests)
+        };
+
+        let remaining_tokens = if self.reset_tokens.as_secs_f64() >= elapsed_secs {
+            self.limit_tokens
+        } else {
+            let vreq = (self.limit_tokens - self.remaining_tokens) as f64
+                / self.reset_requests.as_secs_f64();
+            let remaining_tokens = self.remaining_tokens as f64 + vreq * elapsed_secs;
+
+            (remaining_tokens as u32).min(self.limit_tokens)
+        };
+
+        ExpectedRateLimit {
+            limit_requests: self.limit_requests,
+            limit_tokens: self.limit_tokens,
+            remaining_requests,
+            remaining_tokens,
+        }
     }
 }
 
@@ -682,6 +748,8 @@ impl OpenAi {
     /// 成功しても HTTP ステータスコードは失敗かもしれない。
     ///
     /// HTTP Header に付与されるメタ情報をログに記録する。
+    /// レートリミット情報は後で参照できるように保存する。
+    ///
     /// <https://platform.openai.com/docs/api-reference/debugging-requests>
     async fn post_json(
         &mut self,
@@ -716,7 +784,7 @@ impl OpenAi {
                 self.rate_limit = Some(rate_limit);
             }
             Err(err) => {
-                warn!("[openai] could not get rate limit: {err}");
+                warn!("[openai] could not get rate limit: {err:#}");
             }
         }
 
@@ -749,6 +817,12 @@ impl OpenAi {
         info!("[openai] binary received: size={}", bin.len());
 
         Ok(bin)
+    }
+
+    pub fn get_expected_rate_limit(&self) -> Option<ExpectedRateLimit> {
+        self.rate_limit
+            .as_ref()
+            .map(|rate_limit| rate_limit.calc_expected_current())
     }
 
     /// OpenAI Chat API を使用する。
@@ -894,6 +968,10 @@ mod tests {
         let s = "1h2m3s";
         let v = RateLimit::to_secs_f64(s).unwrap();
         assert_eq!((3600 + 120 + 3) as f64, v);
+
+        let s = "120ms";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert!((0.120 - v).abs() < EPS);
     }
 
     #[tokio::test]
