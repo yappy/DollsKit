@@ -1,24 +1,21 @@
 //! Discord クライアント (bot) 機能。
 
 use super::SystemModule;
-use super::openai::{Role, function::FunctionTable};
 
 use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
 use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
-use crate::sysmod::openai::{self, ChatMessage};
+use crate::sysmod::openai::{self, ChatMessage, OpenAi, OpenAiErrorKind};
+use crate::sysmod::openai::{Role, function::FunctionTable};
 use crate::utils::chat_history::ChatHistory;
-use crate::utils::netutil::HttpStatusError;
 use crate::utils::playtools::dice::{self};
+
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
-
 use poise::{CreateReply, FrameworkContext, serenity_prelude as serenity};
-
 use serde::{Deserialize, Serialize};
-
 use serenity::Client;
 use serenity::all::{CreateAttachment, FullEvent};
 use serenity::http::MessagePagination;
@@ -948,12 +945,18 @@ async fn ai(
         }
         Err(err) => {
             error!("[discord] openai error: {:#?}", err);
-            // HTTP status が得られるタイプのエラーのみ discord 返信する
-            if let Some(err) = err.downcast_ref::<HttpStatusError>() {
-                warn!("[discord] openai reply: {} {}", err.status, err.body);
-                let reply_msg = format!("OpenAI API Error, HTTP Status: {}", err.status);
-                ctx.reply(reply_msg.to_string()).await?;
-            }
+            let errmsg = match OpenAi::error_kind(&err) {
+                OpenAiErrorKind::Timeout => "Server timed out.".to_string(),
+                OpenAiErrorKind::RateLimit => {
+                    "Rate limit exceeded. Please retry after a while.".to_string()
+                }
+                OpenAiErrorKind::QuotaExceeded => "Quota exceeded. Charge the credit.".to_string(),
+                OpenAiErrorKind::HttpError(status) => format!("Error {status}"),
+                _ => "Error".to_string(),
+            };
+
+            warn!("[discord] openai reply: {errmsg}");
+            ctx.reply(errmsg).await?;
         }
     }
 

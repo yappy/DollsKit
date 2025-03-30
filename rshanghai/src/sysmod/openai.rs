@@ -610,6 +610,8 @@ pub enum OpenAiErrorKind {
     RateLimit,
     /// 429: 課金が必要。
     QuotaExceeded,
+    /// その他の HTTP Error
+    HttpError(u16),
 }
 
 impl OpenAi {
@@ -756,6 +758,8 @@ impl OpenAi {
                     } else if msg.contains("quota") && msg.contains("billing") {
                         return OpenAiErrorKind::QuotaExceeded;
                     }
+                } else {
+                    return OpenAiErrorKind::HttpError(http_err.status);
                 }
             }
         }
