@@ -17,6 +17,7 @@ use anyhow::{Result, anyhow, bail};
 use chrono::TimeZone;
 use log::info;
 use log::warn;
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 /// HTTP 通信のタイムアウト。
@@ -542,19 +543,6 @@ impl OpenAi {
         v1.min(v2)
     }
 
-    /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
-    pub fn is_timeout(err: &anyhow::Error) -> bool {
-        for cause in err.chain() {
-            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
-                if req_err.is_timeout() {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-
     async fn get_online_model_info(&self) -> Result<Model> {
         let key = &self.config.api_key;
         let model = self.model_name;
@@ -574,6 +562,7 @@ impl OpenAi {
         netutil::convert_from_json::<Model>(&json_str)
     }
 
+    /// 設定で無効になっていたら警告をログに出しつつ [Err] を返す。
     fn check_enabled(&self) -> Result<()> {
         if !self.config.enabled {
             warn!("[openai] skip because openai feature is disabled");
@@ -583,27 +572,107 @@ impl OpenAi {
         Ok(())
     }
 
+    /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
+    pub fn is_timeout(err: &anyhow::Error) -> bool {
+        for cause in err.chain() {
+            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
+                if req_err.is_timeout() {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    fn log_header(resp: &reqwest::Response, key: &str) {
+        if let Some(value) = resp.headers().get(key) {
+            info!("[openai] {key}: {value:?}");
+        } else {
+            info!("[openai] not found: {key}");
+        }
+    }
+
+    /// JSON を POST して [Response] を返す。
+    /// 成功しても HTTP ステータスコードは失敗かもしれない。
+    ///
+    /// HTTP Header に付与されるメタ情報をログに記録する。
+    /// <https://platform.openai.com/docs/api-reference/debugging-requests>
+    async fn post_json(
+        &self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<Response> {
+        let key = &self.config.api_key;
+
+        info!("[openai] post_json: {url}");
+        info!("[openai] {}", serde_json::to_string(body).unwrap());
+        self.check_enabled()?;
+
+        let resp = self
+            .client
+            .post(url)
+            .header("Authorization", format!("Bearer {key}"))
+            .json(body)
+            .send()
+            .await?;
+        // HTTP POST レスポンス取得まで成功
+        // ステータスコードは失敗かもしれない
+
+        // API メタ情報および Rate Limit 情報をログに記録
+        Self::log_header(&resp, "x-request-id");
+        Self::log_header(&resp, "openai-organization");
+        Self::log_header(&resp, "openai-processing-ms");
+        Self::log_header(&resp, "openai-version");
+        Self::log_header(&resp, "x-ratelimit-limit-requests");
+        Self::log_header(&resp, "x-ratelimit-limit-tokens");
+        Self::log_header(&resp, "x-ratelimit-remaining-requests");
+        Self::log_header(&resp, "x-ratelimit-remaining-tokens");
+        Self::log_header(&resp, "x-ratelimit-reset-requests");
+        Self::log_header(&resp, "x-ratelimit-reset-tokens");
+
+        Ok(resp)
+    }
+
+    /// [post_json] の結果を文字列として返す。
+    /// HTTP エラーも含めてエラーにする。
+    async fn post_json_text(
+        &self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<String> {
+        let resp = self.post_json(url, body).await?;
+        let text = netutil::check_http_resp(resp).await?;
+        info!("[openai] {text}");
+
+        Ok(text)
+    }
+
+    /// [post_json] の結果をバイナリとして返す。
+    /// HTTP エラーも含めてエラーにする。
+    async fn post_json_bin(
+        &self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<Vec<u8>> {
+        let resp = self.post_json(url, body).await?;
+        let bin = netutil::check_http_resp_bin(resp).await?;
+        info!("[openai] binary received: size={}", bin.len());
+
+        Ok(bin)
+    }
+
     /// OpenAI Chat API を使用する。
     pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
-        let key = &self.config.api_key;
+        info!("[openai] chat request");
+
         let body = ChatRequest {
             model: self.model_name.to_string(),
             messages: msgs,
             ..Default::default()
         };
 
-        info!("[openai] chat request: {:?}", body);
-        self.check_enabled()?;
-
-        let resp = self
-            .client
-            .post(URL_CHAT)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let json_str = netutil::check_http_resp(resp).await?;
+        let json_str = self.post_json_text(URL_CHAT, &body).await?;
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
@@ -627,7 +696,8 @@ impl OpenAi {
         msgs: &[ChatMessage],
         funcs: &[Function],
     ) -> Result<ChatMessage> {
-        let key = &self.config.api_key;
+        info!("[openai] chat request with function");
+
         let body = ChatRequest {
             model: self.model_name.to_string(),
             messages: msgs.to_vec(),
@@ -635,18 +705,7 @@ impl OpenAi {
             ..Default::default()
         };
 
-        info!("[openai] chat request with function: {:?}", body);
-        self.check_enabled()?;
-
-        let resp = self
-            .client
-            .post(URL_CHAT)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let json_str = netutil::check_http_resp(resp).await?;
+        let json_str = self.post_json_text(URL_CHAT, &body).await?;
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
@@ -661,7 +720,8 @@ impl OpenAi {
 
     /// OpenAI Image Generation API を使用する。
     pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
-        let key = &self.config.api_key;
+        info!("[openai] image gen request");
+
         let body = ImageGenRequest {
             prompt: prompt.to_string(),
             n: Some(n),
@@ -669,21 +729,7 @@ impl OpenAi {
             ..Default::default()
         };
 
-        info!(
-            "[openai] image gen request: {}",
-            serde_json::to_string(&body)?
-        );
-        self.check_enabled()?;
-
-        let resp = self
-            .client
-            .post(URL_IMAGE_GEN)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let json_str = netutil::check_http_resp(resp).await?;
+        let json_str = self.post_json_text(URL_IMAGE_GEN, &body).await?;
         let resp: ImageGenResponse = netutil::convert_from_json(&json_str)?;
 
         let mut result = Vec::new();
@@ -705,6 +751,8 @@ impl OpenAi {
         response_format: Option<SpeechFormat>,
         speed: Option<f32>,
     ) -> Result<Vec<u8>> {
+        info!("[openai] create speech request");
+
         ensure!(
             input.len() <= SPEECH_INPUT_MAX,
             "input length limit is {SPEECH_INPUT_MAX} characters"
@@ -716,7 +764,6 @@ impl OpenAi {
             );
         }
 
-        let key = &self.config.api_key;
         let body = SpeechRequest {
             model,
             input: input.to_string(),
@@ -725,21 +772,7 @@ impl OpenAi {
             speed,
         };
 
-        info!(
-            "[openai] create speech request: {}",
-            serde_json::to_string(&body)?
-        );
-        self.check_enabled()?;
-
-        let resp = self
-            .client
-            .post(URL_AUDIO_SPEECH)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let bin = netutil::check_http_resp_bin(resp).await?;
+        let bin = self.post_json_bin(URL_AUDIO_SPEECH, &body).await?;
 
         Ok(bin)
     }
