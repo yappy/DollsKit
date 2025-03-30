@@ -57,6 +57,10 @@ pub struct LinePrompt {
     pub history_timeout_min: u32,
     /// OpenAI API タイムアウト時のメッセージ。
     pub timeout_msg: String,
+    /// OpenAI API レートリミットエラーのメッセージ。
+    pub ratelimit_msg: String,
+    /// OpenAI API クレジット枯渇エラーのメッセージ。
+    pub quota_msg: String,
     /// OpenAI API エラー時のメッセージ。
     pub error_msg: String,
 }

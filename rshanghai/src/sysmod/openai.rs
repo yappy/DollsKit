@@ -10,7 +10,7 @@ use std::time::{Duration, Instant, SystemTime};
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::utils::netutil;
+use crate::utils::netutil::{self, HttpStatusError};
 
 use anyhow::{Context, ensure};
 use anyhow::{Result, anyhow, bail};
@@ -598,6 +598,20 @@ pub struct OpenAi {
     rate_limit: Option<RateLimit>,
 }
 
+/// 特別な案内をすべきかもしれないエラー。
+///
+/// <https://platform.openai.com/docs/guides/error-codes>
+pub enum OpenAiErrorKind {
+    /// その他。
+    Fatal,
+    /// HTTP リクエストがタイムアウト。
+    Timeout,
+    /// 429: 短時間に使いすぎ。
+    RateLimit,
+    /// 429: 課金が必要。
+    QuotaExceeded,
+}
+
 impl OpenAi {
     /// コンストラクタ。
     pub fn new() -> Result<Self> {
@@ -725,17 +739,28 @@ impl OpenAi {
         Ok(())
     }
 
-    /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
-    pub fn is_timeout(err: &anyhow::Error) -> bool {
+    /// エラーチェインの中から特定のエラーを探す。
+    pub fn error_kind(err: &anyhow::Error) -> OpenAiErrorKind {
         for cause in err.chain() {
             if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
                 if req_err.is_timeout() {
-                    return true;
+                    return OpenAiErrorKind::Timeout;
+                }
+            }
+            if let Some(http_err) = cause.downcast_ref::<HttpStatusError>() {
+                // 429: Too Many Requests
+                if http_err.status == 429 {
+                    let msg = http_err.body.to_ascii_lowercase();
+                    if msg.find("rate").is_some() && msg.find("limit").is_some() {
+                        return OpenAiErrorKind::RateLimit;
+                    } else if msg.find("quota").is_some() && msg.find("billing").is_some() {
+                        return OpenAiErrorKind::QuotaExceeded;
+                    }
                 }
             }
         }
 
-        false
+        OpenAiErrorKind::Fatal
     }
 
     fn log_header(resp: &reqwest::Response, key: &str) {
@@ -779,7 +804,12 @@ impl OpenAi {
         Self::log_header(&resp, "openai-organization");
         Self::log_header(&resp, "openai-processing-ms");
         Self::log_header(&resp, "openai-version");
+        // ドキュメントにはないが、公式ライブラリが使っている
+        // これに従うのがおすすめなのかもしれない
+        Self::log_header(&resp, "x-should-retry");
 
+        // レートリミット情報を最新に更新
+        // 失敗しても警告のみ
         match RateLimit::from(&resp) {
             Ok(rate_limit) => {
                 info!("[openai] rate limit: {:?}", rate_limit);

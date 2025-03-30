@@ -9,7 +9,7 @@ use crate::{
     sys::taskserver::Control,
     sysmod::{
         line::FunctionContext,
-        openai::{ChatMessage, OpenAi, Role},
+        openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
     },
     utils::netutil,
 };
@@ -446,10 +446,11 @@ async fn on_text_message(
             }
             Err(err) => {
                 error!("[line] openai error: {:#?}", err);
-                let errmsg = if OpenAi::is_timeout(&err) {
-                    prompt.timeout_msg
-                } else {
-                    prompt.error_msg
+                let errmsg = match OpenAi::error_kind(&err) {
+                    OpenAiErrorKind::Timeout => prompt.timeout_msg,
+                    OpenAiErrorKind::RateLimit => prompt.ratelimit_msg,
+                    OpenAiErrorKind::QuotaExceeded => prompt.quota_msg,
+                    _ => prompt.error_msg,
                 };
                 msgs.push(&errmsg);
                 for msg in msgs.iter() {
