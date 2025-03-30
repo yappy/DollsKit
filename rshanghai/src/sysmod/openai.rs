@@ -236,7 +236,7 @@ impl RateLimit {
         let mut unitbuf = String::new();
         for c in s.chars() {
             match c {
-                '0'..'9' | '.' => {
+                '0'..='9' | '.' => {
                     if !unitbuf.is_empty() {
                         let num = numbuf.parse::<f64>()?;
                         let scale = unit_to_scale(&unitbuf)?;
