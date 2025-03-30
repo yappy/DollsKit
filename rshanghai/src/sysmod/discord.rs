@@ -831,14 +831,14 @@ async fn ai(
     #[description = "Show internal details when AI calls a function. (default=False)"]
     trace_function_call: Option<bool>,
 ) -> Result<(), PoiseError> {
+    // そのまま引用返信
+    reply_long_mdquote(&ctx, &chat_msg).await?;
+
     let data = ctx.data();
     let mut discord = data.ctrl.sysmods().discord.lock().await;
 
     // タイムアウト処理
     discord.check_history_timeout();
-
-    // そのまま引用返信
-    reply_long_mdquote(&ctx, &chat_msg).await?;
 
     // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
     let sysmsg = discord
