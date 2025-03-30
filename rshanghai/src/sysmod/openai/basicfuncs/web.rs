@@ -12,6 +12,7 @@ use std::{collections::HashMap, time::Duration};
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     register_request_url(func_table);
+    register_get_weather_areas(func_table);
     register_get_weather_report(func_table);
 }
 
@@ -110,14 +111,43 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
     );
 }
 
+/// 気象情報地域のリストを取得する。
+async fn get_weather_areas(_args: &FuncArgs) -> Result<String> {
+    let area_list: Vec<_> = weather::offices()
+        .iter()
+        .map(|info| info.name.clone())
+        .collect();
+
+    Ok(serde_json::to_string(&area_list).unwrap())
+}
+
+fn register_get_weather_areas<T: 'static>(func_table: &mut FunctionTable<T>) {
+    func_table.register_function(
+        Function {
+            name: "get_weather_areas".to_string(),
+            description: Some("Get area list for get_weather_report".to_string()),
+            parameters: Parameters {
+                type_: "object".to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        },
+        |_, _, args| Box::pin(get_weather_areas(args)),
+    );
+}
+
 /// 気象情報を取得する。
 async fn get_weather_report(args: &FuncArgs) -> Result<String> {
     const TIMEOUT: Duration = Duration::from_secs(10);
     let area = get_arg_str(args, "area")?;
 
     // 引数の都市名をコードに変換
-    let code =
-        weather::office_name_to_code(area).ok_or_else(|| anyhow!("Invalid area: {}", area))?;
+    let code = weather::office_name_to_code(area).ok_or_else(|| {
+        anyhow!(
+            "Invalid area: {} - You should call get_weather_areas to get valid name list.",
+            area
+        )
+    })?;
 
     let url1 = weather::url_overview_forecast(&code);
     let url2 = weather::url_forecast(&code);
@@ -138,18 +168,14 @@ async fn get_weather_report(args: &FuncArgs) -> Result<String> {
 }
 
 fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
-    let area_list: Vec<_> = weather::offices()
-        .iter()
-        .map(|info| info.name.clone())
-        .collect();
-
     let mut properties = HashMap::new();
     properties.insert(
         "area".to_string(),
         ParameterElement {
             type_: "string".to_string(),
-            description: Some("Area name (city name, etc.)".to_string()),
-            enum_: Some(area_list),
+            description: Some(
+                "Area name that list can be obtained by get_weather_areas".to_string(),
+            ),
             ..Default::default()
         },
     );
