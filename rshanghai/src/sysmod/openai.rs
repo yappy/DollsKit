@@ -15,8 +15,8 @@ use crate::utils::netutil;
 use anyhow::{Context, ensure};
 use anyhow::{Result, anyhow, bail};
 use chrono::TimeZone;
-use log::info;
 use log::warn;
+use log::{debug, info};
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -266,8 +266,10 @@ impl RateLimit {
     fn calc_expected_current(&self) -> ExpectedRateLimit {
         let now = Instant::now();
         let elapsed_secs = (now - self.timestamp).as_secs_f64();
+        debug!("{self:?}");
+        debug!("elapsed_secs = {elapsed_secs}");
 
-        let remaining_requests = if self.reset_requests.as_secs_f64() >= elapsed_secs {
+        let remaining_requests = if elapsed_secs >= self.reset_requests.as_secs_f64() {
             self.limit_requests
         } else {
             let vreq = (self.limit_requests - self.remaining_requests) as f64
@@ -277,12 +279,12 @@ impl RateLimit {
             (remaining_requests as u32).min(self.limit_requests)
         };
 
-        let remaining_tokens = if self.reset_tokens.as_secs_f64() >= elapsed_secs {
+        let remaining_tokens = if elapsed_secs >= self.reset_tokens.as_secs_f64() {
             self.limit_tokens
         } else {
-            let vreq = (self.limit_tokens - self.remaining_tokens) as f64
-                / self.reset_requests.as_secs_f64();
-            let remaining_tokens = self.remaining_tokens as f64 + vreq * elapsed_secs;
+            let vtok = (self.limit_tokens - self.remaining_tokens) as f64
+                / self.reset_tokens.as_secs_f64();
+            let remaining_tokens = self.remaining_tokens as f64 + vtok * elapsed_secs;
 
             (remaining_tokens as u32).min(self.limit_tokens)
         };
