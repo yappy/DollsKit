@@ -240,7 +240,7 @@ impl RateLimit {
                     if !unitbuf.is_empty() {
                         let num = numbuf.parse::<f64>()?;
                         let scale = unit_to_scale(&unitbuf)?;
-                        sum += num * scale as f64;
+                        sum += num * scale;
                         numbuf.clear();
                         unitbuf.clear();
                     }
@@ -254,7 +254,7 @@ impl RateLimit {
         if !unitbuf.is_empty() {
             let num = numbuf.parse::<f64>()?;
             let scale = unit_to_scale(&unitbuf)?;
-            sum += num * scale as f64;
+            sum += num * scale;
             numbuf.clear();
             unitbuf.clear();
         }
@@ -751,9 +751,9 @@ impl OpenAi {
                 // 429: Too Many Requests
                 if http_err.status == 429 {
                     let msg = http_err.body.to_ascii_lowercase();
-                    if msg.find("rate").is_some() && msg.find("limit").is_some() {
+                    if msg.contains("rate") && msg.contains("limit") {
                         return OpenAiErrorKind::RateLimit;
-                    } else if msg.find("quota").is_some() && msg.find("billing").is_some() {
+                    } else if msg.contains("quota") && msg.contains("billing") {
                         return OpenAiErrorKind::QuotaExceeded;
                     }
                 }
