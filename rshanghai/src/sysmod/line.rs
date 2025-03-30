@@ -3,7 +3,7 @@
 use super::SystemModule;
 use super::openai::{
     ParameterElement,
-    function::{self, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable},
+    function::{self, BasicContext, FuncArgs, FunctionTable},
 };
 use crate::{
     sys::{
@@ -485,16 +485,8 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
                 required: vec!["keywords".to_string()],
             },
         },
-        Box::new(draw_picture_sync),
+        move |bctx, ctx, args| Box::pin(draw_picture(bctx, ctx, args)),
     );
-}
-
-fn draw_picture_sync(
-    bctx: Arc<BasicContext>,
-    ctx: FunctionContext,
-    args: &FuncArgs,
-) -> FuncBodyAsync {
-    Box::pin(draw_picture(bctx, ctx, args))
 }
 
 async fn draw_picture(
