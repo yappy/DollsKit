@@ -971,10 +971,27 @@ async fn aistatus(_ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
-/// Show AI chat history status.
+/// Show AI rate limit and chat history status.
 #[poise::command(slash_command, prefix_command, category = "AI", rename = "show")]
 async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
-    let text = {
+    let rate_limit = {
+        let ctrl = &ctx.data().ctrl;
+        let ai = ctrl.sysmods().openai.lock().await;
+
+        ai.get_expected_rate_limit().map_or_else(
+            || "No rate limit data".to_string(),
+            |exp| {
+                format!(
+                    "Remaining\nRequests: {} / {}\nTokens: {} / {}",
+                    exp.remaining_requests,
+                    exp.limit_requests,
+                    exp.remaining_tokens,
+                    exp.limit_tokens,
+                )
+            },
+        )
+    };
+    let chat_history = {
         let ctrl = &ctx.data().ctrl;
         let mut discord = ctrl.sysmods().discord.lock().await;
 
@@ -987,7 +1004,8 @@ async fn aistatus_show(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
             discord.config.prompt.history_timeout_min
         )
     };
-    ctx.reply(text).await?;
+
+    ctx.reply(format!("{rate_limit}\n\n{chat_history}")).await?;
 
     Ok(())
 }

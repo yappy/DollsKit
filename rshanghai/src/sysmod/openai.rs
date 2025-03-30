@@ -165,10 +165,10 @@ struct RateLimit {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ExpectedRateLimit {
-    limit_requests: u32,
-    limit_tokens: u32,
-    remaining_requests: u32,
-    remaining_tokens: u32,
+    pub limit_requests: u32,
+    pub limit_tokens: u32,
+    pub remaining_requests: u32,
+    pub remaining_tokens: u32,
 }
 
 impl RateLimit {
