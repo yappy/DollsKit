@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["calculate","calculate_pin","register_all","register_calculate"]};
+window.SIDEBAR_ITEMS = {"fn":["calculate","register_all","register_calculate"]};

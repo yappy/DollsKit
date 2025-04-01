@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/web.rs`."><title>web.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/basicfuncs/</div>web.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/web.rs`."><title>web.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/basicfuncs/</div>web.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -231,22 +231,37 @@
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a></pre></div><pre class="rust"><code><span class="doccomment">//! Web アクセス関連。
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a></pre></div><pre class="rust"><code><span class="doccomment">//! Web アクセス関連。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::{
-    get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable, ParameterElement,
-    Parameters,
+    FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
 <span class="kw">use </span><span class="kw">crate</span>::utils::netutil;
 <span class="kw">use </span><span class="kw">crate</span>::utils::weather::{<span class="self">self</span>, ForecastRoot, OverviewForecast};
-<span class="kw">use </span>anyhow::{anyhow, bail, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>, anyhow, bail};
 <span class="kw">use </span>reqwest::Client;
-<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::{collections::HashMap, time::Duration};
 
 <span class="doccomment">/// このモジュールの関数をすべて登録する。
 </span><span class="kw">pub fn </span>register_all&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
     register_request_url(func_table);
+    register_get_weather_areas(func_table);
     register_get_weather_report(func_table);
 }
 
@@ -319,10 +334,6 @@
     }
 }
 
-<span class="kw">fn </span>request_url_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(request_url(args))
-}
-
 <span class="kw">fn </span>register_request_url&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
     <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
     properties.insert(
@@ -345,7 +356,32 @@
                 required: <span class="macro">vec!</span>[<span class="string">"url"</span>.to_string()],
             },
         },
-        Box::new(request_url_pin),
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(request_url(args)),
+    );
+}
+
+<span class="doccomment">/// 気象情報地域のリストを取得する。
+</span><span class="kw">async fn </span>get_weather_areas(_args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+    <span class="kw">let </span>area_list: Vec&lt;<span class="kw">_</span>&gt; = weather::offices()
+        .iter()
+        .map(|info| info.name.clone())
+        .collect();
+
+    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>area_list).unwrap())
+}
+
+<span class="kw">fn </span>register_get_weather_areas&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
+    func_table.register_function(
+        Function {
+            name: <span class="string">"get_weather_areas"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get area list for get_weather_report"</span>.to_string()),
+            parameters: Parameters {
+                type_: <span class="string">"object"</span>.to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        },
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(get_weather_areas(args)),
     );
 }
 
@@ -355,8 +391,12 @@
     <span class="kw">let </span>area = get_arg_str(args, <span class="string">"area"</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// 引数の都市名をコードに変換
-    </span><span class="kw">let </span>code =
-        weather::office_name_to_code(area).ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Invalid area: {}"</span>, area))<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>code = weather::office_name_to_code(area).ok_or_else(|| {
+        <span class="macro">anyhow!</span>(
+            <span class="string">"Invalid area: {} - You should call get_weather_areas to get valid name list."</span>,
+            area
+        )
+    })<span class="question-mark">?</span>;
 
     <span class="kw">let </span>url1 = weather::url_overview_forecast(<span class="kw-2">&amp;</span>code);
     <span class="kw">let </span>url2 = weather::url_forecast(<span class="kw-2">&amp;</span>code);
@@ -376,23 +416,15 @@
     <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj).unwrap())
 }
 
-<span class="kw">fn </span>get_weather_report_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_weather_report(args))
-}
-
 <span class="kw">fn </span>register_get_weather_report&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
-    <span class="kw">let </span>area_list: Vec&lt;<span class="kw">_</span>&gt; = weather::offices()
-        .iter()
-        .map(|info| info.name.clone())
-        .collect();
-
     <span class="kw">let </span><span class="kw-2">mut </span>properties = HashMap::new();
     properties.insert(
         <span class="string">"area"</span>.to_string(),
         ParameterElement {
             type_: <span class="string">"string"</span>.to_string(),
-            description: <span class="prelude-val">Some</span>(<span class="string">"Area name (city name, etc.)"</span>.to_string()),
-            enum_: <span class="prelude-val">Some</span>(area_list),
+            description: <span class="prelude-val">Some</span>(
+                <span class="string">"Area name that list can be obtained by get_weather_areas"</span>.to_string(),
+            ),
             ..Default::default()
         },
     );
@@ -407,7 +439,7 @@
                 required: <span class="macro">vec!</span>[<span class="string">"area"</span>.to_string()],
             },
         },
-        Box::new(get_weather_report_pin),
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(get_weather_report(args)),
     );
 }
 

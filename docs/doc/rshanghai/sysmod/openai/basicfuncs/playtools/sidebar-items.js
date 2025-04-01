@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["COUNT_MAX","COUNT_MIN","FACE_MAX","FACE_MIN"],"fn":["flip_coin","flip_coin_pin","register_all","register_flip_coin","register_role_dice","role_dice","role_dice_pin"]};
+window.SIDEBAR_ITEMS = {"constant":["COUNT_MAX","COUNT_MIN","FACE_MAX","FACE_MIN"],"fn":["flip_coin","register_all","register_flip_coin","register_role_dice","role_dice"]};

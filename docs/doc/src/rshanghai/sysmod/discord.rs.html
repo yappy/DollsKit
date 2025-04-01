@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/</div>discord.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/discord.rs`."><title>discord.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/</div>discord.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -1218,32 +1218,97 @@
 <a href="#1217" id="1217">1217</a>
 <a href="#1218" id="1218">1218</a>
 <a href="#1219" id="1219">1219</a>
-<a href="#1220" id="1220">1220</a></pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a>
+<a href="#1272" id="1272">1272</a>
+<a href="#1273" id="1273">1273</a>
+<a href="#1274" id="1274">1274</a>
+<a href="#1275" id="1275">1275</a>
+<a href="#1276" id="1276">1276</a>
+<a href="#1277" id="1277">1277</a>
+<a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
+<a href="#1288" id="1288">1288</a></pre></div><pre class="rust"><code><span class="doccomment">//! Discord クライアント (bot) 機能。
 
-</span><span class="kw">use </span><span class="kw">super</span>::openai::{function::FunctionTable, Role};
-<span class="kw">use </span><span class="kw">super</span>::SystemModule;
+</span><span class="kw">use </span><span class="kw">super</span>::SystemModule;
 
 <span class="kw">use </span><span class="kw">crate</span>::sys::{config, taskserver::Control};
 <span class="kw">use </span><span class="kw">crate</span>::sys::{taskserver, version};
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::camera::{<span class="self">self</span>, TakePicOption};
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::FUNCTION_TOKEN;
-<span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{<span class="self">self</span>, ChatMessage};
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{<span class="self">self</span>, ChatMessage, OpenAi, OpenAiErrorKind};
+<span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{Role, function::FunctionTable};
 <span class="kw">use </span><span class="kw">crate</span>::utils::chat_history::ChatHistory;
-<span class="kw">use </span><span class="kw">crate</span>::utils::netutil::HttpStatusError;
 <span class="kw">use </span><span class="kw">crate</span>::utils::playtools::dice::{<span class="self">self</span>};
-<span class="kw">use </span>::serenity::all::{CreateAttachment, FullEvent};
-<span class="kw">use </span>anyhow::{anyhow, bail, ensure, <span class="prelude-ty">Result</span>};
+
+<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow, bail, ensure};
 <span class="kw">use </span>chrono::{NaiveTime, Utc};
 <span class="kw">use </span>log::{error, info, warn};
-
-<span class="kw">use </span>poise::{serenity_prelude <span class="kw">as </span>serenity, CreateReply, FrameworkContext};
-
+<span class="kw">use </span>poise::{CreateReply, FrameworkContext, serenity_prelude <span class="kw">as </span>serenity};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-
+<span class="kw">use </span>serenity::Client;
+<span class="kw">use </span>serenity::all::{CreateAttachment, FullEvent};
 <span class="kw">use </span>serenity::http::MessagePagination;
 <span class="kw">use </span>serenity::model::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>serenity::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>serenity::Client;
 
 <span class="kw">use </span>std::collections::{BTreeMap, HashSet};
 <span class="kw">use </span>std::fmt::Display;
@@ -1320,6 +1385,8 @@
 }
 
 <span class="doccomment">/// Discord システムモジュール。
+///
+/// [Option] は遅延初期化。
 </span><span class="kw">pub struct </span>Discord {
     <span class="doccomment">/// 設定データ。
     </span>config: DiscordConfig,
@@ -1338,11 +1405,11 @@
     </span>auto_del_config: BTreeMap&lt;ChannelId, AutoDeleteConfig&gt;,
 
     <span class="doccomment">/// ai コマンドの会話履歴。
-    </span>chat_history: ChatHistory,
+    </span>chat_history: <span class="prelude-ty">Option</span>&lt;ChatHistory&gt;,
     <span class="doccomment">/// [Self::chat_history] の有効期限。
     </span>chat_timeout: <span class="prelude-ty">Option</span>&lt;Instant&gt;,
     <span class="doccomment">/// OpenAI function 機能テーブル
-    </span>func_table: FunctionTable&lt;()&gt;,
+    </span>func_table: <span class="prelude-ty">Option</span>&lt;FunctionTable&lt;()&gt;&gt;,
 }
 
 <span class="doccomment">/// 自動削除設定。チャネルごとに保持される。
@@ -1382,7 +1449,6 @@
         <span class="macro">info!</span>(<span class="string">"[discord] initialize"</span>);
 
         <span class="kw">let </span>config = config::get(|cfg| cfg.discord.clone());
-        <span class="kw">let </span>ai_config = config::get(|cfg| cfg.openai.clone());
 
         <span class="kw">let </span><span class="kw-2">mut </span>auto_del_config = BTreeMap::new();
         <span class="kw">for </span><span class="kw-2">&amp;</span>ch <span class="kw">in </span><span class="kw-2">&amp;</span>config.auto_del_chs {
@@ -1396,40 +1462,72 @@
             );
         }
 
-        <span class="comment">// トークン上限を算出
-        // Function 定義 + 前文 + (使用可能上限) + 出力
-        </span><span class="kw">let </span>model_info = openai::get_model_info(<span class="kw-2">&amp;</span>ai_config.model)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>chat_history = ChatHistory::new(model_info.name);
-        <span class="macro">assert!</span>(chat_history.get_total_limit() == model_info.token_limit);
-        <span class="kw">let </span>pre_token: usize = config
-            .prompt
-            .pre
-            .iter()
-            .map(|text| chat_history.token_count(text))
-            .sum();
-        <span class="kw">let </span>reserved = FUNCTION_TOKEN + pre_token + openai::get_output_reserved_token(model_info);
-        chat_history.reserve_tokens(reserved);
-        <span class="macro">info!</span>(<span class="string">"[discord] OpenAI token limit"</span>);
-        <span class="macro">info!</span>(<span class="string">"[discord] {:6} total"</span>, model_info.token_limit);
-        <span class="macro">info!</span>(<span class="string">"[discord] {reserved:6} reserved"</span>);
-        <span class="macro">info!</span>(<span class="string">"[discord] {:6} chat history"</span>, chat_history.usage().<span class="number">1</span>);
-
-        <span class="kw">let </span><span class="kw-2">mut </span>func_table = FunctionTable::new(<span class="kw-2">*</span>model_info, <span class="prelude-val">Some</span>(<span class="string">"discord"</span>));
-        func_table.register_basic_functions();
-
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             config,
             wakeup_list,
             ctx: <span class="prelude-val">None</span>,
             postponed_msgs: Default::default(),
             auto_del_config,
-            chat_history,
+            chat_history: <span class="prelude-val">None</span>,
             chat_timeout: <span class="prelude-val">None</span>,
-            func_table,
+            func_table: <span class="prelude-val">None</span>,
         })
     }
 
-    <span class="doccomment">/// 発言を投稿する。
+    <span class="kw">async fn </span>init_openai(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
+        <span class="comment">// トークン上限を算出
+        // Function 定義 + 前文 + (使用可能上限) + 出力
+        </span><span class="kw">let </span>(model_info, reserved) = {
+            <span class="kw">let </span>openai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+
+            (
+                openai.model_info_offline(),
+                openai.get_output_reserved_token(),
+            )
+        };
+
+        <span class="kw">let </span><span class="kw-2">mut </span>chat_history = ChatHistory::new(model_info.name);
+        <span class="macro">assert!</span>(chat_history.get_total_limit() == model_info.context_window);
+        <span class="kw">let </span>pre_token: usize = <span class="self">self
+            </span>.config
+            .prompt
+            .pre
+            .iter()
+            .map(|text| chat_history.token_count(text))
+            .sum();
+        <span class="kw">let </span>reserved = FUNCTION_TOKEN + pre_token + reserved;
+        chat_history.reserve_tokens(reserved);
+        <span class="macro">info!</span>(<span class="string">"[discord] OpenAI token limit"</span>);
+        <span class="macro">info!</span>(<span class="string">"[discord] {:6} total"</span>, model_info.context_window);
+        <span class="macro">info!</span>(<span class="string">"[discord] {reserved:6} reserved"</span>);
+        <span class="macro">info!</span>(<span class="string">"[discord] {:6} chat history"</span>, chat_history.usage().<span class="number">1</span>);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>func_table = FunctionTable::new(Arc::clone(ctrl), <span class="prelude-val">Some</span>(<span class="string">"discord"</span>));
+        func_table.register_basic_functions();
+
+        <span class="kw">let _ </span>= <span class="self">self</span>.chat_history.insert(chat_history);
+        <span class="kw">let _ </span>= <span class="self">self</span>.func_table.insert(func_table);
+    }
+
+    <span class="kw">fn </span>chat_history(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ChatHistory {
+        <span class="self">self</span>.chat_history.as_ref().unwrap()
+    }
+
+    <span class="kw">fn </span>chat_history_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ChatHistory {
+        <span class="self">self</span>.chat_history.as_mut().unwrap()
+    }
+
+    <span class="kw">fn </span>func_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>FunctionTable&lt;()&gt; {
+        <span class="self">self</span>.func_table.as_ref().unwrap()
+    }
+
+    <span class="comment">/*
+    fn func_table_mut(&amp;mut self) -&gt; &amp;mut FunctionTable&lt;()&gt; {
+           self.func_table.as_mut().unwrap()
+       }
+    */
+
+    </span><span class="doccomment">/// 発言を投稿する。
     ///
     /// 接続前の場合、接続後まで遅延する。
     </span><span class="kw">pub async fn </span>say(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -1461,7 +1559,7 @@
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(timeout) = <span class="self">self</span>.chat_timeout {
             <span class="kw">if </span>now &gt; timeout {
-                <span class="self">self</span>.chat_history.clear();
+                <span class="self">self</span>.chat_history_mut().clear();
                 <span class="self">self</span>.chat_timeout = <span class="prelude-val">None</span>;
             }
         }
@@ -1473,7 +1571,8 @@
 /// [Discord::on_start] から spawn される。
 </span><span class="kw">async fn </span>discord_main(ctrl: Control) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>(config, wakeup_list) = {
-        <span class="kw">let </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
+        discord.init_openai(<span class="kw-2">&amp;</span>ctrl).<span class="kw">await</span>;
 
         (discord.config.clone(), discord.wakeup_list.clone())
     };
@@ -2020,14 +2119,14 @@ Please contact my owner."</span>;
     <span class="attr">#[description = <span class="string">"Show internal details when AI calls a function. (default=False)"</span>]
     </span>trace_function_call: <span class="prelude-ty">Option</span>&lt;bool&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
+    <span class="comment">// そのまま引用返信
+    </span>reply_long_mdquote(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">&amp;</span>chat_msg).<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="kw">let </span>data = ctx.data();
     <span class="kw">let </span><span class="kw-2">mut </span>discord = data.ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
     <span class="comment">// タイムアウト処理
     </span>discord.check_history_timeout();
-
-    <span class="comment">// そのまま引用返信
-    </span>reply_long_mdquote(<span class="kw-2">&amp;</span>ctx, <span class="kw-2">&amp;</span>chat_msg).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// 今回の発言をヒストリに追加 (システムメッセージ + 本体)
     </span><span class="kw">let </span>sysmsg = discord
@@ -2036,49 +2135,62 @@ Please contact my owner."</span>;
         .each
         .join(<span class="string">""</span>)
         .replace(<span class="string">"${user}"</span>, <span class="kw-2">&amp;</span>ctx.author().name);
-    discord.chat_history.push({
+    discord.chat_history_mut().push({
         ChatMessage {
             role: Role::System,
             content: <span class="prelude-val">Some</span>(sysmsg),
             ..Default::default()
         }
     });
-    discord.chat_history.push(ChatMessage {
+    discord.chat_history_mut().push(ChatMessage {
         role: Role::User,
         content: <span class="prelude-val">Some</span>(chat_msg.to_string()),
         ..Default::default()
     });
 
-    <span class="kw">let </span>reply_msg = <span class="kw">loop </span>{
-        <span class="kw">let </span>ai = data.ctrl.sysmods().openai.lock().<span class="kw">await</span>;
-
+    <span class="kw">let </span>pre = discord.config.prompt.pre.join(<span class="string">""</span>);
+    <span class="comment">// AI 返答まで関数呼び出しを繰り返す
+    </span><span class="kw">let </span>reply_msg = <span class="kw">loop </span>{
         <span class="comment">// 送信用リスト
         </span><span class="kw">let </span><span class="kw-2">mut </span>all_msgs = Vec::new();
         <span class="comment">// 先頭システムメッセージ
         </span>all_msgs.push(ChatMessage {
             role: Role::System,
-            content: <span class="prelude-val">Some</span>(discord.config.prompt.pre.join(<span class="string">""</span>)),
+            content: <span class="prelude-val">Some</span>(pre.clone()),
             ..Default::default()
         });
         <span class="comment">// それ以降 (ヒストリの中身全部) を追加
-        </span><span class="kw">for </span>m <span class="kw">in </span>discord.chat_history.iter() {
+        </span><span class="kw">for </span>m <span class="kw">in </span>discord.chat_history().iter() {
             all_msgs.push(m.clone());
         }
+
         <span class="comment">// ChatGPT API
-        </span><span class="kw">let </span>reply_msg = ai
-            .chat_with_function(<span class="kw-2">&amp;</span>all_msgs, discord.func_table.function_list())
-            .<span class="kw">await</span>;
+        </span><span class="kw">let </span>reply_msg = {
+            <span class="kw">let </span><span class="kw-2">mut </span>ai = data.ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+            ai.chat_with_function(
+                <span class="kw-2">&amp;</span>all_msgs,
+                discord.func_table.as_ref().unwrap().function_list(),
+            )
+            .<span class="kw">await
+        </span>};
         <span class="kw">match </span><span class="kw-2">&amp;</span>reply_msg {
             <span class="prelude-val">Ok</span>(reply) =&gt; {
                 <span class="comment">// 応答を履歴に追加
-                </span>discord.chat_history.push(reply.clone());
+                </span>discord.chat_history_mut().push(reply.clone());
                 <span class="kw">if </span>reply.function_call.is_some() {
                     <span class="comment">// function call が返ってきた
                     </span><span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
                     <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
-                    <span class="kw">let </span>func_res = discord.func_table.call((), func_name, func_args).<span class="kw">await</span>;
+                    <span class="kw">let </span>func_res = discord
+                        .func_table
+                        .as_ref()
+                        .unwrap()
+                        .call((), func_name, func_args)
+                        .<span class="kw">await</span>;
                     <span class="comment">// debug trace
-                    </span><span class="kw">if </span>discord.func_table.debug_mode() || trace_function_call.unwrap_or(<span class="bool-val">false</span>) {
+                    </span><span class="kw">if </span>discord.func_table.as_ref().unwrap().debug_mode()
+                        || trace_function_call.unwrap_or(<span class="bool-val">false</span>)
+                    {
                         reply_long(
                             <span class="kw-2">&amp;</span>ctx,
                             <span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -2089,7 +2201,7 @@ Please contact my owner."</span>;
                         .<span class="kw">await</span><span class="question-mark">?</span>;
                     }
                     <span class="comment">// function 応答を履歴に追加
-                    </span>discord.chat_history.push(func_res);
+                    </span>discord.chat_history_mut().push(func_res);
                     <span class="comment">// continue
                 </span>} <span class="kw">else </span>{
                     <span class="comment">// 通常の応答が返ってきた
@@ -2121,12 +2233,18 @@ Please contact my owner."</span>;
         }
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">error!</span>(<span class="string">"[discord] openai error: {:#?}"</span>, err);
-            <span class="comment">// HTTP status が得られるタイプのエラーのみ discord 返信する
-            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(err) = err.downcast_ref::&lt;HttpStatusError&gt;() {
-                <span class="macro">warn!</span>(<span class="string">"[discord] openai reply: {} {}"</span>, err.status, err.body);
-                <span class="kw">let </span>reply_msg = <span class="macro">format!</span>(<span class="string">"OpenAI API Error, HTTP Status: {}"</span>, err.status);
-                ctx.reply(reply_msg.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            <span class="kw">let </span>errmsg = <span class="kw">match </span>OpenAi::error_kind(<span class="kw-2">&amp;</span>err) {
+                OpenAiErrorKind::Timeout =&gt; <span class="string">"Server timed out."</span>.to_string(),
+                OpenAiErrorKind::RateLimit =&gt; {
+                    <span class="string">"Rate limit exceeded. Please retry after a while."</span>.to_string()
+                }
+                OpenAiErrorKind::QuotaExceeded =&gt; <span class="string">"Quota exceeded. Charge the credit."</span>.to_string(),
+                OpenAiErrorKind::HttpError(status) =&gt; <span class="macro">format!</span>(<span class="string">"Error {status}"</span>),
+                <span class="kw">_ </span>=&gt; <span class="string">"Error"</span>.to_string(),
+            };
+
+            <span class="macro">warn!</span>(<span class="string">"[discord] openai reply: {errmsg}"</span>);
+            ctx.reply(errmsg).<span class="kw">await</span><span class="question-mark">?</span>;
         }
     }
 
@@ -2144,23 +2262,41 @@ Please contact my owner."</span>;
     </span><span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Show AI chat history status.
+<span class="doccomment">/// Show AI rate limit and chat history status.
 </span><span class="attr">#[poise::command(slash_command, prefix_command, category = <span class="string">"AI"</span>, rename = <span class="string">"show"</span>)]
 </span><span class="kw">async fn </span>aistatus_show(ctx: PoiseContext&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), PoiseError&gt; {
-    <span class="kw">let </span>text = {
+    <span class="kw">let </span>rate_limit = {
+        <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
+        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+
+        ai.get_expected_rate_limit().map_or_else(
+            || <span class="string">"No rate limit data"</span>.to_string(),
+            |exp| {
+                <span class="macro">format!</span>(
+                    <span class="string">"Remaining\nRequests: {} / {}\nTokens: {} / {}"</span>,
+                    exp.remaining_requests,
+                    exp.limit_requests,
+                    exp.remaining_tokens,
+                    exp.limit_tokens,
+                )
+            },
+        )
+    };
+    <span class="kw">let </span>chat_history = {
         <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
         discord.check_history_timeout();
         <span class="macro">format!</span>(
             <span class="string">"History: {}\nToken: {} / {}, Timeout: {} min"</span>,
-            discord.chat_history.len(),
-            discord.chat_history.usage().<span class="number">0</span>,
-            discord.chat_history.usage().<span class="number">1</span>,
+            discord.chat_history().len(),
+            discord.chat_history().usage().<span class="number">0</span>,
+            discord.chat_history().usage().<span class="number">1</span>,
             discord.config.prompt.history_timeout_min
         )
     };
-    ctx.reply(text).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    ctx.reply(<span class="macro">format!</span>(<span class="string">"{rate_limit}\n\n{chat_history}"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -2172,7 +2308,7 @@ Please contact my owner."</span>;
         <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
         <span class="kw">let </span><span class="kw-2">mut </span>discord = ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
-        discord.chat_history.clear();
+        discord.chat_history_mut().clear();
     }
     ctx.reply(<span class="string">"OK"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -2186,7 +2322,7 @@ Please contact my owner."</span>;
     <span class="kw">let </span>help = {
         <span class="kw">let </span>discord = ctx.data().ctrl.sysmods().discord.lock().<span class="kw">await</span>;
 
-        discord.func_table.create_help()
+        discord.func_table().create_help()
     };
     <span class="kw">let </span>text = <span class="macro">format!</span>(<span class="string">"```\n{help}\n```"</span>);
     ctx.reply(text).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -2208,7 +2344,7 @@ Please contact my owner."</span>;
 
     <span class="kw">let </span>img_url = {
         <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
-        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>resp = ai.generate_image(<span class="kw-2">&amp;</span>prompt, <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         resp.pop().ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"image array too short"</span>))<span class="question-mark">?
@@ -2270,7 +2406,7 @@ Please contact my owner."</span>;
 
     <span class="kw">let </span>audio_bin = {
         <span class="kw">let </span>ctrl = <span class="kw-2">&amp;</span>ctx.data().ctrl;
-        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
         ai.text_to_speech(model, <span class="kw-2">&amp;</span>input, voice, <span class="prelude-val">Some</span>(openai::SpeechFormat::Mp3), speed)
             .<span class="kw">await</span><span class="question-mark">?
@@ -2286,7 +2422,7 @@ Please contact my owner."</span>;
     <span class="doccomment">/// async 使用可能になってからの初期化。
     ///
     /// 設定有効ならば [discord_main] を spawn する。
-    </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;</span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
+    </span><span class="kw">fn </span>on_start(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctrl: <span class="kw-2">&amp;</span>Control) {
         <span class="macro">info!</span>(<span class="string">"[discord] on_start"</span>);
         <span class="kw">if </span><span class="self">self</span>.config.enabled {
             taskserver::spawn_oneshot_task(ctrl, <span class="string">"discord"</span>, discord_main);

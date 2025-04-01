@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/system.rs`."><title>system.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/basicfuncs/</div>system.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/basicfuncs/system.rs`."><title>system.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/basicfuncs/</div>system.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -255,27 +255,41 @@
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a></pre></div><pre class="rust"><code><span class="doccomment">//! システム情報取得。
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a></pre></div><pre class="rust"><code><span class="doccomment">//! システム情報取得。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::health::{
-    get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf, get_throttle_status,
-    ThrottleFlags,
+    ThrottleFlags, get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf,
+    get_throttle_status,
 };
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::function::{
-    get_arg_bool_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
-    ParameterElement, Parameters,
+    BasicContext, FuncArgs, Function, FunctionTable, ParameterElement, Parameters,
+    get_arg_bool_opt, get_arg_str,
 };
-<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow, bail};
 <span class="kw">use </span>chrono::{DateTime, Local, Utc};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::sync::atomic::Ordering;
 <span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::atomic::Ordering;
 
 <span class="doccomment">/// このモジュールの関数をすべて登録する。
 </span><span class="kw">pub fn </span>register_all&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
     register_debug_mode(func_table);
     register_get_model(func_table);
+    register_get_rate_limit(func_table);
     register_get_version(func_table);
     register_get_cpu_status(func_table);
     register_get_current_datetime(func_table);
@@ -324,9 +338,6 @@
         },
     );
 
-    <span class="kw">fn </span>debug_mode_pin&lt;T&gt;(bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-        Box::pin(debug_mode(bctx, args))
-    }
     func_table.register_function(
         Function {
             name: <span class="string">"debug_mode"</span>.to_string(),
@@ -337,17 +348,15 @@
                 required: Default::default(),
             },
         },
-        Box::new(debug_mode_pin),
+        |bctx, _ctx, args| Box::pin(debug_mode(bctx, args)),
     );
 }
 
 <span class="doccomment">/// モデル情報取得。
 </span><span class="kw">async fn </span>get_model(bctx: Arc&lt;BasicContext&gt;, _args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>bctx.model).unwrap())
-}
+    <span class="kw">let </span>model = bctx.ctrl.sysmods().openai.lock().<span class="kw">await</span>.model_info().<span class="kw">await</span><span class="question-mark">?</span>;
 
-<span class="kw">fn </span>get_model_pin&lt;T&gt;(bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_model(bctx, args))
+    <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>model).unwrap())
 }
 
 <span class="kw">fn </span>register_get_model&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
@@ -361,7 +370,40 @@
                 required: Default::default(),
             },
         },
-        Box::new(get_model_pin),
+        |bctx, _ctx, args| Box::pin(get_model(bctx, args)),
+    );
+}
+
+<span class="doccomment">/// レートリミット情報取得。
+</span><span class="kw">async fn </span>get_rate_limit(bctx: Arc&lt;BasicContext&gt;, _args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+    <span class="kw">let </span>exp = bctx
+        .ctrl
+        .sysmods()
+        .openai
+        .lock()
+        .<span class="kw">await
+        </span>.get_expected_rate_limit();
+
+    exp.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"No data"</span>)).map(|exp| {
+        <span class="macro">format!</span>(
+            <span class="string">"Remaining\nRequests: {} / {}\nTokens: {} / {}"</span>,
+            exp.remaining_requests, exp.limit_requests, exp.remaining_tokens, exp.limit_tokens,
+        )
+    })
+}
+
+<span class="kw">fn </span>register_get_rate_limit&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
+    func_table.register_function(
+        Function {
+            name: <span class="string">"get_rate_limit"</span>.to_string(),
+            description: <span class="prelude-val">Some</span>(<span class="string">"Get rate limit info of GPT usage"</span>.to_string()),
+            parameters: Parameters {
+                type_: <span class="string">"object"</span>.to_string(),
+                properties: Default::default(),
+                required: Default::default(),
+            },
+        },
+        |bctx, _ctx, args| Box::pin(get_rate_limit(bctx, args)),
     );
 }
 
@@ -370,10 +412,6 @@
     <span class="kw">use </span><span class="kw">crate</span>::sys::version;
 
     <span class="prelude-val">Ok</span>(version::version_info().to_string())
-}
-
-<span class="kw">fn </span>get_version_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_version(args))
 }
 
 <span class="kw">fn </span>register_get_version&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
@@ -387,7 +425,7 @@
                 required: Default::default(),
             },
         },
-        Box::new(get_version_pin),
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(get_version(args)),
     );
 }
 
@@ -442,10 +480,6 @@
     <span class="prelude-val">Ok</span>(serde_json::to_string(<span class="kw-2">&amp;</span>obj)<span class="question-mark">?</span>)
 }
 
-<span class="kw">fn </span>get_cpu_status_pin&lt;T&gt;(_bctx: Arc&lt;BasicContext&gt;, _ctx: T, args: <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync {
-    Box::pin(get_cpu_status(args))
-}
-
 <span class="kw">fn </span>register_get_cpu_status&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
     func_table.register_function(
         Function {
@@ -457,7 +491,7 @@
                 required: Default::default(),
             },
         },
-        Box::new(get_cpu_status_pin),
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(get_cpu_status(args)),
     );
 }
 
@@ -477,14 +511,6 @@
             <span class="macro">bail!</span>(<span class="string">"Parameter tz must be JST or UTC"</span>)
         }
     }
-}
-
-<span class="kw">fn </span>get_current_datetime_pin&lt;T&gt;(
-    _bctx: Arc&lt;BasicContext&gt;,
-    _ctx: T,
-    args: <span class="kw-2">&amp;</span>FuncArgs,
-) -&gt; FuncBodyAsync {
-    Box::pin(get_current_datetime(args))
 }
 
 <span class="kw">fn </span>register_get_current_datetime&lt;T: <span class="lifetime">'static</span>&gt;(func_table: <span class="kw-2">&amp;mut </span>FunctionTable&lt;T&gt;) {
@@ -509,7 +535,7 @@
                 required: <span class="macro">vec!</span>[<span class="string">"tz"</span>.to_string()],
             },
         },
-        Box::new(get_current_datetime_pin),
+        |<span class="kw">_</span>, <span class="kw">_</span>, args| Box::pin(get_current_datetime(args)),
     );
 }
 </code></pre></div></section></main></body></html>

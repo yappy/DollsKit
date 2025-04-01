@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/</div>function.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/openai/function.rs`."><title>function.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/openai/</div>function.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -336,13 +336,36 @@
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a></pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API - function.
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a></pre></div><pre class="rust"><code><span class="doccomment">//! OpenAI API - function.
 
-</span><span class="kw">use super</span>::{basicfuncs, ModelInfo};
+</span><span class="kw">use </span><span class="kw">super</span>::basicfuncs;
 <span class="kw">use </span><span class="kw">crate</span>::sys::config;
+<span class="kw">use </span><span class="kw">crate</span>::sys::taskserver::Control;
 <span class="kw">use </span><span class="kw">crate</span>::sysmod::openai::{ChatMessage, Role};
 <span class="kw">use </span>anyhow::bail;
-<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow};
 <span class="kw">use </span>log::{info, warn};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::collections::HashMap;
@@ -350,8 +373,8 @@
 <span class="kw">use </span>std::ops::RangeBounds;
 <span class="kw">use </span>std::path::{Path, PathBuf};
 <span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
 <span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
 
 <span class="doccomment">/// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -369,7 +392,7 @@
 <span class="doccomment">/// 関数の Rust 上での定義。
 ///
 /// 引数は [BasicContext], T, [FuncArgs] で、返り値は文字列の async fn。
-</span><span class="kw">pub type </span>FuncBody&lt;T&gt; = Box&lt;<span class="kw">dyn </span>Fn(Arc&lt;BasicContext&gt;, T, <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Sync + Send&gt;;
+</span><span class="kw">pub type </span>FuncBody&lt;T&gt; = <span class="kw">dyn </span>Fn(Arc&lt;BasicContext&gt;, T, <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Sync + Send;
 <span class="doccomment">/// 引数。文字列から Json value へのマップ。
 </span><span class="kw">pub type </span>FuncArgs = HashMap&lt;String, serde_json::value::Value&gt;;
 
@@ -382,10 +405,9 @@
 }
 
 <span class="doccomment">/// 標準で関数に提供されるコンテキスト情報。
-</span><span class="attr">#[derive(Debug, Serialize)]
 </span><span class="kw">pub struct </span>BasicContext {
-    <span class="doccomment">/// モデル情報。
-    </span><span class="kw">pub </span>model: ModelInfo,
+    <span class="doccomment">/// システムハンドル。
+    </span><span class="kw">pub </span>ctrl: Control,
     <span class="doccomment">/// 永続化データストレージの場所。
     </span><span class="kw">pub </span>storage_dir: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     <span class="doccomment">/// デバッグモード。
@@ -406,13 +428,13 @@
     <span class="doccomment">/// OpenAI API に渡すためのリスト。
     </span>function_list: Vec&lt;Function&gt;,
     <span class="doccomment">/// 関数名から Rust 関数へのマップ。
-    </span>call_table: HashMap&lt;String, FuncBody&lt;T&gt;&gt;,
+    </span>call_table: HashMap&lt;String, Box&lt;FuncBody&lt;T&gt;&gt;&gt;,
     <span class="doccomment">/// [BasicContext] への参照。
     </span>basic_context: Arc&lt;BasicContext&gt;,
 }
 
 <span class="kw">impl</span>&lt;T: <span class="lifetime">'static</span>&gt; FunctionTable&lt;T&gt; {
-    <span class="kw">pub fn </span>new(model: ModelInfo, storage_dir_name: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(ctrl: Control, storage_dir_name: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; <span class="self">Self </span>{
         <span class="comment">// openai config でディレクトリが指定されており、かつ、
         // この関数にストレージディレクトリ名が指定されている場合、Some
         </span><span class="kw">let </span>storage_dir = <span class="kw">if let </span><span class="prelude-val">Some</span>(storage_dir_name) = storage_dir_name {
@@ -426,7 +448,7 @@
             <span class="prelude-val">None
         </span>};
         <span class="kw">let </span>basic_context = BasicContext {
-            model,
+            ctrl,
             storage_dir,
             debug_mode: AtomicBool::new(<span class="bool-val">false</span>),
         };
@@ -528,7 +550,11 @@
     }
 
     <span class="doccomment">/// 関数を登録する。
-    </span><span class="kw">pub fn </span>register_function(<span class="kw-2">&amp;mut </span><span class="self">self</span>, function: Function, body: FuncBody&lt;T&gt;) {
+    </span><span class="kw">pub fn </span>register_function(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        function: Function,
+        body: <span class="kw">impl </span>Fn(Arc&lt;BasicContext&gt;, T, <span class="kw-2">&amp;</span>FuncArgs) -&gt; FuncBodyAsync + Send + Sync + <span class="lifetime">'static</span>,
+    ) {
         <span class="kw">let </span>name = function.name.clone();
         <span class="self">self</span>.function_list.push(function);
         <span class="self">self</span>.call_table.insert(name, Box::new(body));
@@ -623,54 +649,72 @@
         args.insert(<span class="string">"int"</span>.to_string(), <span class="number">42</span>.into());
 
         <span class="macro">assert_eq!</span>(get_arg_str(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>).unwrap(), <span class="string">"ok"</span>);
-        <span class="macro">assert!</span>(get_arg_str(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"required"</span>));
+        <span class="macro">assert!</span>(
+            get_arg_str(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"required"</span>)
+        );
 
         <span class="macro">assert!</span>(!get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"bool_f"</span>,).unwrap());
         <span class="macro">assert!</span>(get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"bool_t"</span>,).unwrap());
-        <span class="macro">assert!</span>(get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"must be boolean"</span>));
-        <span class="macro">assert!</span>(get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"required"</span>));
+        <span class="macro">assert!</span>(
+            get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"must be boolean"</span>)
+        );
+        <span class="macro">assert!</span>(
+            get_arg_bool(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"required"</span>)
+        );
 
         <span class="macro">assert_eq!</span>(get_arg_bool_opt(<span class="kw-2">&amp;</span>args, <span class="string">"bool_f"</span>).unwrap(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
         <span class="macro">assert_eq!</span>(get_arg_bool_opt(<span class="kw-2">&amp;</span>args, <span class="string">"bool_t"</span>).unwrap(), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
-        <span class="macro">assert!</span>(get_arg_bool_opt(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"must be boolean"</span>));
+        <span class="macro">assert!</span>(
+            get_arg_bool_opt(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"must be boolean"</span>)
+        );
         <span class="macro">assert_eq!</span>(get_arg_bool_opt(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>).unwrap(), <span class="prelude-val">None</span>);
 
         <span class="macro">assert_eq!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..=<span class="number">42</span>).unwrap(), <span class="number">42</span>);
-        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>, <span class="number">1</span>..<span class="number">43</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"must be integer"</span>));
-        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..<span class="number">42</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"Out of range"</span>));
-        <span class="macro">assert!</span>(get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>, <span class="number">1</span>..<span class="number">42</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"required"</span>));
+        <span class="macro">assert!</span>(
+            get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>, <span class="number">1</span>..<span class="number">43</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"must be integer"</span>)
+        );
+        <span class="macro">assert!</span>(
+            get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..<span class="number">42</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"Out of range"</span>)
+        );
+        <span class="macro">assert!</span>(
+            get_arg_i64(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>, <span class="number">1</span>..<span class="number">42</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"required"</span>)
+        );
 
         <span class="macro">assert_eq!</span>(get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..=<span class="number">42</span>).unwrap(), <span class="prelude-val">Some</span>(<span class="number">42</span>));
         <span class="macro">assert_eq!</span>(get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..=<span class="number">42</span>).unwrap(), <span class="prelude-val">Some</span>(<span class="number">42</span>));
-        <span class="macro">assert!</span>(get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>, <span class="number">1</span>..<span class="number">43</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"must be integer"</span>));
-        <span class="macro">assert!</span>(get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..<span class="number">42</span>)
-            .unwrap_err()
-            .to_string()
-            .contains(<span class="string">"Out of range"</span>));
+        <span class="macro">assert!</span>(
+            get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"str"</span>, <span class="number">1</span>..<span class="number">43</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"must be integer"</span>)
+        );
+        <span class="macro">assert!</span>(
+            get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"int"</span>, <span class="number">1</span>..<span class="number">42</span>)
+                .unwrap_err()
+                .to_string()
+                .contains(<span class="string">"Out of range"</span>)
+        );
         <span class="macro">assert_eq!</span>(get_arg_i64_opt(<span class="kw-2">&amp;</span>args, <span class="string">"not_found"</span>, <span class="number">1</span>..<span class="number">42</span>).unwrap(), <span class="prelude-val">None</span>);
     }
 }

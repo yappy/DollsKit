@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/line_hook.rs`."><title>line_hook.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/http/</div>line_hook.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sysmod/http/line_hook.rs`."><title>line_hook.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sysmod/http/</div>line_hook.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -472,7 +472,13 @@
 <a href="#471" id="471">471</a>
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
-<a href="#474" id="474">474</a></pre></div><pre class="rust"><code><span class="doccomment">//! LINE Webhook.
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a></pre></div><pre class="rust"><code><span class="doccomment">//! LINE Webhook.
 //!
 //! &lt;https://developers.line.biz/ja/docs/messaging-api/&gt;
 
@@ -483,13 +489,13 @@
     sys::taskserver::Control,
     sysmod::{
         line::FunctionContext,
-        openai::{ChatMessage, OpenAi, Role},
+        openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
     },
     utils::netutil,
 };
-<span class="kw">use </span>actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
-<span class="kw">use </span>anyhow::{anyhow, bail, ensure, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>base64::{engine::general_purpose, Engine};
+<span class="kw">use </span>actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
+<span class="kw">use </span>anyhow::{<span class="prelude-ty">Result</span>, anyhow, bail, ensure};
+<span class="kw">use </span>base64::{Engine, engine::general_purpose};
 <span class="kw">use </span>log::{error, info};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
@@ -798,18 +804,18 @@
         };
 
         <span class="comment">// タイムアウト処理
-        </span>line.check_history_timeout();
+        </span>line.check_history_timeout(ctrl).<span class="kw">await</span>;
 
         <span class="comment">// 今回の発言をヒストリに追加 (システムメッセージ + 本体)
         </span><span class="kw">let </span>sysmsg = prompt.each.join(<span class="string">""</span>).replace(<span class="string">"${user}"</span>, <span class="kw-2">&amp;</span>display_name);
-        line.chat_history.push({
+        line.chat_history_mut(ctrl).<span class="kw">await</span>.push({
             ChatMessage {
                 role: Role::System,
                 content: <span class="prelude-val">Some</span>(sysmsg),
                 ..Default::default()
             }
         });
-        line.chat_history.push(ChatMessage {
+        line.chat_history_mut(ctrl).<span class="kw">await</span>.push(ChatMessage {
             role: Role::User,
             content: <span class="prelude-val">Some</span>(text.to_string()),
             ..Default::default()
@@ -821,7 +827,6 @@
     <span class="kw">let </span><span class="kw-2">mut </span>func_trace = String::new();
     <span class="kw">let </span>reply_msg = <span class="kw">loop </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>line = ctrl.sysmods().line.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
 
         <span class="comment">// 送信用リスト
         </span><span class="kw">let </span><span class="kw-2">mut </span>all_msgs = Vec::new();
@@ -831,18 +836,21 @@
             content: <span class="prelude-val">Some</span>(prompt.pre.join(<span class="string">""</span>)),
             ..Default::default()
         });
-        <span class="comment">// それ以降 (ヒストリの中身全部) を追加
-        </span><span class="kw">for </span>m <span class="kw">in </span>line.chat_history.iter() {
-            all_msgs.push(m.clone());
-        }
-        <span class="comment">// ChatGPT API
-        </span><span class="kw">let </span>reply_msg = ai
-            .chat_with_function(<span class="kw-2">&amp;</span>all_msgs, line.func_table.function_list())
-            .<span class="kw">await</span>;
+        <span class="kw">let </span>reply_msg = {
+            <span class="kw">let </span><span class="kw-2">mut </span>ai = ctrl.sysmods().openai.lock().<span class="kw">await</span>;
+
+            <span class="comment">// それ以降 (ヒストリの中身全部) を追加
+            </span><span class="kw">for </span>m <span class="kw">in </span>line.chat_history(ctrl).<span class="kw">await</span>.iter() {
+                all_msgs.push(m.clone());
+            }
+            <span class="comment">// ChatGPT API
+            </span>ai.chat_with_function(<span class="kw-2">&amp;</span>all_msgs, line.func_table(ctrl).<span class="kw">await</span>.function_list())
+                .<span class="kw">await
+        </span>};
         <span class="kw">match </span><span class="kw-2">&amp;</span>reply_msg {
             <span class="prelude-val">Ok</span>(reply) =&gt; {
                 <span class="comment">// 応答を履歴に追加
-                </span>line.chat_history.push(reply.clone());
+                </span>line.chat_history_mut(ctrl).<span class="kw">await</span>.push(reply.clone());
                 <span class="kw">if </span>reply.function_call.is_some() {
                     <span class="comment">// function call が返ってきた
                     </span><span class="kw">let </span>reply_to = <span class="kw">match </span>src {
@@ -857,14 +865,17 @@
                         } =&gt; <span class="macro">bail!</span>(<span class="string">"Source::Room is not supported"</span>),
                     };
                     <span class="kw">let </span>ctx = FunctionContext {
-                        ctrl: ctrl.clone(),
                         reply_to: reply_to.to_string(),
                     };
                     <span class="kw">let </span>func_name = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().name;
                     <span class="kw">let </span>func_args = <span class="kw-2">&amp;</span>reply.function_call.as_ref().unwrap().arguments;
-                    <span class="kw">let </span>func_res = line.func_table.call(ctx, func_name, func_args).<span class="kw">await</span>;
+                    <span class="kw">let </span>func_res = line
+                        .func_table_mut(ctrl)
+                        .<span class="kw">await
+                        </span>.call(ctx, func_name, func_args)
+                        .<span class="kw">await</span>;
                     <span class="comment">// debug trace
-                    </span><span class="kw">if </span>line.func_table.debug_mode() {
+                    </span><span class="kw">if </span>line.func_table(ctrl).<span class="kw">await</span>.debug_mode() {
                         <span class="kw">if </span>!func_trace.is_empty() {
                             func_trace.push(<span class="string">'\n'</span>);
                         }
@@ -874,7 +885,7 @@
                         );
                     }
                     <span class="comment">// function 応答を履歴に追加
-                    </span>line.chat_history.push(func_res);
+                    </span>line.chat_history_mut(ctrl).<span class="kw">await</span>.push(func_res);
                     <span class="comment">// continue
                 </span>} <span class="kw">else </span>{
                     <span class="comment">// 通常の応答が返ってきた
@@ -915,10 +926,11 @@
             }
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">error!</span>(<span class="string">"[line] openai error: {:#?}"</span>, err);
-                <span class="kw">let </span>errmsg = <span class="kw">if </span>OpenAi::is_timeout(<span class="kw-2">&amp;</span>err) {
-                    prompt.timeout_msg
-                } <span class="kw">else </span>{
-                    prompt.error_msg
+                <span class="kw">let </span>errmsg = <span class="kw">match </span>OpenAi::error_kind(<span class="kw-2">&amp;</span>err) {
+                    OpenAiErrorKind::Timeout =&gt; prompt.timeout_msg,
+                    OpenAiErrorKind::RateLimit =&gt; prompt.ratelimit_msg,
+                    OpenAiErrorKind::QuotaExceeded =&gt; prompt.quota_msg,
+                    <span class="kw">_ </span>=&gt; prompt.error_msg,
                 };
                 msgs.push(<span class="kw-2">&amp;</span>errmsg);
                 <span class="kw">for </span>msg <span class="kw">in </span>msgs.iter() {

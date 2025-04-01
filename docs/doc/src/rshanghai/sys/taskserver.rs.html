@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-42caa33d.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.84.1 (e71f9a9a9 2025-01-27)" data-channel="1.84.1" data-search-js="search-92e6798f.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sys/</div>taskserver.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/sys/taskserver.rs`."><title>taskserver.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="rshanghai" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">rshanghai/sys/</div>taskserver.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -329,10 +329,7 @@
 <a href="#328" id="328">328</a>
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
-<a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a></pre></div><pre class="rust"><code><span class="doccomment">//! 非同期タスクを管理する。
+<a href="#331" id="331">331</a></pre></div><pre class="rust"><code><span class="doccomment">//! 非同期タスクを管理する。
 
 </span><span class="kw">use </span><span class="kw">crate</span>::sysmod::SystemModules;
 <span class="kw">use </span>anyhow::Result;
@@ -341,7 +338,7 @@
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::select;
-<span class="kw">use </span>tokio::signal::unix::{signal, SignalKind};
+<span class="kw">use </span>tokio::signal::unix::{SignalKind, signal};
 <span class="kw">use </span>tokio::sync::watch;
 
 <span class="doccomment">/// システムシャットダウン開始通知送信側 (単数)
@@ -354,7 +351,7 @@
 /// インスタンスは1つだけ生成され、[Arc] により共有される。
 </span><span class="kw">pub struct </span>Controller {
     <span class="doccomment">/// Tokio ランタイム。
-    </span>rt: tokio::runtime::Runtime,
+    </span><span class="kw">pub </span>rt: tokio::runtime::Runtime,
     <span class="doccomment">/// 全システムモジュールのリスト。
     </span>sysmods: SystemModules,
     <span class="doccomment">/// システムシャットダウン時、true が設定送信される。
@@ -365,9 +362,8 @@
 }
 
 <span class="kw">pub type </span>Control = Arc&lt;Controller&gt;;
-<span class="comment">//pub type WeakControl = Weak&lt;Controller&gt;;
 
-</span><span class="doccomment">/// [TaskServer::run] の返す実行終了種別。
+<span class="doccomment">/// [TaskServer::run] の返す実行終了種別。
 </span><span class="kw">pub enum </span>RunResult {
     Shutdown,
     Reboot,
@@ -476,10 +472,8 @@
 
     <span class="comment">// 空でなくソート済み、秒以下がゼロなのを確認後
     // 今日のその時刻からなる NaiveDateTime に変換する
-    // TODO: is_sorted() がまだ unstable
     </span><span class="macro">assert!</span>(!wakeup_list.is_empty(), <span class="string">"time list is empty"</span>);
-    <span class="kw">let </span>sorted = wakeup_list.windows(<span class="number">2</span>).all(|t| t[<span class="number">0</span>] &lt;= t[<span class="number">1</span>]);
-    <span class="macro">assert!</span>(sorted, <span class="string">"time list is not sorted"</span>);
+    <span class="macro">assert!</span>(wakeup_list.is_sorted(), <span class="string">"time list is not sorted"</span>);
     <span class="kw">let </span>today = Local::now().date_naive();
     <span class="kw">let </span><span class="kw-2">mut </span>dt_list: Vec&lt;<span class="kw">_</span>&gt; = wakeup_list
         .iter()
