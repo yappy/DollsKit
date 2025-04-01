@@ -10,7 +10,7 @@
 //! 参考
 //! <https://github.com/misohena/el-jma/blob/main/docs/how-to-get-jma-forecast.org>
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{Result, anyhow, ensure};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::{

@@ -3,7 +3,7 @@
 use super::SystemModule;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{Result, anyhow, ensure};
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};
 use log::info;
@@ -152,7 +152,7 @@ impl Health {
 }
 
 impl SystemModule for Health {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[health] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {

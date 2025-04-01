@@ -7,7 +7,7 @@ use log::{error, info, trace};
 use std::future::Future;
 use std::sync::Arc;
 use tokio::select;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::watch;
 
 /// システムシャットダウン開始通知送信側 (単数)
@@ -20,7 +20,7 @@ type CancelRx = watch::Receiver<bool>;
 /// インスタンスは1つだけ生成され、[Arc] により共有される。
 pub struct Controller {
     /// Tokio ランタイム。
-    rt: tokio::runtime::Runtime,
+    pub rt: tokio::runtime::Runtime,
     /// 全システムモジュールのリスト。
     sysmods: SystemModules,
     /// システムシャットダウン時、true が設定送信される。
@@ -31,7 +31,6 @@ pub struct Controller {
 }
 
 pub type Control = Arc<Controller>;
-//pub type WeakControl = Weak<Controller>;
 
 /// [TaskServer::run] の返す実行終了種別。
 pub enum RunResult {
@@ -142,10 +141,8 @@ where
 
     // 空でなくソート済み、秒以下がゼロなのを確認後
     // 今日のその時刻からなる NaiveDateTime に変換する
-    // TODO: is_sorted() がまだ unstable
     assert!(!wakeup_list.is_empty(), "time list is empty");
-    let sorted = wakeup_list.windows(2).all(|t| t[0] <= t[1]);
-    assert!(sorted, "time list is not sorted");
+    assert!(wakeup_list.is_sorted(), "time list is not sorted");
     let today = Local::now().date_naive();
     let mut dt_list: Vec<_> = wakeup_list
         .iter()

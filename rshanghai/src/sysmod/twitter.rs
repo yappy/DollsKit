@@ -1,7 +1,7 @@
 //! Twitter 機能。
 
-use super::openai::ChatMessage;
 use super::SystemModule;
+use super::openai::ChatMessage;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
 use crate::sysmod::openai::Role;
@@ -9,7 +9,7 @@ use crate::utils::graphics::FontRenderer;
 use crate::utils::netutil;
 
 use anyhow::Result;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
@@ -565,7 +565,7 @@ impl Twitter {
             // 結果に追加する
             // エラーはログのみ出して追加をしない
             {
-                let ai = ctrl.sysmods().openai.lock().await;
+                let mut ai = ctrl.sysmods().openai.lock().await;
                 match ai.chat(msgs).await {
                     Ok(resp) => reply_buf.push(Reply {
                         to_tw_id: tw.id.clone(),
@@ -992,7 +992,7 @@ impl Twitter {
 }
 
 impl SystemModule for Twitter {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[twitter] on_start");
         if self.config.tlcheck_enabled {
             if self.config.debug_exec_once {

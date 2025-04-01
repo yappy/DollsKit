@@ -151,3 +151,113 @@ cargo upgrade
 # おそらくビルドエラーを起こすので使い方の修正が必要
 cargo upgrade -i
 ```
+
+## リンカを mold に変更
+
+(Rust に限った話ではないが、) 実は従来のリンカ (GNU ld, LLVM lld) は
+作られた歴史が古く、マルチコアの時代に適応できておらず、
+マルチスレッドで性能が出るような設計になっていない。
+基本的な場所すぎてバグらせた場合のリスクが大きすぎ、そのままになっている。
+
+コンパイルはコンパイラのプロセスを1ファイルごとに立ち上げ、同時に実行することで
+並列化の恩恵を大きく受けられる。
+コア数の多い人道的な CPU を使えばみるみるコンパイル時間は短縮されていく。
+
+しかしながらリンカは全てのコンパイルが完了した後にその結果のオブジェクトファイル
+全てを1つにまとめる作業であり、プロセスを分けることはできず、
+ここで内部的にマルチスレッド並列化が効かないと大幅に時間を食うことになる。
+そして現代のソフトウェア肥大化の影響をもろに受ける箇所である。。
+
+というわけで、凄腕の日本人が開発した並列化対応リンカが mold である。
+各環境でデフォルトになっていないのは、カーネルやシステムソフトウェアの
+リンカを置き換えるにはリスクが高すぎて実績 (時間) が足りていないからである。
+コンパイラではなくリンカで、Rust 専用というわけではない。
+Rust はコンパイラは rustc だが、そこから先のリンカ含む binutils は
+C/C++ 用のものを流用している。
+
+参考程度だが、経緯はここにある。\
+<https://note.com/ruiu/n/ndfcda9adb748>
+
+### mold のインストール
+
+なんかよくわかんないけど apt にあった。
+
+```sh
+$ sudo apt install mold
+$ mold -v
+mold 1.10.1 (compatible with GNU ld)
+```
+
+新しいのがいいならソースが GitHub にあるので自分でビルドする。
+`How to Build` を参照。
+ビルド難度は不明。\
+<https://github.com/rui314/mold>
+
+### mold を Rust から使う
+
+使い方も GitHub の README に詳しい。\
+<https://github.com/rui314/mold>
+
+設定ファイルはプロジェクトの `.cargo/config.toml`、
+または全てに適用したい場合は `~/.cargo/config.toml` に置く。
+`.cargo/config` は古い名前なので置くと警告が出る。
+
+以下は例だが、`linker = "clang"` を指定しているのは古い gcc が `-fuse-ld` を
+受け付けてくれないからだそうなので、ダメだったら追加するで OK。
+clang に変えると clang がインストールされていない場合にエラーになる (当たり前)。
+
+```toml
+[target.x86_64-unknown-linux-gnu]
+# linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+```
+
+target の後に target triple (クロスコンパイラとかでよく見るやつ) が必要だが、
+いざ自分の環境の triple を出せと言われると出し方が分からなくてきれそうになる。
+通例、triple 省略で自環境を指すため。
+
+答えとしては `rustup show` がお手軽っぽい。
+
+```sh
+$ rustup show
+Default host: x86_64-unknown-linux-gnu
+```
+
+RasPi4 だとこう。
+
+```sh
+$ rustup show
+Default host: aarch64-unknown-linux-gnu
+```
+
+### リンク結果の確認
+
+elf の `.comment` セクションにコンパイラ、リンカ等、
+使用ツールのバージョンが入っている。
+readelf の `--string-dump` オプションが便利だそうだが、覚えとらんわそんなん。
+ビルド時間を見てあからさまに速くなっていたらそれをもって確認としてもいいのかもしれない。
+
+```sh
+$ readelf --help
+  -p --string-dump=<number|name>
+                         Dump the contents of section <number|name> as strings
+```
+
+```sh
+$ readelf -p .comment rshanghai
+
+String dump of section '.comment':
+  [     0]  mold 1.10.1 (compatible with GNU ld)
+  [    25]  GCC: (crosstool-NG UNKNOWN) 13.2.0
+  [    48]  GCC: (Debian 12.2.0-14) 12.2.0
+  [    68]  rustc version 1.85.0 (4d91de4e4 2025-02-17)
+```
+
+### ビルド時間の計測
+
+`--release` とかは各自で。
+`test` とかもいけるらしい。
+
+```sh
+cargo build --timings
+```

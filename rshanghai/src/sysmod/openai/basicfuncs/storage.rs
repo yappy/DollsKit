@@ -1,15 +1,12 @@
 use crate::sysmod::openai::{
-    function::{
-        get_arg_i64_opt, get_arg_str, BasicContext, FuncArgs, FuncBodyAsync, FunctionTable,
-    },
     Function, ParameterElement, Parameters,
+    function::{FuncArgs, FunctionTable, get_arg_i64_opt, get_arg_str},
 };
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
 const NOTE_FILE_NAME: &str = "note.json";
@@ -48,11 +45,6 @@ async fn load(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
     Ok(json)
 }
 
-fn load_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
-    Box::pin(load(storage_dir, args))
-}
-
 fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -74,7 +66,10 @@ fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["user".to_string()],
             },
         },
-        Box::new(load_pin),
+        |bctx, _ctx, args| {
+            let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
+            Box::pin(load(storage_dir, args))
+        },
     );
 }
 
@@ -125,11 +120,6 @@ async fn save(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&result)?)
 }
 
-fn save_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
-    Box::pin(save(storage_dir, args))
-}
-
 fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -159,7 +149,10 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["user".to_string(), "content".to_string()],
             },
         },
-        Box::new(save_pin),
+        |bctx, _ctx, args| {
+            let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
+            Box::pin(save(storage_dir, args))
+        },
     );
 }
 
@@ -211,11 +204,6 @@ async fn delete(storage_dir: PathBuf, args: &FuncArgs) -> Result<String> {
     Ok(serde_json::to_string(&result)?)
 }
 
-fn delete_pin<T>(bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
-    Box::pin(delete(storage_dir, args))
-}
-
 fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -250,7 +238,10 @@ fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: vec!["user".to_string(), "content".to_string()],
             },
         },
-        Box::new(delete_pin),
+        |bctx, _ctx, args| {
+            let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
+            Box::pin(delete(storage_dir, args))
+        },
     );
 }
 

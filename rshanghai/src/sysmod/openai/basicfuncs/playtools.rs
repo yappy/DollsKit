@@ -1,13 +1,11 @@
 //! システム情報取得。
 
 use crate::sysmod::openai::function::{
-    get_arg_i64_opt, BasicContext, FuncArgs, FuncBodyAsync, Function, FunctionTable,
-    ParameterElement, Parameters,
+    FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_i64_opt,
 };
 use crate::utils::playtools::dice;
 use anyhow::Result;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -44,10 +42,6 @@ async fn flip_coin(args: &FuncArgs) -> Result<String> {
     Ok(text)
 }
 
-fn flip_coin_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(flip_coin(args))
-}
-
 fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -71,7 +65,7 @@ fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(flip_coin_pin),
+        |_, _, args| Box::pin(flip_coin(args)),
     );
 }
 
@@ -82,10 +76,6 @@ async fn role_dice(args: &FuncArgs) -> Result<String> {
     let result = dice::roll(face as u64, count as u32)?;
 
     Ok(format!("{:?}", result))
-}
-
-fn role_dice_pin<T>(_bctx: Arc<BasicContext>, _ctx: T, args: &FuncArgs) -> FuncBodyAsync {
-    Box::pin(role_dice(args))
 }
 
 fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -123,6 +113,6 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
                 required: Default::default(),
             },
         },
-        Box::new(role_dice_pin),
+        |_, _, args| Box::pin(role_dice(args)),
     );
 }

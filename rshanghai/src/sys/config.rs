@@ -1,11 +1,11 @@
 //! 設定データの管理。
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
 use log::info;
 use log::warn;
 use serde::{Deserialize, Serialize};
-use std::fs::remove_file;
 use std::fs::OpenOptions;
+use std::fs::remove_file;
 use std::io::{Read, Write};
 use std::os::unix::prelude::*;
 use std::sync::RwLock;
