@@ -24,7 +24,7 @@ use tokio::sync::Mutex as TokioMutex;
 pub trait SystemModule: Sync + Send {
     /// [SystemModule] の初期化時には [crate::sys::taskserver::TaskServer] がまだ存在しないので
     /// タスクの登録はこのタイミングまで遅延させる。
-    fn on_start(&self, _ctrl: &Control) {}
+    fn on_start(&mut self, _ctrl: &Control) {}
 }
 
 /// [SystemModules] 内の [SystemModule] はマルチスレッドにアクセスされるため、

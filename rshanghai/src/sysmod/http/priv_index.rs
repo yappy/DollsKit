@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use super::{priv_camera, HttpConfig};
+use super::{HttpConfig, priv_camera};
 use crate::utils::netutil;
-use actix_web::{http::header::ContentType, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
 
 pub(super) fn server_config() -> impl Fn(&mut web::ServiceConfig, &HttpConfig) + Clone {
     move |cfg: &mut web::ServiceConfig, http_config: &HttpConfig| {

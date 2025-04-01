@@ -6,9 +6,9 @@
 use super::SystemModule;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{Local, NaiveTime};
-use image::{imageops::FilterType, ImageFormat};
+use image::{ImageFormat, imageops::FilterType};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -308,7 +308,7 @@ impl SystemModule for Camera {
     /// async 使用可能になってからの初期化。
     ///
     /// 設定有効ならば [Self::auto_task] を spawn する。
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[camera] on_start");
         if self.config.enabled {
             if self.config.debug_exec_once {

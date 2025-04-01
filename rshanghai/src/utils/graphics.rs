@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use anyhow::{Context, Result};
 use image::{DynamicImage, ImageFormat, Rgba};
-use rusttype::{point, Font, PositionedGlyph, Scale};
+use rusttype::{Font, PositionedGlyph, Scale, point};
 
 pub struct FontRenderer {
     font: Font<'static>,

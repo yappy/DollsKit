@@ -12,9 +12,9 @@ mod upload;
 use super::SystemModule;
 use crate::sys::taskserver;
 use crate::sys::{config, taskserver::Control};
-use actix_web::{http::header::ContentType, HttpResponse, Responder};
-use actix_web::{web, HttpResponseBuilder};
-use anyhow::{anyhow, Result};
+use actix_web::{HttpResponse, Responder, http::header::ContentType};
+use actix_web::{HttpResponseBuilder, web};
+use anyhow::{Result, anyhow};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use serenity::http::StatusCode;
@@ -128,7 +128,7 @@ async fn http_main_task(ctrl: Control) -> Result<()> {
 }
 
 impl SystemModule for HttpServer {
-    fn on_start(&self, ctrl: &Control) {
+    fn on_start(&mut self, ctrl: &Control) {
         info!("[http] on_start");
         if self.config.enabled {
             taskserver::spawn_oneshot_task(ctrl, "http", http_main_task);
@@ -158,7 +158,7 @@ impl ActixError {
 
 impl actix_web::error::ResponseError for ActixError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
-        error!("HTTP error by Error: {}", self.status.to_string());
+        error!("HTTP error by Error: {}", self.status);
         error!("{:#}", self.err);
 
         HttpResponse::build(self.status)

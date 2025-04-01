@@ -1,10 +1,11 @@
 //! OpenAI API - function.
 
-use super::{basicfuncs, ModelInfo};
+use super::basicfuncs;
 use crate::sys::config;
+use crate::sys::taskserver::Control;
 use crate::sysmod::openai::{ChatMessage, Role};
 use anyhow::bail;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,8 +13,8 @@ use std::future::Future;
 use std::ops::RangeBounds;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Function でもトークンを消費するが、算出方法がよく分からないので定数で確保する。
 /// トークン制限エラーが起きた場合、エラーメッセージ中に含まれていた気がするので
@@ -31,7 +32,7 @@ pub type FuncBodyAsync<'a> = Pin<Box<dyn Future<Output = Result<String>> + Sync 
 /// 関数の Rust 上での定義。
 ///
 /// 引数は [BasicContext], T, [FuncArgs] で、返り値は文字列の async fn。
-pub type FuncBody<T> = Box<dyn Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Sync + Send>;
+pub type FuncBody<T> = dyn Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Sync + Send;
 /// 引数。文字列から Json value へのマップ。
 pub type FuncArgs = HashMap<String, serde_json::value::Value>;
 
@@ -44,10 +45,9 @@ pub struct Args {
 }
 
 /// 標準で関数に提供されるコンテキスト情報。
-#[derive(Debug, Serialize)]
 pub struct BasicContext {
-    /// モデル情報。
-    pub model: ModelInfo,
+    /// システムハンドル。
+    pub ctrl: Control,
     /// 永続化データストレージの場所。
     pub storage_dir: Option<PathBuf>,
     /// デバッグモード。
@@ -68,13 +68,13 @@ pub struct FunctionTable<T> {
     /// OpenAI API に渡すためのリスト。
     function_list: Vec<Function>,
     /// 関数名から Rust 関数へのマップ。
-    call_table: HashMap<String, FuncBody<T>>,
+    call_table: HashMap<String, Box<FuncBody<T>>>,
     /// [BasicContext] への参照。
     basic_context: Arc<BasicContext>,
 }
 
 impl<T: 'static> FunctionTable<T> {
-    pub fn new(model: ModelInfo, storage_dir_name: Option<&str>) -> Self {
+    pub fn new(ctrl: Control, storage_dir_name: Option<&str>) -> Self {
         // openai config でディレクトリが指定されており、かつ、
         // この関数にストレージディレクトリ名が指定されている場合、Some
         let storage_dir = if let Some(storage_dir_name) = storage_dir_name {
@@ -88,7 +88,7 @@ impl<T: 'static> FunctionTable<T> {
             None
         };
         let basic_context = BasicContext {
-            model,
+            ctrl,
             storage_dir,
             debug_mode: AtomicBool::new(false),
         };
@@ -190,7 +190,11 @@ impl<T: 'static> FunctionTable<T> {
     }
 
     /// 関数を登録する。
-    pub fn register_function(&mut self, function: Function, body: FuncBody<T>) {
+    pub fn register_function(
+        &mut self,
+        function: Function,
+        body: impl Fn(Arc<BasicContext>, T, &FuncArgs) -> FuncBodyAsync + Send + Sync + 'static,
+    ) {
         let name = function.name.clone();
         self.function_list.push(function);
         self.call_table.insert(name, Box::new(body));
@@ -285,54 +289,72 @@ mod tests {
         args.insert("int".to_string(), 42.into());
 
         assert_eq!(get_arg_str(&args, "str").unwrap(), "ok");
-        assert!(get_arg_str(&args, "not_found")
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_str(&args, "not_found")
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert!(!get_arg_bool(&args, "bool_f",).unwrap());
         assert!(get_arg_bool(&args, "bool_t",).unwrap());
-        assert!(get_arg_bool(&args, "str")
-            .unwrap_err()
-            .to_string()
-            .contains("must be boolean"));
-        assert!(get_arg_bool(&args, "not_found")
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_bool(&args, "str")
+                .unwrap_err()
+                .to_string()
+                .contains("must be boolean")
+        );
+        assert!(
+            get_arg_bool(&args, "not_found")
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert_eq!(get_arg_bool_opt(&args, "bool_f").unwrap(), Some(false));
         assert_eq!(get_arg_bool_opt(&args, "bool_t").unwrap(), Some(true));
-        assert!(get_arg_bool_opt(&args, "str")
-            .unwrap_err()
-            .to_string()
-            .contains("must be boolean"));
+        assert!(
+            get_arg_bool_opt(&args, "str")
+                .unwrap_err()
+                .to_string()
+                .contains("must be boolean")
+        );
         assert_eq!(get_arg_bool_opt(&args, "not_found").unwrap(), None);
 
         assert_eq!(get_arg_i64(&args, "int", 1..=42).unwrap(), 42);
-        assert!(get_arg_i64(&args, "str", 1..43)
-            .unwrap_err()
-            .to_string()
-            .contains("must be integer"));
-        assert!(get_arg_i64(&args, "int", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("Out of range"));
-        assert!(get_arg_i64(&args, "not_found", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("required"));
+        assert!(
+            get_arg_i64(&args, "str", 1..43)
+                .unwrap_err()
+                .to_string()
+                .contains("must be integer")
+        );
+        assert!(
+            get_arg_i64(&args, "int", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("Out of range")
+        );
+        assert!(
+            get_arg_i64(&args, "not_found", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("required")
+        );
 
         assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
         assert_eq!(get_arg_i64_opt(&args, "int", 1..=42).unwrap(), Some(42));
-        assert!(get_arg_i64_opt(&args, "str", 1..43)
-            .unwrap_err()
-            .to_string()
-            .contains("must be integer"));
-        assert!(get_arg_i64_opt(&args, "int", 1..42)
-            .unwrap_err()
-            .to_string()
-            .contains("Out of range"));
+        assert!(
+            get_arg_i64_opt(&args, "str", 1..43)
+                .unwrap_err()
+                .to_string()
+                .contains("must be integer")
+        );
+        assert!(
+            get_arg_i64_opt(&args, "int", 1..42)
+                .unwrap_err()
+                .to_string()
+                .contains("Out of range")
+        );
         assert_eq!(get_arg_i64_opt(&args, "not_found", 1..42).unwrap(), None);
     }
 }

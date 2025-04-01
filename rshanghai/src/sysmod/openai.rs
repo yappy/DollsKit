@@ -5,17 +5,19 @@ pub mod function;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, Instant, SystemTime};
 
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::utils::netutil;
+use crate::utils::netutil::{self, HttpStatusError};
 
-use anyhow::ensure;
-use anyhow::{anyhow, bail, Result};
-use log::info;
+use anyhow::{Context, ensure};
+use anyhow::{Result, anyhow, bail};
+use chrono::TimeZone;
 use log::warn;
+use log::{debug, info};
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 /// HTTP 通信のタイムアウト。
@@ -23,20 +25,36 @@ use serde::{Deserialize, Serialize};
 const CONN_TIMEOUT: Duration = Duration::from_secs(10);
 /// AI 応答待ちのタイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(60);
+/// モデル情報更新間隔。
+/// 24 時間に一度更新する。
+const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 
-/// <https://platform.openai.com/docs/api-reference/chat/create>
+/// <https://platform.openai.com/docs/api-reference/models/retrieve>
+fn url_model(model: &str) -> String {
+    format!("https://api.openai.com/v1/models/{model}")
+}
 const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
 
-/// モデル情報。
-#[derive(Debug, Clone, Copy, Serialize)]
+/// [OfflineModelInfo] + [OnlineModelInfo]
+#[derive(Debug, Clone, Serialize)]
 pub struct ModelInfo {
+    #[serde(flatten)]
+    offline: OfflineModelInfo,
+    #[serde(flatten)]
+    online: OnlineModelInfo,
+}
+
+/// モデル情報。
+/// API からは得られない、ドキュメントにのみある情報。
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct OfflineModelInfo {
     pub name: &'static str,
-    /// トークン数制限。入力と出力を全て合わせた値。
-    pub token_limit: usize,
-    pub year: u16,
-    pub month: u16,
+    /// 総トークン数制限。入力と出力その他コントロールトークン全てを合わせた値。
+    pub context_window: usize,
+    /// 最大出力トークン数。
+    pub max_output_tokens: usize,
 }
 
 /// モデル情報。一番上がデフォルト。
@@ -44,41 +62,41 @@ pub struct ModelInfo {
 /// <https://platform.openai.com/docs/models>
 ///
 /// <https://openai.com/pricing>
-const MODEL_LIST: &[ModelInfo] = &[
-    ModelInfo {
+const MODEL_LIST: &[OfflineModelInfo] = &[
+    OfflineModelInfo {
         name: "gpt-4o-mini",
-        token_limit: 16384,
-        year: 2024,
-        month: 7,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4o",
-        token_limit: 128000,
-        year: 2024,
-        month: 8,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4",
-        token_limit: 8192,
-        year: 2023,
-        month: 6,
+        context_window: 8192,
+        max_output_tokens: 8192,
     },
-    ModelInfo {
+    OfflineModelInfo {
         name: "gpt-4-turbo",
-        token_limit: 128000,
-        year: 2024,
-        month: 4,
+        context_window: 128000,
+        max_output_tokens: 4096,
     },
 ];
 
-/// トークン数制限のうち出力用に予約する割合。
+/// `max_output_tokens` をギリギリまで攻めると危ないので、少し余裕を持たせる。
+const MAX_OUTPUT_TOKENS_FACTOR: f32 = 1.05;
+
+/// `context_window` のうち出力用に予約する割合 (まともに決まっていない場合用)。
+/// `max_output_tokens` が意味をなしていない gpt-4 で適当に決めるための値。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 
-/// [MODEL_LIST] からモデル名で [ModelInfo] を検索する。
+/// [MODEL_LIST] からモデル名で [OfflineModelInfo] を検索する。
 ///
 /// HashMap で検索する。
-pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
-    static MAP: LazyLock<HashMap<&str, &ModelInfo>> = LazyLock::new(|| {
+fn get_offline_model_info(model: &str) -> Result<&OfflineModelInfo> {
+    static MAP: LazyLock<HashMap<&str, &OfflineModelInfo>> = LazyLock::new(|| {
         let mut map = HashMap::new();
         for info in MODEL_LIST.iter() {
             map.insert(info.name, info);
@@ -92,9 +110,192 @@ pub fn get_model_info(model: &str) -> Result<&ModelInfo> {
         .ok_or_else(|| anyhow!("Model not found: {model}"))
 }
 
-/// 出力用に予約するトークン数を計算する。
-pub fn get_output_reserved_token(info: &ModelInfo) -> usize {
-    (info.token_limit as f32 * OUTPUT_RESERVED_RATIO) as usize
+/// モデル情報。
+/// API から得られるデータ。時々でよいので再取得する必要がある。
+#[derive(Debug, Clone, Serialize)]
+pub struct CachedModelInfo {
+    last_update: SystemTime,
+    info: OnlineModelInfo,
+}
+
+/// OpenAI API JSON 定義。
+/// モデル情報。
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct Model {
+    /// The model identifier, which can be referenced in the API endpoints.
+    id: String,
+    /// The Unix timestamp (in seconds) when the model was created.
+    created: u64,
+    /// The object type, which is always "model".
+    object: String,
+    ///The organization that owns the model.
+    owned_by: String,
+}
+
+/// [Model] から必要なもののみ抜き出して読めるデータに変換したもの。
+#[derive(Default, Clone, Debug, Serialize)]
+pub struct OnlineModelInfo {
+    created: String,
+}
+
+impl OnlineModelInfo {
+    fn from(model: Model) -> Self {
+        let dt_str = chrono::Local
+            .timestamp_opt(model.created as i64, 0)
+            .single()
+            .map_or_else(|| "?".into(), |dt| dt.to_rfc3339());
+
+        Self { created: dt_str }
+    }
+}
+
+/// Rate Limit 情報。
+///
+/// HTTP レスポンスヘッダに含まれる。
+#[derive(Debug, Clone, Copy)]
+struct RateLimit {
+    timestamp: Instant,
+    limit_requests: u32,
+    limit_tokens: u32,
+    remaining_requests: u32,
+    remaining_tokens: u32,
+    reset_requests: Duration,
+    reset_tokens: Duration,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ExpectedRateLimit {
+    pub limit_requests: u32,
+    pub limit_tokens: u32,
+    pub remaining_requests: u32,
+    pub remaining_tokens: u32,
+}
+
+impl RateLimit {
+    fn from(resp: &reqwest::Response) -> Result<Self> {
+        let timestamp = Instant::now();
+        let headers = resp.headers();
+
+        let to_u32 = |key| -> Result<u32> {
+            let s = headers
+                .get(key)
+                .ok_or_else(|| anyhow!("not found: {key}"))?
+                .to_str()?;
+
+            s.parse::<u32>()
+                .with_context(|| format!("parse u32 failed: {s}"))
+        };
+        let to_secs_f64 = |key| -> Result<f64> {
+            let s = headers
+                .get(key)
+                .ok_or_else(|| anyhow!("not found: {key}"))?
+                .to_str()?;
+
+            Self::to_secs_f64(s).with_context(|| format!("parse f64 secs failed: {s}"))
+        };
+
+        let limit_requests = to_u32("x-ratelimit-limit-requests")?;
+        let limit_tokens = to_u32("x-ratelimit-limit-tokens")?;
+        let remaining_requests = to_u32("x-ratelimit-remaining-requests")?;
+        let remaining_tokens = to_u32("x-ratelimit-remaining-tokens")?;
+        let reset_requests = to_secs_f64("x-ratelimit-reset-requests")?;
+        let reset_tokens = to_secs_f64("x-ratelimit-reset-tokens")?;
+
+        Ok(Self {
+            timestamp,
+            limit_requests,
+            limit_tokens,
+            remaining_requests,
+            remaining_tokens,
+            reset_requests: Duration::from_secs_f64(reset_requests),
+            reset_tokens: Duration::from_secs_f64(reset_tokens),
+        })
+    }
+
+    /// サンプルには "6m0s" と書かれているが、
+    /// 実際には "30.828s" のように小数が来ている。
+    /// また、"120ms" とかもある。
+    fn to_secs_f64(s: &str) -> Result<f64> {
+        let mut sum = 0.0;
+
+        let unit_to_scale = |unit: &str| -> Result<f64> {
+            let scale = match unit {
+                "ns" => 0.000_000_001,
+                "us" => 0.000_001,
+                "ms" => 0.001,
+                "s" => 1.0,
+                "m" => 60.0,
+                "h" => 3600.0,
+                "d" => 86400.0,
+                _ => bail!("unknown unit: {unit}"),
+            };
+            Ok(scale)
+        };
+
+        let mut numbuf = String::new();
+        let mut unitbuf = String::new();
+        for c in s.chars() {
+            match c {
+                '0'..='9' | '.' => {
+                    if !unitbuf.is_empty() {
+                        let num = numbuf.parse::<f64>()?;
+                        let scale = unit_to_scale(&unitbuf)?;
+                        sum += num * scale;
+                        numbuf.clear();
+                        unitbuf.clear();
+                    }
+                    numbuf.push(c);
+                }
+                _ => {
+                    unitbuf.push(c);
+                }
+            };
+        }
+        if !unitbuf.is_empty() {
+            let num = numbuf.parse::<f64>()?;
+            let scale = unit_to_scale(&unitbuf)?;
+            sum += num * scale;
+            numbuf.clear();
+            unitbuf.clear();
+        }
+        ensure!(numbuf.is_empty(), "unexpected format: {}", s);
+
+        Ok(sum)
+    }
+
+    fn calc_expected_current(&self) -> ExpectedRateLimit {
+        let now = Instant::now();
+        let elapsed_secs = (now - self.timestamp).as_secs_f64();
+        debug!("{self:?}");
+        debug!("elapsed_secs = {elapsed_secs}");
+
+        let remaining_requests = if elapsed_secs >= self.reset_requests.as_secs_f64() {
+            self.limit_requests
+        } else {
+            let vreq = (self.limit_requests - self.remaining_requests) as f64
+                / self.reset_requests.as_secs_f64();
+            let remaining_requests = self.remaining_requests as f64 + vreq * elapsed_secs;
+
+            (remaining_requests as u32).min(self.limit_requests)
+        };
+
+        let remaining_tokens = if elapsed_secs >= self.reset_tokens.as_secs_f64() {
+            self.limit_tokens
+        } else {
+            let vtok = (self.limit_tokens - self.remaining_tokens) as f64
+                / self.reset_tokens.as_secs_f64();
+            let remaining_tokens = self.remaining_tokens as f64 + vtok * elapsed_secs;
+
+            (remaining_tokens as u32).min(self.limit_tokens)
+        };
+
+        ExpectedRateLimit {
+            limit_requests: self.limit_requests,
+            limit_tokens: self.limit_tokens,
+            remaining_requests,
+            remaining_tokens,
+        }
+    }
 }
 
 /// OpenAI API JSON 定義。
@@ -388,8 +589,29 @@ impl Default for OpenAiConfig {
 /// OpenAI システムモジュール。
 pub struct OpenAi {
     config: OpenAiConfig,
-    model: String,
     client: reqwest::Client,
+
+    model_name: &'static str,
+    model_info_offline: OfflineModelInfo,
+    model_info_online: Option<CachedModelInfo>,
+
+    rate_limit: Option<RateLimit>,
+}
+
+/// 特別な案内をすべきかもしれないエラー。
+///
+/// <https://platform.openai.com/docs/guides/error-codes>
+pub enum OpenAiErrorKind {
+    /// その他。
+    Fatal,
+    /// HTTP リクエストがタイムアウト。
+    Timeout,
+    /// 429: 短時間に使いすぎ。
+    RateLimit,
+    /// 429: 課金が必要。
+    QuotaExceeded,
+    /// その他の HTTP Error
+    HttpError(u16),
 }
 
 impl OpenAi {
@@ -402,16 +624,16 @@ impl OpenAi {
         info!("[openai] OpenAI model list START");
         for info in MODEL_LIST.iter() {
             info!(
-                "[openai] name: \"{}\", token_limit: {}",
-                info.name, info.token_limit
+                "[openai] name: \"{}\", context_window: {}",
+                info.name, info.context_window
             );
         }
         info!("[openai] OpenAI model list END");
 
-        let info = get_model_info(&config.model)?;
+        let info = get_offline_model_info(&config.model)?;
         info!(
             "[openai] selected: model: {}, token_limit: {}",
-            info.name, info.token_limit
+            info.name, info.context_window
         );
 
         if !config.storage_dir.is_empty() {
@@ -426,48 +648,230 @@ impl OpenAi {
 
         Ok(OpenAi {
             config: config.clone(),
-            model: info.name.to_string(),
             client,
+            model_name: info.name,
+            model_info_offline: *info,
+            model_info_online: None,
+            rate_limit: None,
         })
     }
 
-    /// エラーチェインの中から [reqwest] のタイムアウトエラーを探す。
-    pub fn is_timeout(err: &anyhow::Error) -> bool {
-        for cause in err.chain() {
-            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
-                if req_err.is_timeout() {
-                    return true;
-                }
-            }
-        }
+    /*
+    pub fn model_name(&self) -> &str {
+        self.model_name
+    }
+    */
 
-        false
+    pub async fn model_info(&mut self) -> Result<ModelInfo> {
+        let offline = self.model_info_offline();
+        let online = self.model_info_online().await?;
+
+        Ok(ModelInfo { offline, online })
     }
 
-    /// OpenAI Chat API を使用する。
-    pub async fn chat(&self, msgs: Vec<ChatMessage>) -> Result<String> {
-        let key = &self.config.api_key;
-        let body = ChatRequest {
-            model: self.model.clone(),
-            messages: msgs,
-            ..Default::default()
+    pub fn model_info_offline(&self) -> OfflineModelInfo {
+        self.model_info_offline
+    }
+
+    pub async fn model_info_online(&mut self) -> Result<OnlineModelInfo> {
+        let cur = &self.model_info_online;
+        let update = if let Some(info) = cur {
+            let now = SystemTime::now();
+            let elapsed = now.duration_since(info.last_update).unwrap_or_default();
+
+            elapsed > MODEL_INFO_UPDATE_INTERVAL
+        } else {
+            true
         };
 
-        info!("[openai] chat request: {:?}", body);
+        if update {
+            info!("[openai] update model info");
+            let info = self.get_online_model_info().await?;
+            let info = OnlineModelInfo::from(info);
+            let newval = CachedModelInfo {
+                last_update: SystemTime::now(),
+                info: info.clone(),
+            };
+            let _ = self.model_info_online.insert(newval);
+
+            Ok(info)
+        } else {
+            info!("[openai] skip to update model info");
+            Ok(cur.as_ref().unwrap().info.clone())
+        }
+    }
+
+    /// 出力用に予約するトークン数を計算する。
+    /// 基本的に max_output_tokens に余裕を持たせた値を使うが、
+    /// それが意味をなしていない旧モデルの場合は context_window のうち一定割合とする。
+    pub fn get_output_reserved_token(&self) -> usize {
+        let info = self.model_info_offline();
+        let v1 = (info.max_output_tokens as f32 * MAX_OUTPUT_TOKENS_FACTOR) as usize;
+        let v2 = (info.context_window as f32 * OUTPUT_RESERVED_RATIO) as usize;
+
+        v1.min(v2)
+    }
+
+    async fn get_online_model_info(&self) -> Result<Model> {
+        let key = &self.config.api_key;
+        let model = self.model_name;
+
+        info!("[openai] model request");
+        self.check_enabled()?;
+
+        let resp = self
+            .client
+            .get(url_model(model))
+            .header("Authorization", format!("Bearer {key}"))
+            .send()
+            .await?;
+
+        let json_str = netutil::check_http_resp(resp).await?;
+
+        netutil::convert_from_json::<Model>(&json_str)
+    }
+
+    /// 設定で無効になっていたら警告をログに出しつつ [Err] を返す。
+    fn check_enabled(&self) -> Result<()> {
         if !self.config.enabled {
             warn!("[openai] skip because openai feature is disabled");
             bail!("openai is disabled");
         }
 
+        Ok(())
+    }
+
+    /// エラーチェインの中から特定のエラーを探す。
+    pub fn error_kind(err: &anyhow::Error) -> OpenAiErrorKind {
+        for cause in err.chain() {
+            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
+                if req_err.is_timeout() {
+                    return OpenAiErrorKind::Timeout;
+                }
+            }
+            if let Some(http_err) = cause.downcast_ref::<HttpStatusError>() {
+                // 429: Too Many Requests
+                if http_err.status == 429 {
+                    let msg = http_err.body.to_ascii_lowercase();
+                    if msg.contains("rate") && msg.contains("limit") {
+                        return OpenAiErrorKind::RateLimit;
+                    } else if msg.contains("quota") && msg.contains("billing") {
+                        return OpenAiErrorKind::QuotaExceeded;
+                    }
+                } else {
+                    return OpenAiErrorKind::HttpError(http_err.status);
+                }
+            }
+        }
+
+        OpenAiErrorKind::Fatal
+    }
+
+    fn log_header(resp: &reqwest::Response, key: &str) {
+        if let Some(value) = resp.headers().get(key) {
+            info!("[openai] {key}: {value:?}");
+        } else {
+            info!("[openai] not found: {key}");
+        }
+    }
+
+    /// JSON を POST して [Response] を返す。
+    /// 成功しても HTTP ステータスコードは失敗かもしれない。
+    ///
+    /// HTTP Header に付与されるメタ情報をログに記録する。
+    /// レートリミット情報は後で参照できるように保存する。
+    ///
+    /// <https://platform.openai.com/docs/api-reference/debugging-requests>
+    async fn post_json(
+        &mut self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<Response> {
+        let key = &self.config.api_key;
+
+        info!("[openai] post_json: {url}");
+        info!("[openai] {}", serde_json::to_string(body).unwrap());
+        self.check_enabled()?;
+
         let resp = self
             .client
-            .post(URL_CHAT)
+            .post(url)
             .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
+            .json(body)
             .send()
             .await?;
+        // HTTP POST レスポンス取得まで成功
+        // ステータスコードは失敗かもしれない
 
-        let json_str = netutil::check_http_resp(resp).await?;
+        // API メタ情報および Rate Limit 情報をログに記録
+        Self::log_header(&resp, "x-request-id");
+        Self::log_header(&resp, "openai-organization");
+        Self::log_header(&resp, "openai-processing-ms");
+        Self::log_header(&resp, "openai-version");
+        // ドキュメントにはないが、公式ライブラリが使っている
+        // これに従うのがおすすめなのかもしれない
+        Self::log_header(&resp, "x-should-retry");
+
+        // レートリミット情報を最新に更新
+        // 失敗しても警告のみ
+        match RateLimit::from(&resp) {
+            Ok(rate_limit) => {
+                info!("[openai] rate limit: {:?}", rate_limit);
+                self.rate_limit = Some(rate_limit);
+            }
+            Err(err) => {
+                warn!("[openai] could not get rate limit: {err:#}");
+            }
+        }
+
+        Ok(resp)
+    }
+
+    /// [post_json] の結果を文字列として返す。
+    /// HTTP エラーも含めてエラーにする。
+    async fn post_json_text(
+        &mut self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<String> {
+        let resp = self.post_json(url, body).await?;
+        let text = netutil::check_http_resp(resp).await?;
+        info!("[openai] text received: len={}", text.len());
+
+        Ok(text)
+    }
+
+    /// [post_json] の結果をバイナリとして返す。
+    /// HTTP エラーも含めてエラーにする。
+    async fn post_json_bin(
+        &mut self,
+        url: &str,
+        body: &(impl Serialize + std::fmt::Debug),
+    ) -> Result<Vec<u8>> {
+        let resp = self.post_json(url, body).await?;
+        let bin = netutil::check_http_resp_bin(resp).await?;
+        info!("[openai] binary received: size={}", bin.len());
+
+        Ok(bin)
+    }
+
+    pub fn get_expected_rate_limit(&self) -> Option<ExpectedRateLimit> {
+        self.rate_limit
+            .as_ref()
+            .map(|rate_limit| rate_limit.calc_expected_current())
+    }
+
+    /// OpenAI Chat API を使用する。
+    pub async fn chat(&mut self, msgs: Vec<ChatMessage>) -> Result<String> {
+        info!("[openai] chat request");
+
+        let body = ChatRequest {
+            model: self.model_name.to_string(),
+            messages: msgs,
+            ..Default::default()
+        };
+
+        let json_str = self.post_json_text(URL_CHAT, &body).await?;
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
@@ -487,33 +891,20 @@ impl OpenAi {
 
     /// OpenAI Chat API を fcuntion call 機能付きで使用する。
     pub async fn chat_with_function(
-        &self,
+        &mut self,
         msgs: &[ChatMessage],
         funcs: &[Function],
     ) -> Result<ChatMessage> {
-        let key = &self.config.api_key;
+        info!("[openai] chat request with function");
+
         let body = ChatRequest {
-            model: self.model.clone(),
+            model: self.model_name.to_string(),
             messages: msgs.to_vec(),
             functions: Some(funcs.to_vec()),
             ..Default::default()
         };
 
-        info!("[openai] chat request with function: {:?}", body);
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
-
-        let resp = self
-            .client
-            .post(URL_CHAT)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let json_str = netutil::check_http_resp(resp).await?;
+        let json_str = self.post_json_text(URL_CHAT, &body).await?;
         let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
 
         // 最初のを選ぶ
@@ -527,8 +918,9 @@ impl OpenAi {
     }
 
     /// OpenAI Image Generation API を使用する。
-    pub async fn generate_image(&self, prompt: &str, n: u8) -> Result<Vec<String>> {
-        let key = &self.config.api_key;
+    pub async fn generate_image(&mut self, prompt: &str, n: u8) -> Result<Vec<String>> {
+        info!("[openai] image gen request");
+
         let body = ImageGenRequest {
             prompt: prompt.to_string(),
             n: Some(n),
@@ -536,24 +928,7 @@ impl OpenAi {
             ..Default::default()
         };
 
-        info!(
-            "[openai] image gen request: {}",
-            serde_json::to_string(&body)?
-        );
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
-
-        let resp = self
-            .client
-            .post(URL_IMAGE_GEN)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let json_str = netutil::check_http_resp(resp).await?;
+        let json_str = self.post_json_text(URL_IMAGE_GEN, &body).await?;
         let resp: ImageGenResponse = netutil::convert_from_json(&json_str)?;
 
         let mut result = Vec::new();
@@ -568,13 +943,15 @@ impl OpenAi {
 
     /// OpenAI Create Speech API を使用する。
     pub async fn text_to_speech(
-        &self,
+        &mut self,
         model: SpeechModel,
         input: &str,
         voice: SpeechVoice,
         response_format: Option<SpeechFormat>,
         speed: Option<f32>,
     ) -> Result<Vec<u8>> {
+        info!("[openai] create speech request");
+
         ensure!(
             input.len() <= SPEECH_INPUT_MAX,
             "input length limit is {SPEECH_INPUT_MAX} characters"
@@ -586,7 +963,6 @@ impl OpenAi {
             );
         }
 
-        let key = &self.config.api_key;
         let body = SpeechRequest {
             model,
             input: input.to_string(),
@@ -595,31 +971,14 @@ impl OpenAi {
             speed,
         };
 
-        info!(
-            "[openai] create speech request: {}",
-            serde_json::to_string(&body)?
-        );
-        if !self.config.enabled {
-            warn!("[openai] skip because openai feature is disabled");
-            bail!("openai is disabled");
-        }
-
-        let resp = self
-            .client
-            .post(URL_AUDIO_SPEECH)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(&body)
-            .send()
-            .await?;
-
-        let bin = netutil::check_http_resp_bin(resp).await?;
+        let bin = self.post_json_bin(URL_AUDIO_SPEECH, &body).await?;
 
         Ok(bin)
     }
 }
 
 impl SystemModule for OpenAi {
-    fn on_start(&self, _ctrl: &Control) {
+    fn on_start(&mut self, _ctrl: &Control) {
         info!("[openai] on_start");
     }
 }
@@ -630,6 +989,27 @@ mod tests {
     use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
 
+    #[test]
+    fn test_parse_resettime() {
+        const EPS: f64 = 1e-10;
+
+        let s = "6m0s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert_eq!(360.0, v);
+
+        let s = "30.828s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert!((30.828 - v).abs() < EPS);
+
+        let s = "1h2m3s";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert_eq!((3600 + 120 + 3) as f64, v);
+
+        let s = "120ms";
+        let v = RateLimit::to_secs_f64(s).unwrap();
+        assert!((0.120 - v).abs() < EPS);
+    }
+
     #[tokio::test]
     #[serial(openai)]
     #[ignore]
@@ -638,7 +1018,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let msgs = vec![
             ChatMessage {
                 role: Role::System,
@@ -675,7 +1055,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let res = ai
             .generate_image("Rasberry Pi の上に乗っている管理人形", 1)
             .await?;
@@ -692,7 +1072,7 @@ mod tests {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
-        let ai = OpenAi::new().unwrap();
+        let mut ai = OpenAi::new().unwrap();
         let res = ai
             .text_to_speech(
                 SpeechModel::Tts1,

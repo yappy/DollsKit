@@ -2,7 +2,7 @@
 
 use std::{collections::VecDeque, str::Chars};
 
-use anyhow::{anyhow, bail, ensure, Result};
+use anyhow::{Result, anyhow, bail, ensure};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Position {

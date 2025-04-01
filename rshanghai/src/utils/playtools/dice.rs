@@ -2,7 +2,7 @@
 //!
 //! コインフリップにも応用可能。
 
-use anyhow::{ensure, Result};
+use anyhow::{Result, ensure};
 use rand::Rng;
 use static_assertions::const_assert;
 
