@@ -3,7 +3,7 @@
 use super::basicfuncs;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::sysmod::openai::{ChatMessage, Role};
+use crate::sysmod::openai::{InputElement, Role};
 use anyhow::bail;
 use anyhow::{Result, anyhow};
 use log::{info, warn};
@@ -142,9 +142,9 @@ impl<T: 'static> FunctionTable<T> {
     /// 関数を呼び出す。
     ///
     /// OpenAI API からのデータをそのまま渡せ、
-    /// 結果も API にそのまま渡せる [ChatMessage] で返す。
+    /// 結果も API にそのまま渡せる [InputElement] で返す。
     /// エラーも適切なメッセージとして返す。
-    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> ChatMessage {
+    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> InputElement {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
@@ -156,7 +156,7 @@ impl<T: 'static> FunctionTable<T> {
             }
         };
 
-        let content = match &res {
+        let output = match &res {
             Ok(res) => {
                 info!("[openai-func] {func_name} returned: {res}");
                 res.to_string()
@@ -167,11 +167,10 @@ impl<T: 'static> FunctionTable<T> {
             }
         };
 
-        ChatMessage {
-            role: Role::Function,
-            name: Some(func_name.to_string()),
-            content: Some(content),
-            ..Default::default()
+        InputElement::FunctionCallOutput {
+            // TODO
+            call_id: Default::default(),
+            output,
         }
     }
 
