@@ -6,7 +6,7 @@ use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
 use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
-use crate::sysmod::openai::{self, ChatMessage, OpenAi, OpenAiErrorKind};
+use crate::sysmod::openai::{self, InputElement, OpenAi, OpenAiErrorKind};
 use crate::sysmod::openai::{Role, function::FunctionTable};
 use crate::utils::chat_history::ChatHistory;
 use crate::utils::playtools::dice::{self};
@@ -848,94 +848,91 @@ async fn ai(
         .join("")
         .replace("${user}", &ctx.author().name);
     discord.chat_history_mut().push({
-        ChatMessage {
-            role: Role::System,
-            content: Some(sysmsg),
-            ..Default::default()
+        InputElement::Message {
+            role: Role::Developer,
+            content: sysmsg,
         }
     });
-    discord.chat_history_mut().push(ChatMessage {
+    discord.chat_history_mut().push(InputElement::Message {
         role: Role::User,
-        content: Some(chat_msg.to_string()),
-        ..Default::default()
+        content: chat_msg.to_string(),
     });
 
     let pre = discord.config.prompt.pre.join("");
-    // AI 返答まで関数呼び出しを繰り返す
-    let reply_msg = loop {
-        // 送信用リスト
-        let mut all_msgs = Vec::new();
-        // 先頭システムメッセージ
-        all_msgs.push(ChatMessage {
-            role: Role::System,
-            content: Some(pre.clone()),
-            ..Default::default()
-        });
-        // それ以降 (ヒストリの中身全部) を追加
-        for m in discord.chat_history().iter() {
-            all_msgs.push(m.clone());
-        }
+    /*
+       // AI 返答まで関数呼び出しを繰り返す
+       let reply_msg = loop {
+           // 送信用リスト
+           let mut all_msgs = Vec::new();
+           // 先頭システムメッセージ
+           all_msgs.push(ChatMessage {
+               role: Role::System,
+               content: Some(pre.clone()),
+               ..Default::default()
+           });
+           // それ以降 (ヒストリの中身全部) を追加
+           for m in discord.chat_history().iter() {
+               all_msgs.push(m.clone());
+           }
 
-        // ChatGPT API
-        let reply_msg = {
-            let mut ai = data.ctrl.sysmods().openai.lock().await;
-            ai.chat_with_function(
-                &all_msgs,
-                discord.func_table.as_ref().unwrap().function_list(),
-            )
-            .await
-        };
-        match &reply_msg {
-            Ok(reply) => {
-                // 応答を履歴に追加
-                discord.chat_history_mut().push(reply.clone());
-                if reply.function_call.is_some() {
-                    // function call が返ってきた
-                    let func_name = &reply.function_call.as_ref().unwrap().name;
-                    let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = discord
-                        .func_table
-                        .as_ref()
-                        .unwrap()
-                        .call((), func_name, func_args)
-                        .await;
-                    // debug trace
-                    if discord.func_table.as_ref().unwrap().debug_mode()
-                        || trace_function_call.unwrap_or(false)
-                    {
-                        reply_long(
-                            &ctx,
-                            &format!(
-                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                                func_res.content.as_ref().unwrap()
-                            ),
-                        )
-                        .await?;
-                    }
-                    // function 応答を履歴に追加
-                    discord.chat_history_mut().push(func_res);
-                    // continue
-                } else {
-                    // 通常の応答が返ってきた
-                    break reply_msg;
-                }
-            }
-            Err(err) => {
-                // エラーが発生した
-                error!("{:#?}", err);
-                break reply_msg;
-            }
-        }
-    };
-
+           // ChatGPT API
+           let reply_msg = {
+               let mut ai = data.ctrl.sysmods().openai.lock().await;
+               ai.chat_with_function(
+                   &all_msgs,
+                   discord.func_table.as_ref().unwrap().function_list(),
+               )
+               .await
+           };
+           match &reply_msg {
+               Ok(reply) => {
+                   // 応答を履歴に追加
+                   discord.chat_history_mut().push(reply.clone());
+                   if reply.function_call.is_some() {
+                       // function call が返ってきた
+                       let func_name = &reply.function_call.as_ref().unwrap().name;
+                       let func_args = &reply.function_call.as_ref().unwrap().arguments;
+                       let func_res = discord
+                           .func_table
+                           .as_ref()
+                           .unwrap()
+                           .call((), func_name, func_args)
+                           .await;
+                       // debug trace
+                       if discord.func_table.as_ref().unwrap().debug_mode()
+                           || trace_function_call.unwrap_or(false)
+                       {
+                           reply_long(
+                               &ctx,
+                               &format!(
+                                   "function call: {func_name}\nparameters: {func_args}\nresult: {}",
+                                   func_res.content.as_ref().unwrap()
+                               ),
+                           )
+                           .await?;
+                       }
+                       // function 応答を履歴に追加
+                       discord.chat_history_mut().push(func_res);
+                       // continue
+                   } else {
+                       // 通常の応答が返ってきた
+                       break reply_msg;
+                   }
+               }
+               Err(err) => {
+                   // エラーが発生した
+                   error!("{:#?}", err);
+                   break reply_msg;
+               }
+           }
+       };
+    */
+    let reply_msg: Result<String, _> = Err(anyhow!("Woring for response API...".to_string()));
     // discord 返信
     match reply_msg {
         Ok(reply_msg) => {
-            let text = reply_msg
-                .content
-                .ok_or_else(|| anyhow!("content required"))?;
-            info!("[discord] openai reply: {text}");
-            reply_long(&ctx, &text).await?;
+            info!("[discord] openai reply: {reply_msg}");
+            reply_long(&ctx, &reply_msg).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(

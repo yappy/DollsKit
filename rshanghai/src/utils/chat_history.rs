@@ -1,6 +1,6 @@
 //! OpenAI API の会話コンテキストのトークン数制限付き管理。
 
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::openai::InputElement;
 
 use std::collections::VecDeque;
 use tiktoken_rs::CoreBPE;
@@ -23,7 +23,7 @@ pub struct ChatHistory {
 /// 履歴データ。
 struct Element {
     /// メッセージ。
-    msg: ChatMessage,
+    msg: InputElement,
     /// [Self::msg] のトークン数。
     token_count: usize,
 }
@@ -57,20 +57,22 @@ impl ChatHistory {
     ///
     /// 合計サイズを超えた場合、先頭から削除する。
     /// 1エントリでサイズを超えてしまっている場合、超えないように内容をトリムする。
-    pub fn push(&mut self, mut msg: ChatMessage) {
-        let count = if let Some(text) = &msg.content {
-            let tokens = self.tokenize(text);
-            let count = tokens.len();
-            if count > self.token_limit {
-                let trimmed = self.decode(&tokens[0..self.token_limit]);
-                msg.content = Some(trimmed);
+    pub fn push(&mut self, mut msg: InputElement) {
+        let count = match &mut msg {
+            InputElement::Message { role, content } => {
+                let tokens = self.tokenize(&content);
+                let count = tokens.len();
+                if count > self.token_limit {
+                    let trimmed = self.decode(&tokens[0..self.token_limit]);
+                    *content = trimmed;
 
-                self.token_limit
-            } else {
-                count
+                    self.token_limit
+                } else {
+                    count
+                }
             }
-        } else {
-            0
+            //TODO
+            InputElement::FunctionCallOutput { call_id, output } => 0,
         };
 
         self.history.push_back(Element {
@@ -92,7 +94,7 @@ impl ChatHistory {
     }
 
     /// 全履歴を走査するイテレータを返す。
-    pub fn iter(&self) -> impl Iterator<Item = &ChatMessage> {
+    pub fn iter(&self) -> impl Iterator<Item = &InputElement> {
         self.history.iter().map(|elem| &elem.msg)
     }
 

@@ -33,7 +33,7 @@ const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 fn url_model(model: &str) -> String {
     format!("https://api.openai.com/v1/models/{model}")
 }
-const URL_CHAT: &str = "https://api.openai.com/v1/chat/completions";
+const URL_CHAT: &str = "https://api.openai.com/v1/responses";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
 
@@ -263,6 +263,7 @@ impl RateLimit {
         Ok(sum)
     }
 
+    /// 情報のタイムスタンプと現在時刻から、現在の推測値を計算する。
     fn calc_expected_current(&self) -> ExpectedRateLimit {
         let now = Instant::now();
         let elapsed_secs = (now - self.timestamp).as_secs_f64();
@@ -299,30 +300,23 @@ impl RateLimit {
 }
 
 /// OpenAI API JSON 定義。
-/// 会話メッセージ。
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct ChatMessage {
-    /// "system", "user", "assistant", or "function"
-    pub role: Role,
-    /// Required if role is "function"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    /// Required even if None (null)
-    pub content: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub function_call: Option<FunctionCall>,
+/// 入力エレメント。
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum InputElement {
+    Message { role: Role, content: String },
+    FunctionCallOutput { call_id: String, output: String },
 }
 
 /// OpenAI API JSON 定義。
-/// [ChatMessage] に設定されるロール。
+/// 入力/出力テキストのロール。
 #[derive(Default, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     #[default]
-    System,
+    Developer,
     User,
     Assistant,
-    Function,
 }
 
 /// OpenAI API JSON 定義。
@@ -331,36 +325,6 @@ pub enum Role {
 pub struct FunctionCall {
     pub name: String,
     pub arguments: String,
-}
-
-/// OpenAI API JSON 定義。
-/// トークン消費量。
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Usage {
-    pub prompt_tokens: u32,
-    pub completion_tokens: u32,
-    pub total_tokens: u32,
-}
-
-/// OpenAI API JSON 定義。
-/// 応答案。
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Choice {
-    pub index: u32,
-    pub message: ChatMessage,
-    pub finish_reason: String,
-}
-
-/// OpenAI API JSON 定義。
-/// 会話応答データ。
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct ChatResponse {
-    pub id: String,
-    pub object: String,
-    pub created: u64,
-    pub model: String,
-    pub usage: Usage,
-    pub choices: Vec<Choice>,
 }
 
 /// OpenAI API JSON 定義。
@@ -405,26 +369,177 @@ pub struct Function {
 }
 
 /// OpenAI API JSON 定義。
-/// 会話リクエスト。
+/// Response API リクエスト。
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-struct ChatRequest {
+pub struct ResponseRequest {
+    /// Model ID used to generate the response, like gpt-4o or o1.
+    /// OpenAI offers a wide range of models with different capabilities,
+    /// performance characteristics, and price points.
+    /// Refer to the model guide to browse and compare available models.
     model: String,
-    messages: Vec<ChatMessage>,
 
+    /// Inserts a system (or developer) message as the first item
+    /// in the model's context.
+    /// When using along with previous_response_id,
+    /// the instructions from a previous response will not be
+    /// carried over to the next response.
+    /// his makes it simple to swap out system (or developer) messages
+    ///  in new responses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    function_call: Option<String>,
+    instruction: Option<String>,
+
+    /// Text, image, or file inputs to the model, used to generate a response.
+    /// (string or Array)
+    input: Vec<InputElement>,
+
+    /// Specify additional output data to include in the model response.
+    /// Currently supported values are:
+    /// * file_search_call.results:
+    ///   * Include the search results of the file search tool call.
+    /// * message.input_image.image_url:
+    ///   * Include image urls from the input message.
+    /// * computer_call_output.output.image_url:
+    ///   *Include image urls from the computer call output.
     #[serde(skip_serializing_if = "Option::is_none")]
-    functions: Option<Vec<Function>>,
+    include: Option<Vec<String>>,
+
+    /// An upper bound for the number of tokens that can be generated
+    /// for a response, including visible output tokens and reasoning tokens.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_output_tokens: Option<u64>,
+
+    /// The unique ID of the previous response to the model.
+    /// Use this to create multi-turn conversations.
+    /// Learn more about conversation state.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    previous_response_id: Option<String>,
+
+    /// What sampling temperature to use, between 0 and 2.
+    /// Higher values like 0.8 will make the output more random,
+    /// while lower values like 0.2 will make it more focused and deterministic.
+    /// We generally recommend altering this or top_p but not both.
+    /// (Defaults to 1)
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
+
+    /// An alternative to sampling with temperature, called nucleus sampling,
+    /// where the model considers the results of the tokens
+    /// with top_p probability mass.
+    /// So 0.1 means only the tokens comprising
+    /// the top 10% probability mass are considered.
+    /// We generally recommend altering this or temperature but not both.
+    /// (Defaults to 1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    max_tokens: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    n: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    stop: Option<Vec<String>>,
+    top_p: Option<f32>,
+
+    /// A unique identifier representing your end-user,
+    /// which can help OpenAI to monitor and detect abuse.
     #[serde(skip_serializing_if = "Option::is_none")]
     user: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ResponseObject {
+    id: String,
+    created_at: u64,
+    error: Option<ErrorObject>,
+    instructions: Option<String>,
+    max_output_tokens: Option<u64>,
+    model: String,
+    output: Vec<OutputElement>,
+    previous_response_id: Option<String>,
+    usage: Usage,
+    user: Option<String>,
+}
+
+impl ResponseObject {
+    pub fn output_text(&self) -> String {
+        let mut buf = String::new();
+        for elem in self.output.iter() {
+            if let OutputElement::Message { content, .. } = elem {
+                for cont in content.iter() {
+                    if let OutputContent::OutputText { text } = cont {
+                        buf.push_str(&text);
+                    }
+                }
+            }
+        }
+
+        buf
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum OutputElement {
+    /// An output message from the model.
+    Message {
+        /// The unique ID of the output message.
+        id: String,
+        /// The role of the output message. Always assistant.
+        role: Role,
+        /// The content of the output message.
+        content: Vec<OutputContent>,
+    },
+    FunctionCall {
+        id: String,
+        call_id: String,
+        name: String,
+        arguments: String,
+        status: String,
+    },
+    /// The results of a web search tool call.
+    /// See the web search guide for more information.
+    WebSearchCall {
+        /// The unique ID of the web search tool call.
+        id: String,
+        /// The status of the web search tool call.
+        status: String,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum OutputContent {
+    /// A text output from the model.
+    OutputText {
+        /// The text output from the model.
+        text: String,
+        // The annotations of the text output.
+        // annotations: Vec<()>,
+    },
+    /// A refusal from the model.
+    Refusal {
+        /// The refusal explanationfrom the model.
+        refusal: String,
+    },
+}
+
+#[derive(Default, Clone, Debug, Deserialize)]
+struct ErrorObject {
+    /// The error code for the response.
+    code: String,
+    ///A human-readable description of the error.
+    message: String,
+}
+
+#[derive(Default, Clone, Debug, Deserialize)]
+struct Usage {
+    input_tokens: u32,
+    input_tokens_details: InputTokensDetails,
+    output_tokens: u32,
+    output_tokens_details: OutputTokensDetails,
+    total_tokens: u32,
+}
+
+#[derive(Default, Clone, Debug, Deserialize)]
+struct InputTokensDetails {
+    cached_tokens: u32,
+}
+
+#[derive(Default, Clone, Debug, Deserialize)]
+struct OutputTokensDetails {
+    reasoning_tokens: u32,
 }
 
 /// OpenAI API JSON 定義。
@@ -862,59 +977,19 @@ impl OpenAi {
     }
 
     /// OpenAI Chat API を使用する。
-    pub async fn chat(&mut self, msgs: Vec<ChatMessage>) -> Result<String> {
+    pub async fn chat(&mut self, msgs: &[InputElement]) -> Result<ResponseObject> {
         info!("[openai] chat request");
 
-        let body = ChatRequest {
+        let body = ResponseRequest {
             model: self.model_name.to_string(),
-            messages: msgs,
+            input: msgs.to_vec(),
             ..Default::default()
         };
 
         let json_str = self.post_json_text(URL_CHAT, &body).await?;
-        let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
+        let resp: ResponseObject = netutil::convert_from_json(&json_str)?;
 
-        // 最初のを選ぶ
-        let choice0 = resp_msg
-            .choices
-            .first()
-            .ok_or(anyhow!("choices is empty"))?;
-        let text = choice0
-            .message
-            .content
-            .as_ref()
-            .ok_or(anyhow!("message content is empty"))?
-            .clone();
-
-        Ok(text)
-    }
-
-    /// OpenAI Chat API を fcuntion call 機能付きで使用する。
-    pub async fn chat_with_function(
-        &mut self,
-        msgs: &[ChatMessage],
-        funcs: &[Function],
-    ) -> Result<ChatMessage> {
-        info!("[openai] chat request with function");
-
-        let body = ChatRequest {
-            model: self.model_name.to_string(),
-            messages: msgs.to_vec(),
-            functions: Some(funcs.to_vec()),
-            ..Default::default()
-        };
-
-        let json_str = self.post_json_text(URL_CHAT, &body).await?;
-        let resp_msg: ChatResponse = netutil::convert_from_json(&json_str)?;
-
-        // 最初のを選ぶ
-        let msg = &resp_msg
-            .choices
-            .first()
-            .ok_or(anyhow!("choices is empty"))?
-            .message;
-
-        Ok(msg.clone())
+        Ok(resp)
     }
 
     /// OpenAI Image Generation API を使用する。
@@ -1013,38 +1088,37 @@ mod tests {
     #[tokio::test]
     #[serial(openai)]
     #[ignore]
-    // cargo test assistant -- --ignored --nocapture
-    async fn assistant() {
+    // cargo test simple_assistant -- --ignored --nocapture
+    async fn simple_assistant() {
         let src = std::fs::read_to_string("config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
         let msgs = vec![
-            ChatMessage {
-                role: Role::System,
-                content: Some("あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string()),
-                ..Default::default()
+            InputElement::Message {
+                role: Role::Developer,
+                content: "あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
             },
-            ChatMessage {
-                role: Role::System,
-                content: Some("やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string()),
-                ..Default::default()
+            InputElement::Message {
+                role: Role::Developer,
+                content: "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string(),
             },
-            ChatMessage {
+            InputElement::Message {
                 role: Role::User,
-                content: Some("こんにちは。システムメッセージから教えられた、あなたの知っている情報を教えてください。".to_string()),
-                ..Default::default()
+                content: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
             },
         ];
-        let resp = match ai.chat(msgs).await {
-            Ok(text) => text,
+        match ai.chat(&msgs).await {
+            Ok(resp) => {
+                println!("{resp:?}");
+                println!("{}", resp.output_text());
+            }
             Err(err) => {
                 // HTTP status が得られるタイプのエラーのみ許容する
                 let err = err.downcast_ref::<HttpStatusError>().unwrap();
-                err.to_string()
+                println!("{err:#?}");
             }
         };
-        println!("{resp}");
     }
 
     #[tokio::test]
