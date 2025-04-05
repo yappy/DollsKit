@@ -19,6 +19,7 @@ use log::warn;
 use log::{debug, info};
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 /// HTTP 通信のタイムアウト。
 /// これを設定しないと無限待ちになる危険性がある。
@@ -33,7 +34,7 @@ const MODEL_INFO_UPDATE_INTERVAL: Duration = Duration::from_secs(24 * 3600);
 fn url_model(model: &str) -> String {
     format!("https://api.openai.com/v1/models/{model}")
 }
-const URL_CHAT: &str = "https://api.openai.com/v1/responses";
+const URL_RESPONSE: &str = "https://api.openai.com/v1/responses";
 const URL_IMAGE_GEN: &str = "https://api.openai.com/v1/images/generations";
 const URL_AUDIO_SPEECH: &str = "https://api.openai.com/v1/audio/speech";
 
@@ -301,7 +302,7 @@ impl RateLimit {
 
 /// OpenAI API JSON 定義。
 /// 入力エレメント。
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum InputElement {
     Message { role: Role, content: String },
@@ -319,12 +320,67 @@ pub enum Role {
     Assistant,
 }
 
-/// OpenAI API JSON 定義。
-/// function 呼び出し。
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FunctionCall {
+#[serde(tag = "type", rename_all = "snake_case")]
+#[skip_serializing_none]
+pub enum Tool {
+    /// This tool searches the web for relevant results to use in a response.
+    /// Learn more about the web search tool.
+    WebSearchPreview {
+        /// High level guidance for the amount of context window space to use
+        /// for the search. One of low, medium, or high. medium is the default.
+        search_context_size: Option<SearchContextSize>,
+        /// Approximate location parameters for the search.
+        user_location: Option<UserLocation>,
+    },
+    /// A tool that searches for relevant content from uploaded files.
+    /// Learn more about the file search tool.
+    FileSearch {
+        vector_store_ids: Vec<String>,
+    },
+
+    Function(Function),
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum SearchContextSize {
+    Low,
+    #[default]
+    Medium,
+    High,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[skip_serializing_none]
+pub enum UserLocation {
+    Approximate {
+        /// Free text input for the city of the user, e.g. San Francisco.
+        city: Option<String>,
+        /// The two-letter ISO country code of the user, e.g. US.
+        country: Option<String>,
+        /// Free text input for the region of the user, e.g. California.
+        region: Option<String>,
+        /// The IANA timezone of the user, e.g. America/Los_Angeles.
+        timezone: Option<String>,
+    },
+}
+
+/// OpenAI API JSON 定義。
+/// function 定義。
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[skip_serializing_none]
+pub struct Function {
+    /// The name of the function to call.
     pub name: String,
-    pub arguments: String,
+    /// A description of the function.
+    /// Used by the model to determine whether or not to call the function.
+    pub description: Option<String>,
+    /// A JSON schema object describing the parameters of the function.
+    pub parameters: Parameters,
+    // Whether to enforce strict parameter validation. Default true.
+    // pub strict: bool,
 }
 
 /// OpenAI API JSON 定義。
@@ -332,18 +388,15 @@ pub struct FunctionCall {
 ///
 /// <https://json-schema.org/understanding-json-schema>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[skip_serializing_none]
 pub struct ParameterElement {
     /// e.g. "string"
     #[serde(rename = "type")]
     pub type_: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(rename = "enum")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub enum_: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub minumum: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum: Option<i64>,
 }
 
@@ -359,18 +412,9 @@ pub struct Parameters {
 }
 
 /// OpenAI API JSON 定義。
-/// function 定義。
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct Function {
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    pub parameters: Parameters,
-}
-
-/// OpenAI API JSON 定義。
 /// Response API リクエスト。
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize)]
+#[skip_serializing_none]
 pub struct ResponseRequest {
     /// Model ID used to generate the response, like gpt-4o or o1.
     /// OpenAI offers a wide range of models with different capabilities,
@@ -385,12 +429,25 @@ pub struct ResponseRequest {
     /// carried over to the next response.
     /// his makes it simple to swap out system (or developer) messages
     ///  in new responses.
-    #[serde(skip_serializing_if = "Option::is_none")]
     instruction: Option<String>,
 
     /// Text, image, or file inputs to the model, used to generate a response.
     /// (string or Array)
     input: Vec<InputElement>,
+
+    /// An array of tools the model may call while generating a response.
+    /// You can specify which tool to use by setting the tool_choice parameter.
+    ///
+    /// The two categories of tools you can provide the model are:
+    /// * Built-in tools
+    ///   * Tools that are provided by OpenAI that extend
+    ///     the model's capabilities, like web search or file search.
+    ///     Learn more about built-in tools.
+    /// * Function calls (custom tools)
+    ///   * Functions that are defined by you,
+    ///     enabling the model to call your own code.
+    ///     Learn more about function calling.
+    tools: Option<Vec<Tool>>,
 
     /// Specify additional output data to include in the model response.
     /// Currently supported values are:
@@ -400,18 +457,15 @@ pub struct ResponseRequest {
     ///   * Include image urls from the input message.
     /// * computer_call_output.output.image_url:
     ///   *Include image urls from the computer call output.
-    #[serde(skip_serializing_if = "Option::is_none")]
     include: Option<Vec<String>>,
 
     /// An upper bound for the number of tokens that can be generated
     /// for a response, including visible output tokens and reasoning tokens.
-    #[serde(skip_serializing_if = "Option::is_none")]
     max_output_tokens: Option<u64>,
 
     /// The unique ID of the previous response to the model.
     /// Use this to create multi-turn conversations.
     /// Learn more about conversation state.
-    #[serde(skip_serializing_if = "Option::is_none")]
     previous_response_id: Option<String>,
 
     /// What sampling temperature to use, between 0 and 2.
@@ -419,7 +473,6 @@ pub struct ResponseRequest {
     /// while lower values like 0.2 will make it more focused and deterministic.
     /// We generally recommend altering this or top_p but not both.
     /// (Defaults to 1)
-    #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
 
     /// An alternative to sampling with temperature, called nucleus sampling,
@@ -429,12 +482,10 @@ pub struct ResponseRequest {
     /// the top 10% probability mass are considered.
     /// We generally recommend altering this or temperature but not both.
     /// (Defaults to 1)
-    #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f32>,
 
     /// A unique identifier representing your end-user,
     /// which can help OpenAI to monitor and detect abuse.
-    #[serde(skip_serializing_if = "Option::is_none")]
     user: Option<String>,
 }
 
@@ -547,26 +598,23 @@ struct OutputTokensDetails {
 ///
 /// <https://platform.openai.com/docs/api-reference/images>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[skip_serializing_none]
 struct ImageGenRequest {
     /// A text description of the desired image(s).
     /// The maximum length is 1000 characters.
     prompt: String,
     /// The number of images to generate. Must be between 1 and 10.
     /// Defaults to 1
-    #[serde(skip_serializing_if = "Option::is_none")]
     n: Option<u8>,
     /// The format in which the generated images are returned.
     /// Must be one of url or b64_json.
     /// Defaults to url
-    #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<String>,
     /// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
     /// Defaults to 1024x1024
-    #[serde(skip_serializing_if = "Option::is_none")]
     size: Option<ImageSize>,
     /// A unique identifier representing your end-user,
     /// which can help OpenAI to monitor and detect abuse. Learn more.
-    #[serde(skip_serializing_if = "Option::is_none")]
     user: Option<String>,
 }
 
@@ -613,6 +661,7 @@ struct Image {
 ///
 ///<https://platform.openai.com/docs/api-reference/audio/createSpeech>
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[skip_serializing_none]
 struct SpeechRequest {
     /// One of the available TTS models: tts-1 or tts-1-hd
     model: SpeechModel,
@@ -626,11 +675,9 @@ struct SpeechRequest {
     /// The format to audio in.
     /// Supported formats are mp3, opus, aac, flac, wav, and pcm.
     /// Defaults to mp3
-    #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<SpeechFormat>,
     /// The speed of the generated audio.
     /// Select a value from 0.25 to 4.0. 1.0 is the default.
-    #[serde(skip_serializing_if = "Option::is_none")]
     speed: Option<f32>,
 }
 
@@ -976,17 +1023,27 @@ impl OpenAi {
             .map(|rate_limit| rate_limit.calc_expected_current())
     }
 
-    /// OpenAI Chat API を使用する。
+    /// OpenAI Reponse API を使用する。
     pub async fn chat(&mut self, msgs: &[InputElement]) -> Result<ResponseObject> {
+        self.chat_with_tools(msgs, &[]).await
+    }
+
+    /// OpenAI Reponse API を使用する。
+    pub async fn chat_with_tools(
+        &mut self,
+        msgs: &[InputElement],
+        tools: &[Tool],
+    ) -> Result<ResponseObject> {
         info!("[openai] chat request");
 
         let body = ResponseRequest {
             model: self.model_name.to_string(),
             input: msgs.to_vec(),
+            tools: Some(tools.to_vec()),
             ..Default::default()
         };
 
-        let json_str = self.post_json_text(URL_CHAT, &body).await?;
+        let json_str = self.post_json_text(URL_RESPONSE, &body).await?;
         let resp: ResponseObject = netutil::convert_from_json(&json_str)?;
 
         Ok(resp)
