@@ -343,7 +343,7 @@ pub enum Tool {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum SearchContextSize {
     Low,
     #[default]
@@ -353,16 +353,19 @@ pub enum SearchContextSize {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-#[skip_serializing_none]
 pub enum UserLocation {
     Approximate {
         /// Free text input for the city of the user, e.g. San Francisco.
+        #[serde(skip_serializing_if = "Option::is_none")]
         city: Option<String>,
         /// The two-letter ISO country code of the user, e.g. US.
+        #[serde(skip_serializing_if = "Option::is_none")]
         country: Option<String>,
         /// Free text input for the region of the user, e.g. California.
+        #[serde(skip_serializing_if = "Option::is_none")]
         region: Option<String>,
         /// The IANA timezone of the user, e.g. America/Los_Angeles.
+        #[serde(skip_serializing_if = "Option::is_none")]
         timezone: Option<String>,
     },
 }
@@ -429,7 +432,7 @@ pub struct ResponseRequest {
     /// carried over to the next response.
     /// his makes it simple to swap out system (or developer) messages
     ///  in new responses.
-    instruction: Option<String>,
+    instructions: Option<String>,
 
     /// Text, image, or file inputs to the model, used to generate a response.
     /// (string or Array)
@@ -1166,6 +1169,48 @@ mod tests {
             },
         ];
         match ai.chat(&msgs).await {
+            Ok(resp) => {
+                println!("{resp:?}");
+                println!("{}", resp.output_text());
+            }
+            Err(err) => {
+                // HTTP status が得られるタイプのエラーのみ許容する
+                let err = err.downcast_ref::<HttpStatusError>().unwrap();
+                println!("{err:#?}");
+            }
+        };
+    }
+
+    #[tokio::test]
+    #[serial(openai)]
+    #[ignore]
+    // cargo test web_search -- --ignored --nocapture
+    async fn web_search() {
+        let src = std::fs::read_to_string("config.toml").unwrap();
+        let _unset = config::set(toml::from_str(&src).unwrap());
+
+        let mut ai = OpenAi::new().unwrap();
+        let msgs = vec![
+            InputElement::Message {
+                role: Role::Developer,
+                content: "あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
+            },
+            InputElement::Message {
+                role: Role::User,
+                content: "こんにちは。今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+            },
+        ];
+        let tools = [Tool::WebSearchPreview {
+            search_context_size: Some(SearchContextSize::Low),
+            user_location: Some(UserLocation::Approximate {
+                city: None,
+                country: Some("JP".to_string()),
+                region: None,
+                timezone: Some("Asia/Tokyo".to_string()),
+            }),
+        }];
+        println!("{}", serde_json::to_string(&tools).unwrap());
+        match ai.chat_with_tools(&msgs, &tools).await {
             Ok(resp) => {
                 println!("{resp:?}");
                 println!("{}", resp.output_text());
