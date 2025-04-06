@@ -320,9 +320,9 @@ pub enum Role {
     Assistant,
 }
 
+#[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-#[skip_serializing_none]
 pub enum Tool {
     /// This tool searches the web for relevant results to use in a response.
     /// Learn more about the web search tool.
@@ -370,10 +370,21 @@ pub enum UserLocation {
     },
 }
 
+impl Default for UserLocation {
+    fn default() -> Self {
+        Self::Approximate {
+            city: None,
+            country: Some("JP".to_string()),
+            region: None,
+            timezone: Some("Asia/Tokyo".to_string()),
+        }
+    }
+}
+
 /// OpenAI API JSON 定義。
 /// function 定義。
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Function {
     /// The name of the function to call.
     pub name: String,
@@ -383,41 +394,79 @@ pub struct Function {
     /// A JSON schema object describing the parameters of the function.
     pub parameters: Parameters,
     // Whether to enforce strict parameter validation. Default true.
-    // pub strict: bool,
+    pub strict: bool,
+}
+
+impl Default for Function {
+    /// フィールドの説明にはデフォルト true とあるが、
+    /// function call の例ではデフォルト false かのように書かれているので
+    /// 明示的に true にしておく。
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            description: Default::default(),
+            parameters: Default::default(),
+            strict: true,
+        }
+    }
 }
 
 /// OpenAI API JSON 定義。
 /// function パラメータ定義 (JSON Schema)。
 ///
 /// <https://json-schema.org/understanding-json-schema>
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+/// <https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#supported-schemas>
 #[skip_serializing_none]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct ParameterElement {
-    /// e.g. "string"
     #[serde(rename = "type")]
-    pub type_: String,
+    pub type_: Vec<ParameterType>,
     pub description: Option<String>,
     #[serde(rename = "enum")]
     pub enum_: Option<Vec<String>>,
-    pub minumum: Option<i64>,
-    pub maximum: Option<i64>,
+    // Not supported on strict mode
+    //pub minumum: Option<i64>,
+    //pub maximum: Option<i64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ParameterType {
+    Null,
+    Boolean,
+    Integer,
+    Number,
+    String,
 }
 
 /// OpenAI API JSON 定義。
 /// function パラメータ定義。
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Parameters {
     /// "object"
     #[serde(rename = "type")]
     pub type_: String,
     pub properties: HashMap<String, ParameterElement>,
     pub required: Vec<String>,
+    #[serde(rename = "additionalProperties")]
+    pub additional_properties: bool,
+}
+
+impl Default for Parameters {
+    fn default() -> Self {
+        Self {
+            type_: "object".to_string(),
+            properties: Default::default(),
+            required: Default::default(),
+            additional_properties: false,
+        }
+    }
 }
 
 /// OpenAI API JSON 定義。
 /// Response API リクエスト。
-#[derive(Default, Clone, Debug, Serialize)]
 #[skip_serializing_none]
+#[derive(Default, Clone, Debug, Serialize)]
 pub struct ResponseRequest {
     /// Model ID used to generate the response, like gpt-4o or o1.
     /// OpenAI offers a wide range of models with different capabilities,
@@ -430,8 +479,8 @@ pub struct ResponseRequest {
     /// When using along with previous_response_id,
     /// the instructions from a previous response will not be
     /// carried over to the next response.
-    /// his makes it simple to swap out system (or developer) messages
-    ///  in new responses.
+    /// This makes it simple to swap out system (or developer) messages
+    /// in new responses.
     instructions: Option<String>,
 
     /// Text, image, or file inputs to the model, used to generate a response.
@@ -507,6 +556,10 @@ pub struct ResponseObject {
 }
 
 impl ResponseObject {
+    /// OpenAI SDK 互換。
+    /// [Self::output] の出力リストのうち、文字列であるものを連結して返す。
+    ///
+    /// 存在しない場合は空文字列になる。
     pub fn output_text(&self) -> String {
         let mut buf = String::new();
         for elem in self.output.iter() {
@@ -520,6 +573,14 @@ impl ResponseObject {
         }
 
         buf
+    }
+
+    /// [Self::output] の出力リストのうち、FunctionCall であるもののみを走査する。
+    pub fn func_call_iter(&self) -> impl Iterator<Item = &FunctionCall> {
+        self.output.iter().filter_map(|elem| match elem {
+            OutputElement::FunctionCall(fc) => Some(fc),
+            _ => None,
+        })
     }
 }
 
@@ -535,13 +596,7 @@ pub enum OutputElement {
         /// The content of the output message.
         content: Vec<OutputContent>,
     },
-    FunctionCall {
-        id: String,
-        call_id: String,
-        name: String,
-        arguments: String,
-        status: String,
-    },
+    FunctionCall(FunctionCall),
     /// The results of a web search tool call.
     /// See the web search guide for more information.
     WebSearchCall {
@@ -550,6 +605,15 @@ pub enum OutputElement {
         /// The status of the web search tool call.
         status: String,
     },
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct FunctionCall {
+    pub id: String,
+    pub call_id: String,
+    pub name: String,
+    pub arguments: String,
+    pub status: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -600,8 +664,8 @@ struct OutputTokensDetails {
 /// 画像生成リクエスト。
 ///
 /// <https://platform.openai.com/docs/api-reference/images>
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct ImageGenRequest {
     /// A text description of the desired image(s).
     /// The maximum length is 1000 characters.
@@ -663,8 +727,8 @@ struct Image {
 /// 音声生成リクエスト。
 ///
 ///<https://platform.openai.com/docs/api-reference/audio/createSpeech>
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 struct SpeechRequest {
     /// One of the available TTS models: tts-1 or tts-1-hd
     model: SpeechModel,
@@ -1027,21 +1091,29 @@ impl OpenAi {
     }
 
     /// OpenAI Reponse API を使用する。
-    pub async fn chat(&mut self, msgs: &[InputElement]) -> Result<ResponseObject> {
-        self.chat_with_tools(msgs, &[]).await
+    pub async fn chat(
+        &mut self,
+        instructions: Option<&str>,
+        input: &[InputElement],
+    ) -> Result<ResponseObject> {
+        self.chat_with_tools(instructions, input, &[]).await
     }
 
     /// OpenAI Reponse API を使用する。
     pub async fn chat_with_tools(
         &mut self,
-        msgs: &[InputElement],
+        instructions: Option<&str>,
+        input: &[InputElement],
         tools: &[Tool],
     ) -> Result<ResponseObject> {
         info!("[openai] chat request");
 
+        let instructions = instructions.map(|s| s.to_string());
+
         let body = ResponseRequest {
             model: self.model_name.to_string(),
-            input: msgs.to_vec(),
+            instructions,
+            input: input.to_vec(),
             tools: Some(tools.to_vec()),
             ..Default::default()
         };
@@ -1154,21 +1226,15 @@ mod tests {
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
-        let msgs = vec![
-            InputElement::Message {
-                role: Role::Developer,
-                content: "あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
-            },
-            InputElement::Message {
-                role: Role::Developer,
-                content: "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。".to_string(),
-            },
-            InputElement::Message {
-                role: Role::User,
-                content: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
-            },
-        ];
-        match ai.chat(&msgs).await {
+        let inst = concat!(
+            "あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。",
+            "やっぴーさんは男性で、ホワイト企業に勤めています。yappyという名前で呼ばれることもあります。"
+        );
+        let input = [InputElement::Message {
+            role: Role::User,
+            content: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
+        }];
+        match ai.chat(Some(inst), &input).await {
             Ok(resp) => {
                 println!("{resp:?}");
                 println!("{}", resp.output_text());
@@ -1190,16 +1256,10 @@ mod tests {
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
-        let msgs = vec![
-            InputElement::Message {
-                role: Role::Developer,
-                content: "あなたの名前は上海人形で、あなたはやっぴーさんの人形です。あなたはやっぴー家の優秀なアシスタントです。".to_string(),
-            },
-            InputElement::Message {
-                role: Role::User,
-                content: "こんにちは。今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
-            },
-        ];
+        let input = [InputElement::Message {
+            role: Role::User,
+            content: "今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+        }];
         let tools = [Tool::WebSearchPreview {
             search_context_size: Some(SearchContextSize::Low),
             user_location: Some(UserLocation::Approximate {
@@ -1210,7 +1270,7 @@ mod tests {
             }),
         }];
         println!("{}", serde_json::to_string(&tools).unwrap());
-        match ai.chat_with_tools(&msgs, &tools).await {
+        match ai.chat_with_tools(None, &input, &tools).await {
             Ok(resp) => {
                 println!("{resp:?}");
                 println!("{}", resp.output_text());

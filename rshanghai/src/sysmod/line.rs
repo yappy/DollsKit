@@ -1,6 +1,7 @@
 //! LINE API。
 
 use super::SystemModule;
+use super::openai::ParameterType;
 use super::openai::{
     ParameterElement,
     function::{self, BasicContext, FuncArgs, FunctionTable},
@@ -18,6 +19,7 @@ use anyhow::{Result, anyhow, bail, ensure};
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::vec;
 use std::{
     collections::HashMap,
     fmt::Debug,
@@ -50,7 +52,7 @@ pub struct LineConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LinePrompt {
     /// 最初に一度だけ与えられるシステムメッセージ。
-    pub pre: Vec<String>,
+    pub instructions: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
     /// 会話履歴をクリアするまでの時間。
@@ -133,7 +135,7 @@ impl Line {
         let pre_token: usize = self
             .config
             .prompt
-            .pre
+            .instructions
             .iter()
             .map(|text| chat_history.token_count(text))
             .sum();
@@ -474,7 +476,7 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
     properties.insert(
         "keywords".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("Keywords for drawing. They must be in English.".to_string()),
             ..Default::default()
         },
@@ -484,10 +486,11 @@ fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
             name: "draw".to_string(),
             description: Some("Draw a picture".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["keywords".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         move |bctx, ctx, args| Box::pin(draw_picture(bctx, ctx, args)),
     );

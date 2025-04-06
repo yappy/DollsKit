@@ -58,21 +58,31 @@ impl ChatHistory {
     /// 合計サイズを超えた場合、先頭から削除する。
     /// 1エントリでサイズを超えてしまっている場合、超えないように内容をトリムする。
     pub fn push(&mut self, mut msg: InputElement) {
-        let count = match &mut msg {
-            InputElement::Message { role, content } => {
-                let tokens = self.tokenize(&content);
-                let count = tokens.len();
-                if count > self.token_limit {
-                    let trimmed = self.decode(&tokens[0..self.token_limit]);
-                    *content = trimmed;
+        let trim_and_size = |text: &str| {
+            let tokens = self.tokenize(&text);
+            let count = tokens.len();
+            if count > self.token_limit {
+                let trimmed = self.decode(&tokens[0..self.token_limit]);
 
-                    self.token_limit
-                } else {
-                    count
-                }
+                (trimmed, self.token_limit)
+            } else {
+                (text.to_string(), count)
             }
-            //TODO
-            InputElement::FunctionCallOutput { call_id, output } => 0,
+        };
+
+        let count = match &mut msg {
+            InputElement::Message { role: _, content } => {
+                let (trimmed, count) = trim_and_size(content);
+                *content = trimmed;
+
+                count
+            }
+            InputElement::FunctionCallOutput { call_id: _, output } => {
+                let (trimmed, count) = trim_and_size(output);
+                *output = trimmed;
+
+                count
+            }
         };
 
         self.history.push_back(Element {

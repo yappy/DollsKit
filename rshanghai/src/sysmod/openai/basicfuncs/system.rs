@@ -4,6 +4,7 @@ use crate::sysmod::health::{
     ThrottleFlags, get_cpu_cores, get_cpu_info, get_current_freq, get_freq_conf,
     get_throttle_status,
 };
+use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{
     BasicContext, FuncArgs, Function, FunctionTable, ParameterElement, Parameters,
     get_arg_bool_opt, get_arg_str,
@@ -60,7 +61,7 @@ fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "enabled".to_string(),
         ParameterElement {
-            type_: "boolean".to_string(),
+            type_: vec![ParameterType::Boolean, ParameterType::Null],
             description: Some(
                 "New value. If not specified, just get the current value.".to_string(),
             ),
@@ -73,10 +74,11 @@ fn register_debug_mode<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "debug_mode".to_string(),
             description: Some("Get/Set debug mode of function calls".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
-                required: Default::default(),
+                required: vec!["enabled".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| Box::pin(debug_mode(bctx, args)),
     );
@@ -95,10 +97,11 @@ fn register_get_model<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_model".to_string(),
             description: Some("Get GPT model info of the assistant".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| Box::pin(get_model(bctx, args)),
     );
@@ -128,10 +131,11 @@ fn register_get_rate_limit<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_rate_limit".to_string(),
             description: Some("Get rate limit info of GPT usage".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| Box::pin(get_rate_limit(bctx, args)),
     );
@@ -150,10 +154,11 @@ fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_version".to_string(),
             description: Some("Get version of the assistant program".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_version(args)),
     );
@@ -216,10 +221,11 @@ fn register_get_cpu_status<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_cpu_status".to_string(),
             description: Some("Get current status of assistant's CPU".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_cpu_status(args)),
     );
@@ -248,7 +254,7 @@ fn register_get_current_datetime<T: 'static>(func_table: &mut FunctionTable<T>) 
     properties.insert(
         "tz".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("Time zone".to_string()),
             enum_: Some(vec!["JST".to_string(), "UTC".to_string()]),
             ..Default::default()
@@ -260,10 +266,11 @@ fn register_get_current_datetime<T: 'static>(func_table: &mut FunctionTable<T>) 
             name: "get_current_datetime".to_string(),
             description: Some("Get the current date and time".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["tz".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_current_datetime(args)),
     );

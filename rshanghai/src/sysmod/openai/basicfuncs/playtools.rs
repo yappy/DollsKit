@@ -1,5 +1,6 @@
 //! システム情報取得。
 
+use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_i64_opt,
 };
@@ -47,10 +48,13 @@ fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "count".to_string(),
         ParameterElement {
-            type_: "integer".to_string(),
-            description: Some("How many coins do you flip? (default is 1)".to_string()),
-            minumum: Some(COUNT_MIN),
-            maximum: Some(COUNT_MAX),
+            type_: vec![ParameterType::Integer, ParameterType::Null],
+            description: Some(format!(
+                "Number of coins ({} <= count <= {}) (default is 1)",
+                COUNT_MIN, COUNT_MAX
+            )),
+            //minumum: Some(COUNT_MIN),
+            //maximum: Some(COUNT_MAX),
             ..Default::default()
         },
     );
@@ -60,10 +64,11 @@ fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "flip_coin".to_string(),
             description: Some("Flip coin(s). H means Head. T means Tail.".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
-                required: Default::default(),
+                required: vec!["count".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(flip_coin(args)),
     );
@@ -83,20 +88,26 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "face".to_string(),
         ParameterElement {
-            type_: "integer".to_string(),
-            description: Some("Face count of the dice (default is 6)".to_string()),
-            minumum: Some(FACE_MIN),
-            maximum: Some(FACE_MAX),
+            type_: vec![ParameterType::Integer, ParameterType::Null],
+            description: Some(format!(
+                "Face count of dice ({} <= face <= {}) (default is 6)",
+                FACE_MIN, FACE_MAX
+            )),
+            //minumum: Some(FACE_MIN),
+            //maximum: Some(FACE_MAX),
             ..Default::default()
         },
     );
     properties.insert(
         "count".to_string(),
         ParameterElement {
-            type_: "integer".to_string(),
-            description: Some("How many dice do you roll? (default is 1)".to_string()),
-            minumum: Some(COUNT_MIN),
-            maximum: Some(COUNT_MAX),
+            type_: vec![ParameterType::Integer, ParameterType::Null],
+            description: Some(format!(
+                "Number of Dice ({} <= count <= {}) (default is 1)",
+                COUNT_MIN, COUNT_MAX
+            )),
+            //minumum: Some(COUNT_MIN),
+            //maximum: Some(COUNT_MAX),
             ..Default::default()
         },
     );
@@ -108,10 +119,11 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
                 "Role dice with specified number of faces specified number of times".to_string(),
             ),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
-                required: Default::default(),
+                required: vec!["face".to_string(), "count".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(role_dice(args)),
     );

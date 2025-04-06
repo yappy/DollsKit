@@ -3,7 +3,7 @@
 use super::basicfuncs;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::sysmod::openai::{InputElement, Role};
+use crate::sysmod::openai::InputElement;
 use anyhow::bail;
 use anyhow::{Result, anyhow};
 use log::{info, warn};
@@ -109,7 +109,7 @@ impl<T: 'static> FunctionTable<T> {
     }
 
     /// OpenAI API に渡すためのリストを取得する。
-    pub fn function_list(&self) -> &Vec<Function> {
+    pub fn function_list(&self) -> &[Function] {
         &self.function_list
     }
 
@@ -143,8 +143,15 @@ impl<T: 'static> FunctionTable<T> {
     ///
     /// OpenAI API からのデータをそのまま渡せ、
     /// 結果も API にそのまま渡せる [InputElement] で返す。
-    /// エラーも適切なメッセージとして返す。
-    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> InputElement {
+    /// エラーも適切な文字列メッセージとして返す。
+    /// ログ用に文字列としても返す。
+    pub async fn call(
+        &self,
+        ctx: T,
+        call_id: &str,
+        func_name: &str,
+        args_json_str: &str,
+    ) -> (InputElement, String) {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
@@ -166,12 +173,13 @@ impl<T: 'static> FunctionTable<T> {
                 err.to_string()
             }
         };
-
-        InputElement::FunctionCallOutput {
-            // TODO
-            call_id: Default::default(),
+        (
+            InputElement::FunctionCallOutput {
+                call_id: call_id.to_string(),
+                output: output.clone(),
+            },
             output,
-        }
+        )
     }
 
     /// [Self::call] の内部メイン処理。

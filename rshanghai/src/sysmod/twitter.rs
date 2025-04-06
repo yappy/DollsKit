@@ -563,7 +563,7 @@ impl Twitter {
             // エラーはログのみ出して追加をしない
             {
                 let mut ai = ctrl.sysmods().openai.lock().await;
-                match ai.chat(&msgs).await {
+                match ai.chat(None, &msgs).await {
                     Ok(resp) => reply_buf.push(Reply {
                         to_tw_id: tw.id.clone(),
                         to_user_id: tw.author_id.as_ref().unwrap().clone(),

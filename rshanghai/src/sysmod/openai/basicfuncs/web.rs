@@ -1,5 +1,6 @@
 //! Web アクセス関連。
 
+use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
@@ -85,12 +86,13 @@ async fn request_url(args: &FuncArgs) -> Result<String> {
     }
 }
 
+// TODO: DELETE
 fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
     let mut properties = HashMap::new();
     properties.insert(
         "url".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("URL to access".to_string()),
             enum_: None,
             ..Default::default()
@@ -102,10 +104,11 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "request_url".to_string(),
             description: Some("Request HTTP GET".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["url".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(request_url(args)),
     );
@@ -127,10 +130,11 @@ fn register_get_weather_areas<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_weather_areas".to_string(),
             description: Some("Get area list for get_weather_report".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_weather_areas(args)),
     );
@@ -172,7 +176,7 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "area".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some(
                 "Area name that list can be obtained by get_weather_areas".to_string(),
             ),
@@ -185,10 +189,11 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_weather_report".to_string(),
             description: Some("Get whether report data".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["area".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_weather_report(args)),
     );

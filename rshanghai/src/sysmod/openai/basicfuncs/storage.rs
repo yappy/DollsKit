@@ -1,5 +1,5 @@
 use crate::sysmod::openai::{
-    Function, ParameterElement, Parameters,
+    Function, ParameterElement, ParameterType, Parameters,
     function::{FuncArgs, FunctionTable, get_arg_i64_opt, get_arg_str},
 };
 use anyhow::{Result, ensure};
@@ -50,7 +50,7 @@ fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "user".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("user name".to_string()),
             ..Default::default()
         },
@@ -61,10 +61,11 @@ fn register_load<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "note_load".to_string(),
             description: Some("Load note from permanent storage".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["user".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| {
             let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
@@ -125,7 +126,7 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "user".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("user name".to_string()),
             ..Default::default()
         },
@@ -133,7 +134,7 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "content".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("data to be saved".to_string()),
             ..Default::default()
         },
@@ -144,10 +145,11 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "note_save".to_string(),
             description: Some(format!("Save note to permanent storage. If {} files already exist, the oldest one will be deleted.", NOTE_COUNT_MAX)),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["user".to_string(), "content".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| {
             let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
@@ -209,7 +211,7 @@ fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "user".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("user name".to_string()),
             ..Default::default()
         },
@@ -217,13 +219,14 @@ fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "index".to_string(),
         ParameterElement {
-            type_: "integer".to_string(),
-            description: Some(
-                "Data index to be deleted (0-origin). If omitted, all data will be deleted."
-                    .to_string(),
-            ),
-            minumum: Some(0),
-            maximum: Some(NOTE_LENGTH_MAX_I64 - 1),
+            type_: vec![ParameterType::Integer, ParameterType::Null],
+            description: Some(format!(
+                "Data index to be deleted ({} <= index <= {}). If omitted, all data will be deleted.",
+                0,
+                NOTE_LENGTH_MAX_I64 - 1
+            )),
+            //minumum: Some(0),
+            //maximum: Some(NOTE_LENGTH_MAX_I64 - 1),
             ..Default::default()
         },
     );
@@ -233,10 +236,11 @@ fn register_delete<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "note_delete".to_string(),
             description: Some("Delete note".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
-                required: vec!["user".to_string(), "content".to_string()],
+                required: vec!["user".to_string(), "index".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |bctx, _ctx, args| {
             let storage_dir = bctx.storage_dir.as_ref().unwrap().clone();
