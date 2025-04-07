@@ -6,9 +6,7 @@ use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
 use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
-use crate::sysmod::openai::{
-    self, InputElement, OpenAi, OpenAiErrorKind, SearchContextSize, Tool, UserLocation,
-};
+use crate::sysmod::openai::{self, OpenAi, OpenAiErrorKind, SearchContextSize, Tool, UserLocation};
 use crate::sysmod::openai::{Role, function::FunctionTable};
 use crate::utils::chat_history::ChatHistory;
 use crate::utils::playtools::dice::{self};
@@ -849,16 +847,12 @@ async fn ai(
         .each
         .join("")
         .replace("${user}", &ctx.author().name);
-    discord.chat_history_mut().push({
-        InputElement::Message {
-            role: Role::Developer,
-            content: sysmsg,
-        }
-    });
-    discord.chat_history_mut().push(InputElement::Message {
-        role: Role::User,
-        content: chat_msg.to_string(),
-    });
+    discord
+        .chat_history_mut()
+        .push_message(Role::Developer, &sysmsg)?;
+    discord
+        .chat_history_mut()
+        .push_message(Role::User, &chat_msg)?;
 
     // システムメッセージ
     let inst = discord.config.prompt.instructions.join("");
@@ -880,7 +874,7 @@ async fn ai(
         // ChatGPT API
         let resp = {
             let mut ai = data.ctrl.sysmods().openai.lock().await;
-            ai.chat_with_tools(Some(&inst), &input, &tools).await
+            ai.chat_with_tools(Some(&inst), input, &tools).await
         };
         match resp {
             Ok(resp) => {
@@ -891,12 +885,7 @@ async fn ai(
                     let func_args = &fc.arguments;
 
                     // call function
-                    let (func_res, log_text) = {
-                        discord
-                            .func_table()
-                            .call((), call_id, func_name, func_args)
-                            .await
-                    };
+                    let func_out = discord.func_table().call((), func_name, func_args).await;
                     // debug trace
                     if discord.func_table.as_ref().unwrap().debug_mode()
                         || trace_function_call.unwrap_or(false)
@@ -905,21 +894,22 @@ async fn ai(
                             &ctx,
                             &format!(
                                 "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                                log_text
+                                func_out
                             ),
                         )
                         .await?;
                     }
                     // function の結果を履歴に追加
-                    discord.chat_history_mut().push(func_res);
+                    discord
+                        .chat_history_mut()
+                        .push_function(call_id, func_name, func_args, &func_out)?;
                 }
                 // アシスタント応答があれば履歴に追加
                 let text = resp.output_text();
                 if !text.is_empty() {
-                    discord.chat_history_mut().push(InputElement::Message {
-                        role: Role::Assistant,
-                        content: text.clone(),
-                    });
+                    discord
+                        .chat_history_mut()
+                        .push_message(Role::Assistant, &text)?;
                     break Ok(text);
                 }
             }

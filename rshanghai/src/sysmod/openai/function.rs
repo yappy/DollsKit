@@ -3,7 +3,6 @@
 use super::basicfuncs;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::sysmod::openai::InputElement;
 use anyhow::bail;
 use anyhow::{Result, anyhow};
 use log::{info, warn};
@@ -141,17 +140,9 @@ impl<T: 'static> FunctionTable<T> {
 
     /// 関数を呼び出す。
     ///
-    /// OpenAI API からのデータをそのまま渡せ、
-    /// 結果も API にそのまま渡せる [InputElement] で返す。
+    /// 引数は json 文字列であり、OpenAI API からのデータをそのまま渡せる。
     /// エラーも適切な文字列メッセージとして返す。
-    /// ログ用に文字列としても返す。
-    pub async fn call(
-        &self,
-        ctx: T,
-        call_id: &str,
-        func_name: &str,
-        args_json_str: &str,
-    ) -> (InputElement, String) {
+    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> String {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
@@ -173,13 +164,8 @@ impl<T: 'static> FunctionTable<T> {
                 err.to_string()
             }
         };
-        (
-            InputElement::FunctionCallOutput {
-                call_id: call_id.to_string(),
-                output: output.clone(),
-            },
-            output,
-        )
+
+        output
     }
 
     /// [Self::call] の内部メイン処理。

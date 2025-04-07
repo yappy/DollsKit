@@ -9,7 +9,7 @@ use crate::{
     sys::taskserver::Control,
     sysmod::{
         line::FunctionContext,
-        openai::{InputElement, OpenAi, OpenAiErrorKind, Role},
+        openai::{OpenAi, OpenAiErrorKind, Role},
     },
     utils::netutil,
 };
@@ -328,18 +328,12 @@ async fn on_text_message(
 
         // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
         let sysmsg = prompt.each.join("").replace("${user}", &display_name);
-        line.chat_history_mut(ctrl).await.push({
-            InputElement::Message {
-                role: Role::Developer,
-                content: sysmsg,
-            }
-        });
         line.chat_history_mut(ctrl)
             .await
-            .push(InputElement::Message {
-                role: Role::User,
-                content: text.to_string(),
-            });
+            .push_message(Role::Developer, &sysmsg);
+        line.chat_history_mut(ctrl)
+            .await
+            .push_message(Role::User, &text);
 
         prompt
     };

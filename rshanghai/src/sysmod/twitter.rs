@@ -3,7 +3,7 @@
 use super::SystemModule;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
-use crate::sysmod::openai::{InputElement, Role};
+use crate::sysmod::openai::{InputItem, Role};
 use crate::utils::graphics::FontRenderer;
 use crate::utils::netutil;
 
@@ -523,7 +523,7 @@ impl Twitter {
                 .iter()
                 .map(|text| {
                     let text = text.replace("${user}", &user.unwrap().name);
-                    InputElement::Message {
+                    InputItem::Message {
                         role: Role::Developer,
                         content: text,
                     }
@@ -554,7 +554,7 @@ impl Twitter {
 
             // 最後にツイートの本文を追加
             let mut msgs = system_msgs.clone();
-            msgs.push(InputElement::Message {
+            msgs.push(InputItem::Message {
                 role: Role::User,
                 content: main_msg,
             });
@@ -563,7 +563,7 @@ impl Twitter {
             // エラーはログのみ出して追加をしない
             {
                 let mut ai = ctrl.sysmods().openai.lock().await;
-                match ai.chat(None, &msgs).await {
+                match ai.chat(None, msgs).await {
                     Ok(resp) => reply_buf.push(Reply {
                         to_tw_id: tw.id.clone(),
                         to_user_id: tw.author_id.as_ref().unwrap().clone(),
