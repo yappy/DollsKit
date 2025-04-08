@@ -1,4 +1,4 @@
-mod mylog;
+mod logger;
 
 mod moda {
     pub mod modb {
@@ -13,18 +13,18 @@ mod moda {
 }
 fn main() {
     let loggers: Vec<Box<dyn log::Log>> = vec![
-        Box::new(mylog::ConsoleLogger::new(
-            mylog::Console::Stdout,
+        Box::new(logger::ConsoleLogger::new(
+            logger::Console::Stdout,
             log::Level::Trace,
-            mylog::default_format,
+            logger::default_formatter,
         )),
-        Box::new(mylog::ConsoleLogger::new(
-            mylog::Console::Stderr,
+        Box::new(logger::ConsoleLogger::new(
+            logger::Console::Stderr,
             log::Level::Warn,
-            mylog::default_format,
+            logger::default_formatter,
         )),
     ];
-    mylog::RootLogger::init(loggers, log::Level::Trace);
+    logger::RootLogger::init(loggers, log::Level::Trace);
     log::trace!("test");
     moda::modb::test();
 }
