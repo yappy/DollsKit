@@ -1,0 +1,8 @@
+[package]
+name = "mylog"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.40"
+log = { version = "0.4.27", features = ["std"] }
