@@ -41,7 +41,7 @@ serde_with = { version = "3.12.0", features = ["json"] }
 toml = "0.8.20"
 
 # Async
-tokio = { version = "1.44.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
 
 # HTTP client
