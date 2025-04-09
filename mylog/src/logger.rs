@@ -1,8 +1,9 @@
 mod console;
 mod root;
 
-pub use root::RootLogger;
+// Raname and export
 pub use console::{Console, ConsoleLogger};
+pub use root::RootLogger;
 
 use chrono::{DateTime, Local, SecondsFormat};
 use log::{Level, Record};
@@ -21,14 +22,14 @@ pub struct FormatArgs<'a> {
 pub fn default_formatter(args: FormatArgs) -> String {
     match args.level {
         Level::Trace => format!(
-            "{} {} {} {} ({} {}:{})",
+            "{} {} {} ({} {}:{}) {}",
             args.timestamp.to_rfc3339_opts(SecondsFormat::Secs, false),
             args.level_str,
             args.target,
-            args.body,
             args.module,
             args.file,
-            args.line
+            args.line,
+            args.body,
         ),
         _ => format!(
             "{} {} {} {}",
