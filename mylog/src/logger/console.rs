@@ -3,6 +3,7 @@ use log::{Level, Log, Metadata, Record};
 
 use super::{FormatArgs, translate_args};
 
+#[derive(Debug, Clone, Copy)]
 pub enum Console {
     Stdout,
     Stderr,
@@ -11,6 +12,7 @@ pub enum Console {
 pub struct ConsoleLogger {
     level: Level,
     console: Console,
+    color: bool,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
 }
 
@@ -33,12 +35,16 @@ impl Log for ConsoleLogger {
         let timestamp = Local::now();
 
         let level = record.level();
-        let level_str = match level {
-            Level::Error => format!("{COL_RED}[{level:5}]{COL_RESET}"),
-            Level::Warn => format!("{COL_YELLOW}[{level:5}]{COL_RESET}"),
-            Level::Info => format!("{COL_GREEN}[{level:5}]{COL_RESET}"),
-            Level::Debug => format!("{COL_PURPLE}[{level:5}]{COL_RESET}"),
-            _ => format!("[{level:5}]"),
+        let level_str = if self.color {
+            match level {
+                Level::Error => format!("{COL_RED}[{level:5}]{COL_RESET}"),
+                Level::Warn => format!("{COL_YELLOW}[{level:5}]{COL_RESET}"),
+                Level::Info => format!("{COL_GREEN}[{level:5}]{COL_RESET}"),
+                Level::Debug => format!("{COL_PURPLE}[{level:5}]{COL_RESET}"),
+                _ => format!("[{level:5}]"),
+            }
+        } else {
+            format!("[{level:5}]")
         };
         let mut args = translate_args(record, timestamp);
         args.level_str = level_str;
@@ -62,10 +68,25 @@ impl ConsoleLogger {
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {
+        let color = is_console(console);
         Self {
             level,
             console,
+            color,
             formatter: Box::new(formatter),
         }
     }
+}
+
+/// Stdout/Stderr is redirected?
+///
+/// If not, returns true. (colored output will be enabled)
+fn is_console(console: Console) -> bool {
+    let fd = match console {
+        Console::Stdout => libc::STDOUT_FILENO,
+        Console::Stderr => libc::STDERR_FILENO,
+    };
+    let ret = unsafe { libc::isatty(fd) };
+
+    ret != 0
 }
