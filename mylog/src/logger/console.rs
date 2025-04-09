@@ -16,6 +16,21 @@ pub struct ConsoleLogger {
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
 }
 
+impl ConsoleLogger {
+    pub fn new<F>(console: Console, level: Level, formatter: F) -> Box<dyn Log>
+    where
+        F: Fn(FormatArgs) -> String + Send + Sync + 'static,
+    {
+        let color = is_console(console);
+        Box::new(Self {
+            level,
+            console,
+            color,
+            formatter: Box::new(formatter),
+        })
+    }
+}
+
 impl Log for ConsoleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.level
@@ -61,21 +76,6 @@ impl Log for ConsoleLogger {
     }
 
     fn flush(&self) {}
-}
-
-impl ConsoleLogger {
-    pub fn new<F>(console: Console, level: Level, formatter: F) -> Self
-    where
-        F: Fn(FormatArgs) -> String + Send + Sync + 'static,
-    {
-        let color = is_console(console);
-        Self {
-            level,
-            console,
-            color,
-            formatter: Box::new(formatter),
-        }
-    }
 }
 
 /// Stdout/Stderr is redirected?

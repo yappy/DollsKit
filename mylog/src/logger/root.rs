@@ -1,7 +1,13 @@
-use log::{Level, Log, Metadata, SetLoggerError};
+use log::{Log, Metadata};
 
-pub struct RootLogger {
+pub(super) struct RootLogger {
     inner: Vec<Box<dyn Log>>,
+}
+
+impl RootLogger {
+    pub(super) fn new(loggers: Vec<Box<dyn Log>>) -> Self {
+        Self { inner: loggers }
+    }
 }
 
 impl Log for RootLogger {
@@ -22,35 +28,5 @@ impl Log for RootLogger {
         for logger in &self.inner {
             logger.flush();
         }
-    }
-}
-
-impl RootLogger {
-    /// Panic if a logger is already set.
-    pub fn init(loggers: Vec<Box<dyn Log>>, level: Level) -> FlushGuard {
-        Self::init_raw(loggers, level).unwrap()
-    }
-
-    /// Ignore errors if a logger is already set.
-    #[allow(unused)]
-    pub fn init_for_test(loggers: Vec<Box<dyn Log>>, level: Level) -> FlushGuard {
-        Self::init_raw(loggers, level).unwrap_or(FlushGuard)
-    }
-
-    fn init_raw(loggers: Vec<Box<dyn Log>>, level: Level) -> Result<FlushGuard, SetLoggerError> {
-        let log = RootLogger { inner: loggers };
-        log::set_max_level(level.to_level_filter());
-        log::set_boxed_logger(Box::new(log))?;
-
-        Ok(FlushGuard)
-    }
-}
-
-#[must_use]
-pub struct FlushGuard;
-
-impl Drop for FlushGuard {
-    fn drop(&mut self) {
-        log::logger().flush();
     }
 }

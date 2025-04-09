@@ -24,7 +24,7 @@ fn main() {
             logger::default_formatter,
         )),
     ];
-    let flush = logger::RootLogger::init(loggers, log::Level::Trace);
+    let flush = logger::init(loggers, log::Level::Trace);
 
     log::trace!("test");
     moda::modb::test();
