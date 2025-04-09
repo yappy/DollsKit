@@ -27,20 +27,30 @@ impl Log for RootLogger {
 
 impl RootLogger {
     /// Panic if a logger is already set.
-    pub fn init(loggers: Vec<Box<dyn Log>>, level: Level) {
-        Self::init_raw(loggers, level).unwrap();
+    pub fn init(loggers: Vec<Box<dyn Log>>, level: Level) -> FlushGuard {
+        Self::init_raw(loggers, level).unwrap()
     }
 
     /// Ignore errors if a logger is already set.
     #[allow(unused)]
-    pub fn init_for_test(loggers: Vec<Box<dyn Log>>, level: Level) {
-        let _ = Self::init_raw(loggers, level);
+    pub fn init_for_test(loggers: Vec<Box<dyn Log>>, level: Level) -> FlushGuard {
+        Self::init_raw(loggers, level).unwrap_or(FlushGuard)
     }
 
-    fn init_raw(loggers: Vec<Box<dyn Log>>, level: Level) -> Result<(), SetLoggerError> {
+    fn init_raw(loggers: Vec<Box<dyn Log>>, level: Level) -> Result<FlushGuard, SetLoggerError> {
         let log = RootLogger { inner: loggers };
         log::set_max_level(level.to_level_filter());
+        log::set_boxed_logger(Box::new(log))?;
 
-        log::set_boxed_logger(Box::new(log))
+        Ok(FlushGuard)
+    }
+}
+
+#[must_use]
+pub struct FlushGuard;
+
+impl Drop for FlushGuard {
+    fn drop(&mut self) {
+        log::logger().flush();
     }
 }
