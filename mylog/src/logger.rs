@@ -4,6 +4,7 @@ mod root;
 
 // Raname and export
 pub use console::{Console, ConsoleLogger};
+pub use file::{FileLogger, RotateOptions, RotateSize, RotateTime};
 
 use chrono::{DateTime, Local, SecondsFormat};
 use log::{Level, Log, Record, SetLoggerError};
@@ -54,7 +55,6 @@ pub struct FlushGuard;
 impl Drop for FlushGuard {
     fn drop(&mut self) {
         log::logger().flush();
-        eprintln!("flush!")
     }
 }
 
@@ -104,7 +104,7 @@ pub fn default_formatter(args: FormatArgs) -> String {
 
 fn translate_args<'a>(record: &Record<'a>, timestamp: DateTime<Local>) -> FormatArgs<'a> {
     let level = record.level();
-    let level_str = level.to_string();
+    let level_str = format!("[{level:5}]");
     let target = record.target();
     let body = record.args().to_string();
     let module = record.module_path().unwrap_or("unknown");

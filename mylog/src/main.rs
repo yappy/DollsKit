@@ -1,4 +1,4 @@
-mod logger;
+use mylog::logger;
 
 mod moda {
     pub mod modb {

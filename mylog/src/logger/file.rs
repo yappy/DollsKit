@@ -1,17 +1,26 @@
-use core::panic;
-use std::{fs::File, io::Write, sync::Mutex};
-
-use chrono::{Datelike, Local};
-use log::{Level, Log, Metadata, Record};
-
 use super::{FormatArgs, translate_args};
 
+use chrono::{Datelike, Local};
+use core::panic;
+use log::{Level, Log, Metadata, Record};
+use std::{fs::File, io::Write, sync::Mutex};
+
+#[derive(Debug, Clone, Default)]
+pub struct RotateOptions {
+    pub size: RotateSize,
+    pub time: RotateTime,
+}
+
+#[derive(Debug, Clone, Default)]
 pub enum RotateSize {
+    #[default]
     Disabled,
     Enabled(usize),
 }
 
+#[derive(Debug, Clone, Default)]
 pub enum RotateTime {
+    #[default]
     Disabled,
     Day,
     Month,
@@ -23,6 +32,7 @@ pub struct FileLogger {
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
     file_name: String,
     buf_size: usize,
+    rotate: RotateOptions,
 
     state: Mutex<FileLoggerState>,
 }
@@ -39,6 +49,7 @@ impl FileLogger {
         formatter: F,
         file_name: &str,
         buf_size: usize,
+        rotate: RotateOptions,
     ) -> Result<Box<dyn Log>, std::io::Error>
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
@@ -59,6 +70,7 @@ impl FileLogger {
             formatter: Box::new(formatter),
             file_name: file_name.to_string(),
             buf_size,
+            rotate,
             state: Mutex::new(state),
         }))
     }
@@ -78,7 +90,7 @@ impl FileLogger {
             // buf capacity in bytes
             let rest = self.buf_size - state.write_buf.len();
             // copy as many bytes as possible, but it must end at char boundary
-            let wsize = floor_char_booundary(data, rest);
+            let wsize = floor_char_boundary(data, rest);
             let wdata = &data[..wsize];
             data = &data[wsize..];
             if wdata.is_empty() {
@@ -99,7 +111,7 @@ impl FileLogger {
         // write
         state.file.write_all(state.write_buf.as_bytes()).unwrap();
         state.write_buf.clear();
-        todo!();
+        //todo!();
     }
 }
 
@@ -115,7 +127,8 @@ impl Log for FileLogger {
 
         let timestamp = Local::now();
         let args = translate_args(record, timestamp);
-        let output = self.formatter.as_ref()(args);
+        let mut output = self.formatter.as_ref()(args);
+        output.push('\n');
         self.buffered_write(&output);
     }
 
@@ -126,7 +139,7 @@ impl Log for FileLogger {
 }
 
 // str::floor_char_boundary() is unstable yet
-fn floor_char_booundary(s: &str, mut index: usize) -> usize {
+fn floor_char_boundary(s: &str, mut index: usize) -> usize {
     if index >= s.len() {
         s.len()
     } else {
@@ -145,4 +158,22 @@ fn now_ymd() -> (u32, u32, u32) {
     let now = Local::now();
 
     (now.year() as u32, now.month(), now.day())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn char_boundary() {
+        let org = "abcde";
+        let r = floor_char_boundary(org, 100);
+        assert_eq!(org, &org[..r]);
+
+        let org = "あいうえお";
+        let r = floor_char_boundary(org, 5);
+        assert_eq!(&org[..r], "あ");
+        let r = floor_char_boundary(org, 1);
+        assert_eq!(&org[..r], "");
+    }
 }
