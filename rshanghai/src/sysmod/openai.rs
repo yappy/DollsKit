@@ -563,6 +563,7 @@ pub struct ResponseRequest {
     user: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
 pub struct ResponseObject {
     id: String,
@@ -606,6 +607,7 @@ impl ResponseObject {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum OutputElement {
@@ -629,6 +631,7 @@ pub enum OutputElement {
     },
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
 pub struct FunctionCall {
     pub id: String,
@@ -638,6 +641,7 @@ pub struct FunctionCall {
     pub status: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum OutputContent {
@@ -655,6 +659,7 @@ pub enum OutputContent {
     },
 }
 
+#[allow(dead_code)]
 #[derive(Default, Clone, Debug, Deserialize)]
 struct ErrorObject {
     /// The error code for the response.
@@ -663,6 +668,7 @@ struct ErrorObject {
     message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Default, Clone, Debug, Deserialize)]
 struct Usage {
     input_tokens: u32,
@@ -672,11 +678,13 @@ struct Usage {
     total_tokens: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Default, Clone, Debug, Deserialize)]
 struct InputTokensDetails {
     cached_tokens: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Default, Clone, Debug, Deserialize)]
 struct OutputTokensDetails {
     reasoning_tokens: u32,
