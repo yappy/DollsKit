@@ -154,7 +154,7 @@ impl<T: 'static> FunctionTable<T> {
             }
         };
 
-        let output = match &res {
+        match &res {
             Ok(res) => {
                 info!("[openai-func] {func_name} returned: {res}");
                 res.to_string()
@@ -163,9 +163,7 @@ impl<T: 'static> FunctionTable<T> {
                 warn!("[openai-func] {func_name} failed: {:#?}", err);
                 err.to_string()
             }
-        };
-
-        output
+        }
     }
 
     /// [Self::call] の内部メイン処理。

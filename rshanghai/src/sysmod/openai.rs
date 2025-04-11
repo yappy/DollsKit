@@ -589,7 +589,7 @@ impl ResponseObject {
             if let OutputElement::Message { content, .. } = elem {
                 for cont in content.iter() {
                     if let OutputContent::OutputText { text } = cont {
-                        buf.push_str(&text);
+                        buf.push_str(text);
                     }
                 }
             }

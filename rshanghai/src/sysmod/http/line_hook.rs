@@ -333,7 +333,7 @@ async fn on_text_message(
             .push_message(Role::Developer, &sysmsg)?;
         line.chat_history_mut(ctrl)
             .await
-            .push_message(Role::User, &text)?;
+            .push_message(Role::User, text)?;
 
         prompt
     };
