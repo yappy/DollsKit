@@ -169,10 +169,12 @@ impl Line {
         self.func_table.as_ref().unwrap()
     }
 
+    /*
     pub async fn func_table_mut(&mut self, ctrl: &Control) -> &mut FunctionTable<FunctionContext> {
         self.init_openai(ctrl).await;
         self.func_table.as_mut().unwrap()
     }
+    */
 }
 
 impl SystemModule for Line {
