@@ -257,7 +257,6 @@ fn register_get_current_datetime<T: 'static>(func_table: &mut FunctionTable<T>) 
             type_: vec![ParameterType::String],
             description: Some("Time zone".to_string()),
             enum_: Some(vec!["JST".to_string(), "UTC".to_string()]),
-            ..Default::default()
         },
     );
 

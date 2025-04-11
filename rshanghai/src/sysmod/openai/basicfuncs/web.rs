@@ -95,7 +95,6 @@ fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
             type_: vec![ParameterType::String],
             description: Some("URL to access".to_string()),
             enum_: None,
-            ..Default::default()
         },
     );
 
