@@ -818,6 +818,19 @@ async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
+#[derive(Default, poise::ChoiceParameter)]
+enum WebSearchQuality {
+    #[name = "High Quality"]
+    High,
+    #[default]
+    #[name = "Medium Quality"]
+    Medium,
+    #[name = "Low Quality"]
+    Low,
+    #[name = "Disabled"]
+    Disabled,
+}
+
 /// AI assistant.
 ///
 /// The owner of the assistant will pay the usage fee for ChatGPT.
@@ -830,6 +843,7 @@ async fn ai(
     chat_msg: String,
     #[description = "Show internal details when AI calls a function. (default=False)"]
     trace_function_call: Option<bool>,
+    web_search_quality: Option<WebSearchQuality>,
 ) -> Result<(), PoiseError> {
     // そのまま引用返信
     reply_long_mdquote(&ctx, &chat_msg).await?;
@@ -858,12 +872,21 @@ async fn ai(
     let inst = discord.config.prompt.instructions.join("");
     // ツール (function + built-in tools)
     let mut tools = vec![];
-    // TODO: config
-    tools.push(Tool::WebSearchPreview {
-        search_context_size: Some(SearchContextSize::Low),
-        user_location: Some(UserLocation::default()),
-    });
-    for f in discord.func_table.as_ref().unwrap().function_list() {
+    // web search
+    let web_csize = match web_search_quality.unwrap_or_default() {
+        WebSearchQuality::High => Some(SearchContextSize::High),
+        WebSearchQuality::Medium => Some(SearchContextSize::Medium),
+        WebSearchQuality::Low => Some(SearchContextSize::Low),
+        WebSearchQuality::Disabled => None,
+    };
+    if let Some(web_csize) = web_csize {
+        tools.push(Tool::WebSearchPreview {
+            search_context_size: Some(web_csize),
+            user_location: Some(UserLocation::default()),
+        });
+    }
+    // function
+    for f in discord.func_table().function_list() {
         tools.push(Tool::Function(f.clone()));
     }
 
