@@ -56,17 +56,65 @@ let turbo_parsed = "10".parse::<i32>().unwrap();
 名前が全然違う型や関数が密接に関連していてあまり好ましく思えないが、
 そういうものなので受け入れること。
 
+### for とイテレータ
+
+for は C とは違って完全にイテレータ限定。
+
+`Vec` とかを for に渡すと本体がイテレータの中に move されて以後使えなくなる。
+初心者狩り。
+本当にこの初心者狩りが必要なものなのかは理解できていない。
+
+```rust
+for x in v {
+    // ...
+}
+// これ以降 v を使うと既に move されておりエラー
+```
+
+(詳細) `Vec` は `IntoIterator` を実装しており、self を消費して Iterator に
+自動変換されるため。
+
+v を消費したいことはほぼ無いと思われるので、以下でよい。
+
+```rust
+for x in &v {
+    // ...
+}
+```
+
+```rust
+for x in &mut v {
+    // ...
+}
+```
+
+それぞれ `v.iter()` と `v.iter_mut()` に対応している。
+
 ### イテレータとの変換
 
 `IntoIterator` トレイトの `into_iter()` は自身をイテレータに変換する。
 これを実装していると for 文の対象にできるようになる。
-なお自身を move して消費してしまうので以後使えなくなるという初心者が絶対引っかかる
+なお self を move して消費してしまうので以後使えなくなるという初心者が絶対引っかかる
 罠がある。どうかと思うがきっと深い理由があるに違いない…。
 
 <https://doc.rust-lang.org/std/iter/index.html#for-loops-and-intoiterator>
 
-ほとんどのデータ構造型は `iter()` `iter_mut()` で参照をイテレートする
-イテレータを返すので、それを for で回せば OK。
+ほとんどのデータ構造 (コレクション) 型は `iter()` `iter_mut()` で参照を
+イテレートするイテレータを返すので、それを for で回せば OK。
+また、それができる場合、基本的に `impl Iterator for &Vec`
+`impl Iterator for &mut Vec` のようにコンテナの参照や可変参照型に対して
+`IntoIterator` が実装されており、`iter()` `iter_mut()` を返すように実装されている。
+こちらの方が文字数が少なくて楽？かもしれない。
+
+```rust
+let mut values = vec![41];
+for x in &mut values { // same as `values.iter_mut()`
+    *x += 1;
+}
+for x in &values { // same as `values.iter()`
+    assert_eq!(*x, 42);
+}
+```
 
 <https://doc.rust-lang.org/std/iter/index.html#iterating-by-reference>
 
@@ -98,8 +146,8 @@ let turbo_parsed = "10".parse::<i32>().unwrap();
 配列っぽいものなら型を問わずに渡せるようになるし、
 配列っぽいものの一部のみを渡せるようにもなる。
 
-書き込み用に渡す場合は無理なので普通に `&Vec<T>` とか `&String` を渡す。
-というかそんなんしなくても通常は move return すれば OK。
+書き込み用に渡す場合は無理なので普通に `&mut Vec<T>` とか `&mut String` を渡す。
+ただし空の受け取り領域を渡すくらいなら move return すれば OK。
 
 ### 文字列スライス
 
@@ -173,11 +221,6 @@ move の勉強もこれで。
 `Vec<u8>>` に UTF-8 として不正な状態を許さないチェックを追加した感じ。
 スライスは `&str` になる。
 
-### &str
-
-文字列スライス。
-文字列リテラルは `&'static str`。
-
 ### その他データ構造
 
 Vec 以外は use が必要。
@@ -204,40 +247,131 @@ Vec 以外は use が必要。
   * プライオリティキューくんいたんだ…。
     概念ではなく内部実装を名前に付ける方針らしい？
 
-## for
+## 引数を trait で受ける
 
-C とは違って完全にイテレータ限定。
-Range 使えば同じようなことはできる。
+以下の受け方を覚えることで受けられる型の種類が多少増えるが、
 
-`Vec` とかを for に渡すと本体がイテレータの中に move されて以後使えなくなる。
-初心者狩り。
-本当にこの初心者狩りが必要なものなのかは理解できていない。
+* `&Vec<T>` でなく `&[T]`
+* `&String` でなく `&str`
 
-```rust
-for x in v {
-    // ...
-}
-// これ以降 v を使うと既に move されておりエラー
-```
+`println!()` での `Display` や for の `IntoIterator` `Iterator<Item=T>` など、
+trait を受け取る標準ライブラリや言語機能を参考にすれば受け取れる型の範囲を
+増やすことができる。
 
-(詳細) `Vec` は `IntoIterator` を実装しており、self を消費して Iterator に
-自動変換されるため。
+### 文字列に変換できるもの全般を受ける
 
-v を消費したいことはほぼ無いと思われるので、以下でよい。
+`to_string()` の使える型は `ToString` trait を実装している。
+(`Display` trait を実装し、自動でそれを使って `ToString` が
+実装されるようになっている)
+
+<https://doc.rust-lang.org/std/string/trait.ToString.html>
 
 ```rust
-for x in &v {
-    // ...
-}
-```
-
-```rust
-for x in &mut v {
-    // ...
+pub trait ToString {
+    // Required method
+    fn to_string(&self) -> String;
 }
 ```
 
-それぞれ `v.iter()` と `v.iter_mut()` に対応している。多分。
+この trait をパラメータとして受ければ文字列に変換できるもの全般を
+受け方は、基本的にはジェネリックでコンパイル時解決する。
+vtable による実行時解決は必要に迫られない限り推奨されない。
+
+具体的な型ではなく抽象的なインタフェースに対してプログラミングすると柔軟性が増すという
+教えは素晴らしいものだが、それをコンパイル時解決することにより実行時コストが減るので
+さらに素晴らしいというのは C++ テンプレートの教えなので賛否両論。
+~~ビルド遅いんですけど。~~
+~~あと具体的な型1つにつき関数が1回インスタンシエートされるので命令サイズ増えますよね。~~
+
+```rust
+fn my_func1<T>(value: &T) where T: ToString {
+    let s = value.to_string();
+}
+```
+
+* `my_func1` を1つの型パラメータ `<T>` をとるジェネリック関数として定義する。
+* 渡された値の型を `&T` で受けて、T に型を当てはめさせる。
+* where 句で `T` は `trait ToString` を実装しているという制約を宣言する。
+  これで `T` は `impl ToString` していることが保証されるようになるため、
+  `value.to_string()` 呼び出しのコンパイルが通るようになる。
+* where は数学英語で、"ここで、" "ただし、" のような条件や制約を示す。
+  * y=ax+b where a, b are integer constants.
+  * y=ax+b ただしここで a, b は整数の定数。
+  * 英語話者優遇文法を許すな。
+* よって以下のように読めばよい。
+  * `my_func1` は型パラメータ `<T>` を持つ。
+  * 引数は `value: &T`、つまり `value` は `T` への不変参照型である。
+  * ただしここで型パラメータ `T` は `impl ToString` しているものに限る。
+  * すなわち `T` 型は `to_string()` メソッドを利用可能である。
+
+```rust
+fn my_func2<T: ToString>(value: &T) {
+    let s = value.to_string();
+}
+```
+
+慣れてきたらこのように省略できる。
+
+```rust
+fn my_func3(value: &impl T) {
+    let s = value.to_string();
+}
+```
+
+さらに慣れればここまで省略できる。
+ただし型パラメータが無くなったように見えるが impl はシンタックスシュガーなので
+やはりジェネリック関数である。
+
+ここまで言っておいてなんだが `to_string()` は常に新しい `String` オブジェクトを
+生成してしまう (ヒープに malloc する) のでそれでいい場合以外は微妙。
+
+文字列参照に変換できる型全般を受け取りたい場合は `AsRef<str>` だが、
+`String` と `&str` を両方受けたいなら `&str` スライスで受けて
+`String` の時は `&string_variable` で渡すだけなのでジェネリックで受ける意味は
+あまりない…。
+
+```rust
+pub trait AsRef<T>
+where
+    T: ?Sized,
+{
+    // Required method
+    fn as_ref(&self) -> &T;
+}
+```
+
+もうちょっと高度なものに `Cow` (copy-on-write と見せかけて clone-on-write)
+trait がある。
+無理して使うようなものではないと思うが、ライブラリが使っているとよく分からなくて
+きれそうになるので…。
+これは参照による借用とそのものを所有するケースを enum で両対応したものである。
+
+```rust
+pub enum Cow<'a, B>
+where
+    B: 'a + ToOwned + ?Sized,
+{
+    Borrowed(&'a B),
+    Owned(<B as ToOwned>::Owned),
+}
+```
+
+内部が知らない trait とライフタイムでいっぱいできれそうになるが、
+`B` に `str` を入れてみると `Borrowed(&str)` となる。
+読み取りに使っている間はそのまま低コストな `&str` で取り扱い、
+書き込みが必要になったらその時に `to_owned()` を呼び出して `String` を生成する。
+
+`ToOwned` ってなんやねんという感じだが、`Clone` をもう少し一般化したものである。
+`Clone` は不変参照 `&T` からコピーオブジェクト `T` への変換だが、
+`&str` と `String` は全然別の型なので、別の型に対しても適用できるようにした
+バージョンという感じである。
+`B` を `str` とすると、`<B as ToOwned>::Owned` は `String` に解決される。
+
+最終的な結論としては `Into<Cow<'a, str>>>` で受けるのが一種のイディオムになっている
+ようだが、そこまですべきなのかはよく分からない。
+クローンせず不変参照だけで処理完了するケースがそれなりに存在するなら価値はありそうだが、
+重いクローン処理するかどうかが実行時解決になりコードサイズ
+~~とコンパイル時間~~が大きくなる気がする。
 
 ## スマートポインタ
 
