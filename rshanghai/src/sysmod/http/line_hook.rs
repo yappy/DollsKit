@@ -414,12 +414,20 @@ async fn on_text_message(
                         .await
                         .push_function(call_id, func_name, func_args, &func_out)?;
                 }
-                // アシスタント応答があれば履歴に追加
+                // アシスタント応答と web search があれば履歴に追加
                 let text = resp.output_text();
                 if !text.is_empty() {
+                    line.chat_history_mut(ctrl).await.push_message_tool(
+                        std::iter::once((Role::Assistant, text.clone())),
+                        resp.web_search_iter().cloned(),
+                    )?;
+                } else {
                     line.chat_history_mut(ctrl)
                         .await
-                        .push_message(Role::Assistant, &text)?;
+                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
+                }
+
+                if !text.is_empty() {
                     break Ok(text);
                 }
             }

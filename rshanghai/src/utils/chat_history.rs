@@ -78,7 +78,7 @@ impl ChatHistory {
         for (role, content) in msgs {
             let tokens = self.tokenize(&content);
             let item = InputItem::Message {
-                role: role,
+                role,
                 content: content.to_string(),
             };
             items.push(item);
