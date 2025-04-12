@@ -1,6 +1,6 @@
 //! OpenAI API の会話コンテキストのトークン数制限付き管理。
 
-use crate::sysmod::openai::{InputItem, Role};
+use crate::sysmod::openai::{InputItem, Role, WebSearchCall};
 
 use anyhow::{Result, ensure};
 use std::collections::VecDeque;
@@ -65,6 +65,37 @@ impl ChatHistory {
         };
 
         self.push(vec![item], token_count)
+    }
+
+    pub fn push_message_tool(
+        &mut self,
+        msgs: impl Iterator<Item = (Role, String)>,
+        web_search_ids: impl Iterator<Item = WebSearchCall>,
+    ) -> Result<()> {
+        let mut items = vec![];
+        let mut token_count = 0;
+
+        for (role, content) in msgs {
+            let tokens = self.tokenize(&content);
+            let item = InputItem::Message {
+                role: role,
+                content: content.to_string(),
+            };
+            items.push(item);
+            token_count += tokens.len();
+        }
+        for wsc in web_search_ids {
+            // TODO: token
+            let item = InputItem::WebSearchCall(wsc);
+            items.push(item);
+        }
+
+        // 空なら追加せず成功とする
+        if !items.is_empty() {
+            self.push(items, token_count)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn push_function(
