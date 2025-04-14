@@ -11,6 +11,7 @@ mod moda {
         }
     }
 }
+
 fn main() {
     let loggers: Vec<Box<dyn log::Log>> = vec![
         Box::new(logger::ConsoleLogger::new(

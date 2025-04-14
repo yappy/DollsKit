@@ -3,12 +3,18 @@ use super::{FormatArgs, translate_args};
 use chrono::{Datelike, Local};
 use core::panic;
 use log::{Level, Log, Metadata, Record};
-use std::{fs::File, io::Write, sync::Mutex};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct RotateOptions {
     pub size: RotateSize,
     pub time: RotateTime,
+    pub file_count: u16,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -22,6 +28,8 @@ pub enum RotateSize {
 pub enum RotateTime {
     #[default]
     Disabled,
+    /// For debug
+    Second,
     Day,
     Month,
     Year,
@@ -30,9 +38,9 @@ pub enum RotateTime {
 pub struct FileLogger {
     level: Level,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
-    file_name: String,
+    file_path: PathBuf,
     buf_size: usize,
-    rotate: RotateOptions,
+    rotate_opts: RotateOptions,
 
     state: Mutex<FileLoggerState>,
 }
@@ -47,9 +55,9 @@ impl FileLogger {
     pub fn new<F>(
         level: Level,
         formatter: F,
-        file_name: &str,
+        file_path: impl AsRef<Path>,
         buf_size: usize,
-        rotate: RotateOptions,
+        rotate_opts: RotateOptions,
     ) -> Result<Box<dyn Log>, std::io::Error>
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
@@ -58,7 +66,7 @@ impl FileLogger {
             panic!("buf_size < 8");
         }
 
-        let (file, len) = Self::open(file_name)?;
+        let (file, len) = Self::open(file_path.as_ref())?;
         let state = FileLoggerState {
             file,
             len,
@@ -68,24 +76,43 @@ impl FileLogger {
         Ok(Box::new(Self {
             level,
             formatter: Box::new(formatter),
-            file_name: file_name.to_string(),
+            file_path: file_path.as_ref().into(),
             buf_size,
-            rotate,
+            rotate_opts,
             state: Mutex::new(state),
         }))
     }
 
-    fn open(file_name: &str) -> Result<(File, usize), std::io::Error> {
-        let file = File::options().append(true).create(true).open(file_name)?;
+    fn open(file_path: impl AsRef<Path>) -> Result<(File, usize), std::io::Error> {
+        let file = File::options().append(true).create(true).open(file_path)?;
         let len = file.metadata()?.len();
 
         Ok((file, len as usize))
     }
 
     /// Flush if needed, then write to write_buf
-    fn buffered_write(&self, s: &str) {
+    fn buffered_write_entry(&self, log_entry_str: &str) {
+        // lock
         let mut state = self.state.lock().unwrap();
-        let mut data = s;
+
+        // rotate check
+        let mut rotate = false;
+        if let RotateSize::Enabled(size) = self.rotate_opts.size {
+            // if it would exceed the limit, rotate before write
+            // if log_entry_str is longer than the limit, rotate and write it.
+            if state.len.saturating_add(log_entry_str.len()) > size {
+                rotate = true;
+            }
+        }
+        match self.rotate_opts.time {
+            //RotateTime::Day
+            _ => {}
+        }
+        if rotate {
+            self.rotate();
+        }
+
+        let mut data = log_entry_str;
         while !data.is_empty() {
             // buf capacity in bytes
             let rest = self.buf_size - state.write_buf.len();
@@ -97,21 +124,26 @@ impl FileLogger {
                 // write_buf full
                 // flush to file
                 self.flush_buf(&mut state);
+                debug_assert!(state.write_buf.is_empty());
             } else {
                 // memcpy to write_buf
                 state.write_buf.push_str(wdata);
+                state.len += wdata.len();
             }
         }
     }
 
-    /// Rotate if needed, then write write_buf to file
+    /// Called when buffer becomes full and when log::flush() is called
     fn flush_buf(&self, state: &mut FileLoggerState) {
-        // if condition is met, close writer, open a new file
-        // todo
         // write
         state.file.write_all(state.write_buf.as_bytes()).unwrap();
         state.write_buf.clear();
-        //todo!();
+    }
+
+    fn rotate(&self, state: &mut FileLoggerState) {
+        std::fs::rename(from, to)
+        Self::open(self.file_path);
+        state.file
     }
 }
 
@@ -129,7 +161,7 @@ impl Log for FileLogger {
         let args = translate_args(record, timestamp);
         let mut output = self.formatter.as_ref()(args);
         output.push('\n');
-        self.buffered_write(&output);
+        self.buffered_write_entry(&output);
     }
 
     fn flush(&self) {
@@ -154,10 +186,10 @@ fn floor_char_boundary(s: &str, mut index: usize) -> usize {
     }
 }
 
-fn now_ymd() -> (u32, u32, u32) {
+fn now_ymd() -> (u32, u32, u32, i64) {
     let now = Local::now();
 
-    (now.year() as u32, now.month(), now.day())
+    (now.year() as u32, now.month(), now.day(), now.timestamp())
 }
 
 #[cfg(test)]
