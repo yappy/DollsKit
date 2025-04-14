@@ -14,12 +14,12 @@ mod moda {
 
 fn main() {
     let loggers: Vec<Box<dyn log::Log>> = vec![
-        Box::new(logger::ConsoleLogger::new(
+        Box::new(logger::ConsoleLogger::new_boxed(
             logger::Console::Stdout,
             log::Level::Trace,
             logger::default_formatter,
         )),
-        Box::new(logger::ConsoleLogger::new(
+        Box::new(logger::ConsoleLogger::new_boxed(
             logger::Console::Stderr,
             log::Level::Warn,
             logger::default_formatter,

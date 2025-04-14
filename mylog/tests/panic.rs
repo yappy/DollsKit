@@ -5,7 +5,7 @@ use log::{Level, debug, error, info, trace, warn};
 #[test]
 #[should_panic]
 fn integration_panic() {
-    let logger = FileLogger::new(
+    let logger = FileLogger::new_boxed(
         Level::Trace,
         default_formatter,
         "panic.log",

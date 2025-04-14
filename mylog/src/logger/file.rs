@@ -56,7 +56,7 @@ struct FileLoggerState {
 }
 
 impl FileLogger {
-    pub fn new<F>(
+    pub fn new_boxed<F>(
         level: Level,
         formatter: F,
         file_path: impl AsRef<Path>,

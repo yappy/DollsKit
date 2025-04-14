@@ -17,7 +17,7 @@ pub struct ConsoleLogger {
 }
 
 impl ConsoleLogger {
-    pub fn new<F>(console: Console, level: Level, formatter: F) -> Box<dyn Log>
+    pub fn new_boxed<F>(console: Console, level: Level, formatter: F) -> Box<dyn Log>
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {

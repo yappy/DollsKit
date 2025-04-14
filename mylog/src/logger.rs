@@ -25,7 +25,7 @@ pub fn init(loggers: Vec<Box<dyn Log>>, level: Level) -> FlushGuard {
 /// `cargo test -- --nocapture` option is needed to see the log.
 #[allow(unused)]
 pub fn init_for_test(level: Level) -> FlushGuard {
-    let loggers = vec![ConsoleLogger::new(
+    let loggers = vec![ConsoleLogger::new_boxed(
         Console::Stdout,
         level,
         default_formatter,

@@ -6,7 +6,7 @@ use log::{Level, debug, error, info, trace, warn};
 fn integration_test() {
     const BUF_SIZE: usize = 64;
 
-    let logger = FileLogger::new(
+    let logger = FileLogger::new_boxed(
         Level::Trace,
         default_formatter,
         "testlog.log",
