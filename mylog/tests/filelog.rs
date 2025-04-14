@@ -1,4 +1,4 @@
-use mylog::logger::{self, FileLogger, RotateOptions, default_formatter};
+use mylog::logger::{self, FileLogger, RotateOptions, RotateSize, default_formatter};
 
 use log::{Level, debug, error, info, trace, warn};
 
@@ -12,6 +12,8 @@ fn integration_test() {
         "testlog.log",
         BUF_SIZE,
         RotateOptions {
+            file_count: 3,
+            size: RotateSize::Enabled(1024),
             ..Default::default()
         },
     )
@@ -23,4 +25,8 @@ fn integration_test() {
     info!("This is a test.");
     warn!("This is a test.");
     error!("This is a test.");
+
+    for i in 0..1024 {
+        info!("This is a log rotate test {i}");
+    }
 }

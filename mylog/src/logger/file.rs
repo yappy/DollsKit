@@ -38,10 +38,14 @@ pub enum RotateTime {
 pub struct FileLogger {
     level: Level,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
+    /// Absolute path to the main log file
     file_path: PathBuf,
+    dir_path: PathBuf,
+    file_name: String,
     buf_size: usize,
     rotate_opts: RotateOptions,
 
+    /// Lock for log
     state: Mutex<FileLoggerState>,
 }
 
@@ -58,7 +62,7 @@ impl FileLogger {
         file_path: impl AsRef<Path>,
         buf_size: usize,
         rotate_opts: RotateOptions,
-    ) -> Result<Box<dyn Log>, std::io::Error>
+    ) -> Result<Box<dyn Log>, anyhow::Error>
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {
@@ -66,28 +70,27 @@ impl FileLogger {
             panic!("buf_size < 8");
         }
 
-        let (file, len) = Self::open(file_path.as_ref())?;
+        let (file, len) = open_new_or_append(&file_path)?;
         let state = FileLoggerState {
             file,
             len,
             write_buf: String::with_capacity(buf_size),
         };
 
+        let file_path = file_path.as_ref().canonicalize()?;
+        let dir_path = file_path.parent().unwrap().to_path_buf();
+        let file_name = file_path.file_name().unwrap().to_str().unwrap().to_string();
+
         Ok(Box::new(Self {
             level,
             formatter: Box::new(formatter),
-            file_path: file_path.as_ref().into(),
+            file_path,
+            dir_path,
+            file_name,
             buf_size,
             rotate_opts,
             state: Mutex::new(state),
         }))
-    }
-
-    fn open(file_path: impl AsRef<Path>) -> Result<(File, usize), std::io::Error> {
-        let file = File::options().append(true).create(true).open(file_path)?;
-        let len = file.metadata()?.len();
-
-        Ok((file, len as usize))
     }
 
     /// Flush if needed, then write to write_buf
@@ -105,11 +108,16 @@ impl FileLogger {
             }
         }
         match self.rotate_opts.time {
-            //RotateTime::Day
+            RotateTime::Year | RotateTime::Month | RotateTime::Day | RotateTime::Second => todo!(),
             _ => {}
         }
         if rotate {
-            self.rotate();
+            self.flush_buf(&mut state);
+            debug_assert!(state.write_buf.is_empty());
+            if let Err(e) = self.rotate(&mut state) {
+                eprintln!("Warning: log rotate failed");
+                eprintln!("{e:#}");
+            }
         }
 
         let mut data = log_entry_str;
@@ -140,11 +148,76 @@ impl FileLogger {
         state.write_buf.clear();
     }
 
-    fn rotate(&self, state: &mut FileLoggerState) {
-        std::fs::rename(from, to)
-        Self::open(self.file_path);
-        state.file
+    fn rotate(&self, state: &mut FileLoggerState) -> anyhow::Result<()> {
+        let main_name = self.file_name.as_str();
+        // "a.b.c" => ("a.b", "c")
+        // "a" => ("a", "")
+        let (stem, ext) = if let Some(dotind) = main_name.rfind('.') {
+            (&main_name[..dotind], &main_name[dotind..])
+        } else {
+            (main_name, "")
+        };
+
+        let mut last_no = 0;
+        // test ".1" .. ".(file_count - 1)"
+        for i in 1..self.rotate_opts.file_count {
+            let archive_name = format!("{stem}.{i}{ext}");
+            let path = self.dir_path.join(archive_name);
+            if path.exists() {
+                last_no = i;
+            } else {
+                break;
+            }
+        }
+
+        for i in (0..=last_no).rev() {
+            let from = if i == 0 {
+                self.file_path.clone()
+            } else {
+                self.dir_path.join(format!("{stem}.{}{ext}", i))
+            };
+            let to = self.dir_path.join(format!("{stem}.{}{ext}", i + 1));
+            std::fs::rename(from, to)?;
+        }
+
+        let (mut new_file, size) = open_new_or_append(&self.file_path)?;
+        // swap and close
+        std::mem::swap(&mut state.file, &mut new_file);
+        drop(new_file);
+        state.len = size;
+
+        Ok(())
     }
+}
+
+/// Open with (create + append), return File and size.
+fn open_new_or_append(file_path: impl AsRef<Path>) -> Result<(File, usize), anyhow::Error> {
+    let file = File::options().append(true).create(true).open(file_path)?;
+    let len = file.metadata()?.len();
+
+    Ok((file, len as usize))
+}
+
+// str::floor_char_boundary() is unstable yet
+fn floor_char_boundary(s: &str, mut index: usize) -> usize {
+    if index >= s.len() {
+        s.len()
+    } else {
+        loop {
+            if s.is_char_boundary(index) {
+                break;
+            } else {
+                index -= 1;
+            }
+        }
+        index
+    }
+}
+
+fn now_ymd() -> (u32, u32, u32, i64) {
+    let now = Local::now();
+
+    (now.year() as u32, now.month(), now.day(), now.timestamp())
 }
 
 impl Log for FileLogger {
@@ -168,28 +241,6 @@ impl Log for FileLogger {
         let mut state = self.state.lock().unwrap();
         self.flush_buf(&mut state);
     }
-}
-
-// str::floor_char_boundary() is unstable yet
-fn floor_char_boundary(s: &str, mut index: usize) -> usize {
-    if index >= s.len() {
-        s.len()
-    } else {
-        loop {
-            if s.is_char_boundary(index) {
-                break;
-            } else {
-                index -= 1;
-            }
-        }
-        index
-    }
-}
-
-fn now_ymd() -> (u32, u32, u32, i64) {
-    let now = Local::now();
-
-    (now.year() as u32, now.month(), now.day(), now.timestamp())
 }
 
 #[cfg(test)]
