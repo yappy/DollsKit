@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "shanghai",
+    "shanghai", "utils",
 ]
 default-members = [
     "shanghai"
@@ -22,10 +22,29 @@ panic = 'abort'
 panic = 'abort'
 
 [workspace.dependencies]
-# Error handling
+# My crates
+utils = { path = "utils/" }
+
+static_assertions = "1.1.0"
 anyhow = "1.0.98"
+thiserror = "2.0.12"
 log = "0.4.27"
+chrono = { version = "0.4.40", features = ["clock", "iana-time-zone", "std"] }
+rand = "0.9.0"
+
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+serde_with = { version = "3.12.0", features = ["json"] }
+toml = "0.8.20"
+
+tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio-stream = "0.1.17"
+
+reqwest = { version = "0.12.15", features = ["json", "multipart"] }
+
+image = "0.25.6"
 
 # For test
 serial_test = "3.2.0"
 tempfile = "3.19.1"
+hex-literal = "1.0.0"

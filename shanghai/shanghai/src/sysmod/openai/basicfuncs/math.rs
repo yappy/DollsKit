@@ -3,7 +3,7 @@
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
-use crate::utils::parser;
+use utils::parser;
 use anyhow::Result;
 use std::collections::HashMap;
 

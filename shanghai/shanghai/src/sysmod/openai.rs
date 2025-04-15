@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime};
 use super::SystemModule;
 use crate::sys::config;
 use crate::sys::taskserver::Control;
-use crate::utils::netutil::{self, HttpStatusError};
+use utils::netutil::{self, HttpStatusError};
 
 use anyhow::{Context, ensure};
 use anyhow::{Result, anyhow, bail};
@@ -987,8 +987,8 @@ impl SystemModule for OpenAi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::netutil::HttpStatusError;
     use serial_test::serial;
+    use utils::netutil::HttpStatusError;
 
     #[test]
     fn test_parse_resettime() {

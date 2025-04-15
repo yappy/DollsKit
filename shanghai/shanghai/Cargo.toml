@@ -8,15 +8,17 @@ description.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+utils.workspace = true
+
 # Error handling
 anyhow.workspace = true
-thiserror = "2.0.12"
-# Static assert
-static_assertions = "1.1.0"
+thiserror.workspace = true
 # Compiler version
 rustc_version_runtime = "0.3.0"
 # Bit flags
 bitflags = "2.9.0"
+# RNG
+rand.workspace = true
 
 # Command line parser
 getopts = "0.2.21"
@@ -28,30 +30,24 @@ simplelog = "0.12.2"
 daemonize = "0.5.0"
 # Time for log
 time = "0.3.41"
-chrono = { version = "0.4.40", features = ["clock", "iana-time-zone", "std"] }
+chrono.workspace = true
 # Json
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-serde_with = { version = "3.12.0", features = ["json"] }
+serde.workspace = true
+serde_json.workspace = true
+serde_with.workspace = true
 # TOML
-toml = "0.8.20"
+toml.workspace = true
 
 # Async
 tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
 
 # HTTP client
-reqwest = { version = "0.12.15", features = ["json", "multipart"] }
-# URL encode
-percent-encoding = "2.3.1"
+reqwest.workspace = true
 # BASE64
 base64 = "0.22.1"
-# RNG
-rand = "0.9.0"
-# HMAC
-hmac = "0.12.1"
-sha1 = "0.10.6"
-sha2 = "0.10.8"
+
+image.workspace = true
 
 # HTTP server
 actix-web = "4.10.2"
@@ -60,10 +56,6 @@ actix-multipart = "0.7.2"
 serenity = "0.12.4"
 poise = "0.6.1"
 
-# Image convert
-image = "0.25.6"
-# Font
-rusttype="0.9.3"
 # Scraping
 scraper = "0.23.1"
 ego-tree = "0.10.0"
@@ -75,8 +67,6 @@ tiktoken-rs = "0.6.0"
 serial_test.workspace = true
 # Temporary file
 tempfile.workspace = true
-# Hex literal for test
-hex-literal = "1.0.0"
 
 [build-dependencies]
 anyhow.workspace = true

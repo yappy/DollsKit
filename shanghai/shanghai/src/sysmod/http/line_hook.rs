@@ -11,13 +11,13 @@ use crate::{
         line::FunctionContext,
         openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
     },
-    utils::netutil,
 };
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Result, anyhow, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use utils::netutil;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct WebHookRequest {
@@ -467,7 +467,6 @@ async fn on_text_message(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha2::digest::MacError;
 
     #[test]
     fn base64_decode() {
@@ -475,6 +474,6 @@ mod tests {
         let res = verify_signature(line_signature, "1234567890", "test");
         assert!(res.is_err());
         // base64 decode に成功し、MAC 検証に失敗する
-        assert!(res.unwrap_err().is::<MacError>());
+        assert!(res.unwrap_err().to_string().contains("MAC"));
     }
 }

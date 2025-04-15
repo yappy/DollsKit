@@ -3169,26 +3169,19 @@ dependencies = [
  "daemonize",
  "ego-tree",
  "getopts",
- "hex-literal",
- "hmac",
  "image",
  "log",
- "percent-encoding",
  "poise",
  "rand 0.9.0",
  "reqwest 0.12.15",
  "rustc_version_runtime",
- "rusttype",
  "scraper",
  "serde",
  "serde_json",
  "serde_with",
  "serenity",
  "serial_test",
- "sha1",
- "sha2",
  "simplelog",
- "static_assertions",
  "tempfile",
  "thiserror 2.0.12",
  "tiktoken-rs",
@@ -3196,6 +3189,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "toml",
+ "utils",
 ]
 
 [[package]]
@@ -3934,6 +3928,29 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "hex-literal",
+ "hmac",
+ "image",
+ "percent-encoding",
+ "rand 0.9.0",
+ "reqwest 0.12.15",
+ "rusttype",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha1",
+ "sha2",
+ "static_assertions",
+ "thiserror 2.0.12",
+ "tokio",
+]
 
 [[package]]
 name = "uwl"

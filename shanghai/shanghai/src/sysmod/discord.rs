@@ -9,7 +9,7 @@ use crate::sysmod::openai::chat_history::ChatHistory;
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage, OpenAi, OpenAiErrorKind};
 use crate::sysmod::openai::{Role, function::FunctionTable};
-use crate::utils::playtools::dice::{self};
+use utils::playtools::dice::{self};
 
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};

@@ -3,7 +3,7 @@
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_i64_opt,
 };
-use crate::utils::playtools::dice;
+use utils::playtools::dice;
 use anyhow::Result;
 use std::collections::HashMap;
 

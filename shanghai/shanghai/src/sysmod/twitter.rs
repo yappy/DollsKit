@@ -5,8 +5,8 @@ use super::openai::ChatMessage;
 use crate::sys::taskserver::Control;
 use crate::sys::{config, taskserver};
 use crate::sysmod::openai::Role;
-use crate::utils::graphics::FontRenderer;
-use crate::utils::netutil;
+use utils::graphics::FontRenderer;
+use utils::netutil;
 
 use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};

@@ -5,14 +5,12 @@
 use std::sync::Arc;
 
 use super::WebResult;
-use crate::{
-    sys::taskserver::{self, Control},
-    utils::netutil,
-};
+use crate::sys::taskserver::{self, Control};
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Result, anyhow};
 use log::{error, info};
 use serde_json::Value;
+use utils::netutil;
 
 #[actix_web::get("/github/")]
 async fn index_get() -> impl Responder {

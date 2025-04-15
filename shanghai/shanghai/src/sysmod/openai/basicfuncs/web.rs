@@ -3,8 +3,8 @@
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
-use crate::utils::netutil;
-use crate::utils::weather::{self, ForecastRoot, OverviewForecast};
+use utils::netutil;
+use utils::weather::{self, ForecastRoot, OverviewForecast};
 use anyhow::{Context, Result, anyhow, bail};
 use reqwest::Client;
 use std::{collections::HashMap, time::Duration};
