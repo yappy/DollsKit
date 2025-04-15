@@ -16,7 +16,7 @@ const NOTE_LENGTH_MAX_I64: i64 = NOTE_LENGTH_MAX as i64;
 
 /// このモジュールの関数をすべて登録する。
 ///
-/// [FunctionTable::basic_context] に [BasicContext::storage_dir] が
+/// [FunctionTable::basic_context] に [super::super::function::BasicContext] が
 /// 設定されている場合のみ登録される。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
     if func_table.basic_context().storage_dir.is_some() {

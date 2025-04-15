@@ -2,7 +2,11 @@
 //!
 //! 設定ファイルの説明は [sys::config::Config] にある。
 
-mod sys;
+// ドキュメントはライブラリの外部仕様の説明のためではなく、
+// private も含めた実装の解説のために生成する。
+#![allow(rustdoc::private_intra_doc_links)]
+
+pub mod sys;
 mod sysmod;
 
 use anyhow::Result;

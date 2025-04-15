@@ -828,7 +828,7 @@ impl OpenAi {
         Ok(resp)
     }
 
-    /// [post_json] の結果を文字列として返す。
+    /// [Self::post_json] の結果を文字列として返す。
     /// HTTP エラーも含めてエラーにする。
     async fn post_json_text(
         &mut self,
@@ -842,7 +842,7 @@ impl OpenAi {
         Ok(text)
     }
 
-    /// [post_json] の結果をバイナリとして返す。
+    /// [Self::post_json] の結果をバイナリとして返す。
     /// HTTP エラーも含めてエラーにする。
     async fn post_json_bin(
         &mut self,
