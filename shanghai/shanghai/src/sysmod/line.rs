@@ -300,7 +300,6 @@ impl Line {
 
     /// [Self::reply_multi] のシンプル版。
     /// 文字列が長すぎるならば分割して送信する。
-    #[allow(dead_code)]
     pub async fn reply(&self, reply_token: &str, text: &str) -> Result<ReplyResp> {
         let texts = [text];
 

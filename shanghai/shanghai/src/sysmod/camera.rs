@@ -425,7 +425,6 @@ pub struct TakePicOption {
     timeout_ms: u32,
 }
 
-#[allow(dead_code)]
 impl TakePicOption {
     pub fn new() -> Self {
         Self {
@@ -435,21 +434,25 @@ impl TakePicOption {
             timeout_ms: PIC_DEF_TO_MS,
         }
     }
+    #[allow(dead_code)]
     pub fn width(mut self, w: u32) -> Self {
         assert!((PIC_MIN_W..=PIC_MAX_W).contains(&w));
         self.w = w;
         self
     }
+    #[allow(dead_code)]
     pub fn height(mut self, h: u32) -> Self {
         assert!((PIC_MIN_H..=PIC_MAX_H).contains(&h));
         self.h = h;
         self
     }
+    #[allow(dead_code)]
     pub fn quality(mut self, q: u8) -> Self {
         assert!((PIC_MIN_Q..=PIC_MAX_Q).contains(&q));
         self.q = q;
         self
     }
+    #[allow(dead_code)]
     pub fn timeout_ms(mut self, timeout_ms: u32) -> Self {
         self.timeout_ms = timeout_ms;
         self
