@@ -1,0 +1,30 @@
+[workspace]
+resolver = "3"
+members = [
+    "rshanghai",
+]
+default-members = [
+    "rshanghai"
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["yappy"]
+edition = "2024"
+description = "House management system"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+panic = 'abort'
+
+[profile.release]
+panic = 'abort'
+
+[workspace.dependencies]
+# Error handling
+anyhow = "1.0.98"
+log = "0.4.27"
+
+# For test
+serial_test = "3.2.0"
