@@ -27,7 +27,7 @@ use std::{
 ///
 /// Note: 2023/10/29
 ///
-/// ```
+/// ```text
 /// Not found: JmaOfficeInfo { code: "014030", name: "十勝地方", en_name: "Tokachi", office_name: "帯広測候所" }
 /// Not found: JmaOfficeInfo { code: "460040", name: "奄美地方", en_name: "Amami", office_name: "名瀬測候所" }
 /// ```
