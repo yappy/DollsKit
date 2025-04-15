@@ -2677,48 +2677,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rshanghai"
-version = "0.1.0"
-dependencies = [
- "actix-multipart",
- "actix-web",
- "anyhow",
- "base64 0.22.1",
- "bitflags 2.9.0",
- "chrono",
- "daemonize",
- "ego-tree",
- "getopts",
- "hex-literal",
- "hmac",
- "image",
- "log",
- "percent-encoding",
- "poise",
- "rand 0.9.0",
- "reqwest 0.12.15",
- "rustc_version_runtime",
- "rusttype",
- "scraper",
- "serde",
- "serde_json",
- "serde_with",
- "serenity",
- "serial_test",
- "sha1",
- "sha2",
- "simplelog",
- "static_assertions",
- "tempfile",
- "thiserror 2.0.12",
- "tiktoken-rs",
- "time",
- "tokio",
- "tokio-stream",
- "toml",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3196,6 +3154,48 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "shanghai"
+version = "0.1.0"
+dependencies = [
+ "actix-multipart",
+ "actix-web",
+ "anyhow",
+ "base64 0.22.1",
+ "bitflags 2.9.0",
+ "chrono",
+ "daemonize",
+ "ego-tree",
+ "getopts",
+ "hex-literal",
+ "hmac",
+ "image",
+ "log",
+ "percent-encoding",
+ "poise",
+ "rand 0.9.0",
+ "reqwest 0.12.15",
+ "rustc_version_runtime",
+ "rusttype",
+ "scraper",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "serenity",
+ "serial_test",
+ "sha1",
+ "sha2",
+ "simplelog",
+ "static_assertions",
+ "tempfile",
+ "thiserror 2.0.12",
+ "tiktoken-rs",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "toml",
 ]
 
 [[package]]

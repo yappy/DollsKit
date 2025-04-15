@@ -1,10 +1,10 @@
 [workspace]
 resolver = "3"
 members = [
-    "rshanghai",
+    "shanghai",
 ]
 default-members = [
-    "rshanghai"
+    "shanghai"
 ]
 
 [workspace.package]
@@ -28,3 +28,4 @@ log = "0.4.27"
 
 # For test
 serial_test = "3.2.0"
+tempfile = "3.19.1"

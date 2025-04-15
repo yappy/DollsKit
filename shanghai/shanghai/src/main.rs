@@ -35,9 +35,9 @@ const FILE_KILL_SH: &str = "kill.sh";
 /// Cron 設定例の出力先。
 const FILE_CRON: &str = "cron.txt";
 /// デーモン化の際に指定する pid ファイルパス。
-const FILE_PID: &str = "rshanghai.pid";
+const FILE_PID: &str = "shanghai.pid";
 /// ログのファイル出力先。
-const FILE_LOG: &str = "rshanghai.log";
+const FILE_LOG: &str = "shanghai.log";
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
 ///

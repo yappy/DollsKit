@@ -1,19 +1,15 @@
 [package]
-name = "rshanghai"
-version = "0.1.0"
-edition = "2024"
-
-[profile.dev]
-panic = 'abort'
-
-[profile.release]
-panic = 'abort'
+name = "shanghai"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Error handling
-anyhow = "1.0.98"
+anyhow.workspace = true
 thiserror = "2.0.12"
 # Static assert
 static_assertions = "1.1.0"
@@ -25,7 +21,7 @@ bitflags = "2.9.0"
 # Command line parser
 getopts = "0.2.21"
 # Logging (abstract layer)
-log = "0.4.27"
+log.workspace = true
 # Logging (concrete layer)
 simplelog = "0.12.2"
 # Daemon util
@@ -76,11 +72,11 @@ tiktoken-rs = "0.6.0"
 
 [dev-dependencies]
 # Concurrent test control
-serial_test = "3.2.0"
+serial_test.workspace = true
+# Temporary file
+tempfile.workspace = true
 # Hex literal for test
 hex-literal = "1.0.0"
-# Temporary file
-tempfile = "3.19.1"
 
 [build-dependencies]
-anyhow = "1.0.98"
+anyhow.workspace = true
