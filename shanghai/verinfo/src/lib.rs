@@ -1,9 +1,9 @@
 //! バージョン情報。
 
-use rustc_version_runtime;
 use std::sync::LazyLock;
 
 #[rustfmt::skip] const GIT_BRANCH:    &str = env!("BUILD_GIT_BRANCH");
+#[allow(dead_code)]
 #[rustfmt::skip] const GIT_HASH:      &str = env!("BUILD_GIT_HASH");
 #[rustfmt::skip] const GIT_DESCRIBE:  &str = env!("BUILD_GIT_DESCRIBE");
 #[rustfmt::skip] const GIT_DATE:      &str = env!("BUILD_GIT_DATE");

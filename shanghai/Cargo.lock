@@ -3174,7 +3174,6 @@ dependencies = [
  "poise",
  "rand 0.9.0",
  "reqwest 0.12.15",
- "rustc_version_runtime",
  "scraper",
  "serde",
  "serde_json",
@@ -3190,6 +3189,7 @@ dependencies = [
  "tokio-stream",
  "toml",
  "utils",
+ "verinfo",
 ]
 
 [[package]]
@@ -3974,6 +3974,14 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+
+[[package]]
+name = "verinfo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rustc_version_runtime",
+]
 
 [[package]]
 name = "version-compare"

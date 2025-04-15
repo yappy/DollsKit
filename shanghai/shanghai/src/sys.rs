@@ -2,5 +2,3 @@
 
 pub mod config;
 pub mod taskserver;
-#[allow(dead_code)]
-pub mod version;

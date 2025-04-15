@@ -139,9 +139,7 @@ fn register_get_rate_limit<T: 'static>(func_table: &mut FunctionTable<T>) {
 
 /// バージョン情報取得。
 async fn get_version(_args: &FuncArgs) -> Result<String> {
-    use crate::sys::version;
-
-    Ok(version::version_info().to_string())
+    Ok(verinfo::version_info().to_string())
 }
 
 fn register_get_version<T: 'static>(func_table: &mut FunctionTable<T>) {

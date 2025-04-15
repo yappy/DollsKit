@@ -3,11 +3,11 @@
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
-use utils::netutil;
-use utils::weather::{self, ForecastRoot, OverviewForecast};
 use anyhow::{Context, Result, anyhow, bail};
 use reqwest::Client;
 use std::{collections::HashMap, time::Duration};
+use utils::netutil;
+use utils::weather::{self, ForecastRoot, OverviewForecast};
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {

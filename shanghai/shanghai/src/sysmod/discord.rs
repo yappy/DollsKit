@@ -2,8 +2,8 @@
 
 use super::SystemModule;
 
+use crate::sys::taskserver;
 use crate::sys::{config, taskserver::Control};
-use crate::sys::{taskserver, version};
 use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::chat_history::ChatHistory;
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
@@ -626,7 +626,7 @@ to show detailed command help.
 /// Show system information.
 #[poise::command(slash_command, prefix_command, category = "General")]
 async fn sysinfo(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
-    let ver_info: &str = version::version_info();
+    let ver_info: &str = verinfo::version_info();
     ctx.reply(ver_info).await?;
 
     Ok(())

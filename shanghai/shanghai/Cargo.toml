@@ -9,12 +9,11 @@ description.workspace = true
 
 [dependencies]
 utils.workspace = true
+verinfo.workspace = true
 
 # Error handling
 anyhow.workspace = true
 thiserror.workspace = true
-# Compiler version
-rustc_version_runtime = "0.3.0"
 # Bit flags
 bitflags = "2.9.0"
 # RNG
@@ -67,6 +66,3 @@ tiktoken-rs = "0.6.0"
 serial_test.workspace = true
 # Temporary file
 tempfile.workspace = true
-
-[build-dependencies]
-anyhow.workspace = true

@@ -1,6 +1,6 @@
 use super::HttpConfig;
 use super::{github, line_hook, upload};
-use crate::sys::{taskserver::Control, version};
+use crate::sys::taskserver::Control;
 use actix_web::{HttpResponse, Responder, http::header::ContentType, web};
 use chrono::Local;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -58,7 +58,7 @@ async fn index_get(state: web::Data<IndexState>, ctrl: web::Data<Control>) -> im
         .collect::<Vec<_>>()
         .join("\n");
 
-    let ver_str = version::version_info_vec()
+    let ver_str = verinfo::version_info_vec()
         .iter()
         .map(|s| format!("      <li>{s}</li>"))
         .collect::<Vec<_>>()

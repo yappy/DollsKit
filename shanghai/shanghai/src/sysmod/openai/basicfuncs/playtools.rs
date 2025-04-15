@@ -3,9 +3,9 @@
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_i64_opt,
 };
-use utils::playtools::dice;
 use anyhow::Result;
 use std::collections::HashMap;
+use utils::playtools::dice;
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
