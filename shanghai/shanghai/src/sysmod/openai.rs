@@ -1,6 +1,7 @@
 //! OpenAI API.
 
 mod basicfuncs;
+pub mod chat_history;
 pub mod function;
 
 use std::collections::HashMap;

@@ -3,6 +3,7 @@
 use super::SystemModule;
 use super::openai::{
     ParameterElement,
+    chat_history::ChatHistory,
     function::{self, BasicContext, FuncArgs, FunctionTable},
 };
 use crate::{
@@ -11,7 +12,6 @@ use crate::{
         taskserver::{self, Control},
     },
     sysmod::openai::{Function, Parameters, function::FUNCTION_TOKEN},
-    utils::chat_history::ChatHistory,
 };
 
 use anyhow::{Result, anyhow, bail, ensure};

@@ -5,10 +5,10 @@ use super::SystemModule;
 use crate::sys::{config, taskserver::Control};
 use crate::sys::{taskserver, version};
 use crate::sysmod::camera::{self, TakePicOption};
+use crate::sysmod::openai::chat_history::ChatHistory;
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
 use crate::sysmod::openai::{self, ChatMessage, OpenAi, OpenAiErrorKind};
 use crate::sysmod::openai::{Role, function::FunctionTable};
-use crate::utils::chat_history::ChatHistory;
 use crate::utils::playtools::dice::{self};
 
 use anyhow::{Result, anyhow, bail, ensure};
