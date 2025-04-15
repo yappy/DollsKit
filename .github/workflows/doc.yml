@@ -8,6 +8,7 @@ on:
       - main
 env:
   PROJ_ROOT: ./shanghai
+  DOC_OPTS: --no-deps --document-private-items
   REF: refs/heads/doc
 
 jobs:
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.REF }}
           fetch-depth: 0
@@ -33,7 +34,7 @@ jobs:
       - name: Build
         working-directory: ${{ env.PROJ_ROOT }}
         run: |
-          cargo doc --no-deps
+          cargo doc ${DOC_OPTS} --workspace
 
       - name: Remove Old Data and Move
         run: |
