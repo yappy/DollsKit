@@ -12,11 +12,7 @@ jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
+      - uses: actions/checkout@v4
 
       - name: Format
         working-directory: ${{ env.PROJ_ROOT }}
@@ -34,11 +30,7 @@ jobs:
   build-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
+      - uses: actions/checkout@v4
 
       - name: Build
         working-directory: ${{ env.PROJ_ROOT }}
