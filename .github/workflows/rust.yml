@@ -6,6 +6,7 @@ on: [push, pull_request]
 env:
   PROJ_ROOT: ./shanghai
   RUSTFLAGS: "-Dwarnings"
+  DOC_OPTS: --no-deps --document-private-items
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -20,6 +21,9 @@ jobs:
       - name: Clippy
         working-directory: ${{ env.PROJ_ROOT }}
         run: cargo clippy --all-targets --all-features
+      - name: Doc
+        working-directory: ${{ env.PROJ_ROOT }}
+        run: cargo doc ${DOC_OPTS}
       - name: Build
         working-directory: ${{ env.PROJ_ROOT }}
         run: cargo build
