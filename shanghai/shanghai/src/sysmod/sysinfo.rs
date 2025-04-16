@@ -12,6 +12,12 @@ pub struct SystemInfo {
 
 impl SystemModule for SystemInfo {}
 
+impl Default for SystemInfo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemInfo {
     pub fn new() -> Self {
         SystemInfo {
