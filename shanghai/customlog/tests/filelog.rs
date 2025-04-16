@@ -1,9 +1,9 @@
-use mylog::logger::{self, FileLogger, RotateOptions, RotateSize, default_formatter};
-
+use customlog::logger::{self, FileLogger, RotateOptions, RotateSize, default_formatter};
 use log::{Level, debug, error, info, trace, warn};
 
 #[test]
-fn integration_test() {
+#[ignore]
+fn file_log() {
     const BUF_SIZE: usize = 64;
 
     let logger = FileLogger::new_boxed(

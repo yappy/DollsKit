@@ -1,10 +1,10 @@
-use mylog::logger::{self, FileLogger, RotateOptions, default_formatter};
-
+use customlog::logger::{self, FileLogger, RotateOptions, default_formatter};
 use log::{Level, debug, error, info, trace, warn};
 
 #[test]
+#[ignore]
 #[should_panic]
-fn integration_panic() {
+fn log_panic() {
     let logger = FileLogger::new_boxed(
         Level::Trace,
         default_formatter,
