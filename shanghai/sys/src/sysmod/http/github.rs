@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use super::WebResult;
-use crate::sys::taskserver::{self, Control};
+use crate::taskserver::{self, Control};
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Result, anyhow};
 use log::{error, info};

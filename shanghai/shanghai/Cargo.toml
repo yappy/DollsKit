@@ -5,64 +5,22 @@ authors.workspace = true
 edition.workspace = true
 description.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-utils.workspace = true
+sys.workspace = true
 verinfo.workspace = true
 
-# Error handling
 anyhow.workspace = true
-thiserror.workspace = true
-# Bit flags
-bitflags = "2.9.0"
-# RNG
-rand.workspace = true
-
-# Command line parser
-getopts = "0.2.21"
 # Logging (abstract layer)
 log.workspace = true
+chrono.workspace = true
+
 # Logging (concrete layer)
 simplelog = "0.12.2"
-# Daemon util
-daemonize = "0.5.0"
 # Time for log
 time = "0.3.41"
-chrono.workspace = true
-# Json
-serde.workspace = true
-serde_json.workspace = true
-serde_with.workspace = true
-# TOML
-toml.workspace = true
-
-# Async
-tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
-tokio-stream = "0.1.17"
-
-# HTTP client
-reqwest.workspace = true
-# BASE64
-base64 = "0.22.1"
-
-image.workspace = true
-
-# HTTP server
-actix-web = "4.10.2"
-actix-multipart = "0.7.2"
-# Discord
-serenity = "0.12.4"
-poise = "0.6.1"
-
-# Scraping
-scraper = "0.23.1"
-ego-tree = "0.10.0"
-# ChatGPT tokenizer
-tiktoken-rs = "0.6.0"
+# Daemon util
+daemonize = "0.5.0"
+# Command line parser
+getopts = "0.2.21"
 
 [dev-dependencies]
-# Concurrent test control
-serial_test.workspace = true
-# Temporary file
-tempfile.workspace = true

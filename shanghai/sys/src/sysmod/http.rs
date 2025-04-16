@@ -10,8 +10,8 @@ mod priv_index;
 mod upload;
 
 use super::SystemModule;
-use crate::sys::taskserver;
-use crate::sys::{config, taskserver::Control};
+use crate::taskserver;
+use crate::{config, taskserver::Control};
 use actix_web::{HttpResponse, Responder, http::header::ContentType};
 use actix_web::{HttpResponseBuilder, web};
 use anyhow::{Result, anyhow};

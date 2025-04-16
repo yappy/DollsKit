@@ -4,8 +4,8 @@
 //! [CameraConfig::fake_camera] 設定でフェイクできる。
 
 use super::SystemModule;
-use crate::sys::taskserver::Control;
-use crate::sys::{config, taskserver};
+use crate::taskserver::Control;
+use crate::{config, taskserver};
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{Local, NaiveTime};
 use image::{ImageFormat, imageops::FilterType};

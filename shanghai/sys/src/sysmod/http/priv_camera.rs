@@ -1,12 +1,8 @@
 use super::{WebResult, error_resp};
-use crate::{
-    sys::taskserver::Control,
-    sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE},
-    sysmod::{
-        camera::{PicEntry, TakePicOption, create_thumbnail, take_a_pic},
-        twitter::LIMIT_PHOTO_COUNT,
-    },
-};
+use crate::sysmod::camera::{PicEntry, TakePicOption, create_thumbnail, take_a_pic};
+use crate::sysmod::twitter::LIMIT_PHOTO_COUNT;
+use crate::sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE};
+use crate::taskserver::Control;
 use actix_web::{HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Result, anyhow, bail};
 use log::error;

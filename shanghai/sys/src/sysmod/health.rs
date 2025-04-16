@@ -1,8 +1,8 @@
 //! 定期ヘルスチェック機能。
 
 use super::SystemModule;
-use crate::sys::taskserver::Control;
-use crate::sys::{config, taskserver};
+use crate::taskserver::Control;
+use crate::{config, taskserver};
 use anyhow::{Result, anyhow, ensure};
 use bitflags::bitflags;
 use chrono::{DateTime, Local, NaiveTime};

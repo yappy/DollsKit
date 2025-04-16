@@ -5,13 +5,11 @@
 use std::time::{Duration, Instant};
 
 use super::{ActixError, WebResult};
-use crate::{
-    sys::taskserver::Control,
-    sysmod::{
-        line::FunctionContext,
-        openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
-    },
+use crate::sysmod::{
+    line::FunctionContext,
+    openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
 };
+use crate::taskserver::Control;
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Result, anyhow, bail, ensure};
 use base64::{Engine, engine::general_purpose};

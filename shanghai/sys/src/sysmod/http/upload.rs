@@ -3,7 +3,7 @@
 //! ファイル名のルールは [[check_file_name]] を参照。
 
 use super::{ActixError, WebResult};
-use crate::sys::taskserver::Control;
+use crate::taskserver::Control;
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::{HttpResponse, Responder, http::header::ContentType, web};
 use anyhow::{Context, Result, anyhow, ensure};

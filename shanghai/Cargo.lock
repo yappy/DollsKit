@@ -3160,35 +3160,14 @@ dependencies = [
 name = "shanghai"
 version = "0.1.0"
 dependencies = [
- "actix-multipart",
- "actix-web",
  "anyhow",
- "base64 0.22.1",
- "bitflags 2.9.0",
  "chrono",
  "daemonize",
- "ego-tree",
  "getopts",
- "image",
  "log",
- "poise",
- "rand 0.9.0",
- "reqwest 0.12.15",
- "scraper",
- "serde",
- "serde_json",
- "serde_with",
- "serenity",
- "serial_test",
  "simplelog",
- "tempfile",
- "thiserror 2.0.12",
- "tiktoken-rs",
+ "sys",
  "time",
- "tokio",
- "tokio-stream",
- "toml",
- "utils",
  "verinfo",
 ]
 
@@ -3374,6 +3353,38 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.100",
+]
+
+[[package]]
+name = "sys"
+version = "0.1.0"
+dependencies = [
+ "actix-multipart",
+ "actix-web",
+ "anyhow",
+ "base64 0.22.1",
+ "bitflags 2.9.0",
+ "chrono",
+ "ego-tree",
+ "image",
+ "log",
+ "poise",
+ "rand 0.9.0",
+ "reqwest 0.12.15",
+ "scraper",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "serenity",
+ "serial_test",
+ "tempfile",
+ "thiserror 2.0.12",
+ "tiktoken-rs",
+ "tokio",
+ "tokio-stream",
+ "toml",
+ "utils",
+ "verinfo",
 ]
 
 [[package]]

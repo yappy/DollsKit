@@ -6,13 +6,9 @@ use super::openai::{
     chat_history::ChatHistory,
     function::{self, BasicContext, FuncArgs, FunctionTable},
 };
-use crate::{
-    sys::{
-        config,
-        taskserver::{self, Control},
-    },
-    sysmod::openai::{Function, Parameters, function::FUNCTION_TOKEN},
-};
+use crate::config;
+use crate::sysmod::openai::{Function, Parameters, function::FUNCTION_TOKEN};
+use crate::taskserver::{self, Control};
 
 use anyhow::{Result, anyhow, bail, ensure};
 use log::info;

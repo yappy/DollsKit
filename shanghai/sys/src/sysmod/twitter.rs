@@ -2,9 +2,9 @@
 
 use super::SystemModule;
 use super::openai::ChatMessage;
-use crate::sys::taskserver::Control;
-use crate::sys::{config, taskserver};
 use crate::sysmod::openai::Role;
+use crate::taskserver::Control;
+use crate::{config, taskserver};
 use utils::graphics::FontRenderer;
 use utils::netutil;
 

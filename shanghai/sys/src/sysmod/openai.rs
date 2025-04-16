@@ -9,8 +9,8 @@ use std::sync::LazyLock;
 use std::time::{Duration, Instant, SystemTime};
 
 use super::SystemModule;
-use crate::sys::config;
-use crate::sys::taskserver::Control;
+use crate::config;
+use crate::taskserver::Control;
 use utils::netutil::{self, HttpStatusError};
 
 use anyhow::{Context, ensure};

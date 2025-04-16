@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["shanghai", "verinfo", "utils"]
-default-members = ["shanghai", "verinfo", "utils"]
+members = ["shanghai", "sys", "verinfo", "utils", ]
+default-members = ["shanghai", "sys", "verinfo", "utils"]
 
 [workspace.package]
 version = "0.1.0"
@@ -19,6 +19,7 @@ panic = 'abort'
 
 [workspace.dependencies]
 # My crates
+sys = { path = "./sys" }
 verinfo = { path = "./verinfo" }
 utils = { path = "./utils" }
 
