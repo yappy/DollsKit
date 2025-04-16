@@ -17,7 +17,10 @@
   docs/doc/ は GitHub Ations から生成される。
   .github/workflows/doc.yml 参照
 -->
-[ドキュメント](./doc/rshanghai/index.html)
+[ドキュメント](./doc/shanghai/index.html)
+[ドキュメント - sys](./doc/sys/index.html)
+[ドキュメント - verinfo](./doc/verinfo/index.html)
+[ドキュメント - utils](./doc/utils/index.html)
 
 ### タスクサーバ
 

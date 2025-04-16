@@ -23,7 +23,7 @@ git clone <this_repository>
 環境の整った人形、または PC の中で
 
 ```sh
-cd rshanghai
+cd shanghai
 cargo build --release
 # or
 cargo b -r
@@ -117,7 +117,7 @@ crontab < cron.txt
 
 ドキュメントの sys::config::Config にあります。
 
-<https://yappy.github.io/DollsKit/doc/rshanghai/sys/config/struct.Config.html>
+<https://yappy.github.io/DollsKit/doc/sys/config/struct.Config.html>
 
 ## テストのビルドと実行
 
@@ -128,7 +128,7 @@ cargo test
 ## ドキュメントのビルド
 
 ```sh
-cargo doc --no-deps
+cargo doc --no-deps --document-private-items
 ```
 
 ## CI
