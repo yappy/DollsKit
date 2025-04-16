@@ -52,4 +52,4 @@ jobs:
 
       - name: Git Push
         run: |
-          git push origin HEAD:${{ env.ref }}
+          git push origin HEAD:${{ env.REF }}
