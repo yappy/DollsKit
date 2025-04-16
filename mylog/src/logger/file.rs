@@ -1,6 +1,6 @@
 use super::{FormatArgs, translate_args};
 
-use chrono::{Datelike, Local};
+use chrono::{DateTime, Datelike, Local};
 use core::panic;
 use log::{Level, Log, Metadata, Record};
 use std::{
@@ -53,6 +53,7 @@ struct FileLoggerState {
     file: File,
     len: usize,
     write_buf: String,
+    last_update: Option<(i64, u32, u32, u32)>,
 }
 
 impl FileLogger {
@@ -75,6 +76,7 @@ impl FileLogger {
             file,
             len,
             write_buf: String::with_capacity(buf_size),
+            last_update: None,
         };
 
         let file_path = file_path.as_ref().canonicalize()?;
@@ -94,7 +96,7 @@ impl FileLogger {
     }
 
     /// Flush if needed, then write to write_buf
-    fn buffered_write_entry(&self, log_entry_str: &str) {
+    fn buffered_write_entry(&self, ts: &DateTime<Local>, log_entry_str: &str) {
         // lock
         let mut state = self.state.lock().unwrap();
 
@@ -107,9 +109,15 @@ impl FileLogger {
                 rotate = true;
             }
         }
-        match self.rotate_opts.time {
-            RotateTime::Year | RotateTime::Month | RotateTime::Day | RotateTime::Second => todo!(),
-            _ => {}
+        if let Some((lsec, ly, lm, ld)) = state.last_update {
+            let (sec, y, m, d) = to_ymd(ts);
+            rotate = match self.rotate_opts.time {
+                RotateTime::Year => y != ly,
+                RotateTime::Month => m != lm,
+                RotateTime::Day => d != ld,
+                RotateTime::Second => sec > lsec,
+                _ => false,
+            }
         }
         if rotate {
             self.flush_buf(&mut state);
@@ -214,10 +222,8 @@ fn floor_char_boundary(s: &str, mut index: usize) -> usize {
     }
 }
 
-fn now_ymd() -> (u32, u32, u32, i64) {
-    let now = Local::now();
-
-    (now.year() as u32, now.month(), now.day(), now.timestamp())
+fn to_ymd(ts: &DateTime<Local>) -> (i64, u32, u32, u32) {
+    (ts.timestamp(), ts.year() as u32, ts.month(), ts.day())
 }
 
 impl Log for FileLogger {
@@ -234,7 +240,7 @@ impl Log for FileLogger {
         let args = translate_args(record, timestamp);
         let mut output = self.formatter.as_ref()(args);
         output.push('\n');
-        self.buffered_write_entry(&output);
+        self.buffered_write_entry(&timestamp, &output);
     }
 
     fn flush(&self) {
