@@ -101,6 +101,11 @@ impl ChatHistory {
         self.history.len()
     }
 
+    /// 履歴のが空かどうかを返す。
+    pub fn is_empty(&self) -> bool {
+        self.history.len() == 0
+    }
+
     /// トークン制限総量を返す。
     pub fn get_total_limit(&self) -> usize {
         self.total_token_limit
