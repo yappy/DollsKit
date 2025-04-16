@@ -7,16 +7,18 @@ on:
     branches:
       - main
 env:
-  ref: refs/heads/doc
+  PROJ_ROOT: ./shanghai
+  DOC_OPTS: --no-deps --document-private-items
+  REF: refs/heads/doc
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ env.ref }}
+          ref: ${{ env.REF }}
           fetch-depth: 0
 
       - name: Git Setup
@@ -30,14 +32,14 @@ jobs:
           git merge --no-ff ${GITHUB_SHA}
 
       - name: Build
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: |
-          cargo doc --no-deps
+          cargo doc ${DOC_OPTS} --workspace
 
       - name: Remove Old Data and Move
         run: |
           git rm --ignore-unmatch -r ./docs/doc
-          mv ./rshanghai/target/doc ./docs/
+          mv ${{ env.PROJ_ROOT }}/target/doc ./docs/
 
       - name: Git Add
         run: |
