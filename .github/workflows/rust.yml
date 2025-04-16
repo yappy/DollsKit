@@ -4,41 +4,38 @@ on: [push, pull_request]
 
 # Make sure CI fails on all warnings, including Clippy lints
 env:
+  PROJ_ROOT: ./shanghai
   RUSTFLAGS: "-Dwarnings"
+  DOC_OPTS: --no-deps --document-private-items
   CARGO_TERM_COLOR: always
 
 jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
+      - uses: actions/checkout@v4
 
       - name: Format
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: cargo fmt -- --check
       - name: Clippy
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: cargo clippy --all-targets --all-features
+      - name: Doc
+        working-directory: ${{ env.PROJ_ROOT }}
+        run: cargo doc ${DOC_OPTS}
       - name: Build
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: cargo build
       - name: Test
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: cargo test
 
   build-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            override: true
+      - uses: actions/checkout@v4
 
       - name: Build
-        working-directory: ./rshanghai
+        working-directory: ${{ env.PROJ_ROOT }}
         run: cargo build --release
