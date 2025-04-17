@@ -1,5 +1,5 @@
-use customlog::logger::{self, FileLogger, RotateOptions, default_formatter};
-use log::{Level, debug, error, info, trace, warn};
+use customlog::{FileLogger, RotateOptions, default_formatter};
+use log::{Level, LevelFilter, debug, error, info, trace, warn};
 
 #[test]
 #[ignore]
@@ -15,7 +15,7 @@ fn log_panic() {
         },
     )
     .unwrap();
-    let _flush = logger::init(vec![logger], Level::Trace);
+    let _flush = customlog::init(vec![logger], LevelFilter::Trace);
 
     trace!("This is a panic test.");
     trace!("This is a test.");

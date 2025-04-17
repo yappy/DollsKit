@@ -1,5 +1,5 @@
-use customlog::logger::{self, FileLogger, RotateOptions, RotateSize, default_formatter};
-use log::{Level, debug, error, info, trace, warn};
+use customlog::{FileLogger, RotateOptions, RotateSize, default_formatter};
+use log::{Level, LevelFilter, debug, error, info, trace, warn};
 
 #[test]
 #[ignore]
@@ -18,7 +18,7 @@ fn file_log() {
         },
     )
     .unwrap();
-    let _flush = logger::init(vec![logger], Level::Trace);
+    let _flush = customlog::init(vec![logger], LevelFilter::Trace);
 
     trace!("This is a test.");
     debug!("This is a test.");

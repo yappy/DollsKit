@@ -7,15 +7,12 @@
 #![allow(rustdoc::private_intra_doc_links)]
 
 use anyhow::Result;
+use customlog::{ConsoleLogger, FileLogger, FlushGuard, RotateOptions, RotateSize};
 use daemonize::Daemonize;
 use getopts::Options;
-use log::{LevelFilter, error, info};
-use simplelog::format_description;
-use simplelog::{
-    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
-};
+use log::{LevelFilter, Log, error, info};
 use std::env;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::os::unix::prelude::*;
 use sys::sysmod::SystemModules;
@@ -38,6 +35,9 @@ const FILE_CRON: &str = "cron.txt";
 const FILE_PID: &str = "shanghai.pid";
 /// ログのファイル出力先。
 const FILE_LOG: &str = "shanghai.log";
+
+const LOG_ROTATE_SIZE: usize = 1024 * 1024;
+const LOG_BUF_SIZE: usize = 64 * 1024;
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
 ///
@@ -84,36 +84,32 @@ fn daemon() {
 /// ファイルへは Info 以上、stdout へは Trace 以上のログが出力される。
 ///
 /// * `is_daemon` - デーモンかどうか。
-fn init_log(is_daemon: bool) {
-    let config = ConfigBuilder::new()
-        .add_filter_allow_str(CRATE_NAME)
-        .set_time_offset_to_local()
-        .unwrap()
-        .set_time_format_custom(format_description!(
-            "[year]-[month]-[day] [hour]:[minute]:[second]"
-        ))
-        .build();
-    let file = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(FILE_LOG)
-        .unwrap();
-
+fn init_log(is_daemon: bool) -> FlushGuard {
     // filter = Off, Error, Warn, Info, Debug, Trace
-    let loggers: Vec<Box<dyn SharedLogger>> = if is_daemon {
-        vec![WriteLogger::new(LevelFilter::Info, config, file)]
-    } else {
-        vec![
-            TermLogger::new(
-                LevelFilter::Trace,
-                config.clone(),
-                TerminalMode::Stdout,
-                ColorChoice::Never,
-            ),
-            WriteLogger::new(LevelFilter::Info, config, file),
-        ]
+    let rotate_opts = RotateOptions {
+        size: RotateSize::Enabled(LOG_ROTATE_SIZE),
+        ..Default::default()
     };
-    CombinedLogger::init(loggers).unwrap();
+    let file_log = FileLogger::new_boxed(
+        LevelFilter::Info,
+        customlog::default_formatter,
+        FILE_LOG,
+        LOG_BUF_SIZE,
+        rotate_opts,
+    )
+    .expect("Log file open failed");
+
+    let loggers: Vec<Box<dyn Log>> = if is_daemon {
+        vec![file_log]
+    } else {
+        let console_log = ConsoleLogger::new_boxed(
+            customlog::Console::Stdout,
+            LevelFilter::Trace,
+            customlog::default_formatter,
+        );
+        vec![console_log, file_log]
+    };
+    customlog::init(loggers, LevelFilter::Trace)
 }
 
 /// 起動時に一度だけブートメッセージをツイートするタスク。
@@ -272,16 +268,18 @@ pub fn main() -> Result<()> {
         std::process::exit(0);
     }
 
-    if matches.opt_present("d") {
+    let _flush = if matches.opt_present("d") {
         daemon();
-        init_log(true);
+        init_log(true)
     } else {
-        init_log(false);
-    }
+        init_log(false)
+    };
 
     system_main().map_err(|e| {
         error!("Error in system_main");
         error!("{:#}", e);
         e
     })
+
+    // drop(_flush)
 }

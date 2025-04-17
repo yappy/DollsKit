@@ -2,7 +2,7 @@ use super::{FormatArgs, translate_args};
 
 use chrono::{DateTime, Datelike, Local};
 use core::panic;
-use log::{Level, Log, Metadata, Record};
+use log::{LevelFilter, Log, Metadata, Record};
 use std::{
     fs::File,
     io::Write,
@@ -36,7 +36,7 @@ pub enum RotateTime {
 }
 
 pub struct FileLogger {
-    level: Level,
+    level: LevelFilter,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
     /// Absolute path to the main log file
     file_path: PathBuf,
@@ -58,7 +58,7 @@ struct FileLoggerState {
 
 impl FileLogger {
     pub fn new_boxed<F>(
-        level: Level,
+        level: LevelFilter,
         formatter: F,
         file_path: impl AsRef<Path>,
         buf_size: usize,

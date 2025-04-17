@@ -1,5 +1,5 @@
 use chrono::Local;
-use log::{Level, Log, Metadata, Record};
+use log::{Level, LevelFilter, Log, Metadata, Record};
 
 use super::{FormatArgs, translate_args};
 
@@ -10,14 +10,14 @@ pub enum Console {
 }
 
 pub struct ConsoleLogger {
-    level: Level,
+    level: LevelFilter,
     console: Console,
     color: bool,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
 }
 
 impl ConsoleLogger {
-    pub fn new_boxed<F>(console: Console, level: Level, formatter: F) -> Box<dyn Log>
+    pub fn new_boxed<F>(console: Console, level: LevelFilter, formatter: F) -> Box<dyn Log>
     where
         F: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {
