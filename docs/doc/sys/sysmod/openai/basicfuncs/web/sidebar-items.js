@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["compact_html","get_weather_areas","get_weather_report","register_all","register_get_weather_areas","register_get_weather_report","register_request_url","request_url"]};
+window.SIDEBAR_ITEMS = {"fn":["get_weather_areas","get_weather_report","register_all","register_get_weather_areas","register_get_weather_report"]};
