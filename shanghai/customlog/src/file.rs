@@ -37,6 +37,7 @@ pub enum RotateTime {
 
 pub struct FileLogger {
     level: LevelFilter,
+    target_filter: Box<dyn Fn(&str) -> bool + Send + Sync>,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
     /// Absolute path to the main log file
     file_path: PathBuf,
@@ -57,15 +58,17 @@ struct FileLoggerState {
 }
 
 impl FileLogger {
-    pub fn new_boxed<F>(
+    pub fn new_boxed<F1, F2>(
         level: LevelFilter,
-        formatter: F,
+        target_filter: F1,
+        formatter: F2,
         file_path: impl AsRef<Path>,
         buf_size: usize,
         rotate_opts: RotateOptions,
     ) -> Result<Box<dyn Log>, anyhow::Error>
     where
-        F: Fn(FormatArgs) -> String + Send + Sync + 'static,
+        F1: Fn(&str) -> bool + Send + Sync + 'static,
+        F2: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {
         if buf_size < 8 {
             panic!("buf_size < 8");
@@ -85,6 +88,7 @@ impl FileLogger {
 
         Ok(Box::new(Self {
             level,
+            target_filter: Box::new(target_filter),
             formatter: Box::new(formatter),
             file_path,
             dir_path,
@@ -228,7 +232,7 @@ fn to_ymd(ts: &DateTime<Local>) -> (i64, u32, u32, u32) {
 
 impl Log for FileLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level
+        metadata.level() <= self.level && (self.target_filter)(metadata.target())
     }
 
     fn log(&self, record: &Record) {

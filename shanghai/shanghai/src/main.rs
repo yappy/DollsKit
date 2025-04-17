@@ -18,9 +18,6 @@ use std::os::unix::prelude::*;
 use sys::sysmod::SystemModules;
 use sys::taskserver::{Control, RunResult, TaskServer};
 
-/// ログフィルタのためのクレート名。[module_path!] による。
-const CRATE_NAME: &str = module_path!();
-
 /// デーモン化の際に指定する stdout のリダイレクト先。
 const FILE_STDOUT: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
@@ -36,6 +33,7 @@ const FILE_PID: &str = "shanghai.pid";
 /// ログのファイル出力先。
 const FILE_LOG: &str = "shanghai.log";
 
+const LOG_FILTER: &[&str] = &[module_path!(), "sys"];
 const LOG_ROTATE_SIZE: usize = 1024 * 1024;
 const LOG_BUF_SIZE: usize = 64 * 1024;
 
@@ -75,6 +73,10 @@ fn daemon() {
     }
 }
 
+fn log_target_filter(target: &str) -> bool {
+    LOG_FILTER.iter().any(|filter| target.starts_with(filter))
+}
+
 /// ロギングシステムを有効化する。
 ///
 /// デーモンならファイルへの書き出しのみ、
@@ -92,6 +94,7 @@ fn init_log(is_daemon: bool) -> FlushGuard {
     };
     let file_log = FileLogger::new_boxed(
         LevelFilter::Info,
+        log_target_filter,
         customlog::default_formatter,
         FILE_LOG,
         LOG_BUF_SIZE,
@@ -105,6 +108,7 @@ fn init_log(is_daemon: bool) -> FlushGuard {
         let console_log = ConsoleLogger::new_boxed(
             customlog::Console::Stdout,
             LevelFilter::Trace,
+            log_target_filter,
             customlog::default_formatter,
         );
         vec![console_log, file_log]

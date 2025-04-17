@@ -1,12 +1,13 @@
-use customlog::{FileLogger, RotateOptions, default_formatter};
-use log::{Level, LevelFilter, debug, error, info, trace, warn};
+use customlog::{FileLogger, RotateOptions, default_filter, default_formatter};
+use log::{LevelFilter, debug, error, info, trace, warn};
 
 #[test]
 #[ignore]
 #[should_panic]
 fn log_panic() {
     let logger = FileLogger::new_boxed(
-        Level::Trace,
+        LevelFilter::Trace,
+        default_filter,
         default_formatter,
         "panic.log",
         64,

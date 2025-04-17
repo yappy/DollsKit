@@ -13,19 +13,27 @@ pub struct ConsoleLogger {
     level: LevelFilter,
     console: Console,
     color: bool,
+    target_filter: Box<dyn Fn(&str) -> bool + Send + Sync>,
     formatter: Box<dyn Fn(FormatArgs) -> String + Send + Sync>,
 }
 
 impl ConsoleLogger {
-    pub fn new_boxed<F>(console: Console, level: LevelFilter, formatter: F) -> Box<dyn Log>
+    pub fn new_boxed<F1, F2>(
+        console: Console,
+        level: LevelFilter,
+        target_filter: F1,
+        formatter: F2,
+    ) -> Box<dyn Log>
     where
-        F: Fn(FormatArgs) -> String + Send + Sync + 'static,
+        F1: Fn(&str) -> bool + Send + Sync + 'static,
+        F2: Fn(FormatArgs) -> String + Send + Sync + 'static,
     {
         let color = is_console(console);
         Box::new(Self {
             level,
             console,
             color,
+            target_filter: Box::new(target_filter),
             formatter: Box::new(formatter),
         })
     }
@@ -33,7 +41,7 @@ impl ConsoleLogger {
 
 impl Log for ConsoleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level
+        metadata.level() <= self.level && (self.target_filter)(metadata.target())
     }
 
     fn log(&self, record: &Record) {

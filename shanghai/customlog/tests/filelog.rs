@@ -1,5 +1,5 @@
-use customlog::{FileLogger, RotateOptions, RotateSize, default_formatter};
-use log::{Level, LevelFilter, debug, error, info, trace, warn};
+use customlog::{FileLogger, RotateOptions, RotateSize, default_filter, default_formatter};
+use log::{LevelFilter, debug, error, info, trace, warn};
 
 #[test]
 #[ignore]
@@ -7,7 +7,8 @@ fn file_log() {
     const BUF_SIZE: usize = 64;
 
     let logger = FileLogger::new_boxed(
-        Level::Trace,
+        LevelFilter::Trace,
+        default_filter,
         default_formatter,
         "testlog.log",
         BUF_SIZE,

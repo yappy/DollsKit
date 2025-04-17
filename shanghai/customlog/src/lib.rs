@@ -28,6 +28,7 @@ pub fn init_for_test(level: LevelFilter) -> FlushGuard {
     let loggers = vec![ConsoleLogger::new_boxed(
         Console::Stdout,
         level,
+        default_filter,
         default_formatter,
     )];
     if let Ok(flush) = init_raw(loggers, level) {
@@ -100,6 +101,10 @@ pub fn default_formatter(args: FormatArgs) -> String {
             args.body
         ),
     }
+}
+
+pub fn default_filter(_target: &str) -> bool {
+    true
 }
 
 fn translate_args<'a>(record: &Record<'a>, timestamp: DateTime<Local>) -> FormatArgs<'a> {
