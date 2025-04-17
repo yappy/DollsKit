@@ -1,5 +1,6 @@
 //! 計算関連。
 
+use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
@@ -28,7 +29,7 @@ fn register_calculate<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "formula".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some("Available only ( ) + - * / %".to_string()),
             ..Default::default()
         },
@@ -39,10 +40,11 @@ fn register_calculate<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "calculate".to_string(),
             description: Some("Calculate formula.".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["formula".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(calculate(args)),
     );

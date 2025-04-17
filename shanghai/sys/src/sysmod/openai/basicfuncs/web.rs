@@ -1,9 +1,10 @@
 //! Web アクセス関連。
 
+use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{
     FuncArgs, Function, FunctionTable, ParameterElement, Parameters, get_arg_str,
 };
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use reqwest::Client;
 use std::{collections::HashMap, time::Duration};
 use utils::netutil;
@@ -11,104 +12,8 @@ use utils::weather::{self, ForecastRoot, OverviewForecast};
 
 /// このモジュールの関数をすべて登録する。
 pub fn register_all<T: 'static>(func_table: &mut FunctionTable<T>) {
-    register_request_url(func_table);
     register_get_weather_areas(func_table);
     register_get_weather_report(func_table);
-}
-
-/// HTML から無駄な文字を削除してデータ量を減らす。
-fn compact_html(src: &str) -> Result<String> {
-    use ego_tree::NodeRef;
-    use scraper::Node;
-
-    fn visit(result: &mut Vec<String>, cur: &NodeRef<Node>) {
-        static IGNORE_LIST: &[&str] = &["script", "style", "noscript"];
-
-        for child in cur.children() {
-            match child.value() {
-                Node::Element(elem) => {
-                    let tagname = elem.name().to_ascii_lowercase();
-                    if !IGNORE_LIST.iter().any(|&x| x == tagname) {
-                        visit(result, &child);
-                    }
-                }
-                Node::Text(text) => {
-                    for word in text.split_whitespace() {
-                        result.push(word.to_string());
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
-    let html = scraper::Html::parse_document(src);
-    let root = html.root_element();
-    let mut buf = vec![];
-    visit(&mut buf, &root);
-
-    Ok(buf.join(" "))
-}
-
-/// URL に対して GET リクエストを行い結果を文字列で返す。
-async fn request_url(args: &FuncArgs) -> Result<String> {
-    const TIMEOUT: Duration = Duration::from_secs(10);
-    const SIZE_MAX: usize = 8 * 1024;
-    let url = get_arg_str(args, "url")?;
-
-    let client = Client::builder().timeout(TIMEOUT).build()?;
-    let resp = client.get(url).send().await?;
-
-    let status = resp.status();
-    if status.is_success() {
-        let text = resp.text().await?;
-
-        let text = compact_html(&text)?;
-        // SIZE_MAX バイトまで抜き出す
-        if text.len() > SIZE_MAX {
-            let mut end = 0;
-            for (i, _c) in text.char_indices() {
-                if i < SIZE_MAX {
-                    end = i;
-                }
-            }
-            Ok(text[0..end].to_string())
-        } else {
-            Ok(text.to_string())
-        }
-    } else {
-        bail!(
-            "{}, {}",
-            status.as_str(),
-            status.canonical_reason().unwrap_or("")
-        );
-    }
-}
-
-fn register_request_url<T: 'static>(func_table: &mut FunctionTable<T>) {
-    let mut properties = HashMap::new();
-    properties.insert(
-        "url".to_string(),
-        ParameterElement {
-            type_: "string".to_string(),
-            description: Some("URL to access".to_string()),
-            enum_: None,
-            ..Default::default()
-        },
-    );
-
-    func_table.register_function(
-        Function {
-            name: "request_url".to_string(),
-            description: Some("Request HTTP GET".to_string()),
-            parameters: Parameters {
-                type_: "object".to_string(),
-                properties,
-                required: vec!["url".to_string()],
-            },
-        },
-        |_, _, args| Box::pin(request_url(args)),
-    );
 }
 
 /// 気象情報地域のリストを取得する。
@@ -127,10 +32,11 @@ fn register_get_weather_areas<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_weather_areas".to_string(),
             description: Some("Get area list for get_weather_report".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties: Default::default(),
                 required: Default::default(),
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_weather_areas(args)),
     );
@@ -172,7 +78,7 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
     properties.insert(
         "area".to_string(),
         ParameterElement {
-            type_: "string".to_string(),
+            type_: vec![ParameterType::String],
             description: Some(
                 "Area name that list can be obtained by get_weather_areas".to_string(),
             ),
@@ -185,10 +91,11 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
             name: "get_weather_report".to_string(),
             description: Some("Get whether report data".to_string()),
             parameters: Parameters {
-                type_: "object".to_string(),
                 properties,
                 required: vec!["area".to_string()],
+                ..Default::default()
             },
+            ..Default::default()
         },
         |_, _, args| Box::pin(get_weather_report(args)),
     );
@@ -198,41 +105,6 @@ fn register_get_weather_report<T: 'static>(func_table: &mut FunctionTable<T>) {
 mod tests {
     use super::*;
     use serde_json::Value;
-
-    #[tokio::test]
-    #[ignore]
-    // cargo test parse_real_html -- --ignored --nocapture
-    async fn parse_real_html() -> Result<()> {
-        let mut args = FuncArgs::new();
-        args.insert(
-            "url".into(),
-            Value::String("https://www.google.co.jp/".into()),
-        );
-
-        let text = request_url(&args).await?;
-        println!("{}", text);
-
-        Ok(())
-    }
-
-    #[test]
-    fn parse_html() -> Result<()> {
-        const SRC1: &str = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/res/test/scraping/top.htm"
-        ));
-        let res = compact_html(SRC1)?;
-        println!("{res}");
-
-        const SRC2: &str = include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/res/test/scraping/ikkyu.html"
-        ));
-        let res = compact_html(SRC2)?;
-        println!("{res}");
-
-        Ok(())
-    }
 
     #[tokio::test]
     #[ignore]

@@ -1,7 +1,8 @@
 //! OpenAI API の会話コンテキストのトークン数制限付き管理。
 
-use crate::sysmod::openai::ChatMessage;
+use crate::sysmod::openai::{InputItem, Role, WebSearchCall};
 
+use anyhow::{Result, ensure};
 use std::collections::VecDeque;
 use tiktoken_rs::CoreBPE;
 
@@ -22,9 +23,10 @@ pub struct ChatHistory {
 
 /// 履歴データ。
 struct Element {
-    /// メッセージ。
-    msg: ChatMessage,
-    /// [Self::msg] のトークン数。
+    /// メッセージのリスト。
+    /// 削除は [Element] 単位で行われる。
+    items: Vec<InputItem>,
+    /// [Self::msg] の総トークン数。
     token_count: usize,
 }
 
@@ -53,36 +55,89 @@ impl ChatHistory {
         self.token_limit -= token_count;
     }
 
-    /// ヒストリの最後にエントリを追加する。
-    ///
-    /// 合計サイズを超えた場合、先頭から削除する。
-    /// 1エントリでサイズを超えてしまっている場合、超えないように内容をトリムする。
-    pub fn push(&mut self, mut msg: ChatMessage) {
-        let count = if let Some(text) = &msg.content {
-            let tokens = self.tokenize(text);
-            let count = tokens.len();
-            if count > self.token_limit {
-                let trimmed = self.decode(&tokens[0..self.token_limit]);
-                msg.content = Some(trimmed);
+    pub fn push_message(&mut self, role: Role, content: &str) -> Result<()> {
+        let tokens = self.tokenize(content);
+        let token_count = tokens.len();
 
-                self.token_limit
-            } else {
-                count
-            }
-        } else {
-            0
+        let item = InputItem::Message {
+            role,
+            content: content.to_string(),
         };
 
-        self.history.push_back(Element {
-            msg,
-            token_count: count,
-        });
-        self.token_count += count;
+        self.push(vec![item], token_count)
+    }
+
+    pub fn push_message_tool(
+        &mut self,
+        msgs: impl Iterator<Item = (Role, String)>,
+        web_search_ids: impl Iterator<Item = WebSearchCall>,
+    ) -> Result<()> {
+        let mut items = vec![];
+        let mut token_count = 0;
+
+        for (role, content) in msgs {
+            let tokens = self.tokenize(&content);
+            let item = InputItem::Message {
+                role,
+                content: content.to_string(),
+            };
+            items.push(item);
+            token_count += tokens.len();
+        }
+        for wsc in web_search_ids {
+            // TODO: token
+            let item = InputItem::WebSearchCall(wsc);
+            items.push(item);
+        }
+
+        // 空なら追加せず成功とする
+        if !items.is_empty() {
+            self.push(items, token_count)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn push_function(
+        &mut self,
+        call_id: &str,
+        name: &str,
+        arguments: &str,
+        output: &str,
+    ) -> Result<()> {
+        let item1 = InputItem::FunctionCall {
+            call_id: call_id.to_string(),
+            name: name.to_string(),
+            arguments: arguments.to_string(),
+        };
+        let item2 = InputItem::FunctionCallOutput {
+            call_id: call_id.to_string(),
+            output: output.to_string(),
+        };
+        // call_id も含めるべきかは不明。
+        let token_count = self.tokenize(name).len()
+            + self.tokenize(arguments).len()
+            + self.tokenize(output).len();
+
+        self.push(vec![item1, item2], token_count)
+    }
+
+    /// ヒストリの最後にエントリを追加する。
+    ///
+    /// 合計サイズを超えた場合、超えなくなるように先頭から削除する。
+    /// このエントリだけでサイズを超えてしまっている場合、エラー。
+    fn push(&mut self, items: Vec<InputItem>, token_count: usize) -> Result<()> {
+        ensure!(token_count <= self.token_limit, "Too long message");
+
+        self.history.push_back(Element { items, token_count });
+        self.token_count += token_count;
 
         while self.token_count > self.token_limit {
             let front = self.history.pop_front().unwrap();
             self.token_count -= front.token_count;
         }
+
+        Ok(())
     }
 
     /// 全履歴をクリアする。
@@ -92,8 +147,8 @@ impl ChatHistory {
     }
 
     /// 全履歴を走査するイテレータを返す。
-    pub fn iter(&self) -> impl Iterator<Item = &ChatMessage> {
-        self.history.iter().map(|elem| &elem.msg)
+    pub fn iter(&self) -> impl Iterator<Item = &InputItem> {
+        self.history.iter().flat_map(|e| e.items.iter())
     }
 
     /// 履歴の数を返す。
@@ -125,11 +180,6 @@ impl ChatHistory {
     pub fn token_count(&self, text: &str) -> usize {
         self.tokenize(text).len()
     }
-
-    /// トークン列から文字列に復元する。
-    fn decode(&self, tokens: &[u32]) -> String {
-        self.core.decode(tokens.to_vec()).unwrap()
-    }
 }
 
 #[cfg(test)]
@@ -138,8 +188,8 @@ mod tests {
 
     #[test]
     fn token() {
-        let hist = ChatHistory::new("gpt-4");
-        let count = hist.token_count("This is a sentence   with spaces");
+        let hist = ChatHistory::new("gpt-4o");
+        let count = hist.token_count("こんにちは、管理人形さん。");
 
         // https://platform.openai.com/tokenizer
         assert_eq!(7, count);

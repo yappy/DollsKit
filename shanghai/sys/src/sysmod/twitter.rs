@@ -1,7 +1,7 @@
 //! Twitter 機能。
 
 use super::SystemModule;
-use super::openai::ChatMessage;
+use crate::sysmod::openai::InputItem;
 use crate::sysmod::openai::Role;
 use crate::taskserver::Control;
 use crate::{config, taskserver};
@@ -516,7 +516,7 @@ impl Twitter {
                 continue;
             }
 
-            // 設定からプロローグ分の Vec<ChatMessage> を生成する
+            // 設定からプロローグ分の入力メッセージを生成する
             let system_msgs: Vec<_> = self
                 .config
                 .prompt
@@ -524,10 +524,9 @@ impl Twitter {
                 .iter()
                 .map(|text| {
                     let text = text.replace("${user}", &user.unwrap().name);
-                    ChatMessage {
-                        role: Role::System,
-                        content: Some(text),
-                        ..Default::default()
+                    InputItem::Message {
+                        role: Role::Developer,
+                        content: text,
                     }
                 })
                 .collect();
@@ -556,21 +555,20 @@ impl Twitter {
 
             // 最後にツイートの本文を追加
             let mut msgs = system_msgs.clone();
-            msgs.push(ChatMessage {
+            msgs.push(InputItem::Message {
                 role: Role::User,
-                content: Some(main_msg),
-                ..Default::default()
+                content: main_msg,
             });
 
             // 結果に追加する
             // エラーはログのみ出して追加をしない
             {
                 let mut ai = ctrl.sysmods().openai.lock().await;
-                match ai.chat(msgs).await {
+                match ai.chat(None, msgs).await {
                     Ok(resp) => reply_buf.push(Reply {
                         to_tw_id: tw.id.clone(),
                         to_user_id: tw.author_id.as_ref().unwrap().clone(),
-                        text: resp,
+                        text: resp.output_text(),
                         post_image_if_long: true,
                     }),
                     Err(e) => {

@@ -108,6 +108,44 @@ cargo update
 `Cargo.lock` が更新されるので、それをコミットすれば OK。
 github のセキュリティボットからの警告もだいたいこれで対応できる。
 
+### install --list
+
+`cargo install` で新たなコマンドをインストールできるが、一覧が見たくなった時に。
+
+```sh
+$ cargo install --list
+cargo-cache v0.8.3:
+    cargo-cache
+cargo-edit v0.13.2:
+    cargo-add
+    cargo-rm
+    cargo-set-version
+    cargo-upgrade
+cargo-expand v1.0.106:
+    cargo-expand
+cargo-update v16.3.0:
+    cargo-install-update
+    cargo-install-update-config
+mdbook v0.4.48:
+    mdbook
+mdbook-mermaid v0.15.0:
+    mdbook-mermaid
+```
+
+## install-update
+
+`cargo install` したものはバージョンアップしても自動で更新はされない。
+全部一括でやってくれるコマンド。
+
+```sh
+cargo install install-update
+```
+
+```sh
+# -a = --all
+cargo install-update -a
+```
+
 ### cargo-edit
 
 ```sh
@@ -115,8 +153,7 @@ cargo install cargo-edit
 ```
 
 `Cargo.toml` を自力で編集していたのをコマンドで自動化する。
-
-`cargo add` は v1.62 `cargo rm` は v.1.66 から標準搭載になった。
+`cargo add` は v1.62、`cargo rm` は v.1.66 から標準搭載になった。
 
 ```sh
 cargo add regex
@@ -150,6 +187,33 @@ cargo upgrade
 # --incompatible (-i) をつけると非互換アップデートを許す
 # おそらくビルドエラーを起こすので使い方の修正が必要
 cargo upgrade -i
+```
+
+## cargo-cache
+
+そのうち気づくことになると思われるが、`$HOME/.cargo` 以下にビルド中にダウンロードした
+依存クレートのダウンロードキャッシュが溜まっていき、そのうちすごいサイズになっている。
+実は現状では単調増加で削除されることはないらしい…。
+
+公式でも古くなったキャッシュを消す `cargo clean gc` コマンドを追加検討中らしい。
+unstable なので stable ではまだ使えない。
+
+<https://blog.rust-lang.org/2023/12/11/cargo-cache-cleaning.html>
+
+```sh
+cargo install cargo-cache
+```
+
+cargo-cache はこのキャッシュをいい感じに消したり圧縮したりするコマンド。
+
+```sh
+# .cargo/ のサマリを表示
+cargo cache
+# だいたいこれで消える
+# --autoclean = -a
+cargo cache --autoclean
+# 他のコマンドが気になる場合
+cargo cache --help
 ```
 
 ## リンカを mold に変更
@@ -236,6 +300,7 @@ elf の `.comment` セクションにコンパイラ、リンカ等、
 使用ツールのバージョンが入っている。
 readelf の `--string-dump` オプションが便利だそうだが、覚えとらんわそんなん。
 ビルド時間を見てあからさまに速くなっていたらそれをもって確認としてもいいのかもしれない。
+`strings some.elf | grep mold` とかで十分という説もある。
 
 ```sh
 $ readelf --help
