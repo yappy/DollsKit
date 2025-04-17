@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["shanghai", "sys", "verinfo", "utils", ]
-default-members = ["shanghai", "sys", "verinfo", "utils"]
+members = ["shanghai", "sys", "verinfo", "customlog", "utils", ]
+default-members = ["shanghai", "sys", "verinfo", "customlog", "utils"]
 
 [workspace.package]
 version = "0.1.0"
@@ -21,14 +21,15 @@ panic = 'abort'
 # My crates
 sys = { path = "./sys" }
 verinfo = { path = "./verinfo" }
+customlog = { path = "./customlog"}
 utils = { path = "./utils" }
 
 static_assertions = "1.1.0"
 anyhow = "1.0.98"
 thiserror = "2.0.12"
-log = "0.4.27"
+log = { version = "0.4.27", features = ["std"] }
 chrono = { version = "0.4.40", features = ["clock", "iana-time-zone", "std"] }
-rand = "0.9.0"
+rand = "0.9.1"
 
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"

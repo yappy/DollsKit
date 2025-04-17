@@ -1,0 +1,13 @@
+[package]
+name = "customlog"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+description.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+log.workspace = true
+
+libc = "0.2.172"
