@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Console","RotateSize","RotateTime"],"fn":["default_filter","default_formatter","flush_on_panic","init","init_for_test","init_raw","translate_args"],"mod":["console","file","root"],"struct":["ConsoleLogger","FileLogger","FlushGuard","FormatArgs","RotateOptions"]};

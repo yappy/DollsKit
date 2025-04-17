@@ -1,2 +1,2 @@
-window.ALL_CRATES = ["shanghai","sys","utils","verinfo"];
-//{"start":21,"fragment_lengths":[10,6,8,10]}
+window.ALL_CRATES = ["customlog","shanghai","sys","utils","verinfo"];
+//{"start":21,"fragment_lengths":[11,11,6,8,10]}

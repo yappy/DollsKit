@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Console"],"fn":["is_console"],"struct":["ConsoleLogger"]};
