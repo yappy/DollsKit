@@ -5,7 +5,7 @@ use super::SystemModule;
 use crate::sysmod::camera::{self, TakePicOption};
 use crate::sysmod::openai::chat_history::ChatHistory;
 use crate::sysmod::openai::function::FUNCTION_TOKEN;
-use crate::sysmod::openai::{self, ChatMessage, OpenAi, OpenAiErrorKind};
+use crate::sysmod::openai::{self, OpenAi, OpenAiErrorKind, SearchContextSize, Tool, UserLocation};
 use crate::sysmod::openai::{Role, function::FunctionTable};
 use crate::taskserver;
 use crate::{config, taskserver::Control};
@@ -78,7 +78,7 @@ impl Default for DiscordConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordPrompt {
     /// 最初に一度だけ与えられるシステムメッセージ。
-    pub pre: Vec<String>,
+    pub instructions: Vec<String>,
     /// 個々のメッセージの直前に一度ずつ与えらえるシステムメッセージ。
     pub each: Vec<String>,
     /// 会話履歴をクリアするまでの時間。
@@ -200,14 +200,14 @@ impl Discord {
 
         let mut chat_history = ChatHistory::new(model_info.name);
         assert!(chat_history.get_total_limit() == model_info.context_window);
-        let pre_token: usize = self
+        let inst_token: usize = self
             .config
             .prompt
-            .pre
+            .instructions
             .iter()
             .map(|text| chat_history.token_count(text))
             .sum();
-        let reserved = FUNCTION_TOKEN + pre_token + reserved;
+        let reserved = FUNCTION_TOKEN + inst_token + reserved;
         chat_history.reserve_tokens(reserved);
         info!("[discord] OpenAI token limit");
         info!("[discord] {:6} total", model_info.context_window);
@@ -818,6 +818,19 @@ async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
+#[derive(Default, poise::ChoiceParameter)]
+enum WebSearchQuality {
+    #[name = "High Quality"]
+    High,
+    #[default]
+    #[name = "Medium Quality"]
+    Medium,
+    #[name = "Low Quality"]
+    Low,
+    #[name = "Disabled"]
+    Disabled,
+}
+
 /// AI assistant.
 ///
 /// The owner of the assistant will pay the usage fee for ChatGPT.
@@ -830,6 +843,7 @@ async fn ai(
     chat_msg: String,
     #[description = "Show internal details when AI calls a function. (default=False)"]
     trace_function_call: Option<bool>,
+    web_search_quality: Option<WebSearchQuality>,
 ) -> Result<(), PoiseError> {
     // そのまま引用返信
     reply_long_mdquote(&ctx, &chat_msg).await?;
@@ -847,58 +861,54 @@ async fn ai(
         .each
         .join("")
         .replace("${user}", &ctx.author().name);
-    discord.chat_history_mut().push({
-        ChatMessage {
-            role: Role::System,
-            content: Some(sysmsg),
-            ..Default::default()
-        }
-    });
-    discord.chat_history_mut().push(ChatMessage {
-        role: Role::User,
-        content: Some(chat_msg.to_string()),
-        ..Default::default()
-    });
+    discord
+        .chat_history_mut()
+        .push_message(Role::Developer, &sysmsg)?;
+    discord
+        .chat_history_mut()
+        .push_message(Role::User, &chat_msg)?;
 
-    let pre = discord.config.prompt.pre.join("");
-    // AI 返答まで関数呼び出しを繰り返す
-    let reply_msg = loop {
-        // 送信用リスト
-        let mut all_msgs = Vec::new();
-        // 先頭システムメッセージ
-        all_msgs.push(ChatMessage {
-            role: Role::System,
-            content: Some(pre.clone()),
-            ..Default::default()
+    // システムメッセージ
+    let inst = discord.config.prompt.instructions.join("");
+    // ツール (function + built-in tools)
+    let mut tools = vec![];
+    // web search
+    let web_csize = match web_search_quality.unwrap_or_default() {
+        WebSearchQuality::High => Some(SearchContextSize::High),
+        WebSearchQuality::Medium => Some(SearchContextSize::Medium),
+        WebSearchQuality::Low => Some(SearchContextSize::Low),
+        WebSearchQuality::Disabled => None,
+    };
+    if let Some(web_csize) = web_csize {
+        tools.push(Tool::WebSearchPreview {
+            search_context_size: Some(web_csize),
+            user_location: Some(UserLocation::default()),
         });
-        // それ以降 (ヒストリの中身全部) を追加
-        for m in discord.chat_history().iter() {
-            all_msgs.push(m.clone());
-        }
+    }
+    // function
+    for f in discord.func_table().function_list() {
+        tools.push(Tool::Function(f.clone()));
+    }
 
+    // AI 返答まで関数呼び出しを繰り返す
+    let result = loop {
+        // 入力をヒストリの内容から作成
+        let input = Vec::from_iter(discord.chat_history().iter().cloned());
         // ChatGPT API
-        let reply_msg = {
+        let resp = {
             let mut ai = data.ctrl.sysmods().openai.lock().await;
-            ai.chat_with_function(
-                &all_msgs,
-                discord.func_table.as_ref().unwrap().function_list(),
-            )
-            .await
+            ai.chat_with_tools(Some(&inst), input, &tools).await
         };
-        match &reply_msg {
-            Ok(reply) => {
-                // 応答を履歴に追加
-                discord.chat_history_mut().push(reply.clone());
-                if reply.function_call.is_some() {
-                    // function call が返ってきた
-                    let func_name = &reply.function_call.as_ref().unwrap().name;
-                    let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = discord
-                        .func_table
-                        .as_ref()
-                        .unwrap()
-                        .call((), func_name, func_args)
-                        .await;
+        match resp {
+            Ok(resp) => {
+                // function 呼び出しがあれば履歴に追加
+                for fc in resp.func_call_iter() {
+                    let call_id = &fc.call_id;
+                    let func_name = &fc.name;
+                    let func_args = &fc.arguments;
+
+                    // call function
+                    let func_out = discord.func_table().call((), func_name, func_args).await;
                     // debug trace
                     if discord.func_table.as_ref().unwrap().debug_mode()
                         || trace_function_call.unwrap_or(false)
@@ -907,35 +917,46 @@ async fn ai(
                             &ctx,
                             &format!(
                                 "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                                func_res.content.as_ref().unwrap()
+                                func_out
                             ),
                         )
                         .await?;
                     }
-                    // function 応答を履歴に追加
-                    discord.chat_history_mut().push(func_res);
-                    // continue
+                    // function の結果を履歴に追加
+                    discord
+                        .chat_history_mut()
+                        .push_function(call_id, func_name, func_args, &func_out)?;
+                }
+                // アシスタント応答と web search があれば履歴に追加
+                let text = resp.output_text();
+                if !text.is_empty() {
+                    discord.chat_history_mut().push_message_tool(
+                        std::iter::once((Role::Assistant, text.clone())),
+                        resp.web_search_iter().cloned(),
+                    )?;
                 } else {
-                    // 通常の応答が返ってきた
-                    break reply_msg;
+                    discord
+                        .chat_history_mut()
+                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
+                }
+
+                if !text.is_empty() {
+                    break Ok(text);
                 }
             }
             Err(err) => {
                 // エラーが発生した
                 error!("{:#?}", err);
-                break reply_msg;
+                break Err(err);
             }
         }
     };
 
     // discord 返信
-    match reply_msg {
+    match result {
         Ok(reply_msg) => {
-            let text = reply_msg
-                .content
-                .ok_or_else(|| anyhow!("content required"))?;
-            info!("[discord] openai reply: {text}");
-            reply_long(&ctx, &text).await?;
+            info!("[discord] openai reply: {reply_msg}");
+            reply_long(&ctx, &reply_msg).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(
@@ -1269,7 +1290,7 @@ mod tests {
     fn parse_default_toml() {
         // should not panic
         let obj: DiscordPrompt = Default::default();
-        assert_ne!(obj.pre.len(), 0);
+        assert_ne!(obj.instructions.len(), 0);
         assert_ne!(obj.each.len(), 0);
     }
 

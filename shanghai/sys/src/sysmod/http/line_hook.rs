@@ -2,19 +2,17 @@
 //!
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
-use std::time::{Duration, Instant};
-
 use super::{ActixError, WebResult};
-use crate::sysmod::{
-    line::FunctionContext,
-    openai::{ChatMessage, OpenAi, OpenAiErrorKind, Role},
-};
+use crate::sysmod::line::FunctionContext;
+use crate::sysmod::openai::{OpenAi, OpenAiErrorKind, Role, SearchContextSize, Tool, UserLocation};
 use crate::taskserver::Control;
+
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
-use anyhow::{Result, anyhow, bail, ensure};
+use anyhow::{Result, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 use utils::netutil;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -326,69 +324,74 @@ async fn on_text_message(
 
         // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
         let sysmsg = prompt.each.join("").replace("${user}", &display_name);
-        line.chat_history_mut(ctrl).await.push({
-            ChatMessage {
-                role: Role::System,
-                content: Some(sysmsg),
-                ..Default::default()
-            }
-        });
-        line.chat_history_mut(ctrl).await.push(ChatMessage {
-            role: Role::User,
-            content: Some(text.to_string()),
-            ..Default::default()
-        });
+        line.chat_history_mut(ctrl)
+            .await
+            .push_message(Role::Developer, &sysmsg)?;
+        line.chat_history_mut(ctrl)
+            .await
+            .push_message(Role::User, text)?;
 
         prompt
+    };
+
+    // システムメッセージ
+    let inst = prompt.instructions.join("");
+    // ツール (function + built-in tools)
+    let mut tools = vec![];
+    // web search
+    tools.push(Tool::WebSearchPreview {
+        search_context_size: Some(SearchContextSize::Medium),
+        user_location: Some(UserLocation::default()),
+    });
+    // function
+    {
+        let mut line = ctrl.sysmods().line.lock().await;
+        for f in line.func_table(ctrl).await.function_list() {
+            tools.push(Tool::Function(f.clone()));
+        }
+    }
+
+    // function 用コンテキスト情報
+    let reply_to = match src {
+        Source::User { user_id } => user_id,
+        Source::Group {
+            group_id,
+            user_id: _,
+        } => group_id,
+        Source::Room {
+            room_id: _,
+            user_id: _,
+        } => bail!("Source::Room is not supported"),
     };
 
     let mut func_trace = String::new();
     let reply_msg = loop {
         let mut line = ctrl.sysmods().line.lock().await;
 
-        // 送信用リスト
-        let mut all_msgs = Vec::new();
-        // 先頭システムメッセージ
-        all_msgs.push(ChatMessage {
-            role: Role::System,
-            content: Some(prompt.pre.join("")),
-            ..Default::default()
-        });
-        let reply_msg = {
+        let resp = {
             let mut ai = ctrl.sysmods().openai.lock().await;
 
-            // それ以降 (ヒストリの中身全部) を追加
-            for m in line.chat_history(ctrl).await.iter() {
-                all_msgs.push(m.clone());
-            }
+            // ヒストリの中身全部を追加
+            let input = Vec::from_iter(line.chat_history(ctrl).await.iter().cloned());
             // ChatGPT API
-            ai.chat_with_function(&all_msgs, line.func_table(ctrl).await.function_list())
-                .await
+            ai.chat_with_tools(Some(&inst), input, &tools).await
         };
-        match &reply_msg {
-            Ok(reply) => {
-                // 応答を履歴に追加
-                line.chat_history_mut(ctrl).await.push(reply.clone());
-                if reply.function_call.is_some() {
-                    // function call が返ってきた
-                    let reply_to = match src {
-                        Source::User { user_id } => user_id,
-                        Source::Group {
-                            group_id,
-                            user_id: _,
-                        } => group_id,
-                        Source::Room {
-                            room_id: _,
-                            user_id: _,
-                        } => bail!("Source::Room is not supported"),
-                    };
+
+        match resp {
+            Ok(resp) => {
+                // function 呼び出しがあれば履歴に追加
+                for fc in resp.func_call_iter() {
+                    let call_id = &fc.call_id;
+                    let func_name = &fc.name;
+                    let func_args = &fc.arguments;
+
+                    // 関数に渡すコンテキスト情報 (LINE reply_to ID)
                     let ctx = FunctionContext {
-                        reply_to: reply_to.to_string(),
+                        reply_to: reply_to.clone(),
                     };
-                    let func_name = &reply.function_call.as_ref().unwrap().name;
-                    let func_args = &reply.function_call.as_ref().unwrap().arguments;
-                    let func_res = line
-                        .func_table_mut(ctrl)
+                    // call function
+                    let func_out = line
+                        .func_table(ctrl)
                         .await
                         .call(ctx, func_name, func_args)
                         .await;
@@ -399,21 +402,35 @@ async fn on_text_message(
                         }
                         func_trace += &format!(
                             "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                            func_res.content.as_ref().unwrap()
+                            func_out
                         );
                     }
-                    // function 応答を履歴に追加
-                    line.chat_history_mut(ctrl).await.push(func_res);
-                    // continue
+                    // function の結果を履歴に追加
+                    line.chat_history_mut(ctrl)
+                        .await
+                        .push_function(call_id, func_name, func_args, &func_out)?;
+                }
+                // アシスタント応答と web search があれば履歴に追加
+                let text = resp.output_text();
+                if !text.is_empty() {
+                    line.chat_history_mut(ctrl).await.push_message_tool(
+                        std::iter::once((Role::Assistant, text.clone())),
+                        resp.web_search_iter().cloned(),
+                    )?;
                 } else {
-                    // 通常の応答が返ってきた
-                    break reply_msg;
+                    line.chat_history_mut(ctrl)
+                        .await
+                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
+                }
+
+                if !text.is_empty() {
+                    break Ok(text);
                 }
             }
             Err(err) => {
                 // エラーが発生した
                 error!("{:#?}", err);
-                break reply_msg;
+                break Err(err);
             }
         }
     };
@@ -428,10 +445,7 @@ async fn on_text_message(
         }
         match reply_msg {
             Ok(reply_msg) => {
-                let text = reply_msg
-                    .content
-                    .ok_or_else(|| anyhow!("content required"))?;
-                msgs.push(&text);
+                msgs.push(&reply_msg);
                 for msg in msgs.iter() {
                     info!("[line] openai reply: {msg}");
                 }

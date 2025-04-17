@@ -2,10 +2,8 @@
 
 use super::basicfuncs;
 use crate::config;
-use crate::sysmod::openai::{ChatMessage, Role};
 use crate::taskserver::Control;
-use anyhow::bail;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -109,7 +107,7 @@ impl<T: 'static> FunctionTable<T> {
     }
 
     /// OpenAI API に渡すためのリストを取得する。
-    pub fn function_list(&self) -> &Vec<Function> {
+    pub fn function_list(&self) -> &[Function] {
         &self.function_list
     }
 
@@ -141,10 +139,9 @@ impl<T: 'static> FunctionTable<T> {
 
     /// 関数を呼び出す。
     ///
-    /// OpenAI API からのデータをそのまま渡せ、
-    /// 結果も API にそのまま渡せる [ChatMessage] で返す。
-    /// エラーも適切なメッセージとして返す。
-    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> ChatMessage {
+    /// 引数は json 文字列であり、OpenAI API からのデータをそのまま渡せる。
+    /// エラーも適切な文字列メッセージとして返す。
+    pub async fn call(&self, ctx: T, func_name: &str, args_json_str: &str) -> String {
         info!("[openai-func] Call {func_name} {args_json_str}");
 
         let res = {
@@ -156,7 +153,7 @@ impl<T: 'static> FunctionTable<T> {
             }
         };
 
-        let content = match &res {
+        match &res {
             Ok(res) => {
                 info!("[openai-func] {func_name} returned: {res}");
                 res.to_string()
@@ -165,13 +162,6 @@ impl<T: 'static> FunctionTable<T> {
                 warn!("[openai-func] {func_name} failed: {:#?}", err);
                 err.to_string()
             }
-        };
-
-        ChatMessage {
-            role: Role::Function,
-            name: Some(func_name.to_string()),
-            content: Some(content),
-            ..Default::default()
         }
     }
 
