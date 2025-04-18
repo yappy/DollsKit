@@ -147,7 +147,17 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
 ///
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
+///
+/// * SIGUSR1: ログのフラッシュ
+/// * SIGUSR2: なし
 fn system_main() -> Result<()> {
+    let sigusr1 = || {
+        info!("Flush log");
+        log::logger().flush();
+        None
+    };
+    let sigusr2 = || None;
+
     loop {
         info!("system main");
         info!("{}", verinfo::version_info());
@@ -158,7 +168,7 @@ fn system_main() -> Result<()> {
         let ts = TaskServer::new(sysmods);
 
         ts.spawn_oneshot_task("boot_msg", boot_msg_task);
-        let run_result = ts.run();
+        let run_result = ts.run(sigusr1, sigusr2);
 
         info!("task server dropped");
 

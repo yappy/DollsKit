@@ -287,7 +287,13 @@ impl TaskServer {
     /// 実行を開始し、完了するまでブロックする。
     ///
     /// self の所有権を consume するため、一度しか実行できない。
-    pub fn run(self) -> RunResult {
+    ///
+    /// F: シグナルハンドラ。実行を終了するならば Some, 続行するならば None を返す。
+    pub fn run<F1, F2>(self, usr1_handler: F1, usr2_handler: F2) -> RunResult
+    where
+        F1: Fn() -> Option<RunResult>,
+        F2: Fn() -> Option<RunResult>,
+    {
         let ctrl = Arc::clone(&self.ctrl);
         self.ctrl.rt.block_on(async move {
             // SystemModule 全体に on_start イベントを配送
@@ -297,22 +303,37 @@ impl TaskServer {
             let mut sigint = signal(SignalKind::interrupt()).unwrap();
             let mut sigterm = signal(SignalKind::terminate()).unwrap();
             let mut sighup = signal(SignalKind::hangup()).unwrap();
+            let mut sigusr1 = signal(SignalKind::user_defined1()).unwrap();
+            let mut sigusr2 = signal(SignalKind::user_defined2()).unwrap();
 
-            let run_result;
-            tokio::select! {
-                _ = sigint.recv() => {
-                    info!("[signal] SIGINT");
-                    run_result = RunResult::Shutdown;
-                },
-                _ = sigterm.recv() => {
-                    info!("[signal] SIGTERM");
-                    run_result = RunResult::Shutdown;
-                },
-                _ = sighup.recv() => {
-                    info!("[signal] SIGHUP");
-                    run_result = RunResult::Reboot;
-                },
-            }
+            let run_result = loop {
+                tokio::select! {
+                    _ = sigint.recv() => {
+                        info!("[signal] SIGINT");
+                         break RunResult::Shutdown
+                    },
+                    _ = sigterm.recv() => {
+                        info!("[signal] SIGTERM");
+                        break RunResult::Shutdown
+                    },
+                    _ = sighup.recv() => {
+                        info!("[signal] SIGHUP");
+                        break RunResult::Reboot
+                    },
+                    _ = sigusr1.recv() => {
+                        info!("[signal] SIGUSR1");
+                        if let Some(result) = usr1_handler() {
+                            break result
+                        }
+                    }
+                    _ = sigusr2.recv() => {
+                        info!("[signal] SIGUSR2");
+                        if let Some(result) = usr2_handler() {
+                            break result
+                        }
+                    }
+                }
+            };
 
             // 値を true に設定して全タスクにキャンセルリクエストを通知する
             self.cancel_tx.send_replace(true);
