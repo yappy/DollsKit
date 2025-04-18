@@ -22,10 +22,12 @@ use sys::taskserver::{Control, RunResult, TaskServer};
 const FILE_STDOUT: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
 const FILE_STDERR: &str = "stderr.txt";
-/// Cron 用シェルスクリプトの出力先。
+/// デーモン用シェルスクリプトの出力先。
 const FILE_EXEC_SH: &str = "exec.sh";
-/// Cron 用シェルスクリプトの出力先。
+/// デーモン用シェルスクリプトの出力先。
 const FILE_KILL_SH: &str = "kill.sh";
+/// デーモン用シェルスクリプトの出力先。
+const FILE_FLUSH_SH: &str = "flushlog.sh";
 /// Cron 設定例の出力先。
 const FILE_CRON: &str = "cron.txt";
 /// デーモン化の際に指定する pid ファイルパス。
@@ -223,6 +225,16 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w)?;
         writeln!(&mut w, "cd '{cd}'")?;
         writeln!(&mut w, "kill `cat {FILE_PID}`")?;
+    }
+    {
+        let f = create_sh(FILE_FLUSH_SH)?;
+        let mut w = BufWriter::new(f);
+
+        writeln!(&mut w, "#!/bin/bash")?;
+        writeln!(&mut w, "set -euxo pipefail")?;
+        writeln!(&mut w)?;
+        writeln!(&mut w, "cd '{cd}'")?;
+        writeln!(&mut w, "kill -SIGUSR1 `cat {FILE_PID}`")?;
     }
     {
         let f = File::create(FILE_CRON)?;
