@@ -1,4 +1,4 @@
-//! システム情報取得。
+//! ゲームプレイ用のツール。
 
 use crate::sysmod::openai::ParameterType;
 use crate::sysmod::openai::function::{

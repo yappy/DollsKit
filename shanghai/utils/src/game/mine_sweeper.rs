@@ -1,6 +1,6 @@
 //! Mine Sweeper
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use rand::seq::SliceRandom;
 use serde::Serialize;
 use std::ops::RangeInclusive;
@@ -81,10 +81,10 @@ impl Level {
 }
 
 pub struct MineSweeper {
-    state: GameState,
-    width: i32,
-    height: i32,
-    mine_count: i32,
+    pub state: GameState,
+    pub width: i32,
+    pub height: i32,
+    pub mine_count: i32,
     board: Vec<Cell>,
     revealed: Vec<bool>,
 }
@@ -180,6 +180,10 @@ impl MineSweeper {
     }
 
     pub fn reveal(&mut self, x: i32, y: i32) -> Result<GameState> {
+        if !(matches!(self.state, GameState::Initialized | GameState::Playing)) {
+            bail!("Already finished");
+        }
+
         let _ = self.convert(x, y).context("Invalid x y")?;
 
         self.reveal_raw(x, y).context("Already revealed")?;
@@ -210,17 +214,22 @@ impl MineSweeper {
     fn check_state(&self) -> GameState {
         debug_assert_eq!(self.board.len(), self.revealed.len());
 
+        let mut not_cleared = false;
         for (cell, revealed) in self.board.iter().zip(self.revealed.iter()) {
             if *revealed {
                 if matches!(cell, Cell::Mine) {
                     return GameState::Failed;
                 }
             } else if !matches!(cell, Cell::Mine) {
-                return GameState::Playing;
+                not_cleared = true;
             }
         }
 
-        GameState::Cleared
+        if not_cleared {
+            GameState::Playing
+        } else {
+            GameState::Cleared
+        }
     }
 
     fn convert(&self, x: i32, y: i32) -> Option<usize> {
