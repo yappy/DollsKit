@@ -31,85 +31,70 @@ struct WebhookEvent {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct WebhookEventCommon {
     /// "active" or "standby"
     mode: String,
     timestamp: u64,
     source: Option<Source>,
-    #[serde(rename = "webhookEventId")]
     webhook_event_id: String,
-    #[serde(rename = "deliveryContext")]
     delivery_context: DeliveryContext,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum Source {
-    #[serde(rename = "user")]
     User {
-        #[serde(rename = "userId")]
         user_id: String,
     },
-    #[serde(rename = "group")]
     Group {
-        #[serde(rename = "groupId")]
         group_id: String,
-        #[serde(rename = "userId")]
         user_id: Option<String>,
     },
-    #[serde(rename = "room")]
     Room {
-        #[serde(rename = "roomId")]
         room_id: String,
-        #[serde(rename = "userId")]
         user_id: Option<String>,
     },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DeliveryContext {
-    #[serde(rename = "isRedelivery")]
     is_redelivery: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum WebhookEventBody {
-    #[serde(rename = "message")]
     Message {
-        #[serde(rename = "replyToken")]
         reply_token: String,
         message: Message,
     },
-    #[serde(rename = "unsend")]
     Unsend {
-        #[serde(rename = "messageId")]
         message_id: String,
     },
-    #[serde(rename = "follow")]
     Follow {
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "unfollow")]
     Unfollow,
-    #[serde(rename = "join")]
     Join {
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "leave")]
     Leave,
-    #[serde(rename = "memberJoined")]
     MemberJoined {
         joined: Members,
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "memberLeft")]
     MemberLeft {
         left: Members,
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
     #[serde(other)]
@@ -117,17 +102,18 @@ enum WebhookEventBody {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum Message {
-    #[serde(rename = "text")]
     Text {
         id: String,
-        #[serde(rename = "quoteToken")]
         quote_token: String,
         text: String,
         // emojis
         mention: Option<Mention>,
-        #[serde(rename = "quotedMessageId")]
         quoted_message_id: Option<String>,
     },
     #[serde(other)]
@@ -135,33 +121,34 @@ enum Message {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 struct Mention {
     mentionees: Vec<Mentionee>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 struct Mentionee {
     index: usize,
     length: usize,
     #[serde(flatten)]
     target: MentioneeTarget,
-    #[serde(rename = "quotedMessageId")]
     quoted_message_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum MentioneeTarget {
-    #[serde(rename = "user")]
-    User {
-        #[serde(rename = "userId")]
-        user_id: Option<String>,
-    },
-    #[serde(rename = "all")]
+    User { user_id: Option<String> },
     All,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 struct Members {
     /// type = "user"
     members: Vec<Source>,
@@ -479,6 +466,102 @@ async fn on_text_message(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_text_message() {
+        // https://developers.line.biz/ja/reference/messaging-api/#wh-text
+        let src = r#"
+{
+  "destination": "xxxxxxxxxx",
+  "events": [
+    {
+      "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+      "type": "message",
+      "mode": "active",
+      "timestamp": 1462629479859,
+      "source": {
+        "type": "group",
+        "groupId": "Ca56f94637c...",
+        "userId": "U4af4980629..."
+      },
+      "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+      "deliveryContext": {
+        "isRedelivery": false
+      },
+      "message": {
+        "id": "444573844083572737",
+        "type": "text",
+        "quoteToken": "q3Plxr4AgKd...",
+        "text": "@All @example Good Morning!! (love)",
+        "emojis": [
+          {
+            "index": 29,
+            "length": 6,
+            "productId": "5ac1bfd5040ab15980c9b435",
+            "emojiId": "001"
+          }
+        ],
+        "mention": {
+          "mentionees": [
+            {
+              "index": 0,
+              "length": 4,
+              "type": "all"
+            },
+            {
+              "index": 5,
+              "length": 8,
+              "userId": "U49585cd0d5...",
+              "type": "user",
+              "isSelf": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}"#;
+        let _: WebHookRequest = serde_json::from_str(src).unwrap();
+    }
+
+    #[test]
+    fn parse_image_message() {
+        // https://developers.line.biz/ja/reference/messaging-api/#wh-image
+        let src = r#"
+{
+    "destination": "xxxxxxxxxx",
+    "events": [
+        {
+            "type": "message",
+            "message": {
+                "type": "image",
+                "id": "354718705033693861",
+                "quoteToken": "yHAz4Ua2wx7...",
+                "contentProvider": {
+                    "type": "line"
+                },
+                "imageSet": {
+                    "id": "E005D41A7288F41B65593ED38FF6E9834B046AB36A37921A56BC236F13A91855",
+                    "index": 2,
+                    "total": 2
+                }
+            },
+            "timestamp": 1627356924722,
+            "source": {
+                "type": "user",
+                "userId": "U4af4980629..."
+            },
+            "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+            "deliveryContext": {
+                "isRedelivery": false
+            },
+            "replyToken": "fbf94e269485410da6b7e3a5e33283e8",
+            "mode": "active"
+        }
+    ]
+}"#;
+        let _: WebHookRequest = serde_json::from_str(src).unwrap();
+    }
 
     #[test]
     fn base64_decode() {
