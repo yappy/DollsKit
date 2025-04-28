@@ -5,6 +5,7 @@ pub mod chat_history;
 pub mod function;
 
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::io::Cursor;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant, SystemTime};
@@ -338,7 +339,7 @@ pub enum InputItem {
     FunctionCallOutput { call_id: String, output: String },
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum InputContent {
     InputText {
@@ -351,6 +352,19 @@ pub enum InputContent {
         /// One of high, low, or auto. Defaults to auto.
         detail: InputImageDetail,
     },
+}
+
+impl Debug for InputContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InputContent::InputText { text } => write!(f, "InputText({text})"),
+            InputContent::InputImage { image_url, detail } => write!(
+                f,
+                "InputImage(image_url: {} bytes, {detail:?})",
+                image_url.len()
+            ),
+        }
+    }
 }
 
 #[derive(Clone, Default, Debug, Serialize)]
