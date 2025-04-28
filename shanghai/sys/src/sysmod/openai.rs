@@ -319,7 +319,7 @@ pub enum InputItem {
         role: Role,
         /// string | array
         /// image やファイルも含める場合はオブジェクト配列にする必要がある。
-        content: String,
+        content: Vec<InputContent>,
     },
     /// The results of a web search tool call.
     WebSearchCall(WebSearchCall),
@@ -334,6 +334,30 @@ pub enum InputItem {
     },
     /// The output of a function tool call.
     FunctionCallOutput { call_id: String, output: String },
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum InputContent {
+    InputText {
+        /// The text input to the model.
+        text: String,
+    },
+    InputImage {
+        image_url: String,
+        /// The detail level of the image to be sent to the model.
+        /// One of high, low, or auto. Defaults to auto.
+        detail: InputImageDetail,
+    },
+}
+
+#[derive(Clone, Default, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InputImageDetail {
+    #[default]
+    Auto,
+    High,
+    Low,
 }
 
 /// OpenAI API JSON 定義。
@@ -1268,7 +1292,7 @@ mod tests {
     #[ignore]
     // cargo test simple_assistant -- --ignored --nocapture
     async fn simple_assistant() {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
@@ -1278,7 +1302,9 @@ mod tests {
         );
         let input = vec![InputItem::Message {
             role: Role::User,
-            content: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
+            content: vec![InputContent::InputText {
+                text: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
+            }],
         }];
         match ai.chat(Some(inst), input).await {
             Ok(resp) => {
@@ -1298,13 +1324,15 @@ mod tests {
     #[ignore]
     // cargo test web_search -- --ignored --nocapture
     async fn web_search() {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
         let input = vec![InputItem::Message {
             role: Role::User,
-            content: "今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+            content: vec![InputContent::InputText {
+                text: "今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+            }],
         }];
         let tools = [Tool::WebSearchPreview {
             search_context_size: Some(SearchContextSize::Low),
@@ -1334,7 +1362,7 @@ mod tests {
     #[ignore]
     // cargo test image_gen -- --ignored --nocapture
     async fn image_gen() -> Result<()> {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
@@ -1351,7 +1379,7 @@ mod tests {
     #[ignore]
     // cargo test test_to_sppech -- --ignored --nocapture
     async fn test_to_sppech() -> Result<()> {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();

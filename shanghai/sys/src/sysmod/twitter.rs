@@ -1,6 +1,7 @@
 //! Twitter 機能。
 
 use super::SystemModule;
+use crate::sysmod::openai::InputContent;
 use crate::sysmod::openai::InputItem;
 use crate::sysmod::openai::Role;
 use crate::taskserver::Control;
@@ -526,7 +527,7 @@ impl Twitter {
                     let text = text.replace("${user}", &user.unwrap().name);
                     InputItem::Message {
                         role: Role::Developer,
-                        content: text,
+                        content: vec![InputContent::InputText { text }],
                     }
                 })
                 .collect();
@@ -557,7 +558,7 @@ impl Twitter {
             let mut msgs = system_msgs.clone();
             msgs.push(InputItem::Message {
                 role: Role::User,
-                content: main_msg,
+                content: vec![InputContent::InputText { text: main_msg }],
             });
 
             // 結果に追加する

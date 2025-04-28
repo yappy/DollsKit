@@ -3,8 +3,11 @@
 use crate::sysmod::openai::{InputItem, Role, WebSearchCall};
 
 use anyhow::{Result, ensure};
+use base64::{Engine, engine::general_purpose};
 use std::collections::VecDeque;
 use tiktoken_rs::CoreBPE;
+
+use super::{InputContent, InputImageDetail};
 
 /// 会話履歴管理。
 pub struct ChatHistory {
@@ -56,14 +59,35 @@ impl ChatHistory {
     }
 
     pub fn push_message(&mut self, role: Role, content: &str) -> Result<()> {
-        let tokens = self.tokenize(content);
-        let token_count = tokens.len();
+        self.push_message_images(role, content, &[])
+    }
 
-        let item = InputItem::Message {
-            role,
-            content: content.to_string(),
-        };
+    pub fn push_message_images(
+        &mut self,
+        role: Role,
+        text: &str,
+        images: &[Vec<u8>],
+    ) -> Result<()> {
+        let tokens = self.tokenize(text);
+        let mut token_count = tokens.len();
 
+        // content = [InputText, InputImage*]
+        let mut content = vec![InputContent::InputText {
+            text: text.to_string(),
+        }];
+
+        const IMAGE_TOKEN_LOW: usize = 85;
+        for image in images {
+            let base64 = general_purpose::STANDARD.encode(image);
+            let image_url = format!("data:image/png;base64,{base64}");
+            content.push(InputContent::InputImage {
+                image_url,
+                detail: InputImageDetail::Low,
+            });
+            token_count += IMAGE_TOKEN_LOW;
+        }
+
+        let item = InputItem::Message { role, content };
         self.push(vec![item], token_count)
     }
 
@@ -75,11 +99,11 @@ impl ChatHistory {
         let mut items = vec![];
         let mut token_count = 0;
 
-        for (role, content) in msgs {
-            let tokens = self.tokenize(&content);
+        for (role, text) in msgs {
+            let tokens = self.tokenize(&text);
             let item = InputItem::Message {
                 role,
-                content: content.to_string(),
+                content: vec![InputContent::InputText { text }],
             };
             items.push(item);
             token_count += tokens.len();
