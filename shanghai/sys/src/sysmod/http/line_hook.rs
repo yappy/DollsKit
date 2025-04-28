@@ -102,19 +102,48 @@ enum WebhookEventBody {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+struct Members {
+    /// type = "user"
+    members: Vec<Source>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
 enum Message {
+    /// 送信元から送られたテキストを含むメッセージオブジェクトです。
     Text {
+        /// メッセージID
         id: String,
+        /// メッセージの引用トークン。
+        /// 詳しくは、『Messaging APIドキュメント』の「引用トークンを取得する」を
+        /// 参照してください。
         quote_token: String,
+        /// メッセージのテキスト
         text: String,
         // emojis
+        /// メンションの情報を含むオブジェクト。
+        /// textプロパティにメンションが含まれる場合のみ、
+        /// メッセージイベントに含まれます。
         mention: Option<Mention>,
+        /// 引用されたメッセージのメッセージID。
+        /// 過去のメッセージを引用している場合にのみ含まれます。
         quoted_message_id: Option<String>,
+    },
+    /// 送信元から送られた画像を含むメッセージオブジェクトです。
+    Image {
+        /// メッセージID
+        id: String,
+        /// メッセージの引用トークン。
+        /// 詳しくは、『Messaging APIドキュメント』の「引用トークンを取得する」を
+        /// 参照してください。
+        quote_token: String,
+        /// 画像ファイルの提供元。
+        content_provider: ContentProvider,
     },
     #[serde(other)]
     Other,
@@ -147,11 +176,36 @@ enum MentioneeTarget {
     All,
 }
 
+/// 画像ファイルの提供元。
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-struct Members {
-    /// type = "user"
-    members: Vec<Source>,
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+enum ContentProvider {
+    /// LINEユーザーが画像ファイルを送信しました。
+    /// 画像ファイルのバイナリデータは、メッセージIDを指定してコンテンツを取得する
+    /// エンドポイントを使用することで取得できます。
+    Line,
+    /// 画像ファイルのURLは `contentProvider.originalContentUrl`
+    /// プロパティに含まれます。
+    /// なお、画像ファイルの提供元がexternalの場合、
+    /// 画像ファイルのバイナリデータはコンテンツを取得するエンドポイントで
+    /// 取得できません。
+    External {
+        /// 画像ファイルのURL。
+        /// contentProvider.typeがexternalの場合にのみ含まれます。
+        /// 画像ファイルが置かれているサーバーは、
+        /// LINEヤフー株式会社が提供しているものではありません。
+        original_content_url: String,
+        /// プレビュー画像のURL。
+        /// contentProvider.typeがexternalの場合にのみ含まれます。
+        /// プレビュー画像が置かれているサーバーは、
+        /// LINEヤフー株式会社が提供しているものではありません。
+        preview_image_url: String,
+        // image_set
+    },
 }
 
 #[actix_web::get("/line/")]
@@ -527,7 +581,40 @@ mod tests {
     #[test]
     fn parse_image_message() {
         // https://developers.line.biz/ja/reference/messaging-api/#wh-image
-        let src = r#"
+        let src1 = r#"
+{
+    "destination": "xxxxxxxxxx",
+    "events": [
+        {
+            "type": "message",
+            "message": {
+                "type": "image",
+                "id": "354718705033693859",
+                "quoteToken": "q3Plxr4AgKd...",
+                "contentProvider": {
+                    "type": "line"
+                },
+                "imageSet": {
+                    "id": "E005D41A7288F41B65593ED38FF6E9834B046AB36A37921A56BC236F13A91855",
+                    "index": 1,
+                    "total": 2
+                }
+            },
+            "timestamp": 1627356924513,
+            "source": {
+                "type": "user",
+                "userId": "U4af4980629..."
+            },
+            "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+            "deliveryContext": {
+                "isRedelivery": false
+            },
+            "replyToken": "7840b71058e24a5d91f9b5726c7512c9",
+            "mode": "active"
+        }
+    ]
+}"#;
+        let src2 = r#"
 {
     "destination": "xxxxxxxxxx",
     "events": [
@@ -560,7 +647,8 @@ mod tests {
         }
     ]
 }"#;
-        let _: WebHookRequest = serde_json::from_str(src).unwrap();
+        let _: WebHookRequest = serde_json::from_str(src1).unwrap();
+        let _: WebHookRequest = serde_json::from_str(src2).unwrap();
     }
 
     #[test]
