@@ -3,12 +3,12 @@
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
 use super::{ActixError, WebResult};
-use crate::sysmod::line::FunctionContext;
+use crate::sysmod::line::{FunctionContext, Line};
 use crate::sysmod::openai::{OpenAi, OpenAiErrorKind, Role, SearchContextSize, Tool, UserLocation};
 use crate::taskserver::Control;
 
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
-use anyhow::{Result, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
@@ -306,6 +306,15 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     info!("[line] Receive text message: {text}");
                     on_text_message(ctrl, &ev.common.source, reply_token, text).await?;
                 }
+                Message::Image {
+                    id,
+                    quote_token: _,
+                    content_provider,
+                } => {
+                    info!("[line] Receive image message");
+                    on_image_message(ctrl, &ev.common.source, id, reply_token, content_provider)
+                        .await?;
+                }
                 other => {
                     info!("[line] Ignore message type: {:?}", other);
                 }
@@ -317,6 +326,37 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn source_to_display_name(line: &Line, src: &Source) -> Result<String> {
+    let display_name = match src {
+        Source::User { user_id } => {
+            if let Some(name) = line.config.id_name_map.get(user_id) {
+                name.to_string()
+            } else {
+                line.get_profile(user_id).await?.display_name
+            }
+        }
+        Source::Group { group_id, user_id } => {
+            if let Some(user_id) = user_id {
+                if let Some(name) = line.config.id_name_map.get(user_id) {
+                    name.to_string()
+                } else {
+                    line.get_group_profile(group_id, user_id)
+                        .await?
+                        .display_name
+                }
+            } else {
+                bail!("userId is null");
+            }
+        }
+        Source::Room {
+            room_id: _,
+            user_id: _,
+        } => bail!("Source::Room is not supported"),
+    };
+
+    Ok(display_name)
 }
 
 async fn on_text_message(
@@ -333,32 +373,7 @@ async fn on_text_message(
         let prompt = line.config.prompt.clone();
 
         // source フィールドからプロフィール情報を取得
-        let display_name = match src {
-            Source::User { user_id } => {
-                if let Some(name) = line.config.id_name_map.get(user_id) {
-                    name.to_string()
-                } else {
-                    line.get_profile(user_id).await?.display_name
-                }
-            }
-            Source::Group { group_id, user_id } => {
-                if let Some(user_id) = user_id {
-                    if let Some(name) = line.config.id_name_map.get(user_id) {
-                        name.to_string()
-                    } else {
-                        line.get_group_profile(group_id, user_id)
-                            .await?
-                            .display_name
-                    }
-                } else {
-                    bail!("userId is null");
-                }
-            }
-            Source::Room {
-                room_id: _,
-                user_id: _,
-            } => bail!("Source::Room is not supported"),
-        };
+        let display_name = source_to_display_name(&line, src).await?;
 
         // タイムアウト処理
         line.check_history_timeout(ctrl).await;
@@ -513,6 +528,61 @@ async fn on_text_message(
             }
         }
     }
+
+    Ok(())
+}
+
+async fn on_image_message(
+    ctrl: &Control,
+    src: &Option<Source>,
+    id: &str,
+    _reply_token: &str,
+    content_provider: &ContentProvider,
+) -> Result<()> {
+    ensure!(src.is_some(), "Field 'source' is required");
+    let src = src.as_ref().unwrap();
+
+    let mut line = ctrl.sysmods().line.lock().await;
+    let prompt = line.config.prompt.clone();
+
+    // source フィールドからプロフィール情報を取得
+    let display_name = source_to_display_name(&line, src).await?;
+
+    // 画像を取得
+    let bin = match content_provider {
+        ContentProvider::Line => line.get_content(id).await?,
+        ContentProvider::External {
+            original_content_url,
+            preview_image_url: _,
+        } => {
+            const TIMEOUT: Duration = Duration::from_secs(30);
+            let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
+            let resp = client
+                .get(original_content_url)
+                .send()
+                .await
+                .context("URL get network error")?;
+
+            netutil::check_http_resp_bin(resp)
+                .await
+                .context("URL get network error")?
+        }
+    };
+    let input_img = OpenAi::to_image_input(&bin)?;
+
+    // タイムアウト処理
+    line.check_history_timeout(ctrl).await;
+
+    // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
+    let sysmsg = prompt.each.join("").replace("${user}", &display_name);
+    line.chat_history_mut(ctrl)
+        .await
+        .push_message(Role::Developer, &sysmsg)?;
+    line.chat_history_mut(ctrl).await.push_message_images(
+        Role::User,
+        "Image sent",
+        std::iter::once(input_img),
+    )?;
 
     Ok(())
 }

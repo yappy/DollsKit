@@ -3,7 +3,6 @@
 use crate::sysmod::openai::{InputItem, Role, WebSearchCall};
 
 use anyhow::{Result, ensure};
-use base64::{Engine, engine::general_purpose};
 use std::collections::VecDeque;
 use tiktoken_rs::CoreBPE;
 
@@ -59,14 +58,14 @@ impl ChatHistory {
     }
 
     pub fn push_message(&mut self, role: Role, content: &str) -> Result<()> {
-        self.push_message_images(role, content, &[])
+        self.push_message_images(role, content, std::iter::empty())
     }
 
     pub fn push_message_images(
         &mut self,
         role: Role,
         text: &str,
-        images: &[Vec<u8>],
+        images: impl IntoIterator<Item = InputContent>,
     ) -> Result<()> {
         let tokens = self.tokenize(text);
         let mut token_count = tokens.len();
@@ -78,12 +77,18 @@ impl ChatHistory {
 
         const IMAGE_TOKEN_LOW: usize = 85;
         for image in images {
-            let base64 = general_purpose::STANDARD.encode(image);
-            let image_url = format!("data:image/png;base64,{base64}");
-            content.push(InputContent::InputImage {
-                image_url,
-                detail: InputImageDetail::Low,
-            });
+            match &image {
+                InputContent::InputImage {
+                    image_url: _,
+                    detail,
+                } => {
+                    assert!(matches!(detail, InputImageDetail::Low));
+                }
+                _ => {
+                    panic!("Must be an InputImage");
+                }
+            }
+            content.push(image);
             token_count += IMAGE_TOKEN_LOW;
         }
 

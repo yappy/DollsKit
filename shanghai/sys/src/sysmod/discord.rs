@@ -26,7 +26,6 @@ use serenity::prelude::*;
 
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::Display;
-use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -821,45 +820,6 @@ async fn camera(ctx: PoiseContext<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
-/// URL から画像を取得し、OpenAI Image Input に適した形式に変換する。
-///
-/// <https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements>
-///
-/// Supported file types
-/// * PNG (.png)
-/// * JPEG (.jpeg and .jpg)
-/// * WEBP (.webp)
-/// * Non-animated GIF (.gif)
-///
-/// Size limits
-/// * Up to 20MB per image
-/// * Low-resolution: 512px x 512px
-/// * High-resolution: 768px (short side) x 2000px (long side)
-async fn get_image_from_url(client: &reqwest::Client, image_url: &str) -> Result<Vec<u8>> {
-    const SIZE_LIMIT: u32 = 512;
-
-    let resp = client
-        .get(image_url)
-        .send()
-        .await
-        .context("URL get network error")?;
-    let bin = netutil::check_http_resp_bin(resp)
-        .await
-        .context("URL get network error")?;
-
-    let mut img: image::DynamicImage = image::load_from_memory(&bin).context("Load image error")?;
-    // 縦か横が制限を超えている場合はアスペクト比を保ちながらリサイズする
-    if img.width() > SIZE_LIMIT || img.height() > SIZE_LIMIT {
-        img = img.resize(SIZE_LIMIT, SIZE_LIMIT, image::imageops::FilterType::Nearest);
-    }
-
-    let mut output = Cursor::new(vec![]);
-    img.write_to(&mut output, image::ImageFormat::Png)
-        .context("Convert image error")?;
-
-    Ok(output.into_inner())
-}
-
 #[derive(Default, poise::ChoiceParameter)]
 enum WebSearchQuality {
     #[name = "High Quality"]
@@ -892,17 +852,29 @@ async fn ai(
     // 画像 URL の解決
     let mut image_list = vec![];
     if !image_url.is_empty() {
-        const TIMEOUT: Duration = Duration::from_secs(15);
+        const TIMEOUT: Duration = Duration::from_secs(30);
         let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
+        let download = async move |image_url| {
+            let resp = client
+                .get(image_url)
+                .send()
+                .await
+                .context("URL get network error")?;
+
+            netutil::check_http_resp_bin(resp)
+                .await
+                .context("URL get network error")
+        };
+
         for (idx, url) in image_url.iter().enumerate() {
             // "<url>" でプレビュー無効
             ctx.reply(format!("Input image [{idx}]: <{url}>")).await?;
-            match get_image_from_url(&client, url).await {
+            match download(url).await {
                 Ok(bin) => {
                     let attach = CreateAttachment::bytes(bin.clone(), "ai_input.png");
                     ctx.send(CreateReply::default().content(url).attachment(attach))
                         .await?;
-                    image_list.push(bin);
+                    image_list.push(OpenAi::to_image_input(&bin)?);
                 }
                 Err(err) => {
                     error!("{err:#?}");
@@ -934,7 +906,7 @@ async fn ai(
         .push_message(Role::Developer, &sysmsg)?;
     discord
         .chat_history_mut()
-        .push_message_images(Role::User, &chat_msg, &image_list)?;
+        .push_message_images(Role::User, &chat_msg, image_list)?;
 
     // システムメッセージ
     let inst = discord.config.prompt.instructions.join("");

@@ -5,12 +5,14 @@ pub mod chat_history;
 pub mod function;
 
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant, SystemTime};
 
 use super::SystemModule;
 use crate::config;
 use crate::taskserver::Control;
+use base64::{Engine, engine::general_purpose};
 use utils::netutil::{self, HttpStatusError};
 
 use anyhow::{Context, ensure};
@@ -1192,6 +1194,52 @@ impl OpenAi {
         let resp: ResponseObject = netutil::convert_from_json(&json_str)?;
 
         Ok(resp)
+    }
+
+    /// OpenAI Image Input に適した形式に変換する。
+    ///
+    /// <https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements>
+    ///
+    /// Supported file types
+    /// * PNG (.png)
+    /// * JPEG (.jpeg and .jpg)
+    /// * WEBP (.webp)
+    /// * Non-animated GIF (.gif)
+    ///
+    /// Size limits
+    /// * Up to 20MB per image
+    /// * Low-resolution: 512px x 512px
+    /// * High-resolution: 768px (short side) x 2000px (long side)
+    ///
+    /// image/png;base64 文字列として保持する。
+    /// detail=Low だと OpenAI 側で 512x512 まで縮小されるらしいが、
+    /// こちらのメモリ消費と送信時のネットワーク帯域が無駄なので
+    /// ここで 512 まで縮小してからエンコードする。
+    pub fn to_image_input(bin: &[u8]) -> Result<InputContent> {
+        const SIZE_LIMIT: u32 = 512;
+
+        let mut img: image::DynamicImage =
+            image::load_from_memory(bin).context("Load image error")?;
+        // 縦か横が制限を超えている場合はアスペクト比を保ちながらリサイズする
+        if img.width() > SIZE_LIMIT || img.height() > SIZE_LIMIT {
+            img = img.resize(SIZE_LIMIT, SIZE_LIMIT, image::imageops::FilterType::Nearest);
+        }
+
+        // png 形式としてメモリに書き出し
+        let mut output = Cursor::new(vec![]);
+        img.write_to(&mut output, image::ImageFormat::Png)
+            .context("Convert image error")?;
+        let dst = output.into_inner();
+
+        // base64 エンコードして json object に変換
+        let base64 = general_purpose::STANDARD.encode(&dst);
+        let image_url = format!("data:image/png;base64,{base64}");
+        let input = InputContent::InputImage {
+            image_url,
+            detail: InputImageDetail::Low,
+        };
+
+        Ok(input)
     }
 
     /// OpenAI Image Generation API を使用する。
