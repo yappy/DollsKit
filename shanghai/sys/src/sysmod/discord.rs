@@ -589,7 +589,6 @@ fn command_list() -> Vec<poise::Command<PoiseData, PoiseError>> {
         dice(),
         attack(),
         camera(),
-        image_input_test(),
         ai(),
         aistatus(),
         aiimg(),
@@ -872,38 +871,6 @@ enum WebSearchQuality {
     Low,
     #[name = "Disabled"]
     Disabled,
-}
-
-#[poise::command(slash_command, prefix_command, category = "AI")]
-async fn image_input_test(
-    ctx: PoiseContext<'_>,
-    #[description = "Image URL(s). You can copy the URL by right-clicking the image."]
-    image_url: Vec<String>,
-) -> Result<(), PoiseError> {
-    if !image_url.is_empty() {
-        const TIMEOUT: Duration = Duration::from_secs(15);
-        let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
-        for (idx, url) in image_url.iter().enumerate() {
-            // <url> でプレビュー無効
-            ctx.reply(format!("Input image [{idx}]: <{url}>")).await?;
-            match get_image_from_url(&client, url).await {
-                Ok(bin) => {
-                    let attach = CreateAttachment::bytes(bin, "ai_input.png");
-                    ctx.send(CreateReply::default().content(url).attachment(attach))
-                        .await?;
-                }
-                Err(err) => {
-                    error!("{err:#?}");
-                    ctx.reply(format!("{err}: {url}")).await?;
-                    return Ok(());
-                }
-            }
-        }
-    } else {
-        ctx.reply(format!("No input")).await?;
-    }
-
-    Ok(())
 }
 
 /// AI assistant.

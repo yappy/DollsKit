@@ -66,7 +66,6 @@ fn register_mine_sweeper<T: 'static>(func_table: &mut FunctionTable<T>) {
                 "status".to_string(),
                 "open".to_string(),
             ]),
-            ..Default::default()
         },
     );
     properties.insert(

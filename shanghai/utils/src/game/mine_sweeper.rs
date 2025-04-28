@@ -136,7 +136,7 @@ impl MineSweeper {
             width,
             height,
             mine_count,
-            board: board,
+            board,
             revealed: vec![false; (config.width * config.height) as usize],
         };
 
