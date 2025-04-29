@@ -903,10 +903,10 @@ async fn ai(
         .replace("${user}", &ctx.author().name);
     discord
         .chat_history_mut()
-        .push_message(Role::Developer, &sysmsg)?;
+        .push_input_message(Role::Developer, &sysmsg)?;
     discord
         .chat_history_mut()
-        .push_message_images(Role::User, &chat_msg, image_list)?;
+        .push_input_and_images(Role::User, &chat_msg, image_list)?;
 
     // システムメッセージ
     let inst = discord.config.prompt.instructions.join("");
@@ -969,18 +969,12 @@ async fn ai(
                 }
                 // アシスタント応答と web search があれば履歴に追加
                 let text = resp.output_text();
-                if !text.is_empty() {
-                    discord.chat_history_mut().push_message_tool(
-                        std::iter::once((Role::Assistant, text.clone())),
-                        resp.web_search_iter().cloned(),
-                    )?;
-                } else {
-                    discord
-                        .chat_history_mut()
-                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
-                }
+                let text = if text.is_empty() { None } else { Some(text) };
+                discord
+                    .chat_history_mut()
+                    .push_output_and_tools(text.as_deref(), resp.web_search_iter().cloned())?;
 
-                if !text.is_empty() {
+                if let Some(text) = text {
                     break Ok(text);
                 }
             }

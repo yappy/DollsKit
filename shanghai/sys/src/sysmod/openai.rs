@@ -352,12 +352,17 @@ pub enum InputContent {
         /// One of high, low, or auto. Defaults to auto.
         detail: InputImageDetail,
     },
+    OutputText {
+        /// The text output from the model.
+        text: String,
+    },
 }
 
 impl Debug for InputContent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             InputContent::InputText { text } => write!(f, "InputText({text})"),
+            InputContent::OutputText { text } => write!(f, "OutputText({text})"),
             InputContent::InputImage { image_url, detail } => write!(
                 f,
                 "InputImage(image_url: {} bytes, {detail:?})",

@@ -385,10 +385,10 @@ async fn on_text_message(
         let sysmsg = prompt.each.join("").replace("${user}", &display_name);
         line.chat_history_mut(ctrl)
             .await
-            .push_message(Role::Developer, &sysmsg)?;
+            .push_input_message(Role::Developer, &sysmsg)?;
         line.chat_history_mut(ctrl)
             .await
-            .push_message_images(Role::User, text, imgs)?;
+            .push_input_and_images(Role::User, text, imgs)?;
 
         prompt
     };
@@ -471,18 +471,12 @@ async fn on_text_message(
                 }
                 // アシスタント応答と web search があれば履歴に追加
                 let text = resp.output_text();
-                if !text.is_empty() {
-                    line.chat_history_mut(ctrl).await.push_message_tool(
-                        std::iter::once((Role::Assistant, text.clone())),
-                        resp.web_search_iter().cloned(),
-                    )?;
-                } else {
-                    line.chat_history_mut(ctrl)
-                        .await
-                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
-                }
+                let text = if text.is_empty() { None } else { Some(text) };
+                line.chat_history_mut(ctrl)
+                    .await
+                    .push_output_and_tools(text.as_deref(), resp.web_search_iter().cloned())?;
 
-                if !text.is_empty() {
+                if let Some(text) = text {
                     break Ok(text);
                 }
             }

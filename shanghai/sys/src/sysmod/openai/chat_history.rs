@@ -57,16 +57,30 @@ impl ChatHistory {
         self.token_limit -= token_count;
     }
 
-    pub fn push_message(&mut self, role: Role, content: &str) -> Result<()> {
-        self.push_message_images(role, content, std::iter::empty())
+    pub fn push_input_message(&mut self, role: Role, text: &str) -> Result<()> {
+        assert!(matches!(role, Role::Developer | Role::User));
+
+        let tokens = self.tokenize(text);
+        let token_count = tokens.len();
+
+        let item = InputItem::Message {
+            role,
+            content: vec![InputContent::InputText {
+                text: text.to_string(),
+            }],
+        };
+
+        self.push(vec![item], token_count)
     }
 
-    pub fn push_message_images(
+    pub fn push_input_and_images(
         &mut self,
         role: Role,
         text: &str,
         images: impl IntoIterator<Item = InputContent>,
     ) -> Result<()> {
+        assert!(matches!(role, Role::Developer | Role::User));
+
         let tokens = self.tokenize(text);
         let mut token_count = tokens.len();
 
@@ -96,27 +110,37 @@ impl ChatHistory {
         self.push(vec![item], token_count)
     }
 
-    pub fn push_message_tool(
+    pub fn push_output_message(&mut self, text: &str) -> Result<()> {
+        self.push_output_and_tools(Some(text), std::iter::empty())
+    }
+
+    pub fn push_output_and_tools(
         &mut self,
-        msgs: impl Iterator<Item = (Role, String)>,
+        text: Option<&str>,
         web_search_ids: impl Iterator<Item = WebSearchCall>,
     ) -> Result<()> {
         let mut items = vec![];
         let mut token_count = 0;
 
-        for (role, text) in msgs {
-            let tokens = self.tokenize(&text);
+        if let Some(text) = text {
+            let tokens = self.tokenize(text);
+
+            let content = vec![InputContent::OutputText {
+                text: text.to_string(),
+            }];
             let item = InputItem::Message {
-                role,
-                content: vec![InputContent::InputText { text }],
+                role: Role::Assistant,
+                content,
             };
             items.push(item);
             token_count += tokens.len();
         }
+
         for wsc in web_search_ids {
-            // TODO: token
             let item = InputItem::WebSearchCall(wsc);
             items.push(item);
+            // コンテキストウィンドウサイズには影響しないらしい
+            token_count += 0;
         }
 
         // 空なら追加せず成功とする
