@@ -1110,7 +1110,7 @@ impl OpenAi {
         let key = &self.config.api_key;
 
         info!("[openai] post_json: {url}");
-        info!("[openai] {}", serde_json::to_string(body).unwrap());
+        info!("[openai] {body:?}");
         self.check_enabled()?;
 
         let resp = self
