@@ -1,7 +1,7 @@
 //! LINE API。
 
 use super::SystemModule;
-use super::openai::ParameterType;
+use super::openai::{InputContent, ParameterType};
 use super::openai::{
     ParameterElement,
     chat_history::ChatHistory,
@@ -86,10 +86,11 @@ pub struct Line {
     /// HTTP クライアント。
     client: reqwest::Client,
 
+    pub image_buffer: HashMap<String, Vec<InputContent>>,
     /// ai コマンドの会話履歴。
     pub chat_history: Option<ChatHistory>,
-    /// [Self::chat_history] の有効期限。
-    pub chat_timeout: Option<Instant>,
+    /// [Self::image_buffer] [Self::chat_history] の有効期限。
+    pub history_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
     pub func_table: Option<FunctionTable<FunctionContext>>,
 }
@@ -104,8 +105,9 @@ impl Line {
         Ok(Self {
             config,
             client,
+            image_buffer: Default::default(),
             chat_history: None,
-            chat_timeout: None,
+            history_timeout: None,
             func_table: None,
         })
     }
@@ -329,14 +331,21 @@ impl Line {
         Ok(bin)
     }
 
-    /// [Self::chat_history] にタイムアウトを適用する。
+    pub fn postpone_timeout(&mut self) {
+        let now = Instant::now();
+        let timeout = now + Duration::from_secs(self.config.prompt.history_timeout_min as u64 * 60);
+        self.history_timeout = Some(timeout);
+    }
+
+    /// [Self::image_buffer] [Self::chat_history] にタイムアウトを適用する。
     pub async fn check_history_timeout(&mut self, ctrl: &Control) {
         let now = Instant::now();
 
-        if let Some(timeout) = self.chat_timeout {
+        if let Some(timeout) = self.history_timeout {
             if now > timeout {
+                self.image_buffer.clear();
                 self.chat_history_mut(ctrl).await.clear();
-                self.chat_timeout = None;
+                self.history_timeout = None;
             }
         }
     }

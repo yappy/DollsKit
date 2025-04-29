@@ -12,7 +12,7 @@ use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use utils::netutil;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -378,6 +378,9 @@ async fn on_text_message(
         // タイムアウト処理
         line.check_history_timeout(ctrl).await;
 
+        // 画像バッファから同一ユーザに対する画像リストを抽出
+        let imgs = line.image_buffer.remove(&display_name).unwrap_or_default();
+
         // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
         let sysmsg = prompt.each.join("").replace("${user}", &display_name);
         line.chat_history_mut(ctrl)
@@ -385,7 +388,7 @@ async fn on_text_message(
             .push_message(Role::Developer, &sysmsg)?;
         line.chat_history_mut(ctrl)
             .await
-            .push_message(Role::User, text)?;
+            .push_message_images(Role::User, text, imgs)?;
 
         prompt
     };
@@ -508,9 +511,7 @@ async fn on_text_message(
                 line.reply_multi(reply_token, &msgs).await?;
 
                 // タイムアウト延長
-                line.chat_timeout = Some(
-                    Instant::now() + Duration::from_secs(prompt.history_timeout_min as u64 * 60),
-                );
+                line.postpone_timeout();
             }
             Err(err) => {
                 error!("[line] openai error: {:#?}", err);
@@ -543,7 +544,6 @@ async fn on_image_message(
     let src = src.as_ref().unwrap();
 
     let mut line = ctrl.sysmods().line.lock().await;
-    let prompt = line.config.prompt.clone();
 
     // source フィールドからプロフィール情報を取得
     let display_name = source_to_display_name(&line, src).await?;
@@ -568,21 +568,16 @@ async fn on_image_message(
                 .context("URL get network error")?
         }
     };
-    let input_img = OpenAi::to_image_input(&bin)?;
+    let input_content = OpenAi::to_image_input(&bin)?;
 
     // タイムアウト処理
     line.check_history_timeout(ctrl).await;
-
-    // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
-    let sysmsg = prompt.each.join("").replace("${user}", &display_name);
-    line.chat_history_mut(ctrl)
-        .await
-        .push_message(Role::Developer, &sysmsg)?;
-    line.chat_history_mut(ctrl).await.push_message_images(
-        Role::User,
-        "Image sent",
-        std::iter::once(input_img),
-    )?;
+    // 今回の発言を一時バッファに追加
+    if let Some(v) = line.image_buffer.get_mut(&display_name) {
+        v.push(input_content);
+    } else {
+        line.image_buffer.insert(display_name, vec![input_content]);
+    }
 
     Ok(())
 }
