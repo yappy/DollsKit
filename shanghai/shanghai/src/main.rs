@@ -37,6 +37,7 @@ const FILE_LOG: &str = "shanghai.log";
 
 const LOG_FILTER: &[&str] = &[module_path!(), "sys"];
 const LOG_ROTATE_SIZE: usize = 1024 * 1024;
+const LOG_ROTATE_COUNT: u16 = 10;
 const LOG_BUF_SIZE: usize = 64 * 1024;
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
@@ -92,6 +93,7 @@ fn init_log(is_daemon: bool) -> FlushGuard {
     // filter = Off, Error, Warn, Info, Debug, Trace
     let rotate_opts = RotateOptions {
         size: RotateSize::Enabled(LOG_ROTATE_SIZE),
+        file_count: LOG_ROTATE_COUNT,
         ..Default::default()
     };
     let file_log = FileLogger::new_boxed(
