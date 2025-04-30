@@ -165,6 +165,7 @@ fn system_main() -> Result<()> {
     loop {
         info!("system main");
         info!("{}", verinfo::version_info());
+        log::logger().flush();
 
         sys::config::load()?;
 
