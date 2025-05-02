@@ -438,6 +438,13 @@ async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()>
     Ok(())
 }
 
+fn remove_empty_lines(src: &str) -> String {
+    src.lines()
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// 分を (日, 時間, 分) に変換する。
 fn convert_duration(mut min: u32) -> (u32, u32, u32) {
     let day = min / (60 * 24);
@@ -990,7 +997,7 @@ async fn ai(
     match result {
         Ok(reply_msg) => {
             info!("[discord] openai reply: {reply_msg}");
-            reply_long(&ctx, &reply_msg).await?;
+            reply_long(&ctx, &remove_empty_lines(&reply_msg)).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(
@@ -1326,6 +1333,13 @@ mod tests {
         let obj: DiscordPrompt = Default::default();
         assert_ne!(obj.instructions.len(), 0);
         assert_ne!(obj.each.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_empty_lines() {
+        let src = "\n\nabc\n\n\ndef\n\n";
+        let result = remove_empty_lines(src);
+        assert_eq!(result, "abc\ndef");
     }
 
     #[test]
