@@ -237,7 +237,7 @@ async fn history_post(
     }
     let (cmd, targets) = param.unwrap();
 
-    let resp = match cmd.as_str() {
+    match cmd.as_str() {
         "archive" => {
             if let Err(why) = archive_pics(&ctrl, &targets).await {
                 if why.is::<std::io::Error>() {
@@ -271,8 +271,7 @@ async fn history_post(
         _ => HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body("invalid command"),
-    };
-    resp
+    }
 }
 
 /// POST /priv/camera/archive
@@ -292,7 +291,7 @@ async fn archive_post(
     }
     let (cmd, targets) = param.unwrap();
 
-    let resp = match cmd.as_str() {
+    match cmd.as_str() {
         "twitter" => {
             if targets.is_empty() || targets.len() > LIMIT_PHOTO_COUNT {
                 error_resp_msg(StatusCode::BAD_REQUEST, "invalid pic count")
@@ -318,8 +317,7 @@ async fn archive_post(
         _ => HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body("invalid command"),
-    };
-    resp
+    }
 }
 
 async fn archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
