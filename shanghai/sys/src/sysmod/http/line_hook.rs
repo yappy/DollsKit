@@ -241,7 +241,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         return Err(ActixError::new("Bad x-line-signature header", 400));
     }
     let signature = signature.unwrap();
-    info!("x-line-signature: {}", signature);
+    info!("x-line-signature: {signature}");
 
     // verify signature
     let channel_secret = {
@@ -277,7 +277,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
         error!("[line] Json parse error: {err}");
         error!("[line] {json_body}");
     })?;
-    info!("{:?}", req);
+    info!("{req:?}");
 
     // WebhookEvent が最大5個入っている
     for ev in req.events.iter() {
@@ -316,11 +316,11 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                         .await?;
                 }
                 other => {
-                    info!("[line] Ignore message type: {:?}", other);
+                    info!("[line] Ignore message type: {other:?}");
                 }
             },
             other => {
-                info!("[line] Ignore event: {:?}", other);
+                info!("[line] Ignore event: {other:?}");
             }
         }
     }
@@ -460,8 +460,7 @@ async fn on_text_message(
                             func_trace.push('\n');
                         }
                         func_trace += &format!(
-                            "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                            func_out
+                            "function call: {func_name}\nparameters: {func_args}\nresult: {func_out}"
                         );
                     }
                     // function の結果を履歴に追加
@@ -482,7 +481,7 @@ async fn on_text_message(
             }
             Err(err) => {
                 // エラーが発生した
-                error!("{:#?}", err);
+                error!("{err:#?}");
                 break Err(err);
             }
         }
@@ -508,7 +507,7 @@ async fn on_text_message(
                 line.postpone_timeout();
             }
             Err(err) => {
-                error!("[line] openai error: {:#?}", err);
+                error!("[line] openai error: {err:#?}");
                 let errmsg = match OpenAi::error_kind(&err) {
                     OpenAiErrorKind::Timeout => prompt.timeout_msg,
                     OpenAiErrorKind::RateLimit => prompt.ratelimit_msg,

@@ -460,7 +460,7 @@ async fn take_post(ctrl: web::Data<Control>) -> WebResult {
     let pic = take_a_pic(TakePicOption::new()).await;
     if let Err(ref e) = pic {
         error!("take a picture error");
-        error!("{:#}", e);
+        error!("{e:#}");
     }
     let pic = pic?;
 

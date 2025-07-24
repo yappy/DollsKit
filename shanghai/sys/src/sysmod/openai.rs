@@ -1136,7 +1136,7 @@ impl OpenAi {
         // 失敗しても警告のみ
         match RateLimit::from(&resp) {
             Ok(rate_limit) => {
-                info!("[openai] rate limit: {:?}", rate_limit);
+                info!("[openai] rate limit: {rate_limit:?}");
                 self.rate_limit = Some(rate_limit);
             }
             Err(err) => {
@@ -1280,7 +1280,7 @@ impl OpenAi {
             let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
             result.push(url.to_string());
         }
-        info!("[openai] image gen OK: {:?}", result);
+        info!("[openai] image gen OK: {result:?}");
 
         Ok(result)
     }
@@ -1464,7 +1464,7 @@ mod tests {
         let size = res.len();
         const PATH: &str = "speech.mp3";
         std::fs::write(PATH, res)?;
-        println!("Wrote to: {PATH} ({} bytes)", size);
+        println!("Wrote to: {PATH} ({size} bytes)");
 
         Ok(())
     }

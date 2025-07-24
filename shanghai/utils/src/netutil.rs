@@ -67,7 +67,7 @@ where
     T: Deserialize<'a>,
 {
     let obj = serde_json::from_str::<T>(json_str)
-        .with_context(|| format!("JSON parse failed: {}", json_str))?;
+        .with_context(|| format!("JSON parse failed: {json_str}"))?;
 
     Ok(obj)
 }

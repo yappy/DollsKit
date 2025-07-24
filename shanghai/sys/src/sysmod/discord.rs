@@ -246,20 +246,20 @@ impl Discord {
     /// 接続前の場合、接続後まで遅延する。
     pub async fn say(&mut self, msg: &str) -> Result<()> {
         if !self.config.enabled {
-            info!("[discord] disabled - msg: {}", msg);
+            info!("[discord] disabled - msg: {msg}");
             return Ok(());
         }
         if self.config.notif_channel == 0 {
-            info!("[discord] notification disabled - msg: {}", msg);
+            info!("[discord] notification disabled - msg: {msg}");
             return Ok(());
         }
         if self.ctx.is_none() {
-            info!("[discord] not ready, postponed - msg: {}", msg);
+            info!("[discord] not ready, postponed - msg: {msg}");
             self.postponed_msgs.push(msg.to_string());
             return Ok(());
         }
 
-        info!("[discord] say msg: {}", msg);
+        info!("[discord] say msg: {msg}");
         let ch = ChannelId::new(self.config.notif_channel);
         let ctx = self.ctx.as_ref().unwrap();
         ch.say(ctx, msg).await?;
@@ -299,7 +299,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         }
         owners.insert(UserId::new(id));
     }
-    info!("[discord] owners: {:?}", owners);
+    info!("[discord] owners: {owners:?}");
 
     let ctrl_for_setup = ctrl.clone();
     let framework = poise::Framework::builder()
@@ -502,7 +502,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     let mut after = None;
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        info!("get_messages: after={:?}", after);
+        info!("get_messages: after={after:?}");
         let target = after.map(MessagePagination::After);
         let msgs = ctx
             .http
@@ -525,12 +525,12 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
             continue;
         }
         // ch, msg ID はログに残す
-        info!("Delete: ch={}, msg={}", ch, mid);
+        info!("Delete: ch={ch}, msg={mid}");
         // https://discord.com/developers/docs/resources/channel#delete-message
         ctx.http.delete_message(ch, mid, None).await?;
         delcount += 1;
     }
-    info!("deleted {} messages", delcount);
+    info!("deleted {delcount} messages");
 
     Ok((delcount, allmsgs.len()))
 }
@@ -963,8 +963,7 @@ async fn ai(
                         reply_long(
                             &ctx,
                             &format!(
-                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                                func_out
+                                "function call: {func_name}\nparameters: {func_args}\nresult: {func_out}"
                             ),
                         )
                         .await?;
@@ -987,7 +986,7 @@ async fn ai(
             }
             Err(err) => {
                 // エラーが発生した
-                error!("{:#?}", err);
+                error!("{err:#?}");
                 break Err(err);
             }
         }
@@ -1006,7 +1005,7 @@ async fn ai(
             );
         }
         Err(err) => {
-            error!("[discord] openai error: {:#?}", err);
+            error!("[discord] openai error: {err:#?}");
             let errmsg = match OpenAi::error_kind(&err) {
                 OpenAiErrorKind::Timeout => "Server timed out.".to_string(),
                 OpenAiErrorKind::RateLimit => {
@@ -1231,10 +1230,10 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
     // エラーを返していないはずのものは panic にする
     match error {
         poise::FrameworkError::Setup { error, .. } => {
-            panic!("Failed on setup: {:#?}", error)
+            panic!("Failed on setup: {error:#?}")
         }
         poise::FrameworkError::EventHandler { error, .. } => {
-            panic!("Failed on eventhandler: {:#?}", error)
+            panic!("Failed on eventhandler: {error:#?}")
         }
         poise::FrameworkError::Command { error, ctx, .. } => {
             error!(
@@ -1257,7 +1256,7 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
             info!("[discord] not an owner: {}", ctx.author());
             info!("[discord] reply: {errmsg}");
             if let Err(why) = ctx.reply(errmsg).await {
-                error!("[discord] reply error: {:#?}", why)
+                error!("[discord] reply error: {why:#?}")
             }
         }
         poise::FrameworkError::UnknownInteraction { interaction, .. } => {
@@ -1268,7 +1267,7 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
         }
         error => {
             if let Err(why) = poise::builtins::on_error(error).await {
-                error!("[discord] error while handling error: {:#?}", why)
+                error!("[discord] error while handling error: {why:#?}")
             }
         }
     }
@@ -1310,10 +1309,10 @@ async fn event_handler(
                 // notif_channel が有効の場合しかキューされない
                 assert_ne!(0, ch);
 
-                info!("[discord] say msg: {}", msg);
+                info!("[discord] say msg: {msg}");
                 let ch = ChannelId::new(ch);
                 if let Err(why) = ch.say(&ctx, msg).await {
-                    error!("{:#?}", why);
+                    error!("{why:#?}");
                 }
             }
             discord.postponed_msgs.clear();

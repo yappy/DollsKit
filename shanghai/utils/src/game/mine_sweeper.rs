@@ -283,7 +283,7 @@ mod test {
                     }
                     _ => {}
                 },
-                Err(e) => println!("Error: {}", e),
+                Err(e) => println!("Error: {e}"),
             }
         }
     }

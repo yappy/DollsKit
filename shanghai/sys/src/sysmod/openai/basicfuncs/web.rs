@@ -114,7 +114,7 @@ mod tests {
         args.insert("area".into(), Value::String("広島県".into()));
 
         let text = get_weather_report(&args).await?;
-        println!("{}", text);
+        println!("{text}");
 
         Ok(())
     }

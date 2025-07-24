@@ -50,8 +50,7 @@ fn register_flip_coin<T: 'static>(func_table: &mut FunctionTable<T>) {
         ParameterElement {
             type_: vec![ParameterType::Integer, ParameterType::Null],
             description: Some(format!(
-                "Number of coins ({} <= count <= {}) (default is 1)",
-                COUNT_MIN, COUNT_MAX
+                "Number of coins ({COUNT_MIN} <= count <= {COUNT_MAX}) (default is 1)"
             )),
             //minumum: Some(COUNT_MIN),
             //maximum: Some(COUNT_MAX),
@@ -80,7 +79,7 @@ async fn role_dice(args: &FuncArgs) -> Result<String> {
     let count = get_arg_i64_opt(args, "count", COUNT_MIN..=COUNT_MAX)?.unwrap_or(1);
     let result = dice::roll(face as u64, count as u32)?;
 
-    Ok(format!("{:?}", result))
+    Ok(format!("{result:?}"))
 }
 
 fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
@@ -90,8 +89,7 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
         ParameterElement {
             type_: vec![ParameterType::Integer, ParameterType::Null],
             description: Some(format!(
-                "Face count of dice ({} <= face <= {}) (default is 6)",
-                FACE_MIN, FACE_MAX
+                "Face count of dice ({FACE_MIN} <= face <= {FACE_MAX}) (default is 6)"
             )),
             //minumum: Some(FACE_MIN),
             //maximum: Some(FACE_MAX),
@@ -103,8 +101,7 @@ fn register_role_dice<T: 'static>(func_table: &mut FunctionTable<T>) {
         ParameterElement {
             type_: vec![ParameterType::Integer, ParameterType::Null],
             description: Some(format!(
-                "Number of Dice ({} <= count <= {}) (default is 1)",
-                COUNT_MIN, COUNT_MAX
+                "Number of Dice ({COUNT_MIN} <= count <= {COUNT_MAX}) (default is 1)"
             )),
             //minumum: Some(COUNT_MIN),
             //maximum: Some(COUNT_MAX),

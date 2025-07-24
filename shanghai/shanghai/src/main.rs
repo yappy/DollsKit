@@ -132,14 +132,14 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
         let mut twitter = ctrl.sysmods().twitter.lock().await;
         if let Err(why) = twitter.tweet(&msg).await {
             error!("error on tweet");
-            error!("{:#?}", why);
+            error!("{why:#?}");
         }
     }
     {
         let mut discord = ctrl.sysmods().discord.lock().await;
         if let Err(why) = discord.say(&msg).await {
             error!("error on discord notification");
-            error!("{:#?}", why);
+            error!("{why:#?}");
         }
     }
 
@@ -306,7 +306,7 @@ pub fn main() -> Result<()> {
 
     system_main().map_err(|e| {
         error!("Error in system_main");
-        error!("{:#}", e);
+        error!("{e:#}");
         e
     })
 

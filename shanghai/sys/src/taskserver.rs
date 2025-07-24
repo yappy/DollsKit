@@ -83,7 +83,7 @@ where
     let ctrl_move = Arc::clone(ctrl);
 
     ctrl.rt.spawn(async move {
-        info!("[{}] start (one-shot)", name);
+        info!("[{name}] start (one-shot)");
 
         // ctrl を clone して future へ move する
         let future = f(Arc::clone(&ctrl_move));
@@ -91,9 +91,9 @@ where
         // drop clone of ctrl
 
         if let Err(e) = result {
-            error!("[{}] finish (error): {:?}", name, e);
+            error!("[{name}] finish (error): {e:?}");
         } else {
-            info!("[{}] finish (success)", name);
+            info!("[{name}] finish (success)");
         }
         // drop ctrl
     });
@@ -107,14 +107,14 @@ where
     let name = name.to_string();
 
     ctrl.rt.spawn(async move {
-        info!("[{}] start (one-shot)", name);
+        info!("[{name}] start (one-shot)");
 
         let result = f.await;
 
         if let Err(e) = result {
-            error!("[{}] finish (error): {:?}", name, e);
+            error!("[{name}] finish (error): {e:?}");
         } else {
-            info!("[{}] finish (success)", name);
+            info!("[{name}] finish (success)");
         }
         // drop ctrl
     });
@@ -167,8 +167,8 @@ where
     if wakeup_list.len() > LOG_LIMIT {
         str += &format!(", ... ({} items)", wakeup_list.len());
     }
-    info!("[{}] registered as a periodic task", name);
-    info!("[{}] wakeup time: {}", name, str);
+    info!("[{name}] registered as a periodic task");
+    info!("[{name}] wakeup time: {str}");
 
     // spawn async task
     ctrl.rt.spawn(async move {
@@ -180,32 +180,32 @@ where
             let now = Local::now().naive_local();
             let now_hmd = now.date().and_hms_opt(now.hour(), now.minute(), 0).unwrap();
             let next_min = now_hmd + CDuration::try_minutes(1).unwrap();
-            trace!("[{}] periodic task check: {}", name, now_hmd);
+            trace!("[{name}] periodic task check: {now_hmd}");
 
             // 起動時刻リスト内で二分探索
             match dt_list.binary_search(&now_hmd) {
                 Ok(_ind) => {
                     // 一致するものを発見したので続行
-                    trace!("[{}] hit in time list: {}", name, now_hmd);
+                    trace!("[{name}] hit in time list: {now_hmd}");
                 }
                 Err(ind) => {
                     // ind = insertion point
-                    trace!("[{}] not found in time list: {}", name, now_hmd);
+                    trace!("[{name}] not found in time list: {now_hmd}");
                     // 起きるべき時刻は dt_list[ind]
                     if ind < dt_list.len() {
                         let target_dt = dt_list[ind] + CDuration::try_seconds(1).unwrap();
                         let sleep_duration = target_dt - Local::now().naive_local();
                         let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
-                        trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
+                        trace!("[{name}] target: {target_dt}, sleep_sec: {sleep_sec}");
                         select! {
                             _ = tokio::time::sleep(TDuration::from_secs(sleep_sec)) => {}
                             _ = ctrl_move.wait_cancel_rx() => {
-                                info!("[{}] cancel periodic task", name);
+                                info!("[{name}] cancel periodic task");
                                 return;
                             }
                         }
 
-                        trace!("[{}] wake up", name);
+                        trace!("[{name}] wake up");
                     } else {
                         // 一番後ろよりも現在時刻が後
                         // 起動時刻リストをすべて1日ずつ後ろにずらす
@@ -213,7 +213,7 @@ where
                             let tomorrow = dt.date() + CDuration::try_days(1).unwrap();
                             let time = dt.time();
                             *dt = tomorrow.and_time(time);
-                            trace!("[{}] advance time list by 1 day", name);
+                            trace!("[{name}] advance time list by 1 day");
                         }
                     }
                     continue;
@@ -222,13 +222,13 @@ where
 
             // ctrl を clone して future 内に move する
             let future = f(ctrl_move.clone());
-            info!("[{}] start (periodic)", name);
+            info!("[{name}] start (periodic)");
             let result = future.await;
             // drop clone of ctrl
             if let Err(e) = result {
-                error!("[{}] finish (error): {:?}", name, e);
+                error!("[{name}] finish (error): {e:?}");
             } else {
-                info!("[{}] finish (success)", name);
+                info!("[{name}] finish (success)");
             }
 
             // 次の "分" を狙って sleep する
@@ -239,15 +239,15 @@ where
             // その場合は 0 に補正する
             let sleep_duration = target_dt - Local::now().naive_local();
             let sleep_sec = sleep_duration.num_seconds().clamp(0, i64::MAX) as u64;
-            trace!("[{}] target: {}, sleep_sec: {}", name, target_dt, sleep_sec);
+            trace!("[{name}] target: {target_dt}, sleep_sec: {sleep_sec}");
             select! {
                 _ = tokio::time::sleep(tokio::time::Duration::from_secs(sleep_sec)) => {}
                 _ = ctrl_move.wait_cancel_rx() => {
-                    info!("[{}] cancel periodic task", name);
+                    info!("[{name}] cancel periodic task");
                     return;
                 }
             }
-            trace!("[{}] wake up", name);
+            trace!("[{name}] wake up");
         }
         // drop ctrl
     });

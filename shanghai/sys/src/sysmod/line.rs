@@ -382,7 +382,7 @@ impl Line {
             notification_disabled: None,
         };
         let resp = self.post_auth_json(URL_REPLY, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -409,7 +409,7 @@ impl Line {
             custom_aggregation_units: None,
         };
         let resp = self.post_auth_json(URL_PUSH, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -428,7 +428,7 @@ impl Line {
             custom_aggregation_units: None,
         };
         let resp = self.post_auth_json(URL_PUSH, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -481,7 +481,7 @@ impl Line {
         T: Serialize + Debug,
         R: for<'de> Deserialize<'de>,
     {
-        info!("[line] POST {url} {:?}", body);
+        info!("[line] POST {url} {body:?}");
         let token = &self.config.token;
         let resp = self
             .client
