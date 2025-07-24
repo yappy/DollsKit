@@ -53,9 +53,7 @@ pub fn load() -> Result<()> {
         // デフォルト設定ファイルを削除する
         info!("remove {CONFIG_DEF_FILE}");
         if let Err(e) = remove_file(CONFIG_DEF_FILE) {
-            warn!(
-                "removing {CONFIG_DEF_FILE} failed (the first time execution?): {e}"
-            );
+            warn!("removing {CONFIG_DEF_FILE} failed (the first time execution?): {e}");
         }
         // デフォルト設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
@@ -112,9 +110,7 @@ pub fn load() -> Result<()> {
         // 現在設定ファイルを削除する
         info!("remove {CONFIG_CUR_FILE}");
         if let Err(e) = remove_file(CONFIG_CUR_FILE) {
-            warn!(
-                "removing {CONFIG_CUR_FILE} failed (the first time execution?): {e}"
-            );
+            warn!("removing {CONFIG_CUR_FILE} failed (the first time execution?): {e}");
         }
         // 現在設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
