@@ -28,7 +28,7 @@ serde_with.workspace = true
 toml.workspace = true
 
 # Async
-tokio = { version = "1.46.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.47.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
 
 # HTTP client
