@@ -850,42 +850,59 @@ async fn ai(
     #[min_length = 1]
     #[max_length = 6000]
     chat_msg: String,
-    #[description = "Image URL(s). You can copy the URL by right-clicking the image."]
-    image_url: Vec<String>,
+    #[description = "Image URL(s) separated by whitespace. You can copy the URL by right-clicking an image on Discord."]
+    image_url: Option<String>,
     web_search_quality: Option<WebSearchQuality>,
     #[description = "Show internal details when AI calls a function. (default=False)"]
     trace_function_call: Option<bool>,
 ) -> Result<(), PoiseError> {
     // 画像 URL の解決
     let mut image_list = vec![];
-    if !image_url.is_empty() {
+    if let Some(image_url) = image_url {
+        // URL verify
+        let mut urls = vec![];
+        for (idx, url) in image_url.split_whitespace().enumerate() {
+            if !url.chars().all(|c| is_url_char(c)) {
+                ctx.reply(format!("Invalid URL [{idx}]")).await?;
+                return Ok(());
+            }
+            urls.push(url);
+        }
+
+        // HTTP クライアントの準備
         const TIMEOUT: Duration = Duration::from_secs(30);
         let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
-        let download = async move |image_url| {
+        let download = async move |url| {
             let resp = client
-                .get(image_url)
+                .get(url)
                 .send()
                 .await
-                .context("URL get network error")?;
+                .with_context(|| format!("URL get network error"))?;
 
             netutil::check_http_resp_bin(resp)
                 .await
-                .context("URL get network error")
+                .with_context(|| format!("URL get network error"))
         };
 
-        for (idx, url) in image_url.iter().enumerate() {
-            // "<url>" でプレビュー無効
-            ctx.reply(format!("Input image [{idx}]: <{url}>")).await?;
+        for (idx, &url) in urls.iter().enumerate() {
+            // URL から画像をダウンロード
             match download(url).await {
                 Ok(bin) => {
                     let attach = CreateAttachment::bytes(bin.clone(), "ai_input.png");
-                    ctx.send(CreateReply::default().content(url).attachment(attach))
-                        .await?;
+                    // 画像を添付して返信
+                    // 本文は URL ("<url>" でプレビュー無効)
+                    ctx.send(
+                        CreateReply::default()
+                            .content(format!("Input image [{idx}]: <{url}>"))
+                            .attachment(attach),
+                    )
+                    .await?;
                     image_list.push(OpenAi::to_image_input(&bin)?);
                 }
                 Err(err) => {
                     error!("{err:#?}");
-                    ctx.reply(format!("{err}: {url}")).await?;
+                    ctx.reply(format!("Download failed [{idx}]: <{url}>"))
+                        .await?;
                     return Ok(());
                 }
             }
@@ -1022,6 +1039,14 @@ async fn ai(
     }
 
     Ok(())
+}
+
+fn is_url_char(c: char) -> bool {
+    match c {
+        'a'..='z' | 'A'..='Z' | '0'..='9' => return true,
+        ':' | '/' | '.' | '-' | '_' | '~' | '?' | '&' | '=' | '%' | '+' => return true,
+        _ => false,
+    }
 }
 
 #[poise::command(
