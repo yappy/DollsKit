@@ -121,10 +121,10 @@ impl MineSweeper {
                 for (dx, dy) in DXY {
                     let nx = x + dx;
                     let ny = y + dy;
-                    if let Some(nidx) = Self::convert_raw(nx, ny, width, height) {
-                        if matches!(board[nidx], Cell::Mine) {
-                            count += 1;
-                        }
+                    if let Some(nidx) = Self::convert_raw(nx, ny, width, height)
+                        && matches!(board[nidx], Cell::Mine)
+                    {
+                        count += 1;
                     }
                 }
                 board[idx] = Cell::Number(count);
@@ -196,13 +196,13 @@ impl MineSweeper {
         let idx = self.convert(x, y)?;
         if !self.revealed[idx] {
             self.revealed[idx] = true;
-            if let Cell::Number(n) = self.board[idx] {
-                if n == 0 {
-                    for (dy, dx) in DXY {
-                        let nx = x + dx;
-                        let ny = y + dy;
-                        self.reveal_raw(nx, ny);
-                    }
+            if let Cell::Number(n) = self.board[idx]
+                && n == 0
+            {
+                for (dy, dx) in DXY {
+                    let nx = x + dx;
+                    let ny = y + dy;
+                    self.reveal_raw(nx, ny);
                 }
             }
             Some(self.board[idx])

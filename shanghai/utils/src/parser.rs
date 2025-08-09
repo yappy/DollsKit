@@ -126,11 +126,11 @@ impl Lexer<'_> {
         if range.contains(&c) {
             let mut str = String::from(c);
             loop {
-                if let Some(c) = self.peekc() {
-                    if range.contains(&c) {
-                        str.push(self.getc().unwrap());
-                        continue;
-                    }
+                if let Some(c) = self.peekc()
+                    && range.contains(&c)
+                {
+                    str.push(self.getc().unwrap());
+                    continue;
                 }
                 break;
             }

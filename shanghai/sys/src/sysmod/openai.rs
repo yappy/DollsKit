@@ -1064,10 +1064,10 @@ impl OpenAi {
     /// エラーチェインの中から特定のエラーを探す。
     pub fn error_kind(err: &anyhow::Error) -> OpenAiErrorKind {
         for cause in err.chain() {
-            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
-                if req_err.is_timeout() {
-                    return OpenAiErrorKind::Timeout;
-                }
+            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>()
+                && req_err.is_timeout()
+            {
+                return OpenAiErrorKind::Timeout;
             }
             if let Some(http_err) = cause.downcast_ref::<HttpStatusError>() {
                 // 429: Too Many Requests

@@ -341,12 +341,12 @@ impl Line {
     pub async fn check_history_timeout(&mut self, ctrl: &Control) {
         let now = Instant::now();
 
-        if let Some(timeout) = self.history_timeout {
-            if now > timeout {
-                self.image_buffer.clear();
-                self.chat_history_mut(ctrl).await.clear();
-                self.history_timeout = None;
-            }
+        if let Some(timeout) = self.history_timeout
+            && now > timeout
+        {
+            self.image_buffer.clear();
+            self.chat_history_mut(ctrl).await.clear();
+            self.history_timeout = None;
         }
     }
 

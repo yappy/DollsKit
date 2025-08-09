@@ -271,11 +271,11 @@ impl Discord {
     fn check_history_timeout(&mut self) {
         let now = Instant::now();
 
-        if let Some(timeout) = self.chat_timeout {
-            if now > timeout {
-                self.chat_history_mut().clear();
-                self.chat_timeout = None;
-            }
+        if let Some(timeout) = self.chat_timeout
+            && now > timeout
+        {
+            self.chat_history_mut().clear();
+            self.chat_timeout = None;
         }
     }
 }
@@ -862,7 +862,7 @@ async fn ai(
         // URL verify
         let mut urls = vec![];
         for (idx, url) in image_url.split_whitespace().enumerate() {
-            if !url.chars().all(|c| is_url_char(c)) {
+            if !url.chars().all(is_url_char) {
                 ctx.reply(format!("Invalid URL [{idx}]")).await?;
                 return Ok(());
             }
@@ -877,11 +877,11 @@ async fn ai(
                 .get(url)
                 .send()
                 .await
-                .with_context(|| format!("URL get network error"))?;
+                .with_context(|| "URL get network error".to_string())?;
 
             netutil::check_http_resp_bin(resp)
                 .await
-                .with_context(|| format!("URL get network error"))
+                .with_context(|| "URL get network error".to_string())
         };
 
         for (idx, &url) in urls.iter().enumerate() {
@@ -1043,8 +1043,8 @@ async fn ai(
 
 fn is_url_char(c: char) -> bool {
     match c {
-        'a'..='z' | 'A'..='Z' | '0'..='9' => return true,
-        ':' | '/' | '.' | '-' | '_' | '~' | '?' | '&' | '=' | '%' | '+' => return true,
+        'a'..='z' | 'A'..='Z' | '0'..='9' => true,
+        ':' | '/' | '.' | '-' | '_' | '~' | '?' | '&' | '=' | '%' | '+' => true,
         _ => false,
     }
 }
