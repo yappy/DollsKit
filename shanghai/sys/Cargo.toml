@@ -13,7 +13,7 @@ verinfo.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 # Bit flags
-bitflags = "2.9.1"
+bitflags = "2.9.4"
 # RNG
 rand.workspace = true
 # Log
@@ -46,7 +46,7 @@ serenity = "0.12.4"
 poise = "0.6.1"
 
 # Scraping
-scraper = "0.23.1"
+scraper = "0.24.0"
 ego-tree = "0.10.0"
 # ChatGPT tokenizer
 tiktoken-rs = "0.7.0"

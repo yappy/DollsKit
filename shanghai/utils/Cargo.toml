@@ -22,7 +22,7 @@ tokio.workspace = true
 # HTTP client
 reqwest.workspace = true
 # URL encode
-percent-encoding = "2.3.1"
+percent-encoding = "2.3.2"
 # HMAC
 hmac = "0.12.1"
 sha1 = "0.10.6"
