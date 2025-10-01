@@ -82,7 +82,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
     let signature256 = &signature256[prefix.len()..];
 
     // 16 進文字列を 2 文字ずつ u8 配列に変換する
-    if signature256.len() % 2 != 0 {
+    if !signature256.len().is_multiple_of(2) {
         return Ok(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body("Invalid signature"));
