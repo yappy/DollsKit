@@ -767,7 +767,7 @@ struct ImageGenRequest {
     /// The format in which the generated images are returned.
     /// Must be one of url or b64_json.
     /// Defaults to url
-    response_format: Option<String>,
+    response_format: Option<ResponseFormat>,
     /// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
     /// Defaults to 1024x1024
     size: Option<ImageSize>,
