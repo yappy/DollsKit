@@ -25,16 +25,16 @@ customlog = { path = "./customlog"}
 utils = { path = "./utils" }
 
 static_assertions = "1.1.0"
-anyhow = "1.0.99"
-thiserror = "2.0.16"
+anyhow = "1.0.100"
+thiserror = "2.0.17"
 log = { version = "0.4.28", features = ["std"] }
 chrono = { version = "0.4.42", features = ["clock", "iana-time-zone", "std"] }
 rand = "0.9.2"
 
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.143"
-serde_with = { version = "3.14.0", features = ["json"] }
-toml = "0.9.5"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+serde_with = { version = "3.14.1", features = ["json"] }
+toml = "0.9.7"
 
 tokio = { version = "1.47.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
@@ -45,5 +45,5 @@ image = "0.25.8"
 
 # For test
 serial_test = "3.2.0"
-tempfile = "3.22.0"
+tempfile = "3.23.0"
 hex-literal = "1.0.0"
