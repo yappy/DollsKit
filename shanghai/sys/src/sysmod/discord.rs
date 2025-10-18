@@ -9,8 +9,10 @@ use crate::sysmod::openai::{self, OpenAi, OpenAiErrorKind, SearchContextSize, To
 use crate::sysmod::openai::{Role, function::FunctionTable};
 use crate::taskserver;
 use crate::{config, taskserver::Control};
+use utils::netutil;
 use utils::playtools::dice::{self};
 
+use anyhow::Context as _;
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{NaiveTime, Utc};
 use log::{error, info, warn};
@@ -244,20 +246,20 @@ impl Discord {
     /// 接続前の場合、接続後まで遅延する。
     pub async fn say(&mut self, msg: &str) -> Result<()> {
         if !self.config.enabled {
-            info!("[discord] disabled - msg: {}", msg);
+            info!("[discord] disabled - msg: {msg}");
             return Ok(());
         }
         if self.config.notif_channel == 0 {
-            info!("[discord] notification disabled - msg: {}", msg);
+            info!("[discord] notification disabled - msg: {msg}");
             return Ok(());
         }
         if self.ctx.is_none() {
-            info!("[discord] not ready, postponed - msg: {}", msg);
+            info!("[discord] not ready, postponed - msg: {msg}");
             self.postponed_msgs.push(msg.to_string());
             return Ok(());
         }
 
-        info!("[discord] say msg: {}", msg);
+        info!("[discord] say msg: {msg}");
         let ch = ChannelId::new(self.config.notif_channel);
         let ctx = self.ctx.as_ref().unwrap();
         ch.say(ctx, msg).await?;
@@ -269,11 +271,11 @@ impl Discord {
     fn check_history_timeout(&mut self) {
         let now = Instant::now();
 
-        if let Some(timeout) = self.chat_timeout {
-            if now > timeout {
-                self.chat_history_mut().clear();
-                self.chat_timeout = None;
-            }
+        if let Some(timeout) = self.chat_timeout
+            && now > timeout
+        {
+            self.chat_history_mut().clear();
+            self.chat_timeout = None;
         }
     }
 }
@@ -297,7 +299,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
         }
         owners.insert(UserId::new(id));
     }
-    info!("[discord] owners: {:?}", owners);
+    info!("[discord] owners: {owners:?}");
 
     let ctrl_for_setup = ctrl.clone();
     let framework = poise::Framework::builder()
@@ -436,6 +438,13 @@ async fn reply_long_mdquote(ctx: &PoiseContext<'_>, content: &str) -> Result<()>
     Ok(())
 }
 
+fn remove_empty_lines(src: &str) -> String {
+    src.lines()
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// 分を (日, 時間, 分) に変換する。
 fn convert_duration(mut min: u32) -> (u32, u32, u32) {
     let day = min / (60 * 24);
@@ -493,7 +502,7 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
     let mut after = None;
     loop {
         // https://discord.com/developers/docs/resources/channel#get-channel-messages
-        info!("get_messages: after={:?}", after);
+        info!("get_messages: after={after:?}");
         let target = after.map(MessagePagination::After);
         let msgs = ctx
             .http
@@ -516,12 +525,12 @@ async fn delete_msgs_in_channel<F: Fn(&Message, usize, usize) -> bool>(
             continue;
         }
         // ch, msg ID はログに残す
-        info!("Delete: ch={}, msg={}", ch, mid);
+        info!("Delete: ch={ch}, msg={mid}");
         // https://discord.com/developers/docs/resources/channel#delete-message
         ctx.http.delete_message(ch, mid, None).await?;
         delcount += 1;
     }
-    info!("deleted {} messages", delcount);
+    info!("deleted {delcount} messages");
 
     Ok((delcount, allmsgs.len()))
 }
@@ -839,12 +848,67 @@ async fn ai(
     ctx: PoiseContext<'_>,
     #[description = "Chat message to AI assistant"]
     #[min_length = 1]
-    #[max_length = 1024]
+    #[max_length = 6000]
     chat_msg: String,
+    #[description = "Image URL(s) separated by whitespace. You can copy the URL by right-clicking an image on Discord."]
+    image_url: Option<String>,
+    web_search_quality: Option<WebSearchQuality>,
     #[description = "Show internal details when AI calls a function. (default=False)"]
     trace_function_call: Option<bool>,
-    web_search_quality: Option<WebSearchQuality>,
 ) -> Result<(), PoiseError> {
+    // 画像 URL の解決
+    let mut image_list = vec![];
+    if let Some(image_url) = image_url {
+        // URL verify
+        let mut urls = vec![];
+        for (idx, url) in image_url.split_whitespace().enumerate() {
+            if !url.chars().all(is_url_char) {
+                ctx.reply(format!("Invalid URL [{idx}]")).await?;
+                return Ok(());
+            }
+            urls.push(url);
+        }
+
+        // HTTP クライアントの準備
+        const TIMEOUT: Duration = Duration::from_secs(30);
+        let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
+        let download = async move |url| {
+            let resp = client
+                .get(url)
+                .send()
+                .await
+                .with_context(|| "URL get network error".to_string())?;
+
+            netutil::check_http_resp_bin(resp)
+                .await
+                .with_context(|| "URL get network error".to_string())
+        };
+
+        for (idx, &url) in urls.iter().enumerate() {
+            // URL から画像をダウンロード
+            match download(url).await {
+                Ok(bin) => {
+                    let attach = CreateAttachment::bytes(bin.clone(), "ai_input.png");
+                    // 画像を添付して返信
+                    // 本文は URL ("<url>" でプレビュー無効)
+                    ctx.send(
+                        CreateReply::default()
+                            .content(format!("Input image [{idx}]: <{url}>"))
+                            .attachment(attach),
+                    )
+                    .await?;
+                    image_list.push(OpenAi::to_image_input(&bin)?);
+                }
+                Err(err) => {
+                    error!("{err:#?}");
+                    ctx.reply(format!("Download failed [{idx}]: <{url}>"))
+                        .await?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+
     // そのまま引用返信
     reply_long_mdquote(&ctx, &chat_msg).await?;
 
@@ -863,10 +927,10 @@ async fn ai(
         .replace("${user}", &ctx.author().name);
     discord
         .chat_history_mut()
-        .push_message(Role::Developer, &sysmsg)?;
+        .push_input_message(Role::Developer, &sysmsg)?;
     discord
         .chat_history_mut()
-        .push_message(Role::User, &chat_msg)?;
+        .push_input_and_images(Role::User, &chat_msg, image_list)?;
 
     // システムメッセージ
     let inst = discord.config.prompt.instructions.join("");
@@ -916,8 +980,7 @@ async fn ai(
                         reply_long(
                             &ctx,
                             &format!(
-                                "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                                func_out
+                                "function call: {func_name}\nparameters: {func_args}\nresult: {func_out}"
                             ),
                         )
                         .await?;
@@ -929,24 +992,18 @@ async fn ai(
                 }
                 // アシスタント応答と web search があれば履歴に追加
                 let text = resp.output_text();
-                if !text.is_empty() {
-                    discord.chat_history_mut().push_message_tool(
-                        std::iter::once((Role::Assistant, text.clone())),
-                        resp.web_search_iter().cloned(),
-                    )?;
-                } else {
-                    discord
-                        .chat_history_mut()
-                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
-                }
+                let text = if text.is_empty() { None } else { Some(text) };
+                discord
+                    .chat_history_mut()
+                    .push_output_and_tools(text.as_deref(), resp.web_search_iter().cloned())?;
 
-                if !text.is_empty() {
+                if let Some(text) = text {
                     break Ok(text);
                 }
             }
             Err(err) => {
                 // エラーが発生した
-                error!("{:#?}", err);
+                error!("{err:#?}");
                 break Err(err);
             }
         }
@@ -956,7 +1013,7 @@ async fn ai(
     match result {
         Ok(reply_msg) => {
             info!("[discord] openai reply: {reply_msg}");
-            reply_long(&ctx, &reply_msg).await?;
+            reply_long(&ctx, &remove_empty_lines(&reply_msg)).await?;
 
             // タイムアウト延長
             discord.chat_timeout = Some(
@@ -965,7 +1022,7 @@ async fn ai(
             );
         }
         Err(err) => {
-            error!("[discord] openai error: {:#?}", err);
+            error!("[discord] openai error: {err:#?}");
             let errmsg = match OpenAi::error_kind(&err) {
                 OpenAiErrorKind::Timeout => "Server timed out.".to_string(),
                 OpenAiErrorKind::RateLimit => {
@@ -982,6 +1039,10 @@ async fn ai(
     }
 
     Ok(())
+}
+
+fn is_url_char(c: char) -> bool {
+    matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | ':' | '/' | '.' | '-' | '_' | '~' | '?' | '&' | '=' | '%' | '+')
 }
 
 #[poise::command(
@@ -1190,10 +1251,10 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
     // エラーを返していないはずのものは panic にする
     match error {
         poise::FrameworkError::Setup { error, .. } => {
-            panic!("Failed on setup: {:#?}", error)
+            panic!("Failed on setup: {error:#?}")
         }
         poise::FrameworkError::EventHandler { error, .. } => {
-            panic!("Failed on eventhandler: {:#?}", error)
+            panic!("Failed on eventhandler: {error:#?}")
         }
         poise::FrameworkError::Command { error, ctx, .. } => {
             error!(
@@ -1216,7 +1277,7 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
             info!("[discord] not an owner: {}", ctx.author());
             info!("[discord] reply: {errmsg}");
             if let Err(why) = ctx.reply(errmsg).await {
-                error!("[discord] reply error: {:#?}", why)
+                error!("[discord] reply error: {why:#?}")
             }
         }
         poise::FrameworkError::UnknownInteraction { interaction, .. } => {
@@ -1227,7 +1288,7 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
         }
         error => {
             if let Err(why) = poise::builtins::on_error(error).await {
-                error!("[discord] error while handling error: {:#?}", why)
+                error!("[discord] error while handling error: {why:#?}")
             }
         }
     }
@@ -1269,10 +1330,10 @@ async fn event_handler(
                 // notif_channel が有効の場合しかキューされない
                 assert_ne!(0, ch);
 
-                info!("[discord] say msg: {}", msg);
+                info!("[discord] say msg: {msg}");
                 let ch = ChannelId::new(ch);
                 if let Err(why) = ch.say(&ctx, msg).await {
-                    error!("{:#?}", why);
+                    error!("{why:#?}");
                 }
             }
             discord.postponed_msgs.clear();
@@ -1292,6 +1353,13 @@ mod tests {
         let obj: DiscordPrompt = Default::default();
         assert_ne!(obj.instructions.len(), 0);
         assert_ne!(obj.each.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_empty_lines() {
+        let src = "\n\nabc\n\n\ndef\n\n";
+        let result = remove_empty_lines(src);
+        assert_eq!(result, "abc\ndef");
     }
 
     #[test]

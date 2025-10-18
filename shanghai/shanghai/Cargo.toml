@@ -17,6 +17,6 @@ chrono.workspace = true
 # Daemon util
 daemonize = "0.5.0"
 # Command line parser
-getopts = "0.2.21"
+getopts = "0.2.24"
 
 [dev-dependencies]

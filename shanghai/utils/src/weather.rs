@@ -447,7 +447,7 @@ mod tests {
                 let text = serde_json::to_string_pretty(&value)? + "\n";
                 file.write_all(text.as_bytes())?;
             } else {
-                println!("overview_forecast not found: {:?}", info);
+                println!("overview_forecast not found: {info:?}");
             }
 
             let url = format!(
@@ -465,7 +465,7 @@ mod tests {
                 let text = serde_json::to_string_pretty(&value)? + "\n";
                 file.write_all(text.as_bytes())?;
             } else {
-                println!("forecast not found: {:?}", info);
+                println!("forecast not found: {info:?}");
             }
 
             let url = format!(
@@ -483,7 +483,7 @@ mod tests {
                 let text = serde_json::to_string_pretty(&value)? + "\n";
                 file.write_all(text.as_bytes())?;
             } else {
-                println!("overview_week not found: {:?}", info);
+                println!("overview_week not found: {info:?}");
             }
         }
 

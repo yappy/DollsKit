@@ -6,6 +6,8 @@ use anyhow::{Result, ensure};
 use std::collections::VecDeque;
 use tiktoken_rs::CoreBPE;
 
+use super::{InputContent, InputImageDetail};
+
 /// 会話履歴管理。
 pub struct ChatHistory {
     /// トークナイザ。
@@ -55,39 +57,90 @@ impl ChatHistory {
         self.token_limit -= token_count;
     }
 
-    pub fn push_message(&mut self, role: Role, content: &str) -> Result<()> {
-        let tokens = self.tokenize(content);
+    pub fn push_input_message(&mut self, role: Role, text: &str) -> Result<()> {
+        assert!(matches!(role, Role::Developer | Role::User));
+
+        let tokens = self.tokenize(text);
         let token_count = tokens.len();
 
         let item = InputItem::Message {
             role,
-            content: content.to_string(),
+            content: vec![InputContent::InputText {
+                text: text.to_string(),
+            }],
         };
 
         self.push(vec![item], token_count)
     }
 
-    pub fn push_message_tool(
+    pub fn push_input_and_images(
         &mut self,
-        msgs: impl Iterator<Item = (Role, String)>,
+        role: Role,
+        text: &str,
+        images: impl IntoIterator<Item = InputContent>,
+    ) -> Result<()> {
+        assert!(matches!(role, Role::Developer | Role::User));
+
+        let tokens = self.tokenize(text);
+        let mut token_count = tokens.len();
+
+        // content = [InputText, InputImage*]
+        let mut content = vec![InputContent::InputText {
+            text: text.to_string(),
+        }];
+
+        const IMAGE_TOKEN_LOW: usize = 85;
+        for image in images {
+            match &image {
+                InputContent::InputImage {
+                    image_url: _,
+                    detail,
+                } => {
+                    assert!(matches!(detail, InputImageDetail::Low));
+                }
+                _ => {
+                    panic!("Must be an InputImage");
+                }
+            }
+            content.push(image);
+            token_count += IMAGE_TOKEN_LOW;
+        }
+
+        let item = InputItem::Message { role, content };
+        self.push(vec![item], token_count)
+    }
+
+    pub fn push_output_message(&mut self, text: &str) -> Result<()> {
+        self.push_output_and_tools(Some(text), std::iter::empty())
+    }
+
+    pub fn push_output_and_tools(
+        &mut self,
+        text: Option<&str>,
         web_search_ids: impl Iterator<Item = WebSearchCall>,
     ) -> Result<()> {
         let mut items = vec![];
         let mut token_count = 0;
 
-        for (role, content) in msgs {
-            let tokens = self.tokenize(&content);
+        if let Some(text) = text {
+            let tokens = self.tokenize(text);
+
+            let content = vec![InputContent::OutputText {
+                text: text.to_string(),
+            }];
             let item = InputItem::Message {
-                role,
-                content: content.to_string(),
+                role: Role::Assistant,
+                content,
             };
             items.push(item);
             token_count += tokens.len();
         }
+
         for wsc in web_search_ids {
-            // TODO: token
             let item = InputItem::WebSearchCall(wsc);
             items.push(item);
+            // コンテキストウィンドウサイズには影響しないらしい
+            token_count += 0;
         }
 
         // 空なら追加せず成功とする

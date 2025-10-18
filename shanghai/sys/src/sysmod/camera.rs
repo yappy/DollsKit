@@ -218,7 +218,7 @@ impl Camera {
             total_size: main_size + th_size,
         };
         if archive.insert(key.to_string(), entry).is_some() {
-            warn!("[camera-pic] pic archive is overwritten: {}", key);
+            warn!("[camera-pic] pic archive is overwritten: {key}");
         }
 
         Ok(())
@@ -238,12 +238,12 @@ impl Camera {
             .ok_or_else(|| anyhow!("picture not found: {}", id))?;
 
         if let Err(why) = fs::remove_file(&entry.path_main).await {
-            error!("[camera] cannot remove {} main: {}", id, why);
+            error!("[camera] cannot remove {id} main: {why}");
         }
         if let Err(why) = fs::remove_file(&entry.path_th).await {
-            error!("[camera] cannot remove {} thumb: {}", id, why);
+            error!("[camera] cannot remove {id} thumb: {why}");
         }
-        info!("[camera] deleted: {}", id);
+        info!("[camera] deleted: {id}");
 
         Ok(())
     }
@@ -268,18 +268,18 @@ impl Camera {
 
         let mut total = Self::calc_total_size(history);
         while total > limit {
-            info!("[camera] total: {}, limit: {}", total, limit);
+            info!("[camera] total: {total}, limit: {limit}");
 
             // 一番古いものを削除する (1.66.0 or later)
             let (id, entry) = history.pop_first().unwrap();
             // 削除でのエラーはログを出して続行する
             if let Err(why) = fs::remove_file(entry.path_main).await {
-                error!("[camera] cannot remove {} main: {}", id, why);
+                error!("[camera] cannot remove {id} main: {why}");
             }
             if let Err(why) = fs::remove_file(entry.path_th).await {
-                error!("[camera] cannot remove {} thumb: {}", id, why);
+                error!("[camera] cannot remove {id} thumb: {why}");
             }
-            info!("[camera] deleted: {}", id);
+            info!("[camera] deleted: {id}");
 
             total -= entry.total_size;
         }

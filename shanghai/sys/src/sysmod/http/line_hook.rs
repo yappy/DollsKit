@@ -3,16 +3,16 @@
 //! <https://developers.line.biz/ja/docs/messaging-api/>
 
 use super::{ActixError, WebResult};
-use crate::sysmod::line::FunctionContext;
+use crate::sysmod::line::{FunctionContext, Line};
 use crate::sysmod::openai::{OpenAi, OpenAiErrorKind, Role, SearchContextSize, Tool, UserLocation};
 use crate::taskserver::Control;
 
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::ContentType, web};
-use anyhow::{Result, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use utils::netutil;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,85 +31,70 @@ struct WebhookEvent {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct WebhookEventCommon {
     /// "active" or "standby"
     mode: String,
     timestamp: u64,
     source: Option<Source>,
-    #[serde(rename = "webhookEventId")]
     webhook_event_id: String,
-    #[serde(rename = "deliveryContext")]
     delivery_context: DeliveryContext,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum Source {
-    #[serde(rename = "user")]
     User {
-        #[serde(rename = "userId")]
         user_id: String,
     },
-    #[serde(rename = "group")]
     Group {
-        #[serde(rename = "groupId")]
         group_id: String,
-        #[serde(rename = "userId")]
         user_id: Option<String>,
     },
-    #[serde(rename = "room")]
     Room {
-        #[serde(rename = "roomId")]
         room_id: String,
-        #[serde(rename = "userId")]
         user_id: Option<String>,
     },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DeliveryContext {
-    #[serde(rename = "isRedelivery")]
     is_redelivery: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum WebhookEventBody {
-    #[serde(rename = "message")]
     Message {
-        #[serde(rename = "replyToken")]
         reply_token: String,
         message: Message,
     },
-    #[serde(rename = "unsend")]
     Unsend {
-        #[serde(rename = "messageId")]
         message_id: String,
     },
-    #[serde(rename = "follow")]
     Follow {
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "unfollow")]
     Unfollow,
-    #[serde(rename = "join")]
     Join {
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "leave")]
     Leave,
-    #[serde(rename = "memberJoined")]
     MemberJoined {
         joined: Members,
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
-    #[serde(rename = "memberLeft")]
     MemberLeft {
         left: Members,
-        #[serde(rename = "replyToken")]
         reply_token: String,
     },
     #[serde(other)]
@@ -117,54 +102,110 @@ enum WebhookEventBody {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "camelCase")]
+struct Members {
+    /// type = "user"
+    members: Vec<Source>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum Message {
-    #[serde(rename = "text")]
+    /// 送信元から送られたテキストを含むメッセージオブジェクトです。
     Text {
+        /// メッセージID
         id: String,
-        #[serde(rename = "quoteToken")]
+        /// メッセージの引用トークン。
+        /// 詳しくは、『Messaging APIドキュメント』の「引用トークンを取得する」を
+        /// 参照してください。
         quote_token: String,
+        /// メッセージのテキスト
         text: String,
         // emojis
+        /// メンションの情報を含むオブジェクト。
+        /// textプロパティにメンションが含まれる場合のみ、
+        /// メッセージイベントに含まれます。
         mention: Option<Mention>,
-        #[serde(rename = "quotedMessageId")]
+        /// 引用されたメッセージのメッセージID。
+        /// 過去のメッセージを引用している場合にのみ含まれます。
         quoted_message_id: Option<String>,
+    },
+    /// 送信元から送られた画像を含むメッセージオブジェクトです。
+    Image {
+        /// メッセージID
+        id: String,
+        /// メッセージの引用トークン。
+        /// 詳しくは、『Messaging APIドキュメント』の「引用トークンを取得する」を
+        /// 参照してください。
+        quote_token: String,
+        /// 画像ファイルの提供元。
+        content_provider: ContentProvider,
     },
     #[serde(other)]
     Other,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 struct Mention {
     mentionees: Vec<Mentionee>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
 struct Mentionee {
     index: usize,
     length: usize,
     #[serde(flatten)]
     target: MentioneeTarget,
-    #[serde(rename = "quotedMessageId")]
     quoted_message_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum MentioneeTarget {
-    #[serde(rename = "user")]
-    User {
-        #[serde(rename = "userId")]
-        user_id: Option<String>,
-    },
-    #[serde(rename = "all")]
+    User { user_id: Option<String> },
     All,
 }
 
+/// 画像ファイルの提供元。
 #[derive(Debug, Serialize, Deserialize)]
-struct Members {
-    /// type = "user"
-    members: Vec<Source>,
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+enum ContentProvider {
+    /// LINEユーザーが画像ファイルを送信しました。
+    /// 画像ファイルのバイナリデータは、メッセージIDを指定してコンテンツを取得する
+    /// エンドポイントを使用することで取得できます。
+    Line,
+    /// 画像ファイルのURLは `contentProvider.originalContentUrl`
+    /// プロパティに含まれます。
+    /// なお、画像ファイルの提供元がexternalの場合、
+    /// 画像ファイルのバイナリデータはコンテンツを取得するエンドポイントで
+    /// 取得できません。
+    External {
+        /// 画像ファイルのURL。
+        /// contentProvider.typeがexternalの場合にのみ含まれます。
+        /// 画像ファイルが置かれているサーバーは、
+        /// LINEヤフー株式会社が提供しているものではありません。
+        original_content_url: String,
+        /// プレビュー画像のURL。
+        /// contentProvider.typeがexternalの場合にのみ含まれます。
+        /// プレビュー画像が置かれているサーバーは、
+        /// LINEヤフー株式会社が提供しているものではありません。
+        preview_image_url: String,
+        // image_set
+    },
 }
 
 #[actix_web::get("/line/")]
@@ -200,7 +241,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
         return Err(ActixError::new("Bad x-line-signature header", 400));
     }
     let signature = signature.unwrap();
-    info!("x-line-signature: {}", signature);
+    info!("x-line-signature: {signature}");
 
     // verify signature
     let channel_secret = {
@@ -236,7 +277,7 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
         error!("[line] Json parse error: {err}");
         error!("[line] {json_body}");
     })?;
-    info!("{:?}", req);
+    info!("{req:?}");
 
     // WebhookEvent が最大5個入っている
     for ev in req.events.iter() {
@@ -265,17 +306,57 @@ async fn process_post(ctrl: &Control, json_body: &str) -> Result<()> {
                     info!("[line] Receive text message: {text}");
                     on_text_message(ctrl, &ev.common.source, reply_token, text).await?;
                 }
+                Message::Image {
+                    id,
+                    quote_token: _,
+                    content_provider,
+                } => {
+                    info!("[line] Receive image message");
+                    on_image_message(ctrl, &ev.common.source, id, reply_token, content_provider)
+                        .await?;
+                }
                 other => {
-                    info!("[line] Ignore message type: {:?}", other);
+                    info!("[line] Ignore message type: {other:?}");
                 }
             },
             other => {
-                info!("[line] Ignore event: {:?}", other);
+                info!("[line] Ignore event: {other:?}");
             }
         }
     }
 
     Ok(())
+}
+
+async fn source_to_display_name(line: &Line, src: &Source) -> Result<String> {
+    let display_name = match src {
+        Source::User { user_id } => {
+            if let Some(name) = line.config.id_name_map.get(user_id) {
+                name.to_string()
+            } else {
+                line.get_profile(user_id).await?.display_name
+            }
+        }
+        Source::Group { group_id, user_id } => {
+            if let Some(user_id) = user_id {
+                if let Some(name) = line.config.id_name_map.get(user_id) {
+                    name.to_string()
+                } else {
+                    line.get_group_profile(group_id, user_id)
+                        .await?
+                        .display_name
+                }
+            } else {
+                bail!("userId is null");
+            }
+        }
+        Source::Room {
+            room_id: _,
+            user_id: _,
+        } => bail!("Source::Room is not supported"),
+    };
+
+    Ok(display_name)
 }
 
 async fn on_text_message(
@@ -292,44 +373,22 @@ async fn on_text_message(
         let prompt = line.config.prompt.clone();
 
         // source フィールドからプロフィール情報を取得
-        let display_name = match src {
-            Source::User { user_id } => {
-                if let Some(name) = line.config.id_name_map.get(user_id) {
-                    name.to_string()
-                } else {
-                    line.get_profile(user_id).await?.display_name
-                }
-            }
-            Source::Group { group_id, user_id } => {
-                if let Some(user_id) = user_id {
-                    if let Some(name) = line.config.id_name_map.get(user_id) {
-                        name.to_string()
-                    } else {
-                        line.get_group_profile(group_id, user_id)
-                            .await?
-                            .display_name
-                    }
-                } else {
-                    bail!("userId is null");
-                }
-            }
-            Source::Room {
-                room_id: _,
-                user_id: _,
-            } => bail!("Source::Room is not supported"),
-        };
+        let display_name = source_to_display_name(&line, src).await?;
 
         // タイムアウト処理
         line.check_history_timeout(ctrl).await;
+
+        // 画像バッファから同一ユーザに対する画像リストを抽出
+        let imgs = line.image_buffer.remove(&display_name).unwrap_or_default();
 
         // 今回の発言をヒストリに追加 (システムメッセージ + 本体)
         let sysmsg = prompt.each.join("").replace("${user}", &display_name);
         line.chat_history_mut(ctrl)
             .await
-            .push_message(Role::Developer, &sysmsg)?;
+            .push_input_message(Role::Developer, &sysmsg)?;
         line.chat_history_mut(ctrl)
             .await
-            .push_message(Role::User, text)?;
+            .push_input_and_images(Role::User, text, imgs)?;
 
         prompt
     };
@@ -401,8 +460,7 @@ async fn on_text_message(
                             func_trace.push('\n');
                         }
                         func_trace += &format!(
-                            "function call: {func_name}\nparameters: {func_args}\nresult: {}",
-                            func_out
+                            "function call: {func_name}\nparameters: {func_args}\nresult: {func_out}"
                         );
                     }
                     // function の結果を履歴に追加
@@ -412,24 +470,18 @@ async fn on_text_message(
                 }
                 // アシスタント応答と web search があれば履歴に追加
                 let text = resp.output_text();
-                if !text.is_empty() {
-                    line.chat_history_mut(ctrl).await.push_message_tool(
-                        std::iter::once((Role::Assistant, text.clone())),
-                        resp.web_search_iter().cloned(),
-                    )?;
-                } else {
-                    line.chat_history_mut(ctrl)
-                        .await
-                        .push_message_tool(std::iter::empty(), resp.web_search_iter().cloned())?;
-                }
+                let text = if text.is_empty() { None } else { Some(text) };
+                line.chat_history_mut(ctrl)
+                    .await
+                    .push_output_and_tools(text.as_deref(), resp.web_search_iter().cloned())?;
 
-                if !text.is_empty() {
+                if let Some(text) = text {
                     break Ok(text);
                 }
             }
             Err(err) => {
                 // エラーが発生した
-                error!("{:#?}", err);
+                error!("{err:#?}");
                 break Err(err);
             }
         }
@@ -452,12 +504,10 @@ async fn on_text_message(
                 line.reply_multi(reply_token, &msgs).await?;
 
                 // タイムアウト延長
-                line.chat_timeout = Some(
-                    Instant::now() + Duration::from_secs(prompt.history_timeout_min as u64 * 60),
-                );
+                line.postpone_timeout();
             }
             Err(err) => {
-                error!("[line] openai error: {:#?}", err);
+                error!("[line] openai error: {err:#?}");
                 let errmsg = match OpenAi::error_kind(&err) {
                     OpenAiErrorKind::Timeout => prompt.timeout_msg,
                     OpenAiErrorKind::RateLimit => prompt.ratelimit_msg,
@@ -476,9 +526,188 @@ async fn on_text_message(
     Ok(())
 }
 
+async fn on_image_message(
+    ctrl: &Control,
+    src: &Option<Source>,
+    id: &str,
+    _reply_token: &str,
+    content_provider: &ContentProvider,
+) -> Result<()> {
+    ensure!(src.is_some(), "Field 'source' is required");
+    let src = src.as_ref().unwrap();
+
+    let mut line = ctrl.sysmods().line.lock().await;
+
+    // source フィールドからプロフィール情報を取得
+    let display_name = source_to_display_name(&line, src).await?;
+
+    // 画像を取得
+    let bin = match content_provider {
+        ContentProvider::Line => line.get_content(id).await?,
+        ContentProvider::External {
+            original_content_url,
+            preview_image_url: _,
+        } => {
+            const TIMEOUT: Duration = Duration::from_secs(30);
+            let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
+            let resp = client
+                .get(original_content_url)
+                .send()
+                .await
+                .context("URL get network error")?;
+
+            netutil::check_http_resp_bin(resp)
+                .await
+                .context("URL get network error")?
+        }
+    };
+    let input_content = OpenAi::to_image_input(&bin)?;
+
+    // タイムアウト処理
+    line.check_history_timeout(ctrl).await;
+    // 今回の発言を一時バッファに追加
+    if let Some(v) = line.image_buffer.get_mut(&display_name) {
+        v.push(input_content);
+    } else {
+        line.image_buffer.insert(display_name, vec![input_content]);
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_text_message() {
+        // https://developers.line.biz/ja/reference/messaging-api/#wh-text
+        let src = r#"
+{
+  "destination": "xxxxxxxxxx",
+  "events": [
+    {
+      "replyToken": "nHuyWiB7yP5Zw52FIkcQobQuGDXCTA",
+      "type": "message",
+      "mode": "active",
+      "timestamp": 1462629479859,
+      "source": {
+        "type": "group",
+        "groupId": "Ca56f94637c...",
+        "userId": "U4af4980629..."
+      },
+      "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+      "deliveryContext": {
+        "isRedelivery": false
+      },
+      "message": {
+        "id": "444573844083572737",
+        "type": "text",
+        "quoteToken": "q3Plxr4AgKd...",
+        "text": "@All @example Good Morning!! (love)",
+        "emojis": [
+          {
+            "index": 29,
+            "length": 6,
+            "productId": "5ac1bfd5040ab15980c9b435",
+            "emojiId": "001"
+          }
+        ],
+        "mention": {
+          "mentionees": [
+            {
+              "index": 0,
+              "length": 4,
+              "type": "all"
+            },
+            {
+              "index": 5,
+              "length": 8,
+              "userId": "U49585cd0d5...",
+              "type": "user",
+              "isSelf": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}"#;
+        let _: WebHookRequest = serde_json::from_str(src).unwrap();
+    }
+
+    #[test]
+    fn parse_image_message() {
+        // https://developers.line.biz/ja/reference/messaging-api/#wh-image
+        let src1 = r#"
+{
+    "destination": "xxxxxxxxxx",
+    "events": [
+        {
+            "type": "message",
+            "message": {
+                "type": "image",
+                "id": "354718705033693859",
+                "quoteToken": "q3Plxr4AgKd...",
+                "contentProvider": {
+                    "type": "line"
+                },
+                "imageSet": {
+                    "id": "E005D41A7288F41B65593ED38FF6E9834B046AB36A37921A56BC236F13A91855",
+                    "index": 1,
+                    "total": 2
+                }
+            },
+            "timestamp": 1627356924513,
+            "source": {
+                "type": "user",
+                "userId": "U4af4980629..."
+            },
+            "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+            "deliveryContext": {
+                "isRedelivery": false
+            },
+            "replyToken": "7840b71058e24a5d91f9b5726c7512c9",
+            "mode": "active"
+        }
+    ]
+}"#;
+        let src2 = r#"
+{
+    "destination": "xxxxxxxxxx",
+    "events": [
+        {
+            "type": "message",
+            "message": {
+                "type": "image",
+                "id": "354718705033693861",
+                "quoteToken": "yHAz4Ua2wx7...",
+                "contentProvider": {
+                    "type": "line"
+                },
+                "imageSet": {
+                    "id": "E005D41A7288F41B65593ED38FF6E9834B046AB36A37921A56BC236F13A91855",
+                    "index": 2,
+                    "total": 2
+                }
+            },
+            "timestamp": 1627356924722,
+            "source": {
+                "type": "user",
+                "userId": "U4af4980629..."
+            },
+            "webhookEventId": "01FZ74A0TDDPYRVKNK77XKC3ZR",
+            "deliveryContext": {
+                "isRedelivery": false
+            },
+            "replyToken": "fbf94e269485410da6b7e3a5e33283e8",
+            "mode": "active"
+        }
+    ]
+}"#;
+        let _: WebHookRequest = serde_json::from_str(src1).unwrap();
+        let _: WebHookRequest = serde_json::from_str(src2).unwrap();
+    }
 
     #[test]
     fn base64_decode() {

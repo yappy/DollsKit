@@ -186,7 +186,7 @@ impl FileLogger {
             let from = if i == 0 {
                 self.file_path.clone()
             } else {
-                self.dir_path.join(format!("{stem}.{}{ext}", i))
+                self.dir_path.join(format!("{stem}.{i}{ext}"))
             };
             let to = self.dir_path.join(format!("{stem}.{}{ext}", i + 1));
             std::fs::rename(from, to)?;

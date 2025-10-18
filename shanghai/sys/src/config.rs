@@ -51,16 +51,13 @@ pub struct Config {
 pub fn load() -> Result<()> {
     {
         // デフォルト設定ファイルを削除する
-        info!("remove {}", CONFIG_DEF_FILE);
+        info!("remove {CONFIG_DEF_FILE}");
         if let Err(e) = remove_file(CONFIG_DEF_FILE) {
-            warn!(
-                "removing {} failed (the first time execution?): {}",
-                CONFIG_DEF_FILE, e
-            );
+            warn!("removing {CONFIG_DEF_FILE} failed (the first time execution?): {e}");
         }
         // デフォルト設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
-        info!("writing default config to {}", CONFIG_DEF_FILE);
+        info!("writing default config to {CONFIG_DEF_FILE}");
         let main_cfg: Config = Default::default();
         let main_toml = toml::to_string(&main_cfg)?;
         let mut f = OpenOptions::new()
@@ -71,14 +68,14 @@ pub fn load() -> Result<()> {
             .with_context(|| format!("Failed to open {CONFIG_DEF_FILE}"))?;
         f.write_all(main_toml.as_bytes())
             .with_context(|| format!("Failed to write {CONFIG_DEF_FILE}"))?;
-        info!("OK: written to {}", CONFIG_DEF_FILE);
+        info!("OK: written to {CONFIG_DEF_FILE}");
         // close
     }
 
     let toml_str = {
         // 設定ファイルを読む
         // open 後パーミッションを確認し、危険ならエラーとする
-        info!("loading config: {}", CONFIG_FILE);
+        info!("loading config: {CONFIG_FILE}");
         let mut f = OpenOptions::new()
             .read(true)
             .open(CONFIG_FILE)
@@ -99,7 +96,7 @@ pub fn load() -> Result<()> {
         let mut toml_str = String::new();
         f.read_to_string(&mut toml_str)
             .with_context(|| format!("Failed to read {CONFIG_FILE}"))?;
-        info!("OK: {} loaded", CONFIG_FILE);
+        info!("OK: {CONFIG_FILE} loaded");
 
         toml_str
         // close f
@@ -111,16 +108,13 @@ pub fn load() -> Result<()> {
 
     {
         // 現在設定ファイルを削除する
-        info!("remove {}", CONFIG_CUR_FILE);
+        info!("remove {CONFIG_CUR_FILE}");
         if let Err(e) = remove_file(CONFIG_CUR_FILE) {
-            warn!(
-                "removing {} failed (the first time execution?): {}",
-                CONFIG_CUR_FILE, e
-            );
+            warn!("removing {CONFIG_CUR_FILE} failed (the first time execution?): {e}");
         }
         // 現在設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
-        info!("writing current config to {}", CONFIG_CUR_FILE);
+        info!("writing current config to {CONFIG_CUR_FILE}");
         let main_toml = toml::to_string(&*config)?;
         let mut f = OpenOptions::new()
             .write(true)
@@ -130,7 +124,7 @@ pub fn load() -> Result<()> {
             .with_context(|| format!("Failed to open {CONFIG_CUR_FILE}"))?;
         f.write_all(main_toml.as_bytes())
             .with_context(|| format!("Failed to write {CONFIG_CUR_FILE}"))?;
-        info!("OK: written to {}", CONFIG_CUR_FILE);
+        info!("OK: written to {CONFIG_CUR_FILE}");
         // close
     }
 
@@ -176,6 +170,6 @@ mod tests {
     #[serial(config)]
     fn test_if() {
         let _unset = set(Default::default());
-        get(|cfg| println!("{:?}", cfg));
+        get(|cfg| println!("{cfg:?}"));
     }
 }

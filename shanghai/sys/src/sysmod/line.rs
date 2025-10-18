@@ -1,7 +1,7 @@
 //! LINE API。
 
 use super::SystemModule;
-use super::openai::ParameterType;
+use super::openai::{InputContent, ParameterType};
 use super::openai::{
     ParameterElement,
     chat_history::ChatHistory,
@@ -13,7 +13,7 @@ use crate::taskserver::{self, Control};
 
 use anyhow::{Result, anyhow, bail, ensure};
 use log::info;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::vec;
 use std::{
@@ -24,7 +24,7 @@ use std::{
 };
 
 /// LINE API タイムアウト。
-const TIMEOUT: Duration = Duration::from_secs(15);
+const TIMEOUT: Duration = Duration::from_secs(30);
 /// [Message::Text] の最大文字数。
 /// mention 関連でのずれが少し怖いので余裕を持たせる。
 const MSG_SPLIT_LEN: usize = 5000 - 128;
@@ -86,10 +86,11 @@ pub struct Line {
     /// HTTP クライアント。
     client: reqwest::Client,
 
+    pub image_buffer: HashMap<String, Vec<InputContent>>,
     /// ai コマンドの会話履歴。
     pub chat_history: Option<ChatHistory>,
-    /// [Self::chat_history] の有効期限。
-    pub chat_timeout: Option<Instant>,
+    /// [Self::image_buffer] [Self::chat_history] の有効期限。
+    pub history_timeout: Option<Instant>,
     /// OpenAI function 機能テーブル
     pub func_table: Option<FunctionTable<FunctionContext>>,
 }
@@ -104,8 +105,9 @@ impl Line {
         Ok(Self {
             config,
             client,
+            image_buffer: Default::default(),
             chat_history: None,
-            chat_timeout: None,
+            history_timeout: None,
             func_table: None,
         })
     }
@@ -269,8 +271,13 @@ enum Message {
 fn url_profile(user_id: &str) -> String {
     format!("https://api.line.me/v2/bot/profile/{user_id}")
 }
+
 fn url_group_profile(group_id: &str, user_id: &str) -> String {
     format!("https://api.line.me/v2/bot/group/{group_id}/member/{user_id}")
+}
+
+fn url_content(message_id: &str) -> String {
+    format!("https://api-data.line.me/v2/bot/message/{message_id}/content")
 }
 
 const URL_REPLY: &str = "https://api.line.me/v2/bot/message/reply";
@@ -286,15 +293,60 @@ impl Line {
             .await
     }
 
-    /// [Self::chat_history] にタイムアウトを適用する。
+    /// コンテンツを取得する。
+    ///
+    /// <https://developers.line.biz/ja/reference/messaging-api/#get-content>
+    ///
+    /// Webhookで受信したメッセージIDを使って、ユーザーが送信した画像、動画、音声、
+    /// およびファイルを取得するエンドポイントです。
+    /// このエンドポイントは、Webhookイベントオブジェクトの
+    /// contentProvider.typeプロパティがlineの場合にのみ利用できます。
+    /// ユーザーからデータサイズが大きい動画または音声が送られた場合に、
+    /// コンテンツのバイナリデータを取得できるようになるまで時間がかかるときがあります。
+    /// バイナリデータの準備中にコンテンツを取得しようとすると、
+    /// ステータスコード202が返されバイナリデータは取得できません。
+    /// バイナリデータが取得できるかどうかは、
+    /// 動画または音声の取得準備の状況を確認するエンドポイントで確認できます。
+    /// なお、ユーザーが送信したコンテンツは、
+    /// 縮小などの変換が内部的に行われる場合があります。
+    pub async fn get_content(&self, message_id: &str) -> Result<Vec<u8>> {
+        let bin = loop {
+            let (status, bin) = self.get_auth_bin(&url_content(message_id)).await?;
+            match status {
+                StatusCode::OK => {
+                    info!("OK ({} bytes)", bin.len());
+                    break bin;
+                }
+                StatusCode::ACCEPTED => {
+                    // 202 Accepted
+                    info!("202: Not ready yet");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                }
+                _ => {
+                    bail!("Invalid status: {status}");
+                }
+            }
+        };
+
+        Ok(bin)
+    }
+
+    pub fn postpone_timeout(&mut self) {
+        let now = Instant::now();
+        let timeout = now + Duration::from_secs(self.config.prompt.history_timeout_min as u64 * 60);
+        self.history_timeout = Some(timeout);
+    }
+
+    /// [Self::image_buffer] [Self::chat_history] にタイムアウトを適用する。
     pub async fn check_history_timeout(&mut self, ctrl: &Control) {
         let now = Instant::now();
 
-        if let Some(timeout) = self.chat_timeout {
-            if now > timeout {
-                self.chat_history_mut(ctrl).await.clear();
-                self.chat_timeout = None;
-            }
+        if let Some(timeout) = self.history_timeout
+            && now > timeout
+        {
+            self.image_buffer.clear();
+            self.chat_history_mut(ctrl).await.clear();
+            self.history_timeout = None;
         }
     }
 
@@ -330,7 +382,7 @@ impl Line {
             notification_disabled: None,
         };
         let resp = self.post_auth_json(URL_REPLY, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -357,7 +409,7 @@ impl Line {
             custom_aggregation_units: None,
         };
         let resp = self.post_auth_json(URL_PUSH, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -376,7 +428,7 @@ impl Line {
             custom_aggregation_units: None,
         };
         let resp = self.post_auth_json(URL_PUSH, &req).await?;
-        info!("{:?}", resp);
+        info!("{resp:?}");
 
         Ok(resp)
     }
@@ -390,7 +442,7 @@ impl Line {
     ///   * Response body JSON を [ErrorResp] にパースできればその [Debug] を
     ///     メッセージとしてエラーを返す。
     ///   * 変換に失敗した場合、JSON ソースをメッセージとしてエラーを返す。
-    async fn check_resp<'a, T>(resp: reqwest::Response) -> Result<T>
+    async fn check_resp_json<'a, T>(resp: reqwest::Response) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
     {
@@ -421,7 +473,7 @@ impl Line {
             .send()
             .await?;
 
-        Self::check_resp(resp).await
+        Self::check_resp_json(resp).await
     }
 
     async fn post_auth_json<T, R>(&self, url: &str, body: &T) -> Result<R>
@@ -429,7 +481,7 @@ impl Line {
         T: Serialize + Debug,
         R: for<'de> Deserialize<'de>,
     {
-        info!("[line] POST {url} {:?}", body);
+        info!("[line] POST {url} {body:?}");
         let token = &self.config.token;
         let resp = self
             .client
@@ -439,7 +491,33 @@ impl Line {
             .send()
             .await?;
 
-        Self::check_resp(resp).await
+        Self::check_resp_json(resp).await
+    }
+
+    async fn get_auth_bin(&self, url: &str) -> Result<(StatusCode, Vec<u8>)> {
+        info!("[line] GET {url}");
+        let token = &self.config.token;
+
+        let resp = self
+            .client
+            .get(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await?;
+
+        let status = resp.status();
+        if status.is_success() {
+            let body = resp.bytes().await?.to_vec();
+
+            Ok((status, body))
+        } else {
+            let body = resp.text().await?;
+
+            match serde_json::from_str::<ErrorResp>(&body) {
+                Ok(obj) => bail!("{status}: {:?}", obj),
+                Err(json_err) => bail!("{status} - {json_err}: {body}"),
+            }
+        }
     }
 }
 
