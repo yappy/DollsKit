@@ -130,7 +130,7 @@ impl<T: 'static> FunctionTable<T> {
             text.push_str(&format!("({})", params.join(", ")));
 
             if let Some(desc) = &f.description {
-                text.push_str(&format!("\n    {}", desc));
+                text.push_str(&format!("\n    {desc}"));
             }
         }
 
@@ -159,7 +159,7 @@ impl<T: 'static> FunctionTable<T> {
                 res.to_string()
             }
             Err(err) => {
-                warn!("[openai-func] {func_name} failed: {:#?}", err);
+                warn!("[openai-func] {func_name} failed: {err:#?}");
                 err.to_string()
             }
         }

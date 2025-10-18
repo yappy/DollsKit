@@ -5,12 +5,15 @@ pub mod chat_history;
 pub mod function;
 
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::io::Cursor;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant, SystemTime};
 
 use super::SystemModule;
 use crate::config;
 use crate::taskserver::Control;
+use base64::{Engine, engine::general_purpose};
 use utils::netutil::{self, HttpStatusError};
 
 use anyhow::{Context, ensure};
@@ -319,7 +322,7 @@ pub enum InputItem {
         role: Role,
         /// string | array
         /// image やファイルも含める場合はオブジェクト配列にする必要がある。
-        content: String,
+        content: Vec<InputContent>,
     },
     /// The results of a web search tool call.
     WebSearchCall(WebSearchCall),
@@ -334,6 +337,48 @@ pub enum InputItem {
     },
     /// The output of a function tool call.
     FunctionCallOutput { call_id: String, output: String },
+}
+
+#[derive(Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum InputContent {
+    InputText {
+        /// The text input to the model.
+        text: String,
+    },
+    InputImage {
+        image_url: String,
+        /// The detail level of the image to be sent to the model.
+        /// One of high, low, or auto. Defaults to auto.
+        detail: InputImageDetail,
+    },
+    OutputText {
+        /// The text output from the model.
+        text: String,
+    },
+}
+
+impl Debug for InputContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InputContent::InputText { text } => write!(f, "InputText({text})"),
+            InputContent::OutputText { text } => write!(f, "OutputText({text})"),
+            InputContent::InputImage { image_url, detail } => write!(
+                f,
+                "InputImage(image_url: {} bytes, {detail:?})",
+                image_url.len()
+            ),
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InputImageDetail {
+    #[default]
+    Auto,
+    High,
+    Low,
 }
 
 /// OpenAI API JSON 定義。
@@ -722,7 +767,7 @@ struct ImageGenRequest {
     /// The format in which the generated images are returned.
     /// Must be one of url or b64_json.
     /// Defaults to url
-    response_format: Option<String>,
+    response_format: Option<ResponseFormat>,
     /// The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.
     /// Defaults to 1024x1024
     size: Option<ImageSize>,
@@ -1019,10 +1064,10 @@ impl OpenAi {
     /// エラーチェインの中から特定のエラーを探す。
     pub fn error_kind(err: &anyhow::Error) -> OpenAiErrorKind {
         for cause in err.chain() {
-            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>() {
-                if req_err.is_timeout() {
-                    return OpenAiErrorKind::Timeout;
-                }
+            if let Some(req_err) = cause.downcast_ref::<reqwest::Error>()
+                && req_err.is_timeout()
+            {
+                return OpenAiErrorKind::Timeout;
             }
             if let Some(http_err) = cause.downcast_ref::<HttpStatusError>() {
                 // 429: Too Many Requests
@@ -1065,7 +1110,7 @@ impl OpenAi {
         let key = &self.config.api_key;
 
         info!("[openai] post_json: {url}");
-        info!("[openai] {}", serde_json::to_string(body).unwrap());
+        info!("[openai] {body:?}");
         self.check_enabled()?;
 
         let resp = self
@@ -1091,7 +1136,7 @@ impl OpenAi {
         // 失敗しても警告のみ
         match RateLimit::from(&resp) {
             Ok(rate_limit) => {
-                info!("[openai] rate limit: {:?}", rate_limit);
+                info!("[openai] rate limit: {rate_limit:?}");
                 self.rate_limit = Some(rate_limit);
             }
             Err(err) => {
@@ -1170,6 +1215,52 @@ impl OpenAi {
         Ok(resp)
     }
 
+    /// OpenAI Image Input に適した形式に変換する。
+    ///
+    /// <https://platform.openai.com/docs/guides/images-vision?api-mode=responses#image-input-requirements>
+    ///
+    /// Supported file types
+    /// * PNG (.png)
+    /// * JPEG (.jpeg and .jpg)
+    /// * WEBP (.webp)
+    /// * Non-animated GIF (.gif)
+    ///
+    /// Size limits
+    /// * Up to 20MB per image
+    /// * Low-resolution: 512px x 512px
+    /// * High-resolution: 768px (short side) x 2000px (long side)
+    ///
+    /// image/png;base64 文字列として保持する。
+    /// detail=Low だと OpenAI 側で 512x512 まで縮小されるらしいが、
+    /// こちらのメモリ消費と送信時のネットワーク帯域が無駄なので
+    /// ここで 512 まで縮小してからエンコードする。
+    pub fn to_image_input(bin: &[u8]) -> Result<InputContent> {
+        const SIZE_LIMIT: u32 = 512;
+
+        let mut img: image::DynamicImage =
+            image::load_from_memory(bin).context("Load image error")?;
+        // 縦か横が制限を超えている場合はアスペクト比を保ちながらリサイズする
+        if img.width() > SIZE_LIMIT || img.height() > SIZE_LIMIT {
+            img = img.resize(SIZE_LIMIT, SIZE_LIMIT, image::imageops::FilterType::Nearest);
+        }
+
+        // png 形式としてメモリに書き出し
+        let mut output = Cursor::new(vec![]);
+        img.write_to(&mut output, image::ImageFormat::Png)
+            .context("Convert image error")?;
+        let dst = output.into_inner();
+
+        // base64 エンコードして json object に変換
+        let base64 = general_purpose::STANDARD.encode(&dst);
+        let image_url = format!("data:image/png;base64,{base64}");
+        let input = InputContent::InputImage {
+            image_url,
+            detail: InputImageDetail::Low,
+        };
+
+        Ok(input)
+    }
+
     /// OpenAI Image Generation API を使用する。
     pub async fn generate_image(&mut self, prompt: &str, n: u8) -> Result<Vec<String>> {
         info!("[openai] image gen request");
@@ -1189,7 +1280,7 @@ impl OpenAi {
             let url = img.url.as_ref().ok_or_else(|| anyhow!("url is required"))?;
             result.push(url.to_string());
         }
-        info!("[openai] image gen OK: {:?}", result);
+        info!("[openai] image gen OK: {result:?}");
 
         Ok(result)
     }
@@ -1268,7 +1359,7 @@ mod tests {
     #[ignore]
     // cargo test simple_assistant -- --ignored --nocapture
     async fn simple_assistant() {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
@@ -1278,7 +1369,9 @@ mod tests {
         );
         let input = vec![InputItem::Message {
             role: Role::User,
-            content: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
+            content: vec![InputContent::InputText {
+                text: "こんにちは。あなたの知っている情報を教えてください。".to_string(),
+            }],
         }];
         match ai.chat(Some(inst), input).await {
             Ok(resp) => {
@@ -1298,13 +1391,15 @@ mod tests {
     #[ignore]
     // cargo test web_search -- --ignored --nocapture
     async fn web_search() {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
         let input = vec![InputItem::Message {
             role: Role::User,
-            content: "今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+            content: vec![InputContent::InputText {
+                text: "今日の最新ニュースを教えてください。1つだけでいいです。".to_string(),
+            }],
         }];
         let tools = [Tool::WebSearchPreview {
             search_context_size: Some(SearchContextSize::Low),
@@ -1334,7 +1429,7 @@ mod tests {
     #[ignore]
     // cargo test image_gen -- --ignored --nocapture
     async fn image_gen() -> Result<()> {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
@@ -1351,7 +1446,7 @@ mod tests {
     #[ignore]
     // cargo test test_to_sppech -- --ignored --nocapture
     async fn test_to_sppech() -> Result<()> {
-        let src = std::fs::read_to_string("config.toml").unwrap();
+        let src = std::fs::read_to_string("../config.toml").unwrap();
         let _unset = config::set(toml::from_str(&src).unwrap());
 
         let mut ai = OpenAi::new().unwrap();
@@ -1369,7 +1464,7 @@ mod tests {
         let size = res.len();
         const PATH: &str = "speech.mp3";
         std::fs::write(PATH, res)?;
-        println!("Wrote to: {PATH} ({} bytes)", size);
+        println!("Wrote to: {PATH} ({size} bytes)");
 
         Ok(())
     }

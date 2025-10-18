@@ -22,10 +22,12 @@ use sys::taskserver::{Control, RunResult, TaskServer};
 const FILE_STDOUT: &str = "stdout.txt";
 /// デーモン化の際に指定する stderr のリダイレクト先。
 const FILE_STDERR: &str = "stderr.txt";
-/// Cron 用シェルスクリプトの出力先。
+/// デーモン用シェルスクリプトの出力先。
 const FILE_EXEC_SH: &str = "exec.sh";
-/// Cron 用シェルスクリプトの出力先。
+/// デーモン用シェルスクリプトの出力先。
 const FILE_KILL_SH: &str = "kill.sh";
+/// デーモン用シェルスクリプトの出力先。
+const FILE_FLUSH_SH: &str = "flushlog.sh";
 /// Cron 設定例の出力先。
 const FILE_CRON: &str = "cron.txt";
 /// デーモン化の際に指定する pid ファイルパス。
@@ -35,6 +37,7 @@ const FILE_LOG: &str = "shanghai.log";
 
 const LOG_FILTER: &[&str] = &[module_path!(), "sys"];
 const LOG_ROTATE_SIZE: usize = 1024 * 1024;
+const LOG_ROTATE_COUNT: u16 = 10;
 const LOG_BUF_SIZE: usize = 64 * 1024;
 
 /// stdout, stderr をリダイレクトし、デーモン化する。
@@ -90,6 +93,7 @@ fn init_log(is_daemon: bool) -> FlushGuard {
     // filter = Off, Error, Warn, Info, Debug, Trace
     let rotate_opts = RotateOptions {
         size: RotateSize::Enabled(LOG_ROTATE_SIZE),
+        file_count: LOG_ROTATE_COUNT,
         ..Default::default()
     };
     let file_log = FileLogger::new_boxed(
@@ -128,14 +132,14 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
         let mut twitter = ctrl.sysmods().twitter.lock().await;
         if let Err(why) = twitter.tweet(&msg).await {
             error!("error on tweet");
-            error!("{:#?}", why);
+            error!("{why:#?}");
         }
     }
     {
         let mut discord = ctrl.sysmods().discord.lock().await;
         if let Err(why) = discord.say(&msg).await {
             error!("error on discord notification");
-            error!("{:#?}", why);
+            error!("{why:#?}");
         }
     }
 
@@ -147,10 +151,21 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
 ///
 /// 設定データをロードする。
 /// その後、システムモジュールとタスクサーバを初期化し、システムの実行を開始する。
+///
+/// * SIGUSR1: ログのフラッシュ
+/// * SIGUSR2: なし
 fn system_main() -> Result<()> {
+    let sigusr1 = || {
+        info!("Flush log");
+        log::logger().flush();
+        None
+    };
+    let sigusr2 = || None;
+
     loop {
         info!("system main");
         info!("{}", verinfo::version_info());
+        log::logger().flush();
 
         sys::config::load()?;
 
@@ -158,7 +173,7 @@ fn system_main() -> Result<()> {
         let ts = TaskServer::new(sysmods);
 
         ts.spawn_oneshot_task("boot_msg", boot_msg_task);
-        let run_result = ts.run();
+        let run_result = ts.run(sigusr1, sigusr2);
 
         info!("task server dropped");
 
@@ -213,6 +228,16 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w)?;
         writeln!(&mut w, "cd '{cd}'")?;
         writeln!(&mut w, "kill `cat {FILE_PID}`")?;
+    }
+    {
+        let f = create_sh(FILE_FLUSH_SH)?;
+        let mut w = BufWriter::new(f);
+
+        writeln!(&mut w, "#!/bin/bash")?;
+        writeln!(&mut w, "set -euxo pipefail")?;
+        writeln!(&mut w)?;
+        writeln!(&mut w, "cd '{cd}'")?;
+        writeln!(&mut w, "kill -SIGUSR1 `cat {FILE_PID}`")?;
     }
     {
         let f = File::create(FILE_CRON)?;
@@ -281,7 +306,7 @@ pub fn main() -> Result<()> {
 
     system_main().map_err(|e| {
         error!("Error in system_main");
-        error!("{:#}", e);
+        error!("{e:#}");
         e
     })
 

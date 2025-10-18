@@ -363,11 +363,11 @@ pub async fn get_disk_info() -> Result<DiskInfo> {
                 _ => (),
             }
         }
-        if let Some(mp) = mp_tmp {
-            if mp == "/" {
-                total = total_tmp;
-                avail = avail_tmp;
-            }
+        if let Some(mp) = mp_tmp
+            && mp == "/"
+        {
+            total = total_tmp;
+            avail = avail_tmp;
         }
     }
     let total = total.ok_or_else(|| anyhow!("parse error"))?;

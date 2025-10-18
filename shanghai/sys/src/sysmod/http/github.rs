@@ -59,13 +59,13 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
     let event = event.unwrap();
     let delivery = delivery.unwrap();
     let signature256 = signature256.unwrap();
-    info!("X-GitHub-Event: {}", event);
-    info!("X-GitHub-Delivery: {}", delivery);
-    info!("X-Hub-Signature-256: {}", signature256);
+    info!("X-GitHub-Event: {event}");
+    info!("X-GitHub-Delivery: {delivery}");
+    info!("X-Hub-Signature-256: {signature256}");
 
     // "push" 以外は無視する
     if event != "push" {
-        info!(r#"event "{}" ignored"#, event);
+        info!(r#"event "{event}" ignored"#);
         return Ok(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body(""));
@@ -82,7 +82,7 @@ async fn index_post(req: HttpRequest, body: String, ctrl: web::Data<Control>) ->
     let signature256 = &signature256[prefix.len()..];
 
     // 16 進文字列を 2 文字ずつ u8 配列に変換する
-    if signature256.len() % 2 != 0 {
+    if !signature256.len().is_multiple_of(2) {
         return Ok(HttpResponse::BadRequest()
             .content_type(ContentType::plaintext())
             .body("Invalid signature"));
@@ -139,7 +139,7 @@ async fn process_post(ctrl: &Control, json_body: &str) {
             });
         }
         Err(why) => {
-            error!("{:#?}", why);
+            error!("{why:#?}");
         }
     }
 }

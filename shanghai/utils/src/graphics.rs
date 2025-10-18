@@ -123,7 +123,7 @@ impl FontRenderer {
         scale: Scale,
         y: f32,
         height: f32,
-    ) -> (u32, Vec<PositionedGlyph>) {
+    ) -> (u32, Vec<PositionedGlyph<'_>>) {
         if text.is_empty() {
             return (0, Vec::new());
         }

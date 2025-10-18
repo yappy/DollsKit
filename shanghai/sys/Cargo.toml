@@ -13,7 +13,7 @@ verinfo.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 # Bit flags
-bitflags = "2.9.0"
+bitflags = "2.9.4"
 # RNG
 rand.workspace = true
 # Log
@@ -28,7 +28,7 @@ serde_with.workspace = true
 toml.workspace = true
 
 # Async
-tokio = { version = "1.44.2", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
+tokio = { version = "1.48.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.17"
 
 # HTTP client
@@ -39,17 +39,17 @@ base64 = "0.22.1"
 image.workspace = true
 
 # HTTP server
-actix-web = "4.10.2"
+actix-web = "4.11.0"
 actix-multipart = "0.7.2"
 # Discord
 serenity = "0.12.4"
 poise = "0.6.1"
 
 # Scraping
-scraper = "0.23.1"
+scraper = "0.24.0"
 ego-tree = "0.10.0"
 # ChatGPT tokenizer
-tiktoken-rs = "0.6.0"
+tiktoken-rs = "0.7.0"
 
 [dev-dependencies]
 # Concurrent test control

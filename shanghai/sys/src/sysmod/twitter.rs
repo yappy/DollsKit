@@ -1,6 +1,7 @@
 //! Twitter 機能。
 
 use super::SystemModule;
+use crate::sysmod::openai::InputContent;
 use crate::sysmod::openai::InputItem;
 use crate::sysmod::openai::Role;
 use crate::taskserver::Control;
@@ -336,11 +337,11 @@ impl Twitter {
     async fn twitter_task(&mut self, ctrl: &Control) -> Result<()> {
         // 自分の ID
         let me = self.get_my_id().await?;
-        info!("[tw-check] user_me: {:?}", me);
+        info!("[tw-check] user_me: {me:?}");
 
         // チェック開始 ID
         let since_id = self.get_since_id().await?;
-        info!("[tw-check] since_id: {}", since_id);
+        info!("[tw-check] since_id: {since_id}");
 
         // 設定ファイル中の全 user name (screen name) から ID を得る
         info!("[tw-check] get all user info from screen name");
@@ -381,7 +382,7 @@ impl Twitter {
             let max = cur.max(next);
 
             let name = self.get_username_from_id(&to_user_id).unwrap();
-            info!("reply to: {}", name);
+            info!("reply to: {name}");
 
             // post_image_if_long が有効で文字数オーバーの場合、画像にして投稿する
             if self.font.is_some() && post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
@@ -458,7 +459,7 @@ impl Twitter {
                     // 配列内のすべてのパターンを満たす
                     let match_hit = pats.iter().all(|pat| Self::pattern_match(pat, &tw.text));
                     if match_hit {
-                        info!("FIND: {:?}", tw);
+                        info!("FIND: {tw:?}");
                         // 配列からリプライをランダムに1つ選ぶ
                         let rnd_idx = rand::rng().random_range(0..msgs.len());
                         reply_buf.push(Reply {
@@ -505,7 +506,7 @@ impl Twitter {
             });
 
         for tw in tliter {
-            info!("FIND (AI): {:?}", tw);
+            info!("FIND (AI): {tw:?}");
 
             let user = Self::resolve_user(
                 tw.author_id.as_ref().unwrap(),
@@ -526,7 +527,7 @@ impl Twitter {
                     let text = text.replace("${user}", &user.unwrap().name);
                     InputItem::Message {
                         role: Role::Developer,
-                        content: text,
+                        content: vec![InputContent::InputText { text }],
                     }
                 })
                 .collect();
@@ -557,7 +558,7 @@ impl Twitter {
             let mut msgs = system_msgs.clone();
             msgs.push(InputItem::Message {
                 role: Role::User,
-                content: main_msg,
+                content: vec![InputContent::InputText { text: main_msg }],
             });
 
             // 結果に追加する
@@ -683,10 +684,10 @@ impl Twitter {
         if let Some(ref text) = param.text {
             let len = text.chars().count();
             if len > TWEET_LEN_MAX {
-                warn!("tweet length > {}: {}", TWEET_LEN_MAX, len);
-                warn!("before: {}", text);
+                warn!("tweet length > {TWEET_LEN_MAX}: {len}");
+                warn!("before: {text}");
                 let text = Self::truncate_tweet_text(text).to_string();
-                warn!("after : {}", text);
+                warn!("after : {text}");
                 param.text = Some(text);
             }
         }
@@ -697,7 +698,7 @@ impl Twitter {
 
             Ok(())
         } else {
-            info!("fake tweet: {:?}", param);
+            info!("fake tweet: {param:?}");
 
             Ok(())
         }
@@ -933,7 +934,7 @@ impl Twitter {
         body_param: &T,
     ) -> Result<reqwest::Response> {
         let json_str = serde_json::to_string(body_param).unwrap();
-        debug!("POST: {}", json_str);
+        debug!("POST: {json_str}");
 
         let client = reqwest::Client::new();
         let req = self

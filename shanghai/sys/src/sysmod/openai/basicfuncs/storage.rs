@@ -143,7 +143,7 @@ fn register_save<T: 'static>(func_table: &mut FunctionTable<T>) {
     func_table.register_function(
         Function {
             name: "note_save".to_string(),
-            description: Some(format!("Save note to permanent storage. If {} files already exist, the oldest one will be deleted.", NOTE_COUNT_MAX)),
+            description: Some(format!("Save note to permanent storage. If {NOTE_COUNT_MAX} files already exist, the oldest one will be deleted.")),
             parameters: Parameters {
                 properties,
                 required: vec!["user".to_string(), "content".to_string()],
