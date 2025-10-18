@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DXY","H_MAX","H_RANGE","W_MAX","W_RANGE"],"enum":["Cell","GameState","Level"],"struct":["Config","MineSweeper","MsStateJson"]};

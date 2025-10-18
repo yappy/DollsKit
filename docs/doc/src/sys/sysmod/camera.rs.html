@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sys/src/sysmod/camera.rs`."><title>camera.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="sys" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">sys/sysmod/</div>camera.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Raspberry Pi カメラ機能。
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sys/src/sysmod/camera.rs`."><title>camera.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="sys" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">sys/sysmod/</div>camera.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Raspberry Pi カメラ機能。
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! 専用カメラを搭載した Raspberry Pi 以外の環境では撮影できない。
 <a href=#4 id=4 data-nosnippet>4</a>//! [CameraConfig::fake_camera] 設定でフェイクできる。
@@ -218,7 +218,7 @@
 <a href=#218 id=218 data-nosnippet>218</a>            total_size: main_size + th_size,
 <a href=#219 id=219 data-nosnippet>219</a>        };
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">if </span>archive.insert(key.to_string(), entry).is_some() {
-<a href=#221 id=221 data-nosnippet>221</a>            <span class="macro">warn!</span>(<span class="string">"[camera-pic] pic archive is overwritten: {}"</span>, key);
+<a href=#221 id=221 data-nosnippet>221</a>            <span class="macro">warn!</span>(<span class="string">"[camera-pic] pic archive is overwritten: {key}"</span>);
 <a href=#222 id=222 data-nosnippet>222</a>        }
 <a href=#223 id=223 data-nosnippet>223</a>
 <a href=#224 id=224 data-nosnippet>224</a>        <span class="prelude-val">Ok</span>(())
@@ -238,12 +238,12 @@
 <a href=#238 id=238 data-nosnippet>238</a>            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"picture not found: {}"</span>, id))<span class="question-mark">?</span>;
 <a href=#239 id=239 data-nosnippet>239</a>
 <a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(<span class="kw-2">&amp;</span>entry.path_main).<span class="kw">await </span>{
-<a href=#241 id=241 data-nosnippet>241</a>            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} main: {}"</span>, id, why);
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {id} main: {why}"</span>);
 <a href=#242 id=242 data-nosnippet>242</a>        }
 <a href=#243 id=243 data-nosnippet>243</a>        <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(<span class="kw-2">&amp;</span>entry.path_th).<span class="kw">await </span>{
-<a href=#244 id=244 data-nosnippet>244</a>            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} thumb: {}"</span>, id, why);
+<a href=#244 id=244 data-nosnippet>244</a>            <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {id} thumb: {why}"</span>);
 <a href=#245 id=245 data-nosnippet>245</a>        }
-<a href=#246 id=246 data-nosnippet>246</a>        <span class="macro">info!</span>(<span class="string">"[camera] deleted: {}"</span>, id);
+<a href=#246 id=246 data-nosnippet>246</a>        <span class="macro">info!</span>(<span class="string">"[camera] deleted: {id}"</span>);
 <a href=#247 id=247 data-nosnippet>247</a>
 <a href=#248 id=248 data-nosnippet>248</a>        <span class="prelude-val">Ok</span>(())
 <a href=#249 id=249 data-nosnippet>249</a>    }
@@ -268,18 +268,18 @@
 <a href=#268 id=268 data-nosnippet>268</a>
 <a href=#269 id=269 data-nosnippet>269</a>        <span class="kw">let </span><span class="kw-2">mut </span>total = <span class="self">Self</span>::calc_total_size(history);
 <a href=#270 id=270 data-nosnippet>270</a>        <span class="kw">while </span>total &gt; limit {
-<a href=#271 id=271 data-nosnippet>271</a>            <span class="macro">info!</span>(<span class="string">"[camera] total: {}, limit: {}"</span>, total, limit);
+<a href=#271 id=271 data-nosnippet>271</a>            <span class="macro">info!</span>(<span class="string">"[camera] total: {total}, limit: {limit}"</span>);
 <a href=#272 id=272 data-nosnippet>272</a>
 <a href=#273 id=273 data-nosnippet>273</a>            <span class="comment">// 一番古いものを削除する (1.66.0 or later)
 <a href=#274 id=274 data-nosnippet>274</a>            </span><span class="kw">let </span>(id, entry) = history.pop_first().unwrap();
 <a href=#275 id=275 data-nosnippet>275</a>            <span class="comment">// 削除でのエラーはログを出して続行する
 <a href=#276 id=276 data-nosnippet>276</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(entry.path_main).<span class="kw">await </span>{
-<a href=#277 id=277 data-nosnippet>277</a>                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} main: {}"</span>, id, why);
+<a href=#277 id=277 data-nosnippet>277</a>                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {id} main: {why}"</span>);
 <a href=#278 id=278 data-nosnippet>278</a>            }
 <a href=#279 id=279 data-nosnippet>279</a>            <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = fs::remove_file(entry.path_th).<span class="kw">await </span>{
-<a href=#280 id=280 data-nosnippet>280</a>                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {} thumb: {}"</span>, id, why);
+<a href=#280 id=280 data-nosnippet>280</a>                <span class="macro">error!</span>(<span class="string">"[camera] cannot remove {id} thumb: {why}"</span>);
 <a href=#281 id=281 data-nosnippet>281</a>            }
-<a href=#282 id=282 data-nosnippet>282</a>            <span class="macro">info!</span>(<span class="string">"[camera] deleted: {}"</span>, id);
+<a href=#282 id=282 data-nosnippet>282</a>            <span class="macro">info!</span>(<span class="string">"[camera] deleted: {id}"</span>);
 <a href=#283 id=283 data-nosnippet>283</a>
 <a href=#284 id=284 data-nosnippet>284</a>            total -= entry.total_size;
 <a href=#285 id=285 data-nosnippet>285</a>        }

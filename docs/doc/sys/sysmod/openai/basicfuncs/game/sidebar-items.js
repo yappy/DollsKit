@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["mine_sweeper","register_all","register_mine_sweeper"]};
