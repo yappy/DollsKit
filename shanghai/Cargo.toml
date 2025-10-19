@@ -16,6 +16,8 @@ panic = 'abort'
 
 [profile.release]
 panic = 'abort'
+# Let this true to enable debug symbols in release build
+# debug = true
 
 [workspace.dependencies]
 # My crates
