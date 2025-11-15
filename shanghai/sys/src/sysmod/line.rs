@@ -457,7 +457,7 @@ impl Line {
     pub fn verify_signature(&self, signature: &str, body: &str) -> Result<()> {
         let channel_secret = self.config.channel_secret.as_str();
 
-        verify_signature(channel_secret, signature, body)
+        verify_signature(signature, channel_secret, body)
     }
 
     /// 署名検証後の POST request 処理本体。
@@ -491,7 +491,7 @@ impl Line {
 }
 
 /// 署名検証。
-fn verify_signature(channel_secret: &str, signature: &str, body: &str) -> Result<()> {
+fn verify_signature(signature: &str, channel_secret: &str, body: &str) -> Result<()> {
     let key = channel_secret.as_bytes();
     let data = body.as_bytes();
     let expected = general_purpose::STANDARD.decode(signature)?;
