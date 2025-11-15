@@ -12,7 +12,7 @@ verinfo.workspace = true
 # Error handling
 anyhow.workspace = true
 # Bit flags
-bitflags = "2.9.4"
+bitflags = "2.10.0"
 # RNG
 rand.workspace = true
 # Log
