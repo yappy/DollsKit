@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ContentProvider","MentioneeTarget","Message","Source","WebhookEventBody"],"fn":["on_image_message","on_text_message","process_post","source_to_display_name","verify_signature"],"struct":["DeliveryContext","Members","Mention","Mentionee","WebHookRequest","WebhookEvent","WebhookEventCommon","index_get","index_post"]};
+window.SIDEBAR_ITEMS = {"struct":["index_get","index_post"]};

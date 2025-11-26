@@ -1,1 +1,0 @@
-searchState.loadedDescShard("verinfo", 0, "バージョン情報。\nビルドプロファイルを “debug” または “…\nrustc コンパイラバージョン “major.minor.patch…\n…\n…")
