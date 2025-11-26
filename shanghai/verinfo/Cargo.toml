@@ -6,8 +6,6 @@ edition.workspace = true
 description.workspace = true
 
 [dependencies]
-anyhow.workspace = true
-
 # Compiler version
 rustc_version_runtime = "0.3.0"
 
