@@ -16,6 +16,7 @@ fdisk -l
 ## パーティションの削除、再作成 (初期化時のみ)
 
 USB メモリの場合、買ってきたものは多分 fat32 のパーティションが1つ存在する。
+または extFAT とか。
 他の場合もおそらく ext4 ではない。
 
 ```sh
@@ -43,7 +44,7 @@ blkid
 ## マウントポイントの作成 (バックアップ復旧時も)
 
 ```sh
-mkdir /mnt/localbkup
+mkdir /mnt/extssd
 ```
 
 本運用前にパーミッションに注意する。
@@ -51,9 +52,9 @@ mkdir /mnt/localbkup
 ## お試しマウント
 
 ```sh
-mount /mnt/localbkup /dev/sd[a][1]
+mount /dev/sd[a][1] /mnt/extssd
 df -Th
-umount /mnt/localbkup
+umount /mnt/extssd
 ```
 
 ## 起動時 (または mount -a 時) にマウント

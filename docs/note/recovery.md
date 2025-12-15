@@ -38,7 +38,7 @@ Host key verification failed.
 
 ## バックアップメディアのマウント
 
-USB メモリなら `root/usbmem.md` を参考にマウントしてバックアップデータを得る。
+USB メモリなら `root/storage.md` を参考にマウントしてバックアップデータを得る。
 
 ## とりあえず
 

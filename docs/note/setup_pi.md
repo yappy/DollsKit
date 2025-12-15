@@ -50,6 +50,14 @@ SD card に焼くイメージのセレクタ/ダウンローダとイメージ�
 
 ## 最新確認環境
 
+### RPi5
+
+Raspberry Pi OS Lite (64-bit)
+2025-12-04
+(Trixie)
+
+### RPi4
+
 Raspberry Pi OS Lite (32-bit)
 2021-05-07
 (Buster)
@@ -61,8 +69,9 @@ Raspberry Pi OS Lite (32-bit)
 * Using Raspberry Pi Imager から Raspberry Pi Imager を落とす。
 * Micro SD を挿入し、イメージと書き込み先を選択する。
   * GUI を使わない場合は Lite (no desktop) で OK。
-* `Ctrl + Shift + X` で Advanced Options を開く。
-  * ソフト内には説明がなく、公式ドキュメントを読んだ者のみが使える隠しコマンド。
+* Raspberry Pi Imager v.2.0.0 では SSH や wifi は普通に設定できる。
+* ~~`Ctrl + Shift + X` で Advanced Options を開く。~~
+  * ~~ソフト内には説明がなく、公式ドキュメントを読んだ者のみが使える隠しコマンド。~~
   * SSH や wifi の設定をここからできる。
     この時点で公開鍵 SSH にもできる。
     (従来の SD root に特定のファイルを置く方法を行っていると思われる)
@@ -73,12 +82,14 @@ Raspberry Pi OS Lite (32-bit)
   * DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して
     ping, ssh して試す。ssh TCP 22 番ポートが開いているはず。
   * `ssh <user>@<IP addr>` から設定したパスワードで入れたら当たり。
+  * 最近のルータは HTTP 設定画面で接続中のデバイス一覧が見られることも多い。
 
 ## 初期設定
 
 `$sudo raspi-config`
 
 バージョンアップで少しずつパワーアップしている気がする。
+Raspberry Pi Imager の時点で設定可能なものも増えてきている気がする。
 
 * (1) System Options
   * wifi 設定
@@ -247,30 +258,49 @@ set bell-style none
 
 ## カメラモジュール
 
+### カメラハードウェア
+
+RPi5 からケーブルが細くなった。
+しかし、AI Camera には細いケーブルも同梱されているので
+ケーブルを別に買う必要はない(一敗)。
+
+ケーブルのソケットの仕様が分かりにくいが、プラスチックのパーツを差し込み方向と平行に
+引くことができる。その状態だと緩んでいるのでケーブルを差し込み、再度パーツを押せば
+ロックされる。
+
+### AI Camera 特有の準備
+
+<https://www.raspberrypi.com/documentation/accessories/ai-camera.html>
+
+IMX500 は起動中にファームウェアを流し込まないと動かないので下記が必要。草。
+
+* `sudo apt install imx500-all`
+* Reboot
+
+### カメラソフトウェア
+
+* カメラ関連コマンドはさらに libcamera から rpicam に変更になった。
+
+旧情報
+
 * カメラモジュールの有効化
   * 従来のカメラ関連コマンドはレガシー扱いとなり非推奨となった。
   * sudo raspi-config
   * Interfacing options
   * legacy camera supprt
   * 有効にしても raspistill 等のコマンドが使えない。。
-
 * 移行先は libcamera
   * libcamera-still が raspistill 互換 (多分)。
   * libcamera-jpeg との関係は不明。
   * legacy camera supprt = ON だと使えないっぽい。
-
 * 静止画撮影(要 video グループ) (旧)
   * `raspistill -t 1 -o pic.jpg`
   * -t 指定すると真っ黒になってしまうことがあるらしい？
     <https://mizukama.sakura.ne.jp/blog/archives/4022>
-
 * サイズ
   * 3280x2464
 * exif のサムネイル
   * 64x48
-
-* C# からサムネイルの取り出し
-  * GetThumbnailImage()
 
 ## I2C
 

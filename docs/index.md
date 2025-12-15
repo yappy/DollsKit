@@ -5,6 +5,9 @@
 * Raspberry Pi
   * [Raspberry Pi セットアップ](./note/setup_pi.md)
   * [Raspberry Pi バックアップからの復旧](./note/recovery.md)
+* Linux
+  * [ユーザ管理](./note/user.md)
+  * [追加ストレージ](./note/storage.md)
 * Rust
   * [Rust ツール類](./note/rust_tools.md)
   * [Rust テクニカルノート](./note/rust_technote.md)
