@@ -1,4 +1,6 @@
 # CrystalDiskMark v8 - compatible(?) fio job definition
+# How to use
+# $ fio this_file.fio
 
 [global]
 ioengine=libaio
