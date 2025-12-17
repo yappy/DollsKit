@@ -5,7 +5,7 @@
 
 use super::SystemModule;
 use crate::taskserver::Control;
-use crate::{config, taskserver};
+use crate::{config, rpienv, taskserver};
 use anyhow::{Result, anyhow, bail, ensure};
 use chrono::{Local, NaiveTime};
 use image::{ImageFormat, imageops::FilterType};
@@ -388,18 +388,10 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
     Ok(dict)
 }
 
-/// 横最大サイズ。(Raspberry Pi Camera V2)
-const PIC_MAX_W: u32 = 3280;
-/// 縦最大サイズ。(Raspberry Pi Camera V2)
-const PIC_MAX_H: u32 = 2464;
-/// 横最小サイズ。(Raspberry Pi Camera V2)
-const PIC_MIN_W: u32 = 32;
-/// 縦最小サイズ。(Raspberry Pi Camera V2)
-const PIC_MIN_H: u32 = 24;
-/// 横デフォルトサイズ。
-const PIC_DEF_W: u32 = PIC_MAX_W;
-/// 縦デフォルトサイズ。
-const PIC_DEF_H: u32 = PIC_MAX_H;
+/// デフォルトの横サイズ。imx500
+const PIC_DEF_W: u32 = 4056;
+/// デフォルトの縦サイズ。imx500
+const PIC_DEF_H: u32 = 3040;
 /// jpeg 最大クオリティ。
 const PIC_MAX_Q: u8 = 100;
 /// jpeg 最小クオリティ。
@@ -415,41 +407,33 @@ const THUMB_H: u32 = 96;
 
 /// 写真撮影オプション。
 pub struct TakePicOption {
-    /// 横サイズ。
-    w: u32,
-    /// 縦サイズ。
-    h: u32,
+    /// 横サイズ。None の場合カメラデフォルト。
+    w: Option<u32>,
+    /// 縦サイズ。None の場合カメラデフォルト。
+    h: Option<u32>,
     /// jpeg クオリティ。
     q: u8,
     /// 撮影時間(ms)。
     timeout_ms: u32,
 }
 
-impl Default for TakePicOption {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl TakePicOption {
     pub fn new() -> Self {
         Self {
-            w: PIC_DEF_W,
-            h: PIC_DEF_H,
+            w: None,
+            h: None,
             q: PIC_DEF_Q,
             timeout_ms: PIC_DEF_TO_MS,
         }
     }
     #[allow(dead_code)]
     pub fn width(mut self, w: u32) -> Self {
-        assert!((PIC_MIN_W..=PIC_MAX_W).contains(&w));
-        self.w = w;
+        self.w = Some(w);
         self
     }
     #[allow(dead_code)]
     pub fn height(mut self, h: u32) -> Self {
-        assert!((PIC_MIN_H..=PIC_MAX_H).contains(&h));
-        self.h = h;
+        self.h = Some(h);
         self
     }
     #[allow(dead_code)]
@@ -486,6 +470,10 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
     let fake = config::get(|cfg| cfg.camera.fake_camera);
 
     let bin = if !fake {
+        let camera = rpienv::raspi_env()
+            .default_camera()
+            .ok_or_else(|| anyhow!("no cameras found"))?;
+
         let _lock = LOCK.lock().await;
         let output = Command::new(CAMERA_PROG)
             .arg("-o")
@@ -495,9 +483,9 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
             .arg("-q")
             .arg(opt.q.to_string())
             .arg("--width")
-            .arg(opt.w.to_string())
+            .arg(opt.w.unwrap_or(camera.width).to_string())
             .arg("--height")
-            .arg(opt.h.to_string())
+            .arg(opt.h.unwrap_or(camera.height).to_string())
             .output()
             .await?;
         if !output.status.success() {
@@ -513,7 +501,11 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
 
         // オプションの w, h にリサイズする
         let src = image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg)?;
-        let dst = src.resize_exact(opt.w, opt.h, FilterType::Nearest);
+        let dst = src.resize_exact(
+            opt.w.unwrap_or(PIC_DEF_W),
+            opt.h.unwrap_or(PIC_DEF_H),
+            FilterType::Nearest,
+        );
         let mut output = Cursor::new(vec![]);
         dst.write_to(&mut output, ImageFormat::Jpeg)?;
 
