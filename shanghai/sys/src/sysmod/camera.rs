@@ -417,6 +417,12 @@ pub struct TakePicOption {
     timeout_ms: u32,
 }
 
+impl Default for TakePicOption {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TakePicOption {
     pub fn new() -> Self {
         Self {

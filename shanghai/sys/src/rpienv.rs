@@ -39,7 +39,7 @@ impl RaspiEnv {
     /// デフォルトカメラ
     pub fn default_camera(&self) -> Option<&CameraInfo> {
         match self {
-            RaspiEnv::RasRi { cameras, .. } => cameras.get(0),
+            RaspiEnv::RasRi { cameras, .. } => cameras.first(),
             _ => None,
         }
     }
