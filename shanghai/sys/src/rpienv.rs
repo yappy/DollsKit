@@ -20,11 +20,14 @@ impl std::fmt::Display for RaspiEnv {
 
                 writeln!(f, "Cameras:")?;
                 for (i, cam) in cameras.iter().enumerate() {
-                    writeln!(
+                    write!(
                         f,
-                        "{i}: model={}, resolution={}x{}\n",
+                        "{i}: model={}, resolution={}x{}",
                         cam.model, cam.width, cam.height
                     )?;
+                    if i < cameras.len() - 1 {
+                        writeln!(f)?;
+                    }
                 }
                 Ok(())
             }
