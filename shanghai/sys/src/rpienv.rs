@@ -11,6 +11,27 @@ pub enum RaspiEnv {
     },
 }
 
+impl std::fmt::Display for RaspiEnv {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RaspiEnv::NotRasRi => write!(f, "Not Raspberry Pi"),
+            RaspiEnv::RasRi { model, cameras } => {
+                writeln!(f, "Raspberry Model: {model}")?;
+
+                writeln!(f, "Cameras:")?;
+                for (i, cam) in cameras.iter().enumerate() {
+                    writeln!(
+                        f,
+                        "{i}: model={}, resolution={}x{}\n",
+                        cam.model, cam.width, cam.height
+                    )?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CameraInfo {
     pub model: String,
