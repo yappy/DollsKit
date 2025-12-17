@@ -8,6 +8,8 @@
 * Linux
   * [ユーザ管理](./note/user.md)
   * [追加ストレージ](./note/storage.md)
+* Windows
+  * [SSH トンネルとリモートデスクトップ、Wake on LAN](./note/remote.md)
 * Rust
   * [Rust ツール類](./note/rust_tools.md)
   * [Rust テクニカルノート](./note/rust_technote.md)
