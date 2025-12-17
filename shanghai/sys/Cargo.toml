@@ -9,13 +9,10 @@ description.workspace = true
 utils.workspace = true
 verinfo.workspace = true
 
-# Error handling
 anyhow.workspace = true
-# Bit flags
 bitflags = "2.10.0"
-# RNG
 rand.workspace = true
-# Log
+regex.workspace = true
 log.workspace = true
 
 chrono.workspace = true

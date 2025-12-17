@@ -465,11 +465,16 @@ impl TakePicOption {
     }
 }
 
+const CAMERA_PROG: &str = "rpicam-jpeg";
+
 /// 写真を撮影する。成功すると jpeg バイナリデータを返す。
 ///
-/// 従来は raspistill コマンドを使っていたが、Bullseye より廃止された。
+/// <https://www.raspberrypi.com/documentation/computers/camera_software.html>
+///
+/// raspistill は Bullseye まで。既にサポートされていない。
 /// カメラ関連の各種操作は libcamera に移動、集約された。
-/// raspistill コマンド互換の libcamera-still コマンドを使う。
+/// Bookworm 以降では libcamera-* は rpicam-* にリネームされた。
+/// Trixie では libcamera は消えている気がする。
 ///
 /// 同時に2つ以上を実行できないかつ時間がかかるので、[tokio::sync::Mutex] で排他する。
 ///
@@ -482,7 +487,7 @@ pub async fn take_a_pic(opt: TakePicOption) -> Result<Vec<u8>> {
 
     let bin = if !fake {
         let _lock = LOCK.lock().await;
-        let output = Command::new("libcamera-still")
+        let output = Command::new(CAMERA_PROG)
             .arg("-o")
             .arg("-")
             .arg("-t")
