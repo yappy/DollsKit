@@ -227,7 +227,7 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "set -euxo pipefail")?;
         writeln!(&mut w)?;
         writeln!(&mut w, "cd '{cd}'")?;
-        writeln!(&mut w, "kill `cat {FILE_PID}`")?;
+        writeln!(&mut w, "kill $(cat {FILE_PID})")?;
     }
     {
         let f = create_sh(FILE_FLUSH_SH)?;
@@ -237,7 +237,7 @@ fn create_run_script() -> Result<()> {
         writeln!(&mut w, "set -euxo pipefail")?;
         writeln!(&mut w)?;
         writeln!(&mut w, "cd '{cd}'")?;
-        writeln!(&mut w, "kill -SIGUSR1 `cat {FILE_PID}`")?;
+        writeln!(&mut w, "kill -SIGUSR1 $(cat {FILE_PID})")?;
     }
     {
         let f = File::create(FILE_CRON)?;
