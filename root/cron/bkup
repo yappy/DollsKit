@@ -1,23 +1,25 @@
-#!/bin/sh -e
+#!/bin/sh -eu
 
 # Automatic backup script
 #
 # Link from:
 # /etc/cron.weekly/
 
-SCRIPT_DIR=$(dirname $(realpath $0))
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SCRIPT_DIR}/../backup
 BKUP_ROOT=/mnt/localbkup
 LOG=/root/bkup.log
 
-echo -------------------------------------------------------------------------------- >> ${LOG}
-date -R >> ${LOG}
-echo -------------------------------------------------------------------------------- >> ${LOG}
+{
+    echo --------------------------------------------------------------------------------
+    date -R
+    echo --------------------------------------------------------------------------------
+} >> "${LOG}"
 
-python3 ${ROOT}/bkup_local.py \
+python3 "${ROOT}/bkup_local.py" \
 --tag full \
---mount-check ${BKUP_ROOT} \
+--mount-check "${BKUP_ROOT}" \
 --reserved-size 30 \
---exclude-from ${ROOT}/bkup_exclude.txt \
-/ ${BKUP_ROOT}/full \
->> ${LOG} 2>&1
+--exclude-from "${ROOT}/bkup_exclude.txt" \
+/ "${BKUP_ROOT}/full" \
+>> "${LOG}" 2>&1

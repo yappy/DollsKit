@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -eu
 
 # Create a file: /root/mydns
 # user:pass
@@ -7,6 +7,6 @@
 # Link from:
 # /etc/cron.daily/
 
-CRED=`cat /root/mydns`
+CRED=$(cat /root/mydns)
 MYDNS=https://www.mydns.jp/login.html
-curl -u $CRED $MYDNS
+curl -u "$CRED" "$MYDNS"

@@ -5,21 +5,23 @@
 # Link from:
 # /etc/cron.weekly/
 
-SCRIPT_DIR=$(dirname $(realpath $0))
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SCRIPT_DIR}/../backup
 BKUP_ROOT=/mnt/localbkup
 LOG=/root/wpbkup.log
 DB=wordpress
 
-echo -------------------------------------------------------------------------------- >> ${LOG}
-date -R >> ${LOG}
-echo -------------------------------------------------------------------------------- >> ${LOG}
+{
+    echo --------------------------------------------------------------------------------
+    date -R
+    echo --------------------------------------------------------------------------------
+} >> "${LOG}"
 
 # web files
-python3 ${ROOT}/bkup_local.py \
+python3 "${ROOT}/bkup_local.py" \
 --tag wp \
---mount-check ${BKUP_ROOT} \
+--mount-check "${BKUP_ROOT}" \
 --keep-count 30 \
---db wordpress \
-/var/www/html/wp/ ${BKUP_ROOT}/wp \
->> ${LOG} 2>&1
+--db ${DB} \
+/var/www/html/wp/ "${BKUP_ROOT}/wp" \
+>> "${LOG}" 2>&1
