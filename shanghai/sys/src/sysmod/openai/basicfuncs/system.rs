@@ -1,7 +1,9 @@
 //! システム情報取得。
 
 use crate::rpienv::{self, CameraInfo, RaspiEnv};
-use crate::sysmod::health::{ThrottleFlags, get_cpu_cores, get_cpu_info, get_throttle_status};
+use crate::sysmod::health::{
+    ThrottleFlags, get_cpu_cores, get_cpu_info, get_disk_info, get_mem_info, get_throttle_status,
+};
 use crate::sysmod::openai::function::{
     BasicContext, FuncArgs, Function, FunctionTable, ParameterElement, Parameters,
     get_arg_bool_opt, get_arg_str,
@@ -87,7 +89,9 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
     let model = bctx.ctrl.sysmods().openai.lock().await.model_info().await?;
     let build_info = verinfo::version_info_struct();
     let rpienv = rpienv::raspi_env();
-    let cpu_status = get_cpu_status().await?;
+    let cpu = get_cpu_status().await?;
+    let memory = get_memory_status().await?;
+    let disk = get_disk_status().await?;
 
     #[derive(Serialize)]
     #[skip_serializing_none]
@@ -115,12 +119,16 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
         build: &'static VersionInfo,
         env: RpiEnv,
         cpu: CpuStatus,
+        memory: MemoryStatus,
+        disk: DiskStatus,
     }
     let info = Info {
         ai_model: model,
         build: build_info,
         env: rpienv,
-        cpu: cpu_status,
+        cpu,
+        memory,
+        disk,
     };
 
     Ok(serde_json::to_string(&info).unwrap())
@@ -130,8 +138,8 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
 #[derive(Debug, Serialize, Deserialize)]
 struct CpuStatus {
     number_of_cores: u32,
-    cpu_usage_percent: f64,
-    temperature_celsius: Option<f64>,
+    usage_percent: f32,
+    temperature_celsius: Option<f32>,
     throttle_status: Option<Vec<String>>,
 }
 
@@ -157,9 +165,49 @@ async fn get_cpu_status() -> Result<CpuStatus> {
 
     Ok(CpuStatus {
         number_of_cores,
-        cpu_usage_percent: cpu_info.cpu_percent_total,
-        temperature_celsius: cpu_info.temp,
+        usage_percent: cpu_info.cpu_percent_total as f32,
+        temperature_celsius: cpu_info.temp.map(|t| t as f32),
         throttle_status,
+    })
+}
+
+#[derive(Serialize)]
+struct MemoryStatus {
+    total_gib: f32,
+    available_gib: f32,
+    usage_percent: f32,
+}
+
+/// メモリ使用量取得。
+async fn get_memory_status() -> Result<MemoryStatus> {
+    let mem_info = get_mem_info().await?;
+    let usage_percent =
+        (((mem_info.total_mib - mem_info.avail_mib) / mem_info.total_mib) * 100.0) as f32;
+
+    Ok(MemoryStatus {
+        total_gib: (mem_info.total_mib / 1024.0) as f32,
+        available_gib: (mem_info.avail_mib / 1024.0) as f32,
+        usage_percent,
+    })
+}
+
+#[derive(Serialize)]
+struct DiskStatus {
+    total_gib: f32,
+    available_gib: f32,
+    usage_percent: f32,
+}
+
+/// ディスク使用量取得。
+async fn get_disk_status() -> Result<DiskStatus> {
+    let disk_info = get_disk_info().await?;
+    let usage_percent =
+        (((disk_info.total_gib - disk_info.avail_gib) / disk_info.total_gib) * 100.0) as f32;
+
+    Ok(DiskStatus {
+        total_gib: disk_info.total_gib as f32,
+        available_gib: disk_info.avail_gib as f32,
+        usage_percent,
     })
 }
 
