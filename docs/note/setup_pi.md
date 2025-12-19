@@ -151,7 +151,7 @@ static domain_name_servers=XXX.YYY.ZZZ.WWW
 
 ## Debian-Backports
 
-主にgit や cmake が古い場合。
+主にgit や cmake が古い場合。気にならないならスキップで OK。
 最新を追いかけるなら公式のリポジトリを sources.list に登録するのが確実だが、
 こちらで十分なら設定は一回で済む。
 
@@ -176,6 +176,42 @@ backports は `-t` で明示的に指定しなければ使われることはな�
 ```sh
 apt show -a <pkg>
 apt install -t <version>-backports <pkg>
+```
+
+## 自動補完の Beep 音がうるさい
+
+```sh
+$ sudo nano /etc/inputrc
+# uncomment
+set bell-style none
+```
+
+## Bash のタブ補完
+
+デフォルトで入ってるのか入ってないのかはっきりしない。
+
+```sh
+apt install bash-completion
+```
+
+### root でタブ補完が効かない
+
+一般ユーザの `.bashrc` では以下のコードで有効化されていて、
+全員共通の `/etc/bashrc` ではコメントアウトされている？？？
+よくわかんないけど共通設定ファイルをコメントアウト解除するか
+/root/.bashrc の最後にコピペする。
+
+```bash
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
 ```
 
 ## 自動アップデート
@@ -217,14 +253,6 @@ Unattended-Upgrade::Automatic-Reboot "true";
 
 ```sh
 sudo unattended-upgrade --debug --dry-run
-```
-
-## 自動補完の Beep 音がうるさい
-
-```sh
-$ sudo nano /etc/inputrc
-# uncomment
-set bell-style none
 ```
 
 ## screen
@@ -316,10 +344,6 @@ RPi5 からケーブルが細くなった。
 
 * lighttpd
   * `sudo apt install lighttpd`
-* php
-  * `sudo apt install php-cgi`
-
-* lighttpd
   * `/etc/lighttpd`
   * `lighttpd-enable-mod`, `lighttpd-disable-mod`
   * `service lighttpd force-reload`
@@ -332,11 +356,29 @@ RPi5 からケーブルが細くなった。
       * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
 
 * php
+  * `apt install php-cgi`
+    * これは fastcgi じゃないらしい…。
+  * `apt install php-fpm`
+    * FPM (FastCGI Process Manager) は、PHP における FastCGI 実装です。
+      (主に)高負荷のサイトで有用な機能が含まれています。
+    * Apache ではこちらが標準になったとか。
+      セキュリティと性能の両面でこちらの方がいいかもしれない。
+    * ただしプロセスが残るので設定ファイルを書き換えても元のが残りそう。
+      `service php-fpm8.4 force-reload` 等が必要と思われる。
   * `/etc/php/.../php.ini`
   * デフォルトのアップロードサイズ制限は厳しいので適切に設定し直す。
     * memory_limit
     * post_max_size
     * upload_max_filesize
+  * `service php8.4-fpm restart`
+  * PukiWiki が動かない時は mb (multi byte) ライブラリ不足。
+    * `apt install php-mbstring`
+    * `extension=mbstring` の行をコメント解除する。
+
+```txt
+PHP Fatal error:
+Uncaught Error: Call to undefined function mb_strrpos() in ...php:XXX
+```
 
 ## SSL (Let's Encrypt)
 
@@ -417,6 +459,42 @@ ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
 
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。
+
+## PukiWiki
+
+懐かしさはあるが、現代のセキュリティに対応できているかというと不安になる。
+~~Wordpress よりまし。~~
+
+<https://pukiwiki.sourceforge.io/>
+
+海外からめちゃくちゃ荒らされる (残念だが当然) ので認証は必須。
+この認証で大丈夫なのかは不明。
+
+```php
+// pukiwiki.ini.php
+
+// Title of your Wikisite (Name this)
+// Also used as RSS feed's channel name etc
+$page_title = 'PukiWiki';
+// Site admin's name (CHANGE THIS)
+$modifier = 'anonymous';
+// Site admin's Web page (CHANGE THIS)
+$modifierlink = 'http://pukiwiki.example.com/';
+
+// User definition
+$auth_users = array(...);
+// Edit auth (0:Disable, 1:Enable)
+$edit_auth = 0;
+```
+
+ファイルアップロードに関してはおそらく `php.ini` の設定も必要。
+
+```php
+// plugin/attach.inc.php
+
+// Max file size for upload on script of PukiWikiX_FILESIZE
+define('PLUGIN_ATTACH_MAX_FILESIZE', (1024 * 1024)); // default: 1MB
+```
 
 ## MySQL (MariaDB)
 
