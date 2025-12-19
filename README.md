@@ -8,9 +8,9 @@ yappy家の管理プログラム
 
 ## ドキュメント
 
-<https://yappy.github.io/DollsKit/>
+GitHub Pages: <https://yappy.github.io/DollsKit/>
 
-(ドキュメントのソースは `docs/` 以下)
+ドキュメントのソースは `docs/` 以下: [docs/index.md](./docs/index.md)
 
 ## ソースの入手
 

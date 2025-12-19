@@ -346,14 +346,16 @@ RPi5 からケーブルが細くなった。
   * `sudo apt install lighttpd`
   * `/etc/lighttpd`
   * `lighttpd-enable-mod`, `lighttpd-disable-mod`
+    * `conf-available/*` を編集し、これらのコマンドでシンボリックリンクを
+      `conf-enabled/*` に生成削除する
   * `service lighttpd force-reload`
   * 以下などを必要に応じて変更しながら enable する
     * accesslog
     * userdir
-    * fastcgi
-    * fastcgi-php
+    * dir-listing
+    * fastcgi-php-fpm
     * CGI の stderr
-      * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
+      * `server.breakagelog = "/var/log/lighttpd/stderr.log"`
 
 * php
   * `apt install php-cgi`
@@ -443,11 +445,19 @@ IMPORTANT NOTES:
    Donating to EFF:                    https://eff.org/donate-le
 ```
 
+成功すると、`/etc/letsencrypt/live/(domain)` にファイルができている。
+
+* `privkey.pem`  : the private key for your certificate.
+* `fullchain.pem`: the certificate file used in most server software.
+* `chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.
+* `cert.pem`     : will break many server configurations, and should not be used
+  without reading further documentation (see link below).
+
 `/etc/cron.d/certbot` に cronjob が登録されている。
 12 時間ごとに自動で renew してくれるらしい？
 
 * lighttpd に設定する。
-  * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
+  * /etc/lighttpd/conf-available/10-ssl.conf を使う。
   * `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   * `sudo service lighttpd force-reload`
   * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
@@ -455,10 +465,16 @@ IMPORTANT NOTES:
 ```text
 ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
+# なんかデフォルトだと TLS 1.2 が弾かれる。1.3 は OK。
+# TLS 1.3 の方がよいのも TLS 1.1 以下は滅ぼした方がよいのも理解するが、
+# TLS 1.2 無効はやりすぎで害が上回ると思う…。
+ssl.openssl.ssl-conf-cmd += ("MinProtocol" => "TLSv1.2")
 ```
 
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。
+
+<https://www.ssllabs.com/ssltest/>
 
 ## PukiWiki
 
