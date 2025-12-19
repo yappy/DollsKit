@@ -1,5 +1,6 @@
 //! バージョン情報。
 
+use serde::Serialize;
 use std::sync::LazyLock;
 
 #[rustfmt::skip] const GIT_BRANCH:    &str = env!("BUILD_GIT_BRANCH");
@@ -37,10 +38,33 @@ pub fn version_info() -> &'static str {
         let rustc = rustc_version();
 
         format!(
-"Build: {prof}
-Branch: {GIT_BRANCH} {GIT_DESCRIBE} {GIT_DATE}
+"Build: {prof} ({BUILD_TARGET})
+Version: {GIT_BRANCH} {GIT_DESCRIBE} {GIT_DATE}
 {rustc}"
     )
+    });
+
+    &VERSION_INFO
+}
+
+#[derive(Debug, Serialize)]
+pub struct VersionInfo {
+    pub build: String,
+    pub version: String,
+    pub rustc: String,
+}
+
+/// バージョン情報を JSON 向け構造体の形で返す。
+pub fn version_info_struct() -> &'static VersionInfo {
+    static VERSION_INFO: LazyLock<VersionInfo> = LazyLock::new(|| {
+        let prof = build_profile();
+        let rustc = rustc_version();
+
+        VersionInfo {
+            build: format!("{prof} ({BUILD_TARGET})"),
+            version: format!("{GIT_BRANCH} {GIT_DESCRIBE} {GIT_DATE}"),
+            rustc: rustc.to_string(),
+        }
     });
 
     &VERSION_INFO
@@ -52,7 +76,7 @@ pub fn version_info_vec() -> &'static Vec<String> {
         let prof = build_profile();
         let rustc = rustc_version();
         vec![
-            format!("Build: {BUILD_TARGET} {prof}"),
+            format!("Build: {prof} ({BUILD_TARGET})"),
             format!("Branch: {GIT_BRANCH}"),
             format!("Version: {GIT_DESCRIBE}"),
             format!("Last Updated: {GIT_DATE}"),

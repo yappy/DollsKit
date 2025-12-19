@@ -1,5 +1,7 @@
 //! Raspberry Pi 固有の環境情報。
 
+use serde::Serialize;
+
 static RASPI_ENV: std::sync::OnceLock<RaspiEnv> = std::sync::OnceLock::new();
 
 #[derive(Debug)]
@@ -16,7 +18,7 @@ impl std::fmt::Display for RaspiEnv {
         match self {
             RaspiEnv::NotRasRi => write!(f, "Not Raspberry Pi"),
             RaspiEnv::RasRi { model, cameras } => {
-                writeln!(f, "Raspberry Model: {model}")?;
+                writeln!(f, "Model: {model}")?;
 
                 writeln!(f, "Cameras:")?;
                 for (i, cam) in cameras.iter().enumerate() {
@@ -45,7 +47,7 @@ impl RaspiEnv {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CameraInfo {
     pub model: String,
     pub width: u32,
