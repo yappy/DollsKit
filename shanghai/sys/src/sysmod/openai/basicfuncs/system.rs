@@ -101,7 +101,7 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
     }
     let rpienv = match rpienv {
         RaspiEnv::RasRi { model, cameras } => {
-            let cameras = Some(cameras).filter(|v| v.is_empty());
+            let cameras = Some(cameras).filter(|v| !v.is_empty());
             RpiEnv {
                 model: &model,
                 cameras,
@@ -161,7 +161,7 @@ async fn get_cpu_status() -> Result<CpuStatus> {
         }
         v
     });
-    let throttle_status = throttle_status.filter(|v| v.is_empty());
+    let throttle_status = throttle_status.filter(|v| !v.is_empty());
 
     Ok(CpuStatus {
         number_of_cores,
