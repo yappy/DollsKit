@@ -11,7 +11,7 @@
 
 LISTFILE=/root/mydns
 MYDNSV4=https://ipv4.mydns.jp/login.html
-MYDNSV6=https://ipv6.mydns.jp/login.html
+#MYDNSV6=https://ipv6.mydns.jp/login.html
 
 xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV4"
-xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV6"
+#xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV6"
