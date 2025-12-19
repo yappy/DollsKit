@@ -93,8 +93,8 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
     let memory = get_memory_status().await?;
     let disk = get_disk_status().await?;
 
-    #[derive(Serialize)]
     #[skip_serializing_none]
+    #[derive(Serialize)]
     struct RpiEnv {
         model: &'static str,
         cameras: Option<&'static Vec<CameraInfo>>,
