@@ -35,7 +35,7 @@ base64 = "0.22.1"
 image.workspace = true
 
 # HTTP server
-actix-web = "4.11.0"
+actix-web = "4.12.1"
 actix-multipart = "0.7.2"
 # Discord
 serenity = "0.12.4"
