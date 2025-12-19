@@ -44,7 +44,7 @@ Stable 版の Rust 環境があればビルドできるはず。
 
 ```sh
 cargo run --release
-# or 
+# or
 cargo r -r
 ```
 
@@ -74,7 +74,7 @@ sudo apt install fonts-ipafont
 
 ```sh
 cargo run --release
-# or 
+# or
 cargo r -r
 ```
 
