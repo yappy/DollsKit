@@ -356,7 +356,6 @@ RPi5 からケーブルが細くなった。
     * fastcgi-php-fpm
     * CGI の stderr
       * `server.breakagelog = "/var/log/lighttpd/stderr.log"`
-
 * php
   * `apt install php-cgi`
     * これは fastcgi じゃないらしい…。
@@ -380,6 +379,57 @@ RPi5 からケーブルが細くなった。
 ```txt
 PHP Fatal error:
 Uncaught Error: Call to undefined function mb_strrpos() in ...php:XXX
+```
+
+### Lighttpd 設定ファイル
+
+場所: `/etc/lighttpd/`
+
+設定ファイルの文法はやや見慣れない雰囲気なので、ノーヒントで読むと解読しづらい。
+公式チュートリアルは読んだ方がよい。
+
+5分や10分でわかるらしい:
+<https://redmine.lighttpd.net/projects/lighttpd/wiki/TutorialConfiguration>
+
+条件分岐に if を書かないのがポイント。なお else は書く模様。
+頭の中で if をつければ多分読める。
+HTTP リクエストの内容に応じて設定値を切り替えられる。
+
+```perl
+$HTTP["host"] == "example.org" {
+  # options specific to example.org
+  expire.url = ( "" => "access plus 25 hours" )
+} else $HTTP["host"] == "static.example.org" {
+  # options specific to static.example.org
+  expire.url = ( "" => "access plus 2 weeks" )
+} else $HTTP["host"] =~ "" {
+  # options applied to any other vhosts present on this ip
+  # ie. default options
+  expire.url = ( "" => "access plus 3 hours" )
+}
+
+設定ファイルをミスって起動できなくなってしまったら、`lighttpd -tt -f <FILE>` で
+エラー箇所を特定する。
+
+```sh
+lighttpd:
+ -f <name>  filename of the config-file
+ -t         test config-file syntax, then exit
+ -tt        test config-file syntax, load and init modules, then exit
+```
+
+### リバースプロキシ
+
+```perl
+# C++ 版の名残り。不要。
+#$HTTP["url"] =~ "^/house" {
+#  proxy.server  = ( "" => ( ( "host" => "127.0.0.1", "port" => 8888 )))
+#}
+
+# Rust 版向け
+$HTTP["url"] =~ "^/rhouse" {
+  proxy.server  = ( "" => ( ( "host" => "127.0.0.1", "port" => 8899 )))
+}
 ```
 
 ## SSL (Let's Encrypt)
