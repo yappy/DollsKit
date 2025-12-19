@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/sh -u
 
 # Create a file: /root/mydns
 # user1:pass1
@@ -10,6 +10,8 @@
 # /etc/cron.daily/
 
 LISTFILE=/root/mydns
-MYDNS=https://www.mydns.jp/login.html
+MYDNSV4=https://ipv4.mydns.jp/login.html
+MYDNSV6=https://ipv6.mydns.jp/login.html
 
-xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNS"
+xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV4"
+xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV6"
