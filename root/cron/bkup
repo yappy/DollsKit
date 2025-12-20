@@ -5,10 +5,14 @@
 # Link from:
 # /etc/cron.weekly/
 
+# ------------------------------------------------------------------------------
+# Config (can be overriden by ENVVAR)
+BKUP_ROOT=${BKUP_ROOT:-"/mnt/localbkup"}
+LOG=${LOG:-"/root/bkup.log"}
+# ------------------------------------------------------------------------------
+
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SCRIPT_DIR}/../backup
-BKUP_ROOT=/mnt/localbkup
-LOG=/root/bkup.log
 
 {
     echo --------------------------------------------------------------------------------
