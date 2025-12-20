@@ -562,6 +562,75 @@ $edit_auth = 0;
 define('PLUGIN_ATTACH_MAX_FILESIZE', (1024 * 1024)); // default: 1MB
 ```
 
+## Docker
+
+<https://docs.docker.com/engine/install/debian/>
+
+なんかデフォルトの apt にあるやつは unofficial 呼ばわりされている。
+この辺は全部消さないと競合して壊れるらしい。
+`apt show` で Maintainer や APT-Sources を見て Debian のものは無視して
+Docker 公式のもののみを入れるよう気を付ける。
+~~非互換な変更入れすぎでは。~~
+
+* docker.io
+* docker-compose
+* docker-doc
+* podman-docker
+
+信用する keyrings に公式の鍵を追加して、apt source を追加する。
+
+```sh
+apt install docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+```
+
+```sh
+systemctl status docker
+systemctl start docker
+```
+
+`docker` というグループができるので、それに追加したユーザが使えるようになるらしい。
+
+```sh
+docker run hello-world
+```
+
+`docker-compose` はプラグイン化して docker のサブコマンドになったらしい？
+
+```sh
+docker compose version
+```
+
+### Docker Daemon の設定
+
+本体からのヘルプは `dockerd --help`。
+設定ファイルの場所は `/etc/docker/daemon.json`。
+
+Docker の保存する色々なデータは `/var/lib/docker` に置かれる。
+これは `data-root` オプションで変更可能。
+
+Docker Engine 29.0 以降をクリーンインストールした場合はイメージや
+コンテナスナップショットは `/var/lib/containerd` に置かれる。
+ボリュームや設定等の他のデータは `/var/lib/docker` のまま。
+
+overlay2 のような昔のストレージドライバ (アップグレードインストールのデフォルト)
+の場合はすべて `/var/lib/docker` に置かれる。
+
+ログは `journalctl -xu docker.service`。
+
+```json
+// /etc/docker/daemon.json
+{
+  "data-root": "/mnt/docker-data"
+}
+```
+
+```sh
+# /etc/containerd/config.toml
+# 以下をコメント解除して書き換え
+#root = "/var/lib/containerd"
+```
+
 ## MySQL (MariaDB)
 
 * `sudo apt install mariadb-server mariadb-client`
