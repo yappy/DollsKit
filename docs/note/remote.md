@@ -179,8 +179,8 @@ C:\Windows\System32\OpenSSH\ssh.exe
 ```
 
 通常の接続コマンドは以下の通りだが、
-(`~/.ssh/config` で一連の設定を名前1つで呼び出し可能にできる。
-Windows ssh での場所は `%HOMEPATH%/.ssh/config`)。
+`~/.ssh/config` で一連の設定を名前1つで呼び出し可能にできる
+(Windows ssh での場所は `%HOMEPATH%/.ssh/config`)。
 要は通常 `C:\Users\<user_name>\.ssh\` にある。
 
 ```sh
