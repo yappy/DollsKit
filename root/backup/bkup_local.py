@@ -98,12 +98,15 @@ def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, prog: str | None, dry
     # --preserve-permissions(-p) and --same-owner are default for superuser.
     with ar_dst.open(mode="wb") as fout:
         os.fchmod(fout.fileno(), 0o600)
-        cmd = ["tar"]
+        cmd = ["tar", "-C", str(rsync_dst)]
         if prog:
+            # use specified program
             cmd += ["-I", prog]
+        else:
+            # auto detect by ext
+            cmd += ["-a"]
         cmd += [
-            "-C", str(rsync_dst),
-            "-acf", str(ar_dst),
+            "-cf", str(ar_dst),
             "."
         ]
         exec(cmd)
