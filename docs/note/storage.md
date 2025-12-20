@@ -6,12 +6,45 @@ USB メモリ、HDD、SSD 等
 
 ```sh
 dmesg
+lsblk -f
 fdisk -l
 # /dev/sd[a][1]
 ```
 
 * a,b,c,... がデバイス番号
 * 1,2,3,... がパーティション番号
+
+これらはカーネルに認識された順番につけられる。
+以降、`sd[a][1]` のような表記はそれぞれ対象としたい番号に置き換えるものとする。
+
+## パーティションに関する知識
+
+パーティション操作コマンド
+
+* `fdisk`: MBR
+* `gdisk`: GPT
+* `parted`: 両方に使用可能
+
+### MBR (Master Boot Record)
+
+古い方式。
+BIOS 時代ではここからブートしていた。
+
+* パーティションは4つまで。ただしそのうち最大1つを extended partition にできる。
+  * primary partition
+    * この4つまで方式での普通のパーティション。
+  * extended partition
+    * この中に LPAR (Logical PARtition) を個数無制限で作ることができる。
+* ディスクサイズは 2.2TB まで。
+
+### GPT (GUID Partition Table)
+
+新しい方式。
+UEFI はここからブートできる。
+
+* パーティションは 128 個まで。
+* 2.2TB 越えのディスクに対応。
+* パーティションに一意の識別子として GUID をつける。
 
 ## パーティションの削除、再作成 (初期化時のみ)
 
@@ -26,6 +59,11 @@ fdisk /dev/sd[a]
 # n パーティション新規作成
 # w 実際に書き込み
 ```
+
+`/dev/sda1` のようなパーティションデバイスファイルを渡さないよう注意。
+fdisk はパーティションテーブル編集ツールなので、パーティションの中身ではなく
+ディスク全体を渡す必要がある。
+先頭の様子が怪しいという変な警告が出るので無視しないこと。
 
 ## パーティションを ext4 でフォーマット (初期化時のみ)
 
@@ -60,27 +98,39 @@ umount /mnt/extssd
 ## 起動時 (または mount -a 時) にマウント
 
 /etc/fstab に追加。
-バックアップしたい / (ext4) のマウント設定に合わせるとよいと思う。
 抜けている状態でブート失敗になるとよくないので nofail を付けた方がよいと思う。
+
+デバイスは古くは `/dev/sda1` のような名前で指定していたが、これは認識完了した
+順番でつけられるので、同じ種類のデバイスがあると微妙な応答速度の差で入れ替わる
+可能性があり非常に危険。~~よくこんなん使ってたな。~~
+現代では UUID などの一意の識別子で指定できるようになっており、そうすべきである。
+
+* UUID
+* PARTLABEL
+* PARTUUID
+
+パーティションラベルは自分で好きな文字列をつけられるが、
+被らないようにするのも自分の責任。
+UUID は被らないように乱数でつけられているようた。
 
 ```text
 PARTUUID=6c586e13-01  /boot           vfat    defaults          0       2
 PARTUUID=6c586e13-02  /               ext4    defaults,noatime  0       1
-UUID=<uuid>           /mnt/backup     ext4    defaults,noatime,nofail 0 0
-UUID=<uuid>           /mnt/cloud      ext4    defaults,noatime,nofail 0 0
-UUID=<uuid>           /mnt/localbkup  ext4    defaults,noatime,nofail 0 0
+PARTUUID=<uuid>       /mnt/extssd     ext4    defaults,noatime,nofail 0 0
+...
 ```
 
 1. デバイス。
 1. マウント先。
 1. ファイルシステム。
 1. オプション。
+    `mount --option` を `--` 抜きで `--option` のように指定する。
 1. dump コマンドの対象にするか。 (かなり古くからあるバックアップツールらしい)
 1. 起動時の fsck 順序。root fs は 1 を推奨。それ以外は 2 を推奨。0 で無効。
 
 * defaults: デフォルト設定。
 * noauto: `mount -a` で自動マウントしない(起動時含む)。
-* noatime: ファイルを触るたびに最終使用日時を更新するのをやめる。
+* noatime: ファイルを触るたびに最終アクセス日時を更新するのをやめる。
   最近は一日くらいバッファリングしてから書き込んでいるとの噂も。
 * nofail: デバイスがなくてもエラーにしない。
 起動時に抜けていると起動が失敗してしまうので、外付けの場合指定を推奨。
@@ -100,7 +150,7 @@ mountpoint <path>
 ## 取り外すとき
 
 ```sh
-umount /mnt/localbkup
+umount /mnt/extssd
 ```
 
 ## つけなおしたとき
@@ -108,7 +158,7 @@ umount /mnt/localbkup
 ```sh
 mount -a
 # or
-mount /mnt/localbkup
+mount /mnt/extssd
 ```
 
 ## マウント状態の確認(ファイルシステムタイプつき)
@@ -117,13 +167,32 @@ mount /mnt/localbkup
 df -T
 ```
 
-## 設定例
+## パーミッション
 
-* 1 TB SSD
-  * 256 GB: /mnt/localbkup
-    * このマシンの自動バックアップ
-  * 256 GB: /mnt/cloud
-  * 512 GB: /mnt/backup
+バックアップは大事だが、その上でパーミッションにも気を付けよう！
+
+## 別名で再マウント (bind)
+
+BSD 系の nullfs (理解者少なそう。。)。
+ファイル階層の一部を再マウントし、別のパスからも同一の内容にアクセスできるようになる。
+マウントレイヤにおけるハードリンクのようなシンボリックリンクのような何か。
+さすがに結構便利。
+
+```sh
+mount --bind olddir newdir
+# サブマウントまで含める
+mount --rbind olddir newdir
+```
+
+fstab での書き方は、マウントするデバイスのところに olddir のパスを、
+マウント先に newdir のパスを書く。
+ファイルシステムタイプは意味が無いので慣例的に none と書くらしい
+(none でないといけないのかは不明)。
+そしてオプションの部分に `--bind` から `--` を剥ぎ取った `bind` を指定する。
+
+```txt
+olddir  newdir  none  bind  0 0
+```
 
 ## 廃棄 (※作業時注意)
 
@@ -137,3 +206,54 @@ shred -v /dev/sd[a]
 * -v: 進捗表示
 * -n [N]: N 回乱数で上書きする。(default=3)
 * -z: 最後に 0 で上書きする。
+
+## パーティションのサイズ変更
+
+当然のことながら大変危険なので要バックアップ。
+
+まずパーティションを小さくする前にその中に入っているファイルシステムを
+小さくする必要がある。
+
+### fsck + resize fs
+
+パーティションに対して fsck と resize fs を行う。
+
+```sh
+# 先にこれをやれと言われる
+# デフラグもされるのかもしれない
+e2fsck -f /dev/sda1
+# 元の使用量を見ながら小さくする
+resize2fs /dev/sda1 31G
+```
+
+e2 = ext2 だが ext3, ext4 にも対応。
+
+### パーティションテーブルの編集
+
+サイズを変更するというよりは、パーティションを削除して同じ場所に
+元より小さなパーティションを作る(普通に危険だがそういうものなので仕方がない)。
+
+```sh
+fdisk /dev/sd[a]
+# 状況確認
+p
+# パーティションを削除
+d
+# パーティション新規作成 (primary/extended を聞かれるので primary)
+# First sector は元のに合わせる
+# Last sector は +/-size{K,M,G,T,P} のように相対指定できるので新しいサイズで入力
+# うまくやると先頭に ext4 ヘッダがあるのを検出されるのでそのままにする
+# Partition #1 contains a ext4 signature.
+# Do you want to remove the signature?
+n
+p
+# p で状態をよく確認して、書き込んで終了
+w
+
+# 引数なしで実行するとパーティションサイズいっぱいまで拡張してくれる
+resize2fs /dev/sd[a][1]
+
+# PARTUUID 確認
+blkid
+# /etc/fstab 編集
+```
