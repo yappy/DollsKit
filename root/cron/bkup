@@ -20,8 +20,11 @@ ROOT=${SCRIPT_DIR}/../backup
     echo --------------------------------------------------------------------------------
 } >> "${LOG}"
 
+# Require: pbzip2
 python3 "${ROOT}/bkup_local.py" \
 --tag full \
+--ext bz2 \
+--compress-program pbzip2 \
 --mount-check "${BKUP_ROOT}" \
 --reserved-size 30 \
 --exclude-from "${ROOT}/bkup_exclude.txt" \

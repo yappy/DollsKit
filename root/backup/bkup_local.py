@@ -12,7 +12,7 @@ import os
 
 RSYNC_DIR_NAME = "backup"
 LATEST_SLINK_NAME = "latest"
-ARCHIVE_EXT = "tar.bz2"
+ARCHIVE_EXT_DEFAULT = "bz2"
 
 
 def exec(cmd: list[str], fout=None):
@@ -28,8 +28,8 @@ def mount_check(dst: pathlib.Path):
     print()
 
 
-def delete_old_files(dst: pathlib.Path, keep_count: int):
-    files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
+def delete_old_files(dst: pathlib.Path, ext: str, keep_count: int):
+    files = glob.glob(str(dst) + f"/*.tar.{ext}")
     files.sort()
     files = list(map(pathlib.Path, files))
 
@@ -41,8 +41,8 @@ def delete_old_files(dst: pathlib.Path, keep_count: int):
     print("Deleting old files completed")
 
 
-def allocate_size(dst: pathlib.Path, reserved_size: int):
-    files = glob.glob(str(dst) + f"/*.{ARCHIVE_EXT}")
+def allocate_size(dst: pathlib.Path, ext: str, reserved_size: int):
+    files = glob.glob(str(dst) + f"/*.tar.{ext}")
     files.sort()
     files = list(map(pathlib.Path, files))
     print(f"Old files: {files}")
@@ -86,7 +86,7 @@ def rsync(src: pathlib.Path, rsync_dst: pathlib.Path, ex_list: list[str], dry_ru
     print()
 
 
-def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, dry_run: bool):
+def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, prog: str | None, dry_run: bool):
     print("tar...")
     if dry_run:
         print("skip by dry-run")
@@ -98,10 +98,14 @@ def archive(rsync_dst: pathlib.Path, ar_dst: pathlib.Path, dry_run: bool):
     # --preserve-permissions(-p) and --same-owner are default for superuser.
     with ar_dst.open(mode="wb") as fout:
         os.fchmod(fout.fileno(), 0o600)
-        cmd = [
-            "tar",
+        cmd = ["tar"]
+        if prog:
+            cmd += ["-I", prog]
+        cmd += [
             "-C", str(rsync_dst),
-            "-acf", str(ar_dst), "."]
+            "-acf", str(ar_dst),
+            "."
+        ]
         exec(cmd)
     print()
 
@@ -124,6 +128,10 @@ def main():
     parser.add_argument("src", help="backup source root")
     parser.add_argument("dst", help="backup destination root")
     parser.add_argument("--tag", action="store", help="prefix for archive file")
+    parser.add_argument("--ext", action="store", default=ARCHIVE_EXT_DEFAULT,
+                        help=f"archive file extension name.tar.EXT (default={ARCHIVE_EXT_DEFAULT})")
+    parser.add_argument("--compress-program", action="store", metavar="PROG",
+                        help="compress program")
     parser.add_argument("--mount-check", action="store", metavar="PATH",
                         help="check if the specified path is a mountpoint")
     parser.add_argument("--keep-count", type=int, metavar="N",
@@ -150,7 +158,7 @@ def main():
     src = pathlib.Path(args.src).resolve()
     dst = pathlib.Path(args.dst).resolve()
     rsync_dst = dst / RSYNC_DIR_NAME
-    ar_name = f"{user}_{host}{tag}{dt_str}.{ARCHIVE_EXT}"
+    ar_name = f"{user}_{host}{tag}{dt_str}.tar.{args.ext}"
     ar_dst = dst / ar_name
     ex_list = list(map(lambda s: pathlib.Path(s).resolve(), args.exclude_from))
     print(f"Date: {dt_str}")
@@ -173,16 +181,16 @@ def main():
     rsync_dst.mkdir(parents=True, exist_ok=True)
     # delete old files
     if args.keep_count is not None:
-        delete_old_files(dst, args.keep_count)
+        delete_old_files(dst, args.ext, args.keep_count)
     if args.reserved_size is not None:
-        allocate_size(dst, args.reserved_size << 30)
+        allocate_size(dst, args.ext, args.reserved_size << 30)
     # rsync src/ to RSYNC_DIR_NAME/
     rsync(src, rsync_dst, ex_list, args.dry_run)
     # DB dump (removed by rsync. should do after rsync.)
     if args.db is not None:
         dump_db(rsync_dst, args.dump_command, args.db, args.dry_run)
     # tar
-    archive(rsync_dst, ar_dst, args.dry_run)
+    archive(rsync_dst, ar_dst, args.compress_program, args.dry_run)
     # symlink
     symlink(dst, ar_name, args.dry_run)
 
