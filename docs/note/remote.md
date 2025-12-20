@@ -163,13 +163,13 @@ Windows のグループとかドメインとかはよく分からないが、
 
 一応この状態で TCP 3389 番に向かってポートフォワードを行えば家の外から
 接続できるようになるが、当然のごとく外は攻撃パケットで溢れかえっている上に
-パスワード認証だけで PC を好きに操作できてしまうのはヤバすぎるのでやめておこう。
+パスワード認証だけで PC を好きに操作できてしまうのはやばすぎるのでやめておこう。
 一応証明書認証にするとかできるみたいだけど Windows は難しいし…。
 
 人形に ssh が通っていれば、人形から家の中のネットワークにコネクションを張って
-一連の。
+ssh での安全な経路を経由して TCP コネクションを中継できる (SSH トンネリング)。
 WSL2 だと仮想マシンの中から見える仮想ネットワークデバイスとのなんやかんやが面倒なので、
-Windows 上で ssh コマンドを実行した方が無難だろう。
+Windows 上で ssh コマンドを実行した方が無難。
 こんなこともあろうかと、最近の Windows にはデフォルトで openssh が
 インストールされている。
 
@@ -186,6 +186,18 @@ Windows ssh での場所は `%HOMEPATH%/.ssh/config`)。
 ```sh
 ssh (user@(default=現在のユーザ名))(IP アドレスやドメイン名) \
   -p (default=22) -i (default=~/.ssh/id_rsa)
+```
+
+```txt
+Host shanghai4-remote (ssh コマンドに渡す好きな名前)
+HostName yappy.mydns.jp
+User (login user name)
+Port 56789
+```
+
+```sh
+# .ssh/config を書けばこれだけで OK
+ssh shanghai4-remote
 ```
 
 それに加えて以下を指定すると SSH トンネリング (ポートフォワーディング) を使用できる。
@@ -225,12 +237,12 @@ ssh (user@(default=現在のユーザ名))(IP アドレスやドメイン名) \
 例
 
 ```sh
-ssh yappy@house2.yappy.mydns.jp -p [port] -L 3389:192.168.1.200:3389 -N
+ssh yappy@yappy.mydns.jp -p [port] -L 3389:192.168.1.200:3389 -N
 ```
 
 * `.ssh/config` に設定を書いて呼び出し可能な ssh 接続設定
   * user: yappy
-  * host: house2.yappy.mydns.jp を DNS 解決した IP アドレス
+  * host: yappy.mydns.jp を DNS 解決した IP アドレス
   * port: `-p` で指定可能
 * `-L`: ポートフォワード設定
   * localhost のポート番号、ローカルのリモートデスクトップアプリがデフォルトで
