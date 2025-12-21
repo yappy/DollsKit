@@ -200,5 +200,15 @@ def main():
     print("OK!")
 
 
+def main_wrapper():
+    try:
+        print("START", datetime.datetime.now())
+        print()
+        main()
+    finally:
+        print()
+        print("END", datetime.datetime.now())
+
+
 if __name__ == '__main__':
-    main()
+    main_wrapper()
