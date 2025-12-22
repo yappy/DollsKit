@@ -15,5 +15,8 @@ services:
   mongo:
 
   elasticsearch:
+    build:
+      context: ../growi-docker-compose/elasticsearch/v9
+      dockerfile: ../growi-docker-compose/Dockerfile
     environment:
       - "ES_JAVA_OPTS=-Xms2g -Xmx2g"  # increase amount if you have enough memory
