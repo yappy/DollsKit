@@ -2,7 +2,7 @@ name: growi-public
 
 services:
   app:
-    ports:
+    ports: !override
       - 127.0.0.1:3000:3000    # localhost only by default
     environment:
       # !!!!! Replace this with your own URL !!!!!
