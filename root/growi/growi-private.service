@@ -1,7 +1,7 @@
 # symbolic link from: /etc/systemd/system/
 
 [Unit]
-Description=Docker GROWI public
+Description=Docker GROWI private
 Requires=docker.service
 After=network.target
 
@@ -11,15 +11,15 @@ After=network.target
 Type=simple
 
 # !!!!! Replace here with path to git repository !!!!!
-WorkingDirectory=/root/DollsKit/growi
+WorkingDirectory=/root/DollsKit/root/growi
 
 ExecStart=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.public.yaml \
+  -f compose.private.yaml \
   up
 ExecStop=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.public.yaml \
+  -f compose.private.yaml \
   down
 Restart=always
 
