@@ -915,7 +915,7 @@ fn notify2(item: &dyn Summary) {
 }
 
 // 古い書き方 (エラーになり dyn をつけろと言われる)
-// fn notify2(item: &Summary) 
+// fn notify2(item: &Summary)
 ```
 
 ### Trait を返す・保存する

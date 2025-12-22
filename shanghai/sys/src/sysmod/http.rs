@@ -30,9 +30,17 @@ pub struct HttpConfig {
     priv_enabled: bool,
     /// ポート番号。
     port: u16,
-    /// ルートパス。リバースプロキシ設定に合わせること。
+    /// ルートパス。
+    /// リバースプロキシ条件の URL プレフィクスに合わせること。
+    ///
+    /// 例: "/rhouse" で始まるものを転送するという条件のリバースプロキシ設定の場合、
+    /// "/rhouse/some/path" はそのままバックエンドサーバに送られる。
+    /// ここで [path_prefix] を "/rhouse" に設定すると、
+    /// バックエンドサーバ側では "{path_prefix}/some/path" が有効なパスとなり、
+    /// 正常に稼働する。
     path_prefix: String,
-    /// 管理者専用ページのルートパス。リバースプロキシ設定に合わせること。
+    /// 管理者専用ページのルートパス。[path_prefix] の後に連結される。
+    /// リバースプロキシ条件の URL プレフィクスに合わせること。
     priv_prefix: String,
     /// アップローダ機能を有効化する。パスは /_rootpath_/upload/。
     upload_enabled: bool,
@@ -53,7 +61,7 @@ impl Default for HttpConfig {
             priv_enabled: false,
             port: 8899,
             path_prefix: "/rhouse".to_string(),
-            priv_prefix: "/rhouse/priv".to_string(),
+            priv_prefix: "/priv".to_string(),
             upload_enabled: false,
             upload_dir: "./upload".to_string(),
             ghhook_enabled: false,

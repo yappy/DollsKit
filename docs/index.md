@@ -5,9 +5,16 @@
 * Raspberry Pi
   * [Raspberry Pi セットアップ](./note/setup_pi.md)
   * [Raspberry Pi バックアップからの復旧](./note/recovery.md)
+* Linux
+  * [ユーザ管理](./note/user.md)
+  * [追加ストレージ](./note/storage.md)
+* Windows
+  * [SSH トンネルとリモートデスクトップ、Wake on LAN](./note/remote.md)
 * Rust
   * [Rust ツール類](./note/rust_tools.md)
   * [Rust テクニカルノート](./note/rust_technote.md)
+* OpenAI
+  * [OpenAI API ノート](./note/openai.md)
 * Twitter (旧情報)
   * [Twitter API ノート](./note/twitter.md)
 

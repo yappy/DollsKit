@@ -1,12 +1,17 @@
-#!/bin/sh -e
+#!/bin/sh -u
 
 # Create a file: /root/mydns
-# user:pass
+# user1:pass1
+# user2:pass2
+# ...
 # permission recommended: 400
 
 # Link from:
 # /etc/cron.daily/
 
-CRED=`cat /root/mydns`
-MYDNS=https://www.mydns.jp/login.html
-curl -u $CRED $MYDNS
+LISTFILE=/root/mydns
+MYDNSV4=https://ipv4.mydns.jp/login.html
+#MYDNSV6=https://ipv6.mydns.jp/login.html
+
+xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV4"
+#xargs --verbose --arg-file "$LISTFILE" -I{} curl -u {} "$MYDNSV6"

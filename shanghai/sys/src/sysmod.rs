@@ -13,7 +13,7 @@ use self::{
     camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
     sysinfo::SystemInfo, twitter::Twitter,
 };
-use crate::{sysmod::line::Line, taskserver::Control};
+use crate::{rpienv, sysmod::line::Line, taskserver::Control};
 use anyhow::Result;
 use chrono::NaiveTime;
 use log::info;
@@ -55,6 +55,10 @@ pub struct SystemModules {
 impl SystemModules {
     pub fn new() -> Result<SystemModules> {
         info!("initialize system modules...");
+
+        info!("get Raspberry Pi info...");
+        let rpienv = rpienv::raspi_env();
+        info!("{}", rpienv);
 
         let wakeup_health_ck: Vec<_> = (0..24)
             .flat_map(|hour| (0..60).map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap()))

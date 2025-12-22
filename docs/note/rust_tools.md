@@ -8,7 +8,7 @@
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Q. 最近流行ってるけどこういうの怖くない？  
+Q. 最近流行ってるけどこういうの怖くない？ \
 A. はい。シェルスクリプトを自分で読む等、自己責任で。
 
 ## Daily Commands
