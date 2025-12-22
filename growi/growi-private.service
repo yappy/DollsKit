@@ -1,5 +1,4 @@
-# /etc/systemd/system/
-# ~/.config/systemd/user
+# symbolic link from: /etc/systemd/system/
 
 [Unit]
 Description=Docker GROWI private
