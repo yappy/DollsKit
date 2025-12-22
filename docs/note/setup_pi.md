@@ -432,7 +432,7 @@ $HTTP["url"] =~ "^/rhouse" {
 }
 ```
 
-## SSL (Let's Encrypt)
+## SSL/TLS (Let's Encrypt)
 
 * `sudo apt install certbot`
 * http サーバ稼働状態でドメインと webroot (/var/www/html/ 的な位置) を
@@ -526,6 +526,16 @@ ssl.openssl.ssl-conf-cmd += ("MinProtocol" => "TLSv1.2")
 
 <https://www.ssllabs.com/ssltest/>
 
+### 証明書の失効と削除
+
+サブドメインを変えたので revoke & delete して証明書を取り直したい場合。
+
+```sh
+certbot revoke --cert-path /path/to/cert.pem
+```
+
+Yes と答え続ければ revoke 後に削除もやってくれる。
+
 ## PukiWiki
 
 懐かしさはあるが、現代のセキュリティに対応できているかというと不安になる。
@@ -612,24 +622,40 @@ Docker の保存する色々なデータは `/var/lib/docker` に置かれる。
 Docker Engine 29.0 以降をクリーンインストールした場合はイメージや
 コンテナスナップショットは `/var/lib/containerd` に置かれる。
 ボリュームや設定等の他のデータは `/var/lib/docker` のまま。
-
 overlay2 のような昔のストレージドライバ (アップグレードインストールのデフォルト)
 の場合はすべて `/var/lib/docker` に置かれる。
 
-ログは `journalctl -xu docker.service`。
+unionfs により `du` すると本来より大幅に大量のディスクを食っているように見えるが
+そんなことはない。
+しかしユーザランドにそのように見せているということは rsync 等のバックアップコピーが
+いい感じに動くとは到底言い難い。
+というか `Dockerfile` や `compose.yml` から作り直せるデータであり、
+バックアップの必要はない。
+バックアップ対象の /var ではない場所に設定を変えるのが無難と思われる。
+Volume は別途バックアップが必要。
 
 ```json
 // /etc/docker/daemon.json
 {
-  "data-root": "/mnt/docker-data"
+  "data-root": "/mnt/docker/data"
 }
 ```
 
-```sh
+```ini
 # /etc/containerd/config.toml
 # 以下をコメント解除して書き換え
-#root = "/var/lib/containerd"
+# root = "/var/lib/containerd"
+root = "/mnt/docker/containerd"
 ```
+
+```sh
+service containerd restart
+service docker restart
+```
+
+### GROWI
+
+TODO
 
 ## MySQL (MariaDB)
 
