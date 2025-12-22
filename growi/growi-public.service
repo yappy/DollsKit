@@ -2,7 +2,7 @@
 # ~/.config/systemd/user
 
 [Unit]
-Description=Docker GROWI private
+Description=Docker GROWI public
 Requires=docker.service
 After=network.target
 
@@ -16,11 +16,11 @@ WorkingDirectory=/root/DollsKit/growi
 
 ExecStart=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.private.yaml \
+  -f compose.public.yaml \
   up
 ExecStop=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.private.yaml \
+  -f compose.public.yaml \
   down
 Restart=always
 
