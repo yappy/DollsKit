@@ -204,18 +204,18 @@ pub struct CpuInfo {
 #[derive(Debug, Clone, Copy)]
 pub struct MemInfo {
     /// メモリ総量 (MiB)。
-    total_mib: f64,
+    pub total_mib: f64,
     /// 利用可能メモリ量 (MiB)。
-    avail_mib: f64,
+    pub avail_mib: f64,
 }
 
 /// ディスク使用率。
 #[derive(Debug, Clone, Copy)]
 pub struct DiskInfo {
     /// ディスク総量 (GiB)。
-    total_gib: f64,
+    pub total_gib: f64,
     /// 利用可能ディスクサイズ (GiB)。
-    avail_gib: f64,
+    pub avail_gib: f64,
 }
 
 /// [CpuInfo] を計測する。

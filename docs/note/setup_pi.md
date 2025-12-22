@@ -50,6 +50,14 @@ SD card に焼くイメージのセレクタ/ダウンローダとイメージ�
 
 ## 最新確認環境
 
+### RPi5
+
+Raspberry Pi OS Lite (64-bit)
+2025-12-04
+(Trixie)
+
+### RPi4
+
 Raspberry Pi OS Lite (32-bit)
 2021-05-07
 (Buster)
@@ -61,8 +69,9 @@ Raspberry Pi OS Lite (32-bit)
 * Using Raspberry Pi Imager から Raspberry Pi Imager を落とす。
 * Micro SD を挿入し、イメージと書き込み先を選択する。
   * GUI を使わない場合は Lite (no desktop) で OK。
-* `Ctrl + Shift + X` で Advanced Options を開く。
-  * ソフト内には説明がなく、公式ドキュメントを読んだ者のみが使える隠しコマンド。
+* Raspberry Pi Imager v.2.0.0 では SSH や wifi は普通に設定できる。
+* ~~`Ctrl + Shift + X` で Advanced Options を開く。~~
+  * ~~ソフト内には説明がなく、公式ドキュメントを読んだ者のみが使える隠しコマンド。~~
   * SSH や wifi の設定をここからできる。
     この時点で公開鍵 SSH にもできる。
     (従来の SD root に特定のファイルを置く方法を行っていると思われる)
@@ -73,12 +82,14 @@ Raspberry Pi OS Lite (32-bit)
   * DHCP のアドレス範囲の先頭に現在つながっている機器の数を足した付近に対して
     ping, ssh して試す。ssh TCP 22 番ポートが開いているはず。
   * `ssh <user>@<IP addr>` から設定したパスワードで入れたら当たり。
+  * 最近のルータは HTTP 設定画面で接続中のデバイス一覧が見られることも多い。
 
 ## 初期設定
 
 `$sudo raspi-config`
 
 バージョンアップで少しずつパワーアップしている気がする。
+Raspberry Pi Imager の時点で設定可能なものも増えてきている気がする。
 
 * (1) System Options
   * wifi 設定
@@ -140,7 +151,7 @@ static domain_name_servers=XXX.YYY.ZZZ.WWW
 
 ## Debian-Backports
 
-主にgit や cmake が古い場合。
+主にgit や cmake が古い場合。気にならないならスキップで OK。
 最新を追いかけるなら公式のリポジトリを sources.list に登録するのが確実だが、
 こちらで十分なら設定は一回で済む。
 
@@ -165,6 +176,42 @@ backports は `-t` で明示的に指定しなければ使われることはな�
 ```sh
 apt show -a <pkg>
 apt install -t <version>-backports <pkg>
+```
+
+## 自動補完の Beep 音がうるさい
+
+```sh
+$ sudo nano /etc/inputrc
+# uncomment
+set bell-style none
+```
+
+## Bash のタブ補完
+
+デフォルトで入ってるのか入ってないのかはっきりしない。
+
+```sh
+apt install bash-completion
+```
+
+### root でタブ補完が効かない
+
+一般ユーザの `.bashrc` では以下のコードで有効化されていて、
+全員共通の `/etc/bashrc` ではコメントアウトされている？？？
+よくわかんないけど共通設定ファイルをコメントアウト解除するか
+/root/.bashrc の最後にコピペする。
+
+```bash
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
 ```
 
 ## 自動アップデート
@@ -208,14 +255,6 @@ Unattended-Upgrade::Automatic-Reboot "true";
 sudo unattended-upgrade --debug --dry-run
 ```
 
-## 自動補完の Beep 音がうるさい
-
-```sh
-$ sudo nano /etc/inputrc
-# uncomment
-set bell-style none
-```
-
 ## screen
 
 * nohup だと ssh が切れた後プロセスが死んでしまう(原因は不明)
@@ -241,11 +280,23 @@ set bell-style none
   * sshd 再起動
     * `service ssh restart`
 
-## VNC (remote desktop)
-
-<https://www.raspberrypi.com/documentation/computers/remote-access.html#virtual-network-computing-vnc>
-
 ## カメラモジュール
+
+### カメラハードウェア
+
+RPi5 からケーブルが細くなった。
+しかし、AI Camera には細いケーブルも同梱されているので
+ケーブルを別に買う必要はない(一敗)。
+
+ケーブルのソケットの仕様が分かりにくいが、プラスチックのパーツを差し込み方向と平行に
+引くことができる。その状態だと緩んでいるのでケーブルを差し込み、再度パーツを押せば
+ロックされる。
+
+### カメラソフトウェア
+
+* カメラ関連コマンドはさらに libcamera から rpicam に変更になった。
+
+旧情報
 
 * カメラモジュールの有効化
   * 従来のカメラ関連コマンドはレガシー扱いとなり非推奨となった。
@@ -253,24 +304,18 @@ set bell-style none
   * Interfacing options
   * legacy camera supprt
   * 有効にしても raspistill 等のコマンドが使えない。。
-
 * 移行先は libcamera
   * libcamera-still が raspistill 互換 (多分)。
   * libcamera-jpeg との関係は不明。
   * legacy camera supprt = ON だと使えないっぽい。
-
 * 静止画撮影(要 video グループ) (旧)
   * `raspistill -t 1 -o pic.jpg`
   * -t 指定すると真っ黒になってしまうことがあるらしい？
     <https://mizukama.sakura.ne.jp/blog/archives/4022>
-
 * サイズ
   * 3280x2464
 * exif のサムネイル
   * 64x48
-
-* C# からサムネイルの取り出し
-  * GetThumbnailImage()
 
 ## I2C
 
@@ -299,27 +344,93 @@ set bell-style none
 
 * lighttpd
   * `sudo apt install lighttpd`
-* php
-  * `sudo apt install php-cgi`
-
-* lighttpd
   * `/etc/lighttpd`
   * `lighttpd-enable-mod`, `lighttpd-disable-mod`
+    * `conf-available/*` を編集し、これらのコマンドでシンボリックリンクを
+      `conf-enabled/*` に生成削除する
   * `service lighttpd force-reload`
   * 以下などを必要に応じて変更しながら enable する
     * accesslog
     * userdir
-    * fastcgi
-    * fastcgi-php
+    * dir-listing
+    * fastcgi-php-fpm
     * CGI の stderr
-      * `server.breakagelog = "/var/log/lighttpd/breakagelog.log"`
-
+      * `server.breakagelog = "/var/log/lighttpd/stderr.log"`
 * php
+  * `apt install php-cgi`
+    * これは fastcgi じゃないらしい…。
+  * `apt install php-fpm`
+    * FPM (FastCGI Process Manager) は、PHP における FastCGI 実装です。
+      (主に)高負荷のサイトで有用な機能が含まれています。
+    * Apache ではこちらが標準になったとか。
+      セキュリティと性能の両面でこちらの方がいいかもしれない。
+    * ただしプロセスが残るので設定ファイルを書き換えても元のが残りそう。
+      `service php-fpm8.4 force-reload` 等が必要と思われる。
   * `/etc/php/.../php.ini`
   * デフォルトのアップロードサイズ制限は厳しいので適切に設定し直す。
     * memory_limit
     * post_max_size
     * upload_max_filesize
+  * `service php8.4-fpm restart`
+  * PukiWiki が動かない時は mb (multi byte) ライブラリ不足。
+    * `apt install php-mbstring`
+    * `extension=mbstring` の行をコメント解除する。
+
+```txt
+PHP Fatal error:
+Uncaught Error: Call to undefined function mb_strrpos() in ...php:XXX
+```
+
+### Lighttpd 設定ファイル
+
+場所: `/etc/lighttpd/`
+
+設定ファイルの文法はやや見慣れない雰囲気なので、ノーヒントで読むと解読しづらい。
+公式チュートリアルは読んだ方がよい。
+
+5分や10分でわかるらしい:
+<https://redmine.lighttpd.net/projects/lighttpd/wiki/TutorialConfiguration>
+
+条件分岐に if を書かないのがポイント。なお else は書く模様。
+頭の中で if をつければ多分読める。
+HTTP リクエストの内容に応じて設定値を切り替えられる。
+
+```perl
+$HTTP["host"] == "example.org" {
+  # options specific to example.org
+  expire.url = ( "" => "access plus 25 hours" )
+} else $HTTP["host"] == "static.example.org" {
+  # options specific to static.example.org
+  expire.url = ( "" => "access plus 2 weeks" )
+} else $HTTP["host"] =~ "" {
+  # options applied to any other vhosts present on this ip
+  # ie. default options
+  expire.url = ( "" => "access plus 3 hours" )
+}
+
+設定ファイルをミスって起動できなくなってしまったら、`lighttpd -tt -f <FILE>` で
+エラー箇所を特定する。
+
+```sh
+lighttpd:
+ -f <name>  filename of the config-file
+ -t         test config-file syntax, then exit
+ -tt        test config-file syntax, load and init modules, then exit
+```
+
+### リバースプロキシ
+
+```perl
+# C++ 版の名残り。不要。
+#$HTTP["url"] =~ "^/house" {
+#  proxy.server  = ( "" => ( ( "host" => "127.0.0.1", "port" => 8888 )))
+#}
+
+# Rust 版向け
+$HTTP["url"] =~ "^/rhouse" {
+  proxy.server  = ( "" => ( ( "host" => "127.0.0.1", "port" => 8899 )))
+}
+```
 
 ## SSL (Let's Encrypt)
 
@@ -384,11 +495,19 @@ IMPORTANT NOTES:
    Donating to EFF:                    https://eff.org/donate-le
 ```
 
+成功すると、`/etc/letsencrypt/live/(domain)` にファイルができている。
+
+* `privkey.pem`  : the private key for your certificate.
+* `fullchain.pem`: the certificate file used in most server software.
+* `chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.
+* `cert.pem`     : will break many server configurations, and should not be used
+  without reading further documentation (see link below).
+
 `/etc/cron.d/certbot` に cronjob が登録されている。
 12 時間ごとに自動で renew してくれるらしい？
 
 * lighttpd に設定する。
-  * /etc/lighttpd/conf-available/10-ssl.conf をコピーして使う。
+  * /etc/lighttpd/conf-available/10-ssl.conf を使う。
   * `sudo lighttpd-enable-mod (xx- と .conf を除いた名前)`
   * `sudo service lighttpd force-reload`
   * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
@@ -396,10 +515,121 @@ IMPORTANT NOTES:
 ```text
 ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
 ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
+# なんかデフォルトだと TLS 1.2 が弾かれる。1.3 は OK。
+# TLS 1.3 の方がよいのも TLS 1.1 以下は滅ぼした方がよいのも理解するが、
+# TLS 1.2 無効はやりすぎで害が上回ると思う…。
+ssl.openssl.ssl-conf-cmd += ("MinProtocol" => "TLSv1.2")
 ```
 
 セキュリティや設定の確認は Qualys SSL LABS で診断してもらうのがおすすめらしい。
 ドメインを入れるだけで色々とチェックしてくれる。
+
+<https://www.ssllabs.com/ssltest/>
+
+## PukiWiki
+
+懐かしさはあるが、現代のセキュリティに対応できているかというと不安になる。
+~~Wordpress よりまし。~~
+
+<https://pukiwiki.sourceforge.io/>
+
+海外からめちゃくちゃ荒らされる (残念だが当然) ので認証は必須。
+この認証で大丈夫なのかは不明。
+
+```php
+// pukiwiki.ini.php
+
+// Title of your Wikisite (Name this)
+// Also used as RSS feed's channel name etc
+$page_title = 'PukiWiki';
+// Site admin's name (CHANGE THIS)
+$modifier = 'anonymous';
+// Site admin's Web page (CHANGE THIS)
+$modifierlink = 'http://pukiwiki.example.com/';
+
+// User definition
+$auth_users = array(...);
+// Edit auth (0:Disable, 1:Enable)
+$edit_auth = 0;
+```
+
+ファイルアップロードに関してはおそらく `php.ini` の設定も必要。
+
+```php
+// plugin/attach.inc.php
+
+// Max file size for upload on script of PukiWikiX_FILESIZE
+define('PLUGIN_ATTACH_MAX_FILESIZE', (1024 * 1024)); // default: 1MB
+```
+
+## Docker
+
+<https://docs.docker.com/engine/install/debian/>
+
+なんかデフォルトの apt にあるやつは unofficial 呼ばわりされている。
+この辺は全部消さないと競合して壊れるらしい。
+`apt show` で Maintainer や APT-Sources を見て Debian のものは無視して
+Docker 公式のもののみを入れるよう気を付ける。
+~~非互換な変更入れすぎでは。~~
+
+* docker.io
+* docker-compose
+* docker-doc
+* podman-docker
+
+信用する keyrings に公式の鍵を追加して、apt source を追加する。
+
+```sh
+apt install docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+```
+
+```sh
+systemctl status docker
+systemctl start docker
+```
+
+`docker` というグループができるので、それに追加したユーザが使えるようになるらしい。
+
+```sh
+docker run hello-world
+```
+
+`docker-compose` はプラグイン化して docker のサブコマンドになったらしい？
+
+```sh
+docker compose version
+```
+
+### Docker Daemon の設定
+
+本体からのヘルプは `dockerd --help`。
+設定ファイルの場所は `/etc/docker/daemon.json`。
+
+Docker の保存する色々なデータは `/var/lib/docker` に置かれる。
+これは `data-root` オプションで変更可能。
+
+Docker Engine 29.0 以降をクリーンインストールした場合はイメージや
+コンテナスナップショットは `/var/lib/containerd` に置かれる。
+ボリュームや設定等の他のデータは `/var/lib/docker` のまま。
+
+overlay2 のような昔のストレージドライバ (アップグレードインストールのデフォルト)
+の場合はすべて `/var/lib/docker` に置かれる。
+
+ログは `journalctl -xu docker.service`。
+
+```json
+// /etc/docker/daemon.json
+{
+  "data-root": "/mnt/docker-data"
+}
+```
+
+```sh
+# /etc/containerd/config.toml
+# 以下をコメント解除して書き換え
+#root = "/var/lib/containerd"
+```
 
 ## MySQL (MariaDB)
 
@@ -787,56 +1017,3 @@ rclone lsf remote:
 # JSON フォーマットで出力する (同上)
 rclone lsjson remote:
 ```
-
-### Linux CLI client のビルド
-
-スマホも含めて各 OS のクライアントがダウンロード可能だが、
-Linux - CLI のコマンドライン版を求めると github へ案内され
-CMake, C++, boost を使った高難度ステージへ案内される。
-
-<https://github.com/pcloudcom/console-client>
-
-ビルドの難度がやたら高い上に、何だか不安定な気がする以上に
-rclone がよく出来すぎているため、**rclone があれば不要**と思われる。
-
-必要なもの
-
-* README.md を読む
-  * 不親切な部分を自力で補完する力が必要。
-* git clone, status, clean -fxd
-  * ビルド中に盛大に汚れるので make で何が起きたか `git status` で確認する。
-  * `git reset --hard` で変更されたファイルを git 管理の状態に戻せる。
-  * `git clean -fxd` で git 管理外のファイルを削除し初期状態に戻せる。
-* `make` は遅いので `make -j4` 等でコア数くらいに並列化する。
-* 多分最初はエラーが出るので README.md 内 apt install 例からそれっぽいものを探して
-  インストールする。
-  * libboost-system-dev libboost-program-options-dev libfuse-dev libudev-dev
-  あたり。
-* Build steps を要約すると以下の通り。
-  * lib/pclsync/ を `make -j4 fs`
-    * raspi だと `-mtune=core2` がないと言われて死ぬ。
-    これは最適化(チューニング)オプションで特定のアーキテクチャ向けに最適化するが、
-    `-mtune=native` で自身の環境に合わせられるのでそうすればいいと思う。
-    てかなんで core2 ？
-    いつの時代に作られたんだ…？
-    PC ならビルドは通るが本当は `-mtune=native` にした方がよいと思う。
-    今 core2 じゃないし。。
-  * lib/mbedtls/ を `cmake .` `make -j4`
-* 最後に pCloudCC/ まで戻って `cmake .` `make -j4`
-  * その後の `sudo make install` でアンインストール不能の破壊的インストールが嫌なら
-  代わりに README.md の下の方にある `debuild -i -us -uc -b` を行う。
-  Debian package (*.deb) 形式となり、apt で install/uninstall できる。
-  * どこでやるか書いてないが `debian/` ディレクトリのある pCloudCC/ の下。
-    最後の `cmake` と同じ。
-  * debuild コマンドのインストールは `sudo apt install devscripts`。
-  * なお、`cmake . && make` 成功後だと失敗する。
-    `make clean` しても直らないので `git reset --hard && git clean -fxd` する。
-  * なお、`debuild` だとライブラリ不足でエラーが起きた場合に非常にわかりづらい。
-    `cmake . && make` が成功することを確認してからリセットして `debuild` する。
-    なんやねん。
-  * 一つ上のリポジトリトップに .deb パッケージができているので、`./` 始点の
-    相対パスを指定し apt でインストールできる。
-    `apt install ./pcloudcc_<version>_<arch>.deb`
-  * アンインストールも apt で OK。
-    `sudo apt remove pcloudcc`
-* コマンドは `pcloudcc`。使い方は README.md または --help オプション。
