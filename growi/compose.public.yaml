@@ -1,0 +1,19 @@
+name: growi-public
+
+services:
+  app:
+    ports:
+      - 127.0.0.1:3000:3000    # localhost only by default
+    environment:
+      - FILE_UPLOAD=mongodb   # activate this line if you use MongoDB GridFS rather than AWS
+      # - FILE_UPLOAD=local     # activate this line if you use local storage of server rather than AWS
+      - MATHJAX=1             # activate this line if you want to use MathJax
+      # - PLANTUML_URI=http://  # activate this line and specify if you use your own PlantUML server rather than public plantuml.com
+      # - FORCE_WIKI_MODE='public'    # activate this line to force wiki public mode
+      # - FORCE_WIKI_MODE='private'   # activate this line to force wiki private mode
+
+  mongo:
+
+  elasticsearch:
+    environment:
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"  # increase amount if you have enough memory

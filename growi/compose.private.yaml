@@ -1,9 +1,9 @@
-version: '3'
+name: growi-private
 
 services:
   app:
     ports:
-      - 127.0.0.1:3000:3000    # localhost only by default
+      - 127.0.0.1:3001:3000    # localhost only by default
     environment:
       - FILE_UPLOAD=mongodb   # activate this line if you use MongoDB GridFS rather than AWS
       # - FILE_UPLOAD=local     # activate this line if you use local storage of server rather than AWS
@@ -15,8 +15,5 @@ services:
   mongo:
 
   elasticsearch:
-    build:
-      context: ../growi-docker-compose/elasticsearch/v9
-      dockerfile: ../growi-docker-compose/Dockerfile
     environment:
       - "ES_JAVA_OPTS=-Xms2g -Xmx2g"  # increase amount if you have enough memory
