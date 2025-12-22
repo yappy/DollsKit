@@ -102,10 +102,7 @@ async fn get_assistant_info(bctx: Arc<BasicContext>, _args: &FuncArgs) -> Result
     let rpienv = match rpienv {
         RaspiEnv::RasRi { model, cameras } => {
             let cameras = Some(cameras).filter(|v| !v.is_empty());
-            RpiEnv {
-                model: &model,
-                cameras,
-            }
+            RpiEnv { model, cameras }
         }
         RaspiEnv::NotRasRi => RpiEnv {
             model: "Not Raspberry Pi",
