@@ -20,4 +20,4 @@ services:
 
   elasticsearch:
     environment:
-      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"  # increase amount if you have enough memory
+      - "ES_JAVA_OPTS=-Xms256m -Xmx1g"  # increase amount if you have enough memory
