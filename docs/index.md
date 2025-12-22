@@ -13,6 +13,8 @@
 * Rust
   * [Rust ツール類](./note/rust_tools.md)
   * [Rust テクニカルノート](./note/rust_technote.md)
+* OpenAI
+  * [OpenAI API ノート](./note/openai.md)
 * Twitter (旧情報)
   * [Twitter API ノート](./note/twitter.md)
 
