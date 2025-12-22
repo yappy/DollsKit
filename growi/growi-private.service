@@ -1,0 +1,24 @@
+# /etc/systemd/system/
+# ~/.config/systemd/user
+
+[Unit]
+Description=Docker GROWI private
+Requires=docker.service
+After=network.target
+
+[Service]
+# service process = ExecStart
+# compose up -d is not needed
+Type=simple
+
+# Replace here with path to git repository
+Environment=ROOT=/root
+Environment=GROWI_DIR=${ROOT}/DollsKit/growi
+Environment=COMPOSE_FILE=:${GROWI_DIR}/growi-docker-compose/docker-compose.yml:${GROWI_DIR}/compose.private.yaml
+
+ExecStart=/usr/bin/docker compose up
+ExecStop=/usr/bin/docker compose down
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
