@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["config","sysmod","taskserver"]};
+window.SIDEBAR_ITEMS = {"mod":["config","rpienv","sysmod","taskserver"]};

@@ -1,5 +1,5 @@
 (function() {
-    var implementors = Object.fromEntries([["sys",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.91.1/core/ops/bit/trait.BitOr.html\" title=\"trait core::ops::bit::BitOr\">BitOr</a> for <a class=\"struct\" href=\"sys/sysmod/health/struct.ThrottleFlags.html\" title=\"struct sys::sysmod::health::ThrottleFlags\">ThrottleFlags</a>"]]]]);
+    var implementors = Object.fromEntries([["sys",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.92.0/core/ops/bit/trait.BitOr.html\" title=\"trait core::ops::bit::BitOr\">BitOr</a> for <a class=\"struct\" href=\"sys/sysmod/health/struct.ThrottleFlags.html\" title=\"struct sys::sysmod::health::ThrottleFlags\">ThrottleFlags</a>"]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
