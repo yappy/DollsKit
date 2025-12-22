@@ -14,6 +14,9 @@ git submodule update
 
 # 同時にやる
 git submodule update --init
+# submodule の中の submodule も含める
+# 何も考えたくない人向け
+git submodule update --init --recursive
 
 # clone 時に一緒にやってしまう
 git clone --recursive
