@@ -214,6 +214,23 @@ if ! shopt -oq posix; then
 fi
 ```
 
+### DNS の設定追加
+
+家の DNS の様子が怪しい場合。
+
+`/etc/resolv.conf` は NetworkManager によって管理されており、
+書き換えても再起動時に上書きされてしまう。
+NetworkManager の管理ツールで設定を追加する必要がある。
+
+```sh
+# 名前を取得
+nmcli device
+nmcli connection modify [CONN] +ipv4.dns 8.8.8.8
+
+systemctl restart NetworkManager
+cat /etc/resolv.conf
+```
+
 ## 自動アップデート
 
 1. `sudo apt install unattended-upgrades`
