@@ -7,26 +7,10 @@
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
-BKUP_ROOT=${BKUP_ROOT:-"/mnt/localbkup"}
-LOG=${LOG:-"/root/bkup.log"}
+LOG_FILE=${LOG_FILE:-"/root/bkup.log"}
 # ------------------------------------------------------------------------------
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SCRIPT_DIR}/../backup
 
-{
-    echo --------------------------------------------------------------------------------
-    date -R
-    echo --------------------------------------------------------------------------------
-} >> "${LOG}"
-
-# Require: pbzip2
-python3 "${ROOT}/bkup_local.py" \
---tag full \
---ext bz2 \
---compress-program pbzip2 \
---mount-check "${BKUP_ROOT}" \
---reserved-size 30 \
---exclude-from "${ROOT}/bkup_exclude.txt" \
-/ "${BKUP_ROOT}/full" \
->> "${LOG}" 2>&1
+"${ROOT}/bkup_all.sh" >> "${LOG_FILE}" 2>&1

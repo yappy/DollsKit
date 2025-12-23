@@ -1,12 +1,14 @@
 #!/bin/bash -eu
 
-SELF_DIR=$(dirname "$(realpath "$0")")
-SCRIPT_DIR=${SELF_DIR}/bkup/src
-
-# Can be overriden by ENVVAR
+# ------------------------------------------------------------------------------
+# Config (can be overriden by ENVVAR)
 BKUP_MP=${BKUP_MP:-"/mnt/bkup"}
 SRC_DIR=${SRC_DIR:-"/"}
 KEEP_COUNT=${KEEP_COUNT:-"10"}
+# ------------------------------------------------------------------------------
+
+SELF_DIR=$(dirname "$(realpath "$0")")
+SCRIPT_DIR=${SELF_DIR}/bkup/src
 
 BKUP_ROOT="${BKUP_MP}/full"
 SYNC_DIR=${BKUP_ROOT}/sync
