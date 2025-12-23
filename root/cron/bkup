@@ -7,10 +7,11 @@
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
-LOG_FILE=${LOG_FILE:-"/root/bkup.log"}
+LOG_FILE=${LOG_FILE:-"/root/log/bkup.log"}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SELF_DIR}/../backup
 
+mkdir -p "$(dirname "${LOG_FILE}")"
 "${ROOT}/bkup_full.sh" >> "${LOG_FILE}" 2>&1

@@ -7,16 +7,20 @@
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
-LOG_FILE=${LOG_FILE:-"/root/growi_bkup.log"}
+LOG_FILE=${LOG_FILE:-"/root/log/growi_bkup.log"}
 PROJS=${PROJS:-"growi-public growi-private"}
 VOLUMES=${VOLUMES:-"es_data growi_data mongo_configdb mongo_db page_bulk_export_tmp"}
 # ------------------------------------------------------------------------------
 
-PROJS_ARRAY=( "${PROJS}" )
-
 SELF_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SELF_DIR}/../backup
+# split PROJS into array by whitespace
+read -r -a PROJS_ARRAY <<< "${PROJS}"
+read -r -a VOLUMES_ARRAY <<< "${VOLUMES}"
 
+mkdir -p "$(dirname "${LOG_FILE}")"
 for PROJ in "${PROJS_ARRAY[@]}"; do
-    "${ROOT}/bkup_docker.sh" "${PROJ}" "${VOLUMES}" >> "${LOG_FILE}" 2>&1
+    set -x
+    "${ROOT}/bkup_docker.sh" "${PROJ}" "${VOLUMES_ARRAY[@]}" >> "${LOG_FILE}" 2>&1
+    set +x
 done
