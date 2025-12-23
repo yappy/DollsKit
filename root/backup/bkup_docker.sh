@@ -5,7 +5,7 @@ echo Usage: "$0" PROJ VOLUMES...
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
 BKUP_MP=${BKUP_MP:-"/mnt/bkup"}
-KEEP_COUNT=${KEEP_COUNT:-"30"}
+KEEP_DAYS=${KEEP_DAYS:-"180"}
 EXT=${EXT:-"tar.bz2"}
 # ------------------------------------------------------------------------------
 
@@ -24,8 +24,13 @@ echo START
 date -R
 echo --------------------------------------------------------------------------------
 
+# cleanup
+echo Delete files older than "${KEEP_DAYS}" days in "${DSTDIR}"
+find "${DSTDIR}" -type f -mtime "+${KEEP_DAYS}" -exec rm {} \;
+
+# tar
 for VOL in "${VOLUMES[@]}"; do
-    FILE="${VOL_FULL}_$(date +%Y%m%d%H%M ).${EXT}"
+    FILE="${VOL}_$(date +%Y%m%d%H%M ).${EXT}"
     set -x
     docker run --rm -v "${PROJ}_${VOL}:/mnt/vol" -v "${DSTDIR}:/mnt/bkup" \
         busybox tar caf "/mnt/bkup/${FILE}" -C /mnt/vol . &
