@@ -13,7 +13,7 @@ SYNC_DIR=${BKUP_ROOT}/sync
 ARCHIVE_DIR=${BKUP_ROOT}/archive
 
 # check if mount point is available
-mountpoint "${BKUP_ROOT}"
+mountpoint "${BKUP_MP}"
 
 echo --------------------------------------------------------------------------------
 echo START
