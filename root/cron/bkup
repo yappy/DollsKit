@@ -13,4 +13,4 @@ LOG_FILE=${LOG_FILE:-"/root/bkup.log"}
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SCRIPT_DIR}/../backup
 
-"${ROOT}/bkup_all.sh" >> "${LOG_FILE}" 2>&1
+"${ROOT}/bkup_full.sh" >> "${LOG_FILE}" 2>&1
