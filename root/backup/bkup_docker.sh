@@ -30,7 +30,7 @@ find "${DSTDIR}" -type f -mtime "+${KEEP_DAYS}" -exec rm {} \;
 
 # tar
 for VOL in "${VOLUMES[@]}"; do
-    FILE="${VOL}_$(date +%Y%m%d%H%M ).${EXT}"
+    FILE="${PROJ}_${VOL}_$(date +%Y%m%d%H%M ).${EXT}"
     set -x
     docker run --rm -v "${PROJ}_${VOL}:/mnt/vol" -v "${DSTDIR}:/mnt/bkup" \
         busybox tar caf "/mnt/bkup/${FILE}" -C /mnt/vol . &
