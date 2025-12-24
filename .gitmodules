@@ -1,0 +1,6 @@
+[submodule "growi/growi-docker-compose"]
+	path = root/growi/growi-docker-compose
+	url = https://github.com/growilabs/growi-docker-compose
+[submodule "root/backup/bkup"]
+	path = root/backup/bkup
+	url = https://github.com/yappy/bkup
