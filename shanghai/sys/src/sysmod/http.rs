@@ -7,6 +7,7 @@ mod index;
 mod line_hook;
 mod priv_camera;
 mod priv_index;
+mod tmp;
 mod upload;
 
 use super::SystemModule;
