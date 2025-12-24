@@ -937,11 +937,12 @@ impl Twitter {
         debug!("POST: {json_str}");
 
         let client = reqwest::Client::new();
-        let req = self
-            .http_oauth_post(&client, base_url, query_param)
-            .header("Content-type", "application/json")
-            .body(json_str);
-        let resp = req.send().await?;
+        let resp = netutil::send_with_retry(|| {
+            self.http_oauth_post(&client, base_url, query_param)
+                .header("Content-type", "application/json")
+                .body(json_str.clone())
+        })
+        .await?;
 
         Ok(resp)
     }

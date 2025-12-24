@@ -436,7 +436,7 @@ mod tests {
                 "https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json",
                 info.code
             );
-            let resp = client.get(url).send().await?;
+            let resp = crate::netutil::send_with_retry(|| client.get(&url)).await?;
             if resp.status().is_success() {
                 let mut file = File::create(format!(
                     "{}/res/test/weather/overview_forecast/{}.json",
@@ -454,7 +454,7 @@ mod tests {
                 "https://www.jma.go.jp/bosai/forecast/data/forecast/{}.json",
                 info.code
             );
-            let resp = client.get(url).send().await?;
+            let resp = crate::netutil::send_with_retry(|| client.get(&url)).await?;
             if resp.status().is_success() {
                 let mut file = File::create(format!(
                     "{}/res/test/weather/forecast/{}.json",
@@ -472,7 +472,7 @@ mod tests {
                 "https://www.jma.go.jp/bosai/forecast/data/overview_week/{}.json",
                 info.code
             );
-            let resp = client.get(url).send().await?;
+            let resp = crate::netutil::send_with_retry(|| client.get(&url)).await?;
             if resp.status().is_success() {
                 let mut file = File::create(format!(
                     "{}/res/test/weather/overview_week/{}.json",
