@@ -19,6 +19,7 @@ use anyhow::{Result, anyhow};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use serenity::http::StatusCode;
+use std::collections::VecDeque;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -72,17 +73,46 @@ impl Default for HttpConfig {
     }
 }
 
+pub struct TmpElement {
+    pub id: String,
+    pub ctype: ContentType,
+    pub data: Vec<u8>,
+}
+
 pub struct HttpServer {
     config: HttpConfig,
+    tmp_data: VecDeque<TmpElement>,
 }
 
 impl HttpServer {
+    const TMP_COUNT_MAX: usize = 32;
+
     pub fn new() -> Result<Self> {
         info!("[http] initialize");
 
         let config = config::get(|cfg| cfg.http.clone());
 
-        Ok(Self { config })
+        Ok(Self {
+            config,
+            tmp_data: Default::default(),
+        })
+    }
+
+    pub fn add_tmp_data(&mut self, ctype: ContentType, data: Vec<u8>) {
+        let id = loop {
+            let id = format!(
+                "{:016x}{:016x}",
+                rand::random::<u64>(),
+                rand::random::<u64>()
+            );
+            if !self.tmp_data.iter().any(|elem| elem.id == id) {
+                break id;
+            }
+        };
+        self.tmp_data.push_back(TmpElement { id, ctype, data });
+        while self.tmp_data.len() > Self::TMP_COUNT_MAX {
+            self.tmp_data.pop_front();
+        }
     }
 }
 
