@@ -436,7 +436,7 @@
 <a href=#436 id=436 data-nosnippet>436</a>                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/overview_forecast/{}.json"</span>,
 <a href=#437 id=437 data-nosnippet>437</a>                info.code
 <a href=#438 id=438 data-nosnippet>438</a>            );
-<a href=#439 id=439 data-nosnippet>439</a>            <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#439 id=439 data-nosnippet>439</a>            <span class="kw">let </span>resp = <span class="kw">crate</span>::netutil::send_with_retry(|| client.get(<span class="kw-2">&amp;</span>url)).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#440 id=440 data-nosnippet>440</a>            <span class="kw">if </span>resp.status().is_success() {
 <a href=#441 id=441 data-nosnippet>441</a>                <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="macro">format!</span>(
 <a href=#442 id=442 data-nosnippet>442</a>                    <span class="string">"{}/res/test/weather/overview_forecast/{}.json"</span>,
@@ -454,7 +454,7 @@
 <a href=#454 id=454 data-nosnippet>454</a>                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/forecast/{}.json"</span>,
 <a href=#455 id=455 data-nosnippet>455</a>                info.code
 <a href=#456 id=456 data-nosnippet>456</a>            );
-<a href=#457 id=457 data-nosnippet>457</a>            <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#457 id=457 data-nosnippet>457</a>            <span class="kw">let </span>resp = <span class="kw">crate</span>::netutil::send_with_retry(|| client.get(<span class="kw-2">&amp;</span>url)).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#458 id=458 data-nosnippet>458</a>            <span class="kw">if </span>resp.status().is_success() {
 <a href=#459 id=459 data-nosnippet>459</a>                <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="macro">format!</span>(
 <a href=#460 id=460 data-nosnippet>460</a>                    <span class="string">"{}/res/test/weather/forecast/{}.json"</span>,
@@ -472,7 +472,7 @@
 <a href=#472 id=472 data-nosnippet>472</a>                <span class="string">"https://www.jma.go.jp/bosai/forecast/data/overview_week/{}.json"</span>,
 <a href=#473 id=473 data-nosnippet>473</a>                info.code
 <a href=#474 id=474 data-nosnippet>474</a>            );
-<a href=#475 id=475 data-nosnippet>475</a>            <span class="kw">let </span>resp = client.get(url).send().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#475 id=475 data-nosnippet>475</a>            <span class="kw">let </span>resp = <span class="kw">crate</span>::netutil::send_with_retry(|| client.get(<span class="kw-2">&amp;</span>url)).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#476 id=476 data-nosnippet>476</a>            <span class="kw">if </span>resp.status().is_success() {
 <a href=#477 id=477 data-nosnippet>477</a>                <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="macro">format!</span>(
 <a href=#478 id=478 data-nosnippet>478</a>                    <span class="string">"{}/res/test/weather/overview_week/{}.json"</span>,

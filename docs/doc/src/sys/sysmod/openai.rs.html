@@ -1039,12 +1039,12 @@
 <a href=#1039 id=1039 data-nosnippet>1039</a>        <span class="macro">info!</span>(<span class="string">"[openai] model request"</span>);
 <a href=#1040 id=1040 data-nosnippet>1040</a>        <span class="self">self</span>.check_enabled()<span class="question-mark">?</span>;
 <a href=#1041 id=1041 data-nosnippet>1041</a>
-<a href=#1042 id=1042 data-nosnippet>1042</a>        <span class="kw">let </span>resp = <span class="self">self
-<a href=#1043 id=1043 data-nosnippet>1043</a>            </span>.client
-<a href=#1044 id=1044 data-nosnippet>1044</a>            .get(url_model(model))
-<a href=#1045 id=1045 data-nosnippet>1045</a>            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
-<a href=#1046 id=1046 data-nosnippet>1046</a>            .send()
-<a href=#1047 id=1047 data-nosnippet>1047</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#1042 id=1042 data-nosnippet>1042</a>        <span class="kw">let </span>resp = netutil::send_with_retry(|| {
+<a href=#1043 id=1043 data-nosnippet>1043</a>            <span class="self">self</span>.client
+<a href=#1044 id=1044 data-nosnippet>1044</a>                .get(url_model(model))
+<a href=#1045 id=1045 data-nosnippet>1045</a>                .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
+<a href=#1046 id=1046 data-nosnippet>1046</a>        })
+<a href=#1047 id=1047 data-nosnippet>1047</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#1048 id=1048 data-nosnippet>1048</a>
 <a href=#1049 id=1049 data-nosnippet>1049</a>        <span class="kw">let </span>json_str = netutil::check_http_resp(resp).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#1050 id=1050 data-nosnippet>1050</a>
@@ -1113,13 +1113,13 @@
 <a href=#1113 id=1113 data-nosnippet>1113</a>        <span class="macro">info!</span>(<span class="string">"[openai] {body:?}"</span>);
 <a href=#1114 id=1114 data-nosnippet>1114</a>        <span class="self">self</span>.check_enabled()<span class="question-mark">?</span>;
 <a href=#1115 id=1115 data-nosnippet>1115</a>
-<a href=#1116 id=1116 data-nosnippet>1116</a>        <span class="kw">let </span>resp = <span class="self">self
-<a href=#1117 id=1117 data-nosnippet>1117</a>            </span>.client
-<a href=#1118 id=1118 data-nosnippet>1118</a>            .post(url)
-<a href=#1119 id=1119 data-nosnippet>1119</a>            .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
-<a href=#1120 id=1120 data-nosnippet>1120</a>            .json(body)
-<a href=#1121 id=1121 data-nosnippet>1121</a>            .send()
-<a href=#1122 id=1122 data-nosnippet>1122</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#1116 id=1116 data-nosnippet>1116</a>        <span class="kw">let </span>resp = netutil::send_with_retry(|| {
+<a href=#1117 id=1117 data-nosnippet>1117</a>            <span class="self">self</span>.client
+<a href=#1118 id=1118 data-nosnippet>1118</a>                .post(url)
+<a href=#1119 id=1119 data-nosnippet>1119</a>                .header(<span class="string">"Authorization"</span>, <span class="macro">format!</span>(<span class="string">"Bearer {key}"</span>))
+<a href=#1120 id=1120 data-nosnippet>1120</a>                .json(body)
+<a href=#1121 id=1121 data-nosnippet>1121</a>        })
+<a href=#1122 id=1122 data-nosnippet>1122</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#1123 id=1123 data-nosnippet>1123</a>        <span class="comment">// HTTP POST レスポンス取得まで成功
 <a href=#1124 id=1124 data-nosnippet>1124</a>        // ステータスコードは失敗かもしれない
 <a href=#1125 id=1125 data-nosnippet>1125</a>
