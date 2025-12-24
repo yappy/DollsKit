@@ -1039,12 +1039,12 @@ impl OpenAi {
         info!("[openai] model request");
         self.check_enabled()?;
 
-        let resp = self
-            .client
-            .get(url_model(model))
-            .header("Authorization", format!("Bearer {key}"))
-            .send()
-            .await?;
+        let resp = netutil::send_with_retry(|| {
+            self.client
+                .get(url_model(model))
+                .header("Authorization", format!("Bearer {key}"))
+        })
+        .await?;
 
         let json_str = netutil::check_http_resp(resp).await?;
 
@@ -1113,13 +1113,13 @@ impl OpenAi {
         info!("[openai] {body:?}");
         self.check_enabled()?;
 
-        let resp = self
-            .client
-            .post(url)
-            .header("Authorization", format!("Bearer {key}"))
-            .json(body)
-            .send()
-            .await?;
+        let resp = netutil::send_with_retry(|| {
+            self.client
+                .post(url)
+                .header("Authorization", format!("Bearer {key}"))
+                .json(body)
+        })
+        .await?;
         // HTTP POST レスポンス取得まで成功
         // ステータスコードは失敗かもしれない
 

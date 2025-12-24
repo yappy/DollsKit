@@ -873,9 +873,7 @@ async fn ai(
         const TIMEOUT: Duration = Duration::from_secs(30);
         let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
         let download = async move |url| {
-            let resp = client
-                .get(url)
-                .send()
+            let resp = netutil::send_with_retry(|| client.get(url))
                 .await
                 .with_context(|| "URL get network error".to_string())?;
 

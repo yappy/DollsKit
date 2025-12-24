@@ -7,6 +7,7 @@ mod index;
 mod line_hook;
 mod priv_camera;
 mod priv_index;
+mod tmp;
 mod upload;
 
 use super::SystemModule;
@@ -18,6 +19,7 @@ use anyhow::{Result, anyhow};
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use serenity::http::StatusCode;
+use std::collections::VecDeque;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -30,6 +32,9 @@ pub struct HttpConfig {
     priv_enabled: bool,
     /// ポート番号。
     port: u16,
+    /// ベース URL。
+    /// e.g. "http://example.com"
+    server_url: String,
     /// ルートパス。
     /// リバースプロキシ条件の URL プレフィクスに合わせること。
     ///
@@ -60,6 +65,7 @@ impl Default for HttpConfig {
             enabled: false,
             priv_enabled: false,
             port: 8899,
+            server_url: "".to_string(),
             path_prefix: "/rhouse".to_string(),
             priv_prefix: "/priv".to_string(),
             upload_enabled: false,
@@ -71,17 +77,62 @@ impl Default for HttpConfig {
     }
 }
 
+pub struct TmpElement {
+    pub id: String,
+    pub ctype: ContentType,
+    pub data: Vec<u8>,
+}
+
 pub struct HttpServer {
     config: HttpConfig,
+    tmp_data: VecDeque<TmpElement>,
 }
 
 impl HttpServer {
+    const TMP_COUNT_MAX: usize = 32;
+
     pub fn new() -> Result<Self> {
         info!("[http] initialize");
 
         let config = config::get(|cfg| cfg.http.clone());
 
-        Ok(Self { config })
+        Ok(Self {
+            config,
+            tmp_data: Default::default(),
+        })
+    }
+
+    pub fn export_tmp_data(&mut self, ctype: ContentType, data: Vec<u8>) -> Result<String> {
+        anyhow::ensure!(
+            !self.config.server_url.is_empty(),
+            "config server_url is empty"
+        );
+
+        let id = loop {
+            let id = format!(
+                "{:016x}{:016x}",
+                rand::random::<u64>(),
+                rand::random::<u64>()
+            );
+            if !self.tmp_data.iter().any(|elem| elem.id == id) {
+                break id;
+            }
+        };
+
+        self.tmp_data.push_back(TmpElement {
+            id: id.clone(),
+            ctype,
+            data,
+        });
+        while self.tmp_data.len() > Self::TMP_COUNT_MAX {
+            self.tmp_data.pop_front();
+        }
+
+        let url = format!(
+            "{}{}/tmp/{id}",
+            self.config.server_url, self.config.path_prefix
+        );
+        Ok(url)
     }
 }
 

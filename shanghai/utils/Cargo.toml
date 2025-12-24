@@ -9,6 +9,7 @@ description.workspace = true
 static_assertions.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
+log.workspace = true
 chrono.workspace = true
 rand.workspace = true
 

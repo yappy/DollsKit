@@ -389,9 +389,9 @@ fn find_files_rec(mut dict: PicDict, path: &Path) -> Result<PicDict> {
 }
 
 /// デフォルトの横サイズ。imx500
-const PIC_DEF_W: u32 = 4056;
+pub const PIC_DEF_W: u32 = 4056;
 /// デフォルトの縦サイズ。imx500
-const PIC_DEF_H: u32 = 3040;
+pub const PIC_DEF_H: u32 = 3040;
 /// jpeg 最大クオリティ。
 const PIC_MAX_Q: u8 = 100;
 /// jpeg 最小クオリティ。
