@@ -163,8 +163,8 @@ impl Line {
 
         let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("line"));
         func_table.register_basic_functions();
-        register_draw_picture(&mut func_table);
         register_camera(&mut func_table);
+        register_draw_picture(&mut func_table);
 
         let _ = self.chat_history.insert(chat_history);
         let _ = self.func_table.insert(func_table);
@@ -1186,6 +1186,11 @@ fn register_camera(func_table: &mut FunctionTable<FunctionContext>) {
         Function {
             name: "camera".to_string(),
             description: Some("Take a picture".to_string()),
+            parameters: Parameters {
+                properties: Default::default(),
+                required: Default::default(),
+                ..Default::default()
+            },
             ..Default::default()
         },
         move |bctx, ctx, args| Box::pin(camera(bctx, ctx, args)),
@@ -1199,12 +1204,15 @@ async fn camera(bctx: Arc<BasicContext>, ctx: FunctionContext, _args: &FuncArgs)
 
     let mut w = camera::PIC_DEF_W;
     let mut h = camera::PIC_DEF_H;
+    info!("[line] take a picture: {}x{}", w, h);
     let mut orig = camera::take_a_pic(camera::TakePicOption::new().width(w).height(h)).await?;
+    info!("[line] take a picture OK, size={}", orig.len());
     // サイズ制限に収まるまで小さくする
     while orig.len() > IMAGE_ORIGINAL_SIZE_MAX {
         w /= 2;
         h /= 2;
         orig = camera::resize(&orig, w, h)?;
+        info!("[line] resize, size={}", orig.len());
     }
     let mut preview = orig.clone();
     while preview.len() > IMAGE_PREVIEW_SIZE_MAX {
@@ -1220,12 +1228,17 @@ async fn camera(bctx: Arc<BasicContext>, ctx: FunctionContext, _args: &FuncArgs)
             http.export_tmp_data(ContentType::jpeg(), preview)?,
         )
     };
-    {
-        let line = bctx.ctrl.sysmods().line.lock().await;
 
-        line.push_image_message(&ctx.reply_to, &url_original, &url_preview)
-            .await?;
-    }
+    let ctrl = bctx.ctrl.clone();
+    taskserver::spawn_oneshot_fn(&ctrl, "line_camera_send", async move {
+        {
+            let line = bctx.ctrl.sysmods().line.lock().await;
+
+            line.push_image_message(&ctx.reply_to, &url_original, &url_preview)
+                .await?;
+        }
+        Ok(())
+    });
 
     Ok("OK. Now the users can see the picture.".to_string())
 }
