@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use std::vec;
 use std::{collections::HashMap, fmt::Debug, sync::Arc, time::Instant};
+use utils::netutil;
 
 /// LINE API タイムアウト。
 const TIMEOUT: Duration = Duration::from_secs(30);
@@ -688,15 +689,14 @@ async fn on_image_message(
             original_content_url,
             preview_image_url: _,
         } => {
+            const CONN_TIMEOUT: Duration = Duration::from_secs(30);
             const TIMEOUT: Duration = Duration::from_secs(30);
-            let client = reqwest::ClientBuilder::new().timeout(TIMEOUT).build()?;
-            let resp = client
-                .get(original_content_url)
-                .send()
-                .await
-                .context("URL get network error")?;
 
-            utils::netutil::check_http_resp_bin(resp)
+            let client = reqwest::ClientBuilder::new()
+                .connect_timeout(CONN_TIMEOUT)
+                .timeout(TIMEOUT)
+                .build()?;
+            netutil::checked_get_url_bin(&client, original_content_url)
                 .await
                 .context("URL get network error")?
         }
@@ -1031,12 +1031,12 @@ impl Line {
     {
         info!("[line] GET {url}");
         let token = &self.config.token;
-        let resp = self
-            .client
-            .get(url)
-            .header("Authorization", format!("Bearer {token}"))
-            .send()
-            .await?;
+        let resp = netutil::send_with_retry(|| {
+            self.client
+                .get(url)
+                .header("Authorization", format!("Bearer {token}"))
+        })
+        .await?;
 
         Self::check_resp_json(resp).await
     }
@@ -1048,13 +1048,13 @@ impl Line {
     {
         info!("[line] POST {url} {body:?}");
         let token = &self.config.token;
-        let resp = self
-            .client
-            .post(url)
-            .header("Authorization", format!("Bearer {token}"))
-            .json(body)
-            .send()
-            .await?;
+        let resp = netutil::send_with_retry(|| {
+            self.client
+                .post(url)
+                .header("Authorization", format!("Bearer {token}"))
+                .json(body)
+        })
+        .await?;
 
         Self::check_resp_json(resp).await
     }
@@ -1063,12 +1063,12 @@ impl Line {
         info!("[line] GET {url}");
         let token = &self.config.token;
 
-        let resp = self
-            .client
-            .get(url)
-            .header("Authorization", format!("Bearer {token}"))
-            .send()
-            .await?;
+        let resp = netutil::send_with_retry(|| {
+            self.client
+                .get(url)
+                .header("Authorization", format!("Bearer {token}"))
+        })
+        .await?;
 
         let status = resp.status();
         if status.is_success() {

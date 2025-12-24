@@ -3,11 +3,31 @@
 use anyhow::{Context, Result, anyhow};
 use hmac::{Mac, SimpleHmac, digest::CtOutput};
 use percent_encoding::{AsciiSet, utf8_percent_encode};
-use reqwest::Client;
+use reqwest::{Client, RequestBuilder, Response};
 use serde::Deserialize;
 use sha1::Sha1;
 use sha2::Sha256;
+use std::time::{Duration, Instant};
 use thiserror::Error;
+
+const RETRY_TIMEOUT: Duration = Duration::from_secs(5);
+const RETRY_INTERVAL: Duration = Duration::from_millis(500);
+
+pub async fn send_with_retry(mut build_req: impl FnMut() -> RequestBuilder) -> Result<Response> {
+    let start = Instant::now();
+    loop {
+        let res = build_req().send().await.context("HTTP request failed");
+        if let Err(ref err) = res
+            && Instant::now() - start < RETRY_TIMEOUT
+        {
+            log::error!("{err:#?}");
+            log::warn!("HTTP request failed, retrying...");
+            tokio::time::sleep(RETRY_INTERVAL).await;
+        } else {
+            break res;
+        }
+    }
+}
 
 #[derive(Debug, Error)]
 #[error("Http error {status} {body}")]
@@ -52,11 +72,17 @@ pub async fn check_http_resp_bin(resp: reqwest::Response) -> Result<Vec<u8>> {
     }
 }
 
-/// [check_http_resp] 付きの GET。
+/// [send_with_retry] [check_http_resp] 付きの GET。
 pub async fn checked_get_url(client: &Client, url: &str) -> Result<String> {
-    let resp = client.get(url).send().await?;
+    let resp = send_with_retry(|| client.get(url)).await?;
 
     check_http_resp(resp).await
+}
+
+pub async fn checked_get_url_bin(client: &Client, url: &str) -> Result<Vec<u8>> {
+    let resp = send_with_retry(|| client.get(url)).await?;
+
+    check_http_resp_bin(resp).await
 }
 
 /// 文字列を JSON としてパースし、T 型に変換する。
