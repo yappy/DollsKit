@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/bash -eu
 
 # Automatic backup script
 #
@@ -7,26 +7,11 @@
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
-BKUP_ROOT=${BKUP_ROOT:-"/mnt/localbkup"}
-LOG=${LOG:-"/root/bkup.log"}
+LOG_FILE=${LOG_FILE:-"/root/log/bkup.log"}
 # ------------------------------------------------------------------------------
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-ROOT=${SCRIPT_DIR}/../backup
+SELF_DIR=$(dirname "$(realpath "$0")")
+ROOT=${SELF_DIR}/../backup
 
-{
-    echo --------------------------------------------------------------------------------
-    date -R
-    echo --------------------------------------------------------------------------------
-} >> "${LOG}"
-
-# Require: pbzip2
-python3 "${ROOT}/bkup_local.py" \
---tag full \
---ext bz2 \
---compress-program pbzip2 \
---mount-check "${BKUP_ROOT}" \
---reserved-size 30 \
---exclude-from "${ROOT}/bkup_exclude.txt" \
-/ "${BKUP_ROOT}/full" \
->> "${LOG}" 2>&1
+mkdir -p "$(dirname "${LOG_FILE}")"
+"${ROOT}/bkup_full.sh" >> "${LOG_FILE}" 2>&1
