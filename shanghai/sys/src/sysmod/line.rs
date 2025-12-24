@@ -12,6 +12,7 @@ use crate::sysmod::openai::{Function, Parameters, function::FUNCTION_TOKEN};
 use crate::sysmod::openai::{OpenAi, OpenAiErrorKind, Role, SearchContextSize, Tool, UserLocation};
 use crate::taskserver::{self, Control};
 
+use actix_web::http::header::ContentType;
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use base64::{Engine, engine::general_purpose};
 use log::{error, info, warn};
@@ -37,6 +38,8 @@ pub struct LineConfig {
     token: String,
     /// チャネルシークレット。
     pub channel_secret: String,
+    /// 特権ユーザ LINE ID リスト。
+    pub privileged_user_ids: Vec<String>,
     /// LINE ID から名前への固定マップ。
     pub id_name_map: HashMap<String, String>,
     // OpenAI プロンプト。
@@ -71,9 +74,12 @@ impl Default for LinePrompt {
     }
 }
 
+/// OpenAI function 呼び出し時のコンテキスト情報。
 pub struct FunctionContext {
     /// userId, groupIdm or roomId
     pub reply_to: String,
+    /// 特権ユーザの発言なら true
+    pub privileged: bool,
 }
 
 /// LINE システムモジュール。
@@ -158,6 +164,7 @@ impl Line {
         let mut func_table = FunctionTable::new(Arc::clone(ctrl), Some("line"));
         func_table.register_basic_functions();
         register_draw_picture(&mut func_table);
+        register_camera(&mut func_table);
 
         let _ = self.chat_history.insert(chat_history);
         let _ = self.func_table.insert(func_table);
@@ -509,12 +516,12 @@ async fn on_text_message(
     ensure!(src.is_some(), "Field 'source' is required");
     let src = src.as_ref().unwrap();
 
-    let prompt = {
+    let (prompt, privileged) = {
         let mut line = ctrl.sysmods().line.lock().await;
         let prompt = line.config.prompt.clone();
 
         // source フィールドからプロフィール情報を取得
-        let display_name = source_to_display_name(&line, src).await?;
+        let (display_name, privileged) = source_to_display_name_and_permission(&line, src).await?;
 
         // タイムアウト処理
         line.check_history_timeout(ctrl).await;
@@ -531,7 +538,7 @@ async fn on_text_message(
             .await
             .push_input_and_images(Role::User, text, imgs)?;
 
-        prompt
+        (prompt, privileged)
     };
 
     // システムメッセージ
@@ -588,6 +595,7 @@ async fn on_text_message(
                     // 関数に渡すコンテキスト情報 (LINE reply_to ID)
                     let ctx = FunctionContext {
                         reply_to: reply_to.clone(),
+                        privileged,
                     };
                     // call function
                     let func_out = line
@@ -680,7 +688,7 @@ async fn on_image_message(
     let mut line = ctrl.sysmods().line.lock().await;
 
     // source フィールドからプロフィール情報を取得
-    let display_name = source_to_display_name(&line, src).await?;
+    let (display_name, _privileged) = source_to_display_name_and_permission(&line, src).await?;
 
     // 画像を取得
     let bin = match content_provider {
@@ -715,24 +723,18 @@ async fn on_image_message(
     Ok(())
 }
 
-async fn source_to_display_name(line: &Line, src: &Source) -> Result<String> {
-    let display_name = match src {
-        Source::User { user_id } => {
-            if let Some(name) = line.config.id_name_map.get(user_id) {
-                name.to_string()
-            } else {
-                line.get_profile(user_id).await?.display_name
-            }
-        }
-        Source::Group { group_id, user_id } => {
+async fn source_to_display_name_and_permission(
+    line: &Line,
+    src: &Source,
+) -> Result<(String, bool)> {
+    let user_id = match src {
+        Source::User { user_id } => user_id,
+        Source::Group {
+            group_id: _,
+            user_id,
+        } => {
             if let Some(user_id) = user_id {
-                if let Some(name) = line.config.id_name_map.get(user_id) {
-                    name.to_string()
-                } else {
-                    line.get_group_profile(group_id, user_id)
-                        .await?
-                        .display_name
-                }
+                user_id
             } else {
                 bail!("userId is null");
             }
@@ -742,8 +744,14 @@ async fn source_to_display_name(line: &Line, src: &Source) -> Result<String> {
             user_id: _,
         } => bail!("Source::Room is not supported"),
     };
+    let display_name = if let Some(name) = line.config.id_name_map.get(user_id) {
+        name.to_string()
+    } else {
+        line.get_profile(user_id).await?.display_name
+    };
+    let privileged = line.config.privileged_user_ids.contains(user_id);
 
-    Ok(display_name)
+    Ok((display_name, privileged))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -810,6 +818,9 @@ struct SentMessage {
     id: String,
     quote_token: Option<String>,
 }
+
+const IMAGE_ORIGINAL_SIZE_MAX: usize = 10 * 1000 * 1000;
+const IMAGE_PREVIEW_SIZE_MAX: usize = 1000 * 1000;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -980,10 +991,15 @@ impl Line {
     }
 
     /// <https://developers.line.biz/ja/reference/messaging-api/#send-push-message>
-    pub async fn push_image_message(&self, to: &str, url: &str) -> Result<ReplyResp> {
+    pub async fn push_image_message(
+        &self,
+        to: &str,
+        url_original: &str,
+        url_preview: &str,
+    ) -> Result<ReplyResp> {
         let messages = vec![SendMessage::Image {
-            original_content_url: url.to_string(),
-            preview_image_url: url.to_string(),
+            original_content_url: url_original.to_string(),
+            preview_image_url: url_preview.to_string(),
         }];
 
         let req = PushReq {
@@ -1111,6 +1127,7 @@ fn split_message(text: &str) -> Vec<&str> {
     result
 }
 
+/// 固有関数: 画像生成
 fn register_draw_picture(func_table: &mut FunctionTable<FunctionContext>) {
     let mut properties = HashMap::new();
     properties.insert(
@@ -1155,12 +1172,62 @@ async fn draw_picture(
         };
         {
             let line = bctx.ctrl.sysmods().line.lock().await;
-            line.push_image_message(&ctx.reply_to, &url).await?;
+            line.push_image_message(&ctx.reply_to, &url, &url).await?;
         }
         Ok(())
     });
 
     Ok("Accepted. The result will be automatially posted later. Assistant should not draw for now.".to_string())
+}
+
+/// 固有関数: カメラで写真を撮る
+fn register_camera(func_table: &mut FunctionTable<FunctionContext>) {
+    func_table.register_function(
+        Function {
+            name: "camera".to_string(),
+            description: Some("Take a picture".to_string()),
+            ..Default::default()
+        },
+        move |bctx, ctx, args| Box::pin(camera(bctx, ctx, args)),
+    );
+}
+
+async fn camera(bctx: Arc<BasicContext>, ctx: FunctionContext, _args: &FuncArgs) -> Result<String> {
+    use crate::sysmod::camera;
+
+    anyhow::ensure!(ctx.privileged, "Permission denied");
+
+    let mut w = camera::PIC_DEF_W;
+    let mut h = camera::PIC_DEF_H;
+    let mut orig = camera::take_a_pic(camera::TakePicOption::new().width(w).height(h)).await?;
+    // サイズ制限に収まるまで小さくする
+    while orig.len() > IMAGE_ORIGINAL_SIZE_MAX {
+        w /= 2;
+        h /= 2;
+        orig = camera::resize(&orig, w, h)?;
+    }
+    let mut preview = orig.clone();
+    while preview.len() > IMAGE_PREVIEW_SIZE_MAX {
+        w /= 2;
+        h /= 2;
+        preview = camera::resize(&preview, w, h)?;
+    }
+    let (url_original, url_preview) = {
+        let mut http = bctx.ctrl.sysmods().http.lock().await;
+
+        (
+            http.export_tmp_data(ContentType::jpeg(), orig)?,
+            http.export_tmp_data(ContentType::jpeg(), preview)?,
+        )
+    };
+    {
+        let line = bctx.ctrl.sysmods().line.lock().await;
+
+        line.push_image_message(&ctx.reply_to, &url_original, &url_preview)
+            .await?;
+    }
+
+    Ok("OK. Now the users can see the picture.".to_string())
 }
 
 #[cfg(test)]

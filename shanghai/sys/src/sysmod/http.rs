@@ -32,6 +32,9 @@ pub struct HttpConfig {
     priv_enabled: bool,
     /// ポート番号。
     port: u16,
+    /// ベース URL。
+    /// e.g. "http://example.com"
+    server_url: String,
     /// ルートパス。
     /// リバースプロキシ条件の URL プレフィクスに合わせること。
     ///
@@ -62,6 +65,7 @@ impl Default for HttpConfig {
             enabled: false,
             priv_enabled: false,
             port: 8899,
+            server_url: "".to_string(),
             path_prefix: "/rhouse".to_string(),
             priv_prefix: "/priv".to_string(),
             upload_enabled: false,
@@ -98,7 +102,12 @@ impl HttpServer {
         })
     }
 
-    pub fn add_tmp_data(&mut self, ctype: ContentType, data: Vec<u8>) {
+    pub fn export_tmp_data(&mut self, ctype: ContentType, data: Vec<u8>) -> Result<String> {
+        anyhow::ensure!(
+            !self.config.server_url.is_empty(),
+            "config server_url is empty"
+        );
+
         let id = loop {
             let id = format!(
                 "{:016x}{:016x}",
@@ -109,10 +118,21 @@ impl HttpServer {
                 break id;
             }
         };
-        self.tmp_data.push_back(TmpElement { id, ctype, data });
+
+        self.tmp_data.push_back(TmpElement {
+            id: id.clone(),
+            ctype,
+            data,
+        });
         while self.tmp_data.len() > Self::TMP_COUNT_MAX {
             self.tmp_data.pop_front();
         }
+
+        let url = format!(
+            "{}{}/tmp/{id}",
+            self.config.server_url, self.config.path_prefix
+        );
+        Ok(url)
     }
 }
 
