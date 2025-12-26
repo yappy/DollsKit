@@ -27,7 +27,7 @@ for PROJ in "${PROJS[@]}" ; do
     python3 "${SCRIPT_DIR}/bkup.py" \
     dockervol \
     --project "${PROJ}" \
-    --dst "${ARCHIVE_DIR}/${PROJ}" \
+    --dst "${ARCHIVE_DIR}" \
     "${VOLUME_ARGS[@]}"
 
     python3 "${SCRIPT_DIR}/bkup.py" \
