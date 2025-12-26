@@ -4,7 +4,7 @@
 # Config (can be overriden by ENVVAR)
 BKUP_MP=${BKUP_MP:-"/mnt/bkup"}
 SRC_DIR=${SRC_DIR:-"/"}
-KEEP_COUNT=${KEEP_COUNT:-"10"}
+KEEP_COUNT=${KEEP_COUNT:-"30"}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
