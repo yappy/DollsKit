@@ -14,4 +14,4 @@ SELF_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SELF_DIR}/../backup
 
 mkdir -p "$(dirname "${LOG_FILE}")"
-"${ROOT}/bkup_growi.sh" >> "${LOG_FILE}" 2>&1
+"${ROOT}/bkup_growi.py" >> "${LOG_FILE}" 2>&1
