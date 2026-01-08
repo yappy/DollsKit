@@ -25,6 +25,8 @@ SERVICE = "mongo"
 
 def exec(cmd: list[str]):
     print("EXEC:", " ".join(cmd))
+    sys.stdout.flush()
+    sys.stderr.flush()
     subprocess.run(cmd, check=True)
 
 
@@ -66,18 +68,19 @@ def clean():
 
 
 def main():
-    # check if the mount point is available
-    exec(["mountpoint", str(BKUP_MP)])
-
-    shutil.rmtree(DUMP_DIR, ignore_errors=True)
-    DUMP_DIR.mkdir(parents=True, exist_ok=True)
-    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-
     print("--------------------------------------------------------------------------------")
     print("START")
     print(datetime.datetime.now())
     print("--------------------------------------------------------------------------------")
 
+    # check if the mount point is available
+    exec(["mountpoint", str(BKUP_MP)])
+    # clean dump dir and mkdir
+    shutil.rmtree(DUMP_DIR, ignore_errors=True)
+    DUMP_DIR.mkdir(parents=True, exist_ok=True)
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # main
     for proj in PROJS:
         dbdump(proj)
     archive()
