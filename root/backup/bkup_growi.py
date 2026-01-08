@@ -25,6 +25,8 @@ SERVICE = "mongo"
 
 def exec(cmd: list[str]):
     print("EXEC:", " ".join(cmd))
+    sys.stdout.flush()
+    sys.stderr.flush()
     subprocess.run(cmd, check=True)
 
 
