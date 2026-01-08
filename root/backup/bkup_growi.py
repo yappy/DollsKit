@@ -41,6 +41,10 @@ def dbdump(proj: str):
         "docker", "compose", "-p", proj, "cp",
         f"{SERVICE}:{ar_path_cont}", ar_path_host
     ])
+    exec([
+        "docker", "compose", "-p", proj, "exec", SERVICE,
+        "rm", ar_path_cont
+    ])
 
 
 def archive():
