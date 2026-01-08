@@ -46,7 +46,7 @@ def main():
 
     for proj in PROJS:
         ar_path_cont = f"/tmp/{proj}.archive"
-        ar_path_host = str(BKUP_DUMP / SERVICE / f"{proj}.archive")
+        ar_path_host = str(BKUP_DUMP / f"{proj}.archive")
         exec(["docker", "compose", "-p", proj, "exec", SERVICE,
               "mongodump", f"--archive={ar_path_cont}"])
         exec(["docker", "compose", "-p", proj, "cp",
