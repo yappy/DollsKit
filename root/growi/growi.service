@@ -1,7 +1,7 @@
 # symbolic link from: /etc/systemd/system/
 
 [Unit]
-Description=Docker GROWI public
+Description=Docker GROWI
 Requires=docker.service
 After=network.target
 
@@ -15,11 +15,11 @@ WorkingDirectory=/root/DollsKit/root/growi
 
 ExecStart=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.public.yaml \
+  -f compose.yaml \
   up
 ExecStop=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.public.yaml \
+  -f compose.yaml \
   down
 Restart=always
 
