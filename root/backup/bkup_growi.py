@@ -19,6 +19,7 @@ SCRIPT_DIR = SELF_DIR / "bkup" / "src"
 BKUP_ROOT = BKUP_MP / "growi"
 DUMP_DIR = BKUP_ROOT / "dump"
 ARCHIVE_DIR = BKUP_ROOT / "archive"
+ARCHIVE_TAG = "growi"
 # target GROWI service (DB)
 SERVICE = "mongo"
 
@@ -55,6 +56,7 @@ def archive():
         "archive",
         "--src", str(DUMP_DIR),
         "--dst", str(ARCHIVE_DIR),
+        "--tag", ARCHIVE_TAG,
     ])
 
 
