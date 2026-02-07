@@ -11,7 +11,7 @@ import subprocess
 # Config (can be overriden by ENVVAR)
 BKUP_MP = pathlib.Path(os.environ.get("BKUP_MP", "/mnt/bkup"))
 KEEP_COUNT = os.environ.get("KEEP_COUNT", "30")
-PROJS = os.environ.get("PROJS", "growi-public growi-private").split()
+PROJS = os.environ.get("PROJS", "growi").split()
 # ------------------------------------------------------------------------------
 
 SELF_DIR = pathlib.Path(os.path.dirname(__file__))
