@@ -1,5 +1,7 @@
 //! LINE API。
 
+#![allow(clippy::identity_op)]
+
 use super::SystemModule;
 use super::openai::{InputContent, ParameterType};
 use super::openai::{
@@ -819,8 +821,12 @@ struct SentMessage {
     quote_token: Option<String>,
 }
 
-const IMAGE_ORIGINAL_SIZE_MAX: usize = 10 * 1000 * 1000;
-const IMAGE_PREVIEW_SIZE_MAX: usize = 1000 * 1000;
+/// 画像サイズ制限。
+/// 仕様ぴったりの 10 MB はスマホの通信料に対して大きすぎるので控えめにする。
+const IMAGE_ORIGINAL_SIZE_MAX: usize = 1 * 1000 * 1000;
+/// プレビュー画像サイズ制限。
+/// 仕様は 1 MB。
+const IMAGE_PREVIEW_SIZE_MAX: usize = 200 * 1000;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
