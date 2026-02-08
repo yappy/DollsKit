@@ -1,5 +1,7 @@
 //! LINE API。
 
+#![allow(clippy::identity_op)]
+
 use super::SystemModule;
 use super::openai::{InputContent, ParameterType};
 use super::openai::{

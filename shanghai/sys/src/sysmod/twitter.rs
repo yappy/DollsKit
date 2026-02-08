@@ -385,8 +385,11 @@ impl Twitter {
             info!("reply to: {name}");
 
             // post_image_if_long が有効で文字数オーバーの場合、画像にして投稿する
-            if self.font.is_some() && post_image_if_long && text.chars().count() > TWEET_LEN_MAX {
-                let pngbin = self.font.as_ref().unwrap().draw_multiline_text(
+            if let Some(font) = &self.font
+                && post_image_if_long
+                && text.chars().count() > TWEET_LEN_MAX
+            {
+                let pngbin = font.draw_multiline_text(
                     LONG_TWEET_FGCOLOR,
                     LONG_TWEET_BGCOLOR,
                     &text,
