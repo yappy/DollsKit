@@ -38,7 +38,7 @@ image.workspace = true
 actix-web = "4.12.1"
 actix-multipart = "0.7.2"
 # Discord
-serenity = "0.12.4"
+serenity = "0.12.5"
 poise = "0.6.1"
 
 # ChatGPT tokenizer
