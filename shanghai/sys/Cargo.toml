@@ -38,7 +38,7 @@ image.workspace = true
 actix-web = "4.13.0"
 actix-multipart = "0.7.2"
 # Discord
-serenity = "0.12.5"
+serenity = { version = "0.12.5", default-features = false }
 poise = "0.6.1"
 
 # ChatGPT tokenizer
