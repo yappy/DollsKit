@@ -14,7 +14,7 @@ use base64::{Engine as _, engine::general_purpose};
 use chrono::NaiveTime;
 use log::warn;
 use log::{debug, info};
-use rand::Rng;
+use rand::RngExt;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
