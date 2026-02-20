@@ -10,7 +10,7 @@ utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true
-bitflags = "2.10.0"
+bitflags = "2.11.0"
 rand.workspace = true
 regex.workspace = true
 log.workspace = true
@@ -35,7 +35,7 @@ base64 = "0.22.1"
 image.workspace = true
 
 # HTTP server
-actix-web = "4.12.1"
+actix-web = "4.13.0"
 actix-multipart = "0.7.2"
 # Discord
 serenity = "0.12.5"
