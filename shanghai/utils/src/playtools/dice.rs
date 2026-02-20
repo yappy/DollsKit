@@ -3,7 +3,7 @@
 //! コインフリップにも応用可能。
 
 use anyhow::{Result, ensure};
-use rand::Rng;
+use rand::RngExt;
 use static_assertions::const_assert;
 
 /// ダイスの面数の最大値。
