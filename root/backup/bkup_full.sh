@@ -6,8 +6,8 @@ BKUP_MP=${BKUP_MP:-"/mnt/bkup"}
 SRC_DIR=${SRC_DIR:-"/"}
 KEEP_COUNT=${KEEP_COUNT:-"30"}
 # Cloud upload (rclone) settings: set RCLONE_REMOTE to enable upload
-RCLONE_REMOTE=${RCLONE_REMOTE:-""}
-RCLONE_DST=${RCLONE_DST:-""}
+RCLONE_REMOTE=${RCLONE_REMOTE:-"pcloud_enc"}
+RCLONE_DST=${RCLONE_DST:-$(uname -n)/full}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
