@@ -15,4 +15,4 @@ SELF_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SELF_DIR}/../backup
 
 mkdir -p "$(dirname "${LOG_FILE}")"
-"${ROOT}/bkup_full.sh" 2>&1 | tee -a "${LOG_FILE}"
+"${ROOT}/bkup_full.py" 2>&1 | tee -a "${LOG_FILE}"
