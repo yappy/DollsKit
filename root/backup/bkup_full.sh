@@ -1,4 +1,5 @@
 #!/bin/bash -eu
+# -e: Exit if any command returns a non-zero status.
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
@@ -8,6 +9,7 @@ KEEP_COUNT=${KEEP_COUNT:-"30"}
 # Cloud upload (rclone) settings: set RCLONE_REMOTE to enable upload
 RCLONE_REMOTE=${RCLONE_REMOTE:-"pcloud_enc"}
 RCLONE_DST=${RCLONE_DST:-$(uname -n)/full}
+RCLONE_KEEP_COUNT=${RCLONE_KEEP_COUNT:-"5"}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
@@ -52,9 +54,9 @@ if [ -n "${RCLONE_REMOTE:-}" ]; then
 
     python3 "${SCRIPT_DIR}/bkup.py" \
     cloudclean \
-    --src "${ARCHIVE_DIR}" \
     --remote "${RCLONE_REMOTE}" \
-    --dst "${RCLONE_DST}"
+    --dst "${RCLONE_DST}" \
+    --keep-count "${RCLONE_KEEP_COUNT}"
 fi
 
 echo END
