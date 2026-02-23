@@ -5,6 +5,9 @@
 BKUP_MP=${BKUP_MP:-"/mnt/bkup"}
 SRC_DIR=${SRC_DIR:-"/"}
 KEEP_COUNT=${KEEP_COUNT:-"30"}
+# Cloud upload (rclone) settings: set RCLONE_REMOTE to enable upload
+RCLONE_REMOTE=${RCLONE_REMOTE:-""}
+RCLONE_DST=${RCLONE_DST:-""}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
@@ -39,7 +42,21 @@ clean \
 --dst "${ARCHIVE_DIR}" \
 --keep-count "${KEEP_COUNT}"
 
-echo --------------------------------------------------------------------------------
+# Upload to cloud if RCLONE_REMOTE is not empty
+if [ -n "${RCLONE_REMOTE:-}" ]; then
+    python3 "${SCRIPT_DIR}/bkup.py" \
+    cloud \
+    --src "${ARCHIVE_DIR}" \
+    --remote "${RCLONE_REMOTE}" \
+    --dst "${RCLONE_DST}"
+
+    python3 "${SCRIPT_DIR}/bkup.py" \
+    cloudclean \
+    --src "${ARCHIVE_DIR}" \
+    --remote "${RCLONE_REMOTE}" \
+    --dst "${RCLONE_DST}"
+fi
+
 echo END
 date -R
 echo --------------------------------------------------------------------------------
