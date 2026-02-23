@@ -21,6 +21,7 @@ RCLONE_KEEP_COUNT = os.environ.get("RCLONE_KEEP_COUNT", "30")
 
 SELF_DIR = pathlib.Path(os.path.dirname(__file__))
 SCRIPT_DIR = SELF_DIR / "bkup" / "src"
+
 BKUP_ROOT = BKUP_MP / "growi"
 DUMP_DIR = BKUP_ROOT / "dump"
 ARCHIVE_DIR = BKUP_ROOT / "archive"
@@ -29,7 +30,7 @@ ARCHIVE_TAG = "growi"
 SERVICE = "mongo"
 
 
-def exec(cmd: list[str]):
+def exec_cmd(cmd: list[str]):
     print("EXEC:", " ".join(cmd))
     sys.stdout.flush()
     sys.stderr.flush()
@@ -41,22 +42,22 @@ def exec(cmd: list[str]):
 def dbdump(proj: str):
     ar_path_cont = f"/tmp/{proj}.archive"
     ar_path_host = str(DUMP_DIR / f"{proj}.archive")
-    exec([
+    exec_cmd([
         "docker", "compose", "-p", proj, "exec", SERVICE,
         "mongodump", "--quiet", f"--archive={ar_path_cont}"
     ])
-    exec([
+    exec_cmd([
         "docker", "compose", "-p", proj, "cp",
         f"{SERVICE}:{ar_path_cont}", ar_path_host
     ])
-    exec([
+    exec_cmd([
         "docker", "compose", "-p", proj, "exec", SERVICE,
         "rm", ar_path_cont
     ])
 
 
 def archive():
-    exec([
+    exec_cmd([
         sys.executable, str(SCRIPT_DIR / "bkup.py"),
         "archive",
         "--src", str(DUMP_DIR),
@@ -66,7 +67,7 @@ def archive():
 
 
 def clean():
-    exec([
+    exec_cmd([
         sys.executable, str(SCRIPT_DIR / "bkup.py"),
         "clean",
         "--dst", str(DUMP_DIR),
@@ -75,7 +76,7 @@ def clean():
 
 
 def cloud():
-    exec([
+    exec_cmd([
         sys.executable, str(SCRIPT_DIR / "bkup.py"),
         "cloud",
         "--src", str(ARCHIVE_DIR),
@@ -85,7 +86,7 @@ def cloud():
 
 
 def cloud_clean():
-    exec([
+    exec_cmd([
         sys.executable, str(SCRIPT_DIR / "bkup.py"),
         "cloudclean",
         "--remote", RCLONE_REMOTE,
@@ -101,7 +102,7 @@ def main():
     print("--------------------------------------------------------------------------------")
 
     # check if the mount point is available
-    exec(["mountpoint", str(BKUP_MP)])
+    exec_cmd(["mountpoint", str(BKUP_MP)])
     # clean dump dir and mkdir
     shutil.rmtree(DUMP_DIR, ignore_errors=True)
     DUMP_DIR.mkdir(parents=True, exist_ok=True)
