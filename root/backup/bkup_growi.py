@@ -12,6 +12,11 @@ import subprocess
 BKUP_MP = pathlib.Path(os.environ.get("BKUP_MP", "/mnt/bkup"))
 KEEP_COUNT = os.environ.get("KEEP_COUNT", "30")
 PROJS = os.environ.get("PROJS", "growi").split()
+# Cloud upload (rclone) settings: set RCLONE_REMOTE to enable upload
+# Disabled if RCLONE_REMOTE is empty
+RCLONE_REMOTE = os.environ.get("RCLONE_REMOTE", "pcloud_enc")
+RCLONE_DST = os.environ.get("RCLONE_DST", f"{os.uname().nodename}/growi")
+RCLONE_KEEP_COUNT = os.environ.get("RCLONE_KEEP_COUNT", "30")
 # ------------------------------------------------------------------------------
 
 SELF_DIR = pathlib.Path(os.path.dirname(__file__))
@@ -69,6 +74,26 @@ def clean():
     ])
 
 
+def cloud():
+    exec([
+        sys.executable, str(SCRIPT_DIR / "bkup.py"),
+        "cloud",
+        "--src", str(ARCHIVE_DIR),
+        "--remote", RCLONE_REMOTE,
+        "--dst", RCLONE_DST,
+    ])
+
+
+def cloud_clean():
+    exec([
+        sys.executable, str(SCRIPT_DIR / "bkup.py"),
+        "cloudclean",
+        "--remote", RCLONE_REMOTE,
+        "--dst", RCLONE_DST,
+        "--keep-count", RCLONE_KEEP_COUNT,
+    ])
+
+
 def main():
     print("--------------------------------------------------------------------------------")
     print("START")
@@ -87,6 +112,9 @@ def main():
         dbdump(proj)
     archive()
     clean()
+    if RCLONE_REMOTE:
+        cloud()
+        cloud_clean()
 
     print("--------------------------------------------------------------------------------")
     print("END")
