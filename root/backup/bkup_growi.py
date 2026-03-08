@@ -37,9 +37,32 @@ def exec_cmd(cmd: list[str]):
     subprocess.run(cmd, check=True)
 
 
+def dbdump(proj: str):
+    service = f"{proj}.service"
+    service_manintance = f"{proj}-maintenance.service"
+
+    exec_cmd([
+        "systemctl", "stop", service
+    ])
+    try:
+        exec_cmd([
+            "systemctl", "start", service_manintance
+        ])
+        try:
+            dbdump_main(proj)
+        finally:
+            exec_cmd([
+                "systemctl", "stop", service_manintance
+            ])
+    finally:
+        exec_cmd([
+            "systemctl", "start", service
+        ])
+
+
 # mongodump > /tmp/{proj}.archive (in the container)
 # docker compose cp to the host
-def dbdump(proj: str):
+def dbdump_main(proj: str):
     ar_path_cont = f"/tmp/{proj}.archive"
     ar_path_host = str(DUMP_DIR / f"{proj}.archive")
     exec_cmd([
