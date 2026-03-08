@@ -69,6 +69,7 @@ def wait_for_mongo(proj: str):
 
     find = False
     for _ in range(TIMEOUT_SEC):
+        print(f"Waiting for {SERVICE} ...")
         proc = subprocess.run([
             "docker", "compose", "-p", proj, "ps", "--format", "json"
         ], check=True, text=True, stdout=subprocess.PIPE)
@@ -77,7 +78,8 @@ def wait_for_mongo(proj: str):
             if obj["Image"].startswith(f"{SERVICE}:") and obj["State"] == "running":
                 find = True
                 break
-        print(f"Waiting for {SERVICE} ...")
+        if find:
+            break
         time.sleep(1)
     if not find:
         raise RuntimeError(f"Timeout {TIMEOUT_SEC} sec: {SERVICE} is not running")
