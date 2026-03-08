@@ -6,6 +6,8 @@ import datetime
 import pathlib
 import shutil
 import subprocess
+import json
+import time
 
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
@@ -49,6 +51,7 @@ def dbdump(proj: str):
             "systemctl", "start", service_manintance
         ])
         try:
+            wait_for_mongo(proj)
             dbdump_main(proj)
         finally:
             exec_cmd([
@@ -58,6 +61,26 @@ def dbdump(proj: str):
         exec_cmd([
             "systemctl", "start", service
         ])
+
+
+# wait for mongo to be ready
+def wait_for_mongo(proj: str):
+    TIMEOUT_SEC = 10
+
+    find = False
+    for _ in range(TIMEOUT_SEC):
+        proc = subprocess.run([
+            "docker", "compose", "-p", proj, "ps", "--format", "json"
+        ], check=True, text=True, stdout=subprocess.PIPE)
+        for line in proc.stdout.splitlines():
+            obj = json.loads(line)
+            if obj["Image"].startswith(f"{SERVICE}:") and obj["State"] == "running":
+                find = True
+                break
+        print(f"Waiting for {SERVICE} ...")
+        time.sleep(1)
+    if not find:
+        raise RuntimeError(f"Timeout {TIMEOUT_SEC} sec: {SERVICE} is not running")
 
 
 # mongodump > /tmp/{proj}.archive (in the container)
