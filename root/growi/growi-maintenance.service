@@ -1,10 +1,10 @@
 # symbolic link from: /etc/systemd/system/
 
 [Unit]
-Description=Docker GROWI
+Description=Docker GROWI (Maintenance Mode - MongoDB only)
 Requires=docker.service
 After=network.target
-Conflicts=growi-maintenance.service
+Conflicts=growi.service
 
 [Service]
 # compose up -d is not needed
@@ -16,11 +16,13 @@ WorkingDirectory=/root/DollsKit/root/growi
 ExecStart=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
   -f compose.yaml \
-  up
+  up mongo
+
 ExecStop=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
   -f compose.yaml \
   down
+
 Restart=always
 
 [Install]

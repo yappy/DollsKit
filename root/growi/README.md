@@ -37,9 +37,18 @@ git config --global submodule.recurse true
 
 `/etc/systemd/system/` に `*.service` という名前で設定ファイルを置く。
 シンボリックリンクも既に置かれていたので多分大丈夫。
-編集後はリロードが必要。
+編集後はリロード `systemctl daemon-reload` が必要。
 
-下記の `enable` `disable` で自動起動を設定できる。
+`enable` `disable` で自動起動を設定できる。
+
+```sh
+# シンボリックリンクを置く
+cd /etc/systemd/system
+ln -s path/to/growi.service
+ln -s path/to/growi-maintenance.service
+# 自動起動設定
+systemctl enable growi.service
+```
 
 ### systemctl
 
@@ -72,6 +81,21 @@ git config --global submodule.recurse true
   * 更新を表示し続ける。(`tail -f` みたいなの)
 
 ## バックアップ
+
+### メンテナンスモード
+
+動いている最中に `mongorestore` したりすると変になった (残念だが当然) ので、
+バックアップリストアは安全な停止状態で行う。
+必要なのは mongodb のコンテナのみなので、`growi-maintenance.service` を
+用意してある。
+systemd サービス定義で `Conflicts` を指定してあるので、片方を起動しようとすると
+その前にもう片方は自動的に終了する。
+
+```sh
+systemctl start growi-maintenance.service
+# 終わったら
+systemctl start growi.service
+```
 
 ### ボリューム
 
