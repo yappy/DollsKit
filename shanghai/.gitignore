@@ -1,10 +1,4 @@
 /target
-/*.sh
-/cron.txt
-/*.pid
-/std*.txt
-/*.log
-/config*.*
 /camera
 /upload
 /aimemory
