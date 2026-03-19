@@ -8,6 +8,7 @@ use std::fs::OpenOptions;
 use std::fs::remove_file;
 use std::io::{Read, Write};
 use std::os::unix::prelude::*;
+use std::path::Path;
 use std::sync::RwLock;
 
 use crate::sysmod::camera::CameraConfig;
@@ -18,11 +19,11 @@ use crate::sysmod::line::LineConfig;
 use crate::sysmod::openai::OpenAiConfig;
 use crate::sysmod::twitter::TwitterConfig;
 
-/// ロードする設定ファイルパス。
+/// ロードする設定ファイル。
 const CONFIG_FILE: &str = "config.toml";
-/// デフォルト設定の出力パス。
+/// デフォルト設定の出力ファイル名。
 const CONFIG_DEF_FILE: &str = "config_default.toml";
-/// 現在設定の出力パス。
+/// 現在設定の出力ファイル名。
 const CONFIG_CUR_FILE: &str = "config_current.toml";
 
 /// 設定データ(グローバル変数)。
@@ -48,12 +49,21 @@ pub struct Config {
 }
 
 /// 設定データをロードする。
-pub fn load() -> Result<()> {
+pub fn load(dir: &Path) -> Result<()> {
+    let config_path = dir.join(CONFIG_FILE);
+    let config_def_path = dir.join(CONFIG_DEF_FILE);
+    let config_cur_path = dir.join(CONFIG_CUR_FILE);
+
+    info!("log directory: {}", dir.to_string_lossy());
+    std::fs::create_dir_all(dir)?;
     {
         // デフォルト設定ファイルを削除する
         info!("remove {CONFIG_DEF_FILE}");
-        if let Err(e) = remove_file(CONFIG_DEF_FILE) {
-            warn!("removing {CONFIG_DEF_FILE} failed (the first time execution?): {e}");
+        if let Err(e) = remove_file(&config_def_path) {
+            warn!(
+                "removing {} failed (the first time execution?): {e}",
+                config_def_path.to_string_lossy()
+            );
         }
         // デフォルト設定を書き出す
         // permission=600 でアトミックに必ず新規作成する、失敗したらエラー
@@ -64,7 +74,7 @@ pub fn load() -> Result<()> {
             .write(true)
             .create_new(true)
             .mode(0o600)
-            .open(CONFIG_DEF_FILE)
+            .open(config_def_path)
             .with_context(|| format!("Failed to open {CONFIG_DEF_FILE}"))?;
         f.write_all(main_toml.as_bytes())
             .with_context(|| format!("Failed to write {CONFIG_DEF_FILE}"))?;
@@ -78,7 +88,7 @@ pub fn load() -> Result<()> {
         info!("loading config: {CONFIG_FILE}");
         let mut f = OpenOptions::new()
             .read(true)
-            .open(CONFIG_FILE)
+            .open(&config_path)
             .with_context(|| format!("Failed to open {CONFIG_FILE} (the first execution?)"))
             .with_context(|| {
                 format!("HINT: Copy {CONFIG_DEF_FILE} to {CONFIG_FILE} and try again")
@@ -109,7 +119,7 @@ pub fn load() -> Result<()> {
     {
         // 現在設定ファイルを削除する
         info!("remove {CONFIG_CUR_FILE}");
-        if let Err(e) = remove_file(CONFIG_CUR_FILE) {
+        if let Err(e) = remove_file(&config_cur_path) {
             warn!("removing {CONFIG_CUR_FILE} failed (the first time execution?): {e}");
         }
         // 現在設定を書き出す
@@ -120,7 +130,7 @@ pub fn load() -> Result<()> {
             .write(true)
             .create_new(true)
             .mode(0o600)
-            .open(CONFIG_CUR_FILE)
+            .open(&config_cur_path)
             .with_context(|| format!("Failed to open {CONFIG_CUR_FILE}"))?;
         f.write_all(main_toml.as_bytes())
             .with_context(|| format!("Failed to write {CONFIG_CUR_FILE}"))?;
