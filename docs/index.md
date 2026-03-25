@@ -1,25 +1,5 @@
 # yappy 家の管理システム
 
-## ノート
-
-* Raspberry Pi
-  * [Raspberry Pi セットアップ](./note/setup_pi.md)
-  * [Raspberry Pi バックアップからの復旧](./note/recovery.md)
-* Linux
-  * [ユーザ管理](./note/user.md)
-  * [追加ストレージ](./note/storage.md)
-  * [systemd](./note/systemd.md)
-  * [Docker](./note/docker.md)
-* Windows
-  * [SSH トンネルとリモートデスクトップ、Wake on LAN](./note/remote.md)
-* Rust
-  * [Rust ツール類](./note/rust_tools.md)
-  * [Rust テクニカルノート](./note/rust_technote.md)
-* OpenAI
-  * [OpenAI API ノート](./note/openai.md)
-* Twitter (旧情報)
-  * [Twitter API ノート](./note/twitter.md)
-
 ## 管理プログラム
 
 <!--
@@ -54,3 +34,22 @@ HTTP サーバとして lighttpd を稼働。
 ## 自動アップデート
 
 unattended-upgrades によりセキュリティアップデートを自動的に適用し再起動する。
+
+## ノート
+
+* Raspberry Pi
+  * [Raspberry Pi セットアップ](./note/rpi_linux/setup_pi.md)
+  * [Raspberry Pi バックアップからの復旧](./note/rpi_linux/recovery.md)
+* Linux
+  * [ユーザ管理](./note/rpi_linux/user.md)
+  * [追加ストレージ](./note/rpi_linux/storage.md)
+  * [systemd](./note/rpi_linux/systemd.md)
+  * [Docker](./note/rpi_linux/docker.md)
+* Windows
+  * [SSH トンネルとリモートデスクトップ、Wake on LAN](./note/windows/remote.md)
+* Rust
+  * [Rust ツール類](./note/rust/tools.md)
+  * [Rust テクニカルノート](./note/rust/technote.md)
+* Web API
+  * [OpenAI API ノート](./note/webapi/openai.md)
+  * (旧情報) [Twitter API ノート](./note/webapi/twitter.md)
