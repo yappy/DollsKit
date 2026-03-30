@@ -157,6 +157,8 @@ fn create_systemd_files() -> Result<()> {
     let exe = exe.to_str().context("Invalid UTF-8")?;
     let cd = env::current_dir()?;
     let cd = cd.to_str().context("Invalid UTF-8")?;
+    let home = utils::dir::home_dir()?;
+    let home = home.to_str().context("Invalid UTF-8")?;
 
     let user = users::get_user_by_uid(users::get_current_uid()).context("Cannot get user name")?;
     let user = user.name().to_str().context("Invalid UTF-8 in user name")?;
@@ -182,6 +184,7 @@ Type=simple
 Restart=always
 User={user}
 Group={group}
+Environment=HOME={home}
 WorkingDirectory={cd}
 ExecStart={exe}
 # ExecStop default: SYGTERM

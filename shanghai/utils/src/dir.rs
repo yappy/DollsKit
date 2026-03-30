@@ -5,6 +5,13 @@ use std::path::PathBuf;
 
 const APP_NAME: &str = "shanghai";
 
+/// $HOME
+pub fn home_dir() -> Result<PathBuf> {
+    let home_dir = dirs::home_dir().context("Cannot get home dir")?;
+
+    Ok(home_dir)
+}
+
 /// e.g. `$HOME/.config/shanghai`
 ///
 /// https://specifications.freedesktop.org/basedir/latest/
