@@ -162,8 +162,12 @@ fn create_systemd_files() -> Result<()> {
 
     let user = users::get_user_by_uid(users::get_current_uid()).context("Cannot get user name")?;
     let user = user.name().to_str().context("Invalid UTF-8 in user name")?;
-    let group = users::get_group_by_gid(users::get_current_gid()).context("Cannot get group name")?;
-    let group = group.name().to_str().context("Invalid UTF-8 in group name")?;
+    let group =
+        users::get_group_by_gid(users::get_current_gid()).context("Cannot get group name")?;
+    let group = group
+        .name()
+        .to_str()
+        .context("Invalid UTF-8 in group name")?;
 
     const TIMEOUT_STOP_SEC: u32 = 20;
 
