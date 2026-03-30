@@ -17,5 +17,6 @@ chrono.workspace = true
 
 # Command line parser
 getopts = "0.2.24"
+users = "0.11.0"
 
 [dev-dependencies]
