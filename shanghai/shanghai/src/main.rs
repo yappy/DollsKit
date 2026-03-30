@@ -83,13 +83,13 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
     let now = now.format("%F %T %:z");
     let msg = format!("[{now}] Boot...\n{build_info}");
 
-    {
+    /*{
         let mut twitter = ctrl.sysmods().twitter.lock().await;
         if let Err(why) = twitter.tweet(&msg).await {
             error!("error on tweet");
             error!("{why:#?}");
         }
-    }
+    }*/
     {
         let mut discord = ctrl.sysmods().discord.lock().await;
         if let Err(why) = discord.say(&msg).await {
