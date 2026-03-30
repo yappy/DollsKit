@@ -1,5 +1,6 @@
 //! 各種ユーティリティ。
 
+pub mod dir;
 pub mod game;
 pub mod graphics;
 pub mod netutil;

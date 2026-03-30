@@ -8,6 +8,7 @@ description.workspace = true
 [dependencies]
 customlog.workspace = true
 sys.workspace = true
+utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true

@@ -54,7 +54,7 @@ pub fn load(dir: &Path) -> Result<()> {
     let config_def_path = dir.join(CONFIG_DEF_FILE);
     let config_cur_path = dir.join(CONFIG_CUR_FILE);
 
-    info!("log directory: {}", dir.to_string_lossy());
+    info!("config directory: {}", dir.to_string_lossy());
     std::fs::create_dir_all(dir)?;
     {
         // デフォルト設定ファイルを削除する

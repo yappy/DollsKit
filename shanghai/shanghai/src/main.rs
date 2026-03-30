@@ -6,12 +6,11 @@
 // private も含めた実装の解説のために生成する。
 #![allow(rustdoc::private_intra_doc_links)]
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use customlog::{ConsoleLogger, FileLogger, FlushGuard, RotateOptions, RotateSize};
 use getopts::Options;
 use log::{LevelFilter, error, info};
 use std::env;
-use std::path::PathBuf;
 use sys::sysmod::SystemModules;
 use sys::taskserver::{Control, RunResult, TaskServer};
 
@@ -44,7 +43,7 @@ fn init_log(verbose: bool) -> Result<FlushGuard> {
         ..Default::default()
     };
 
-    let log_dir = cache_dir()?;
+    let log_dir = utils::dir::cache_dir()?;
     let file_path = log_dir.join(FILE_LOG);
     let file_log = FileLogger::new_boxed(
         LevelFilter::Info,
@@ -111,7 +110,7 @@ async fn boot_msg_task(ctrl: Control) -> Result<()> {
 /// * SIGUSR1: ログのフラッシュ
 /// * SIGUSR2: なし
 fn system_main() -> Result<()> {
-    let config_dir = config_dir()?;
+    let config_dir = utils::dir::config_dir()?;
 
     let sigusr1 = || {
         info!("Flush log");
@@ -147,36 +146,6 @@ fn system_main() -> Result<()> {
     }
 
     Ok(())
-}
-
-/// e.g. `$HOME/.config/shanghai`
-///
-/// https://specifications.freedesktop.org/basedir/latest/
-fn config_dir() -> Result<PathBuf> {
-    let xdg = if let Ok(dir) = std::env::var("XDG_CONFIG_HOME") {
-        dir.into()
-    } else if let Some(home) = std::env::home_dir() {
-        home.join(".config")
-    } else {
-        bail!("Cannot decide config dir. Confirm envvar HOME or XDG_CONFIG_HOME")
-    };
-
-    Ok(xdg.join(env!("CARGO_CRATE_NAME")))
-}
-
-/// e.g. `$HOME/.cache/shanghai`
-///
-/// https://specifications.freedesktop.org/basedir/latest/
-fn cache_dir() -> Result<PathBuf> {
-    let xdg = if let Ok(dir) = std::env::var("XDG_CACHE_HOME") {
-        dir.into()
-    } else if let Some(home) = std::env::home_dir() {
-        home.join(".cache")
-    } else {
-        bail!("Cannot decide cache dir. Confirm envvar HOME or XDG_CACHE_HOME")
-    };
-
-    Ok(xdg.join(env!("CARGO_CRATE_NAME")))
 }
 
 /// コマンドラインのヘルプを表示する。
