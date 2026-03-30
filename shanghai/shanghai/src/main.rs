@@ -6,7 +6,7 @@
 // private も含めた実装の解説のために生成する。
 #![allow(rustdoc::private_intra_doc_links)]
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use customlog::{ConsoleLogger, FileLogger, FlushGuard, RotateOptions, RotateSize};
 use getopts::Options;
 use log::{LevelFilter, error, info};
@@ -16,11 +16,12 @@ use sys::taskserver::{Control, RunResult, TaskServer};
 
 /// ログのファイル出力先。
 const FILE_LOG: &str = "shanghai.log";
-
 const LOG_FILTER: &[&str] = &[module_path!(), "sys"];
 const LOG_ROTATE_SIZE: usize = 1024 * 1024;
 const LOG_ROTATE_COUNT: u16 = 10;
 const LOG_BUF_SIZE: usize = 64 * 1024;
+
+const FILE_SYSTEMD_SERVICE: &str = "shanghai.service";
 
 fn log_target_filter(target: &str) -> bool {
     LOG_FILTER.iter().any(|filter| target.starts_with(filter))
@@ -148,6 +149,42 @@ fn system_main() -> Result<()> {
     Ok(())
 }
 
+fn create_systemd_files() -> Result<()> {
+    let dir = utils::dir::share_dir()?;
+    let file_path = dir.join(FILE_SYSTEMD_SERVICE);
+
+    let exe = env::current_exe()?;
+    let exe = exe.to_str().context("Invalid UTF-8")?;
+    let cd = env::current_dir()?;
+    let cd = cd.to_str().context("Invalid UTF-8")?;
+    const TIMEOUT_STOP_SEC: u32 = 20;
+
+    let src = format!(
+        "\
+Description=House Management System
+After=network.service
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory={cd}
+ExecStart={exe}
+# ExecStop default: SYGTERM
+TimeoutStopSec={TIMEOUT_STOP_SEC}
+ExecReload=/bin/kill -s SIGUSR1 $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+"
+    );
+
+    log::info!("systemd service: {}", file_path.to_string_lossy());
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(&file_path, src)?;
+
+    Ok(())
+}
+
 /// コマンドラインのヘルプを表示する。
 ///
 /// * `program` - プログラム名 (argv\[0\])。
@@ -161,8 +198,6 @@ fn print_help(program: &str, opts: Options) {
 ///
 /// コマンドラインとデーモン化、ログの初期化処理をしたのち、[system_main] を呼ぶ。
 pub fn main() -> Result<()> {
-    //create_run_script()?;
-
     // コマンドライン引数のパース
     let args: Vec<String> = env::args().collect();
     let program = &args[0];
@@ -187,6 +222,7 @@ pub fn main() -> Result<()> {
     let verbose = matches.opt_present("v");
 
     let _flush = init_log(verbose)?;
+    create_systemd_files()?;
 
     system_main().map_err(|e| {
         error!("Error in system_main");
