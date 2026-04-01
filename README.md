@@ -40,6 +40,18 @@ Stable 版の Rust 環境があればビルドできるはず。
 
 ## 管理プログラムの実行開始
 
+### ディレクトリ
+
+`$HOME` 相対で以下のディレクトリが使われます。
+XDG 仕様に従い、`$XDG_*` 環境変数が存在すればそちらが優先して使われます。
+
+* 設定ファイル
+  * `$XDG_CONFIG_HOME` > `$HOME/.config`
+* ログファイル
+  * `$XDG_CACHE_HOME` > `$HOME/.cache`
+* systemd サービス定義ファイル
+  * `$XDG_DATA_HOME` > `$HOME/.local/share`
+
 ### 仮実行
 
 ```sh
@@ -57,6 +69,7 @@ cargo r -r
 存在しないキーはデフォルトファイルの内容が使われます。
 
 ```sh
+cd ~/.config/shanghai
 cp config_default.toml config.toml
 ```
 
@@ -76,25 +89,9 @@ sudo apt install fonts-ipafont
 cargo run --release
 # or
 cargo r -r
-```
 
-### daemon として実行
-
-`--daemon` オプション付きで実行します。
-
-```sh
-cargo run --release -- --daemon
-or
-cargo r -r -- --daemon
-```
-
-ただし、`--daemon` なしでもよいので一度実行すると `exec.sh`, `kill.sh` が
-生成されるので、そちらを実行する方が便利です。
-
-```sh
-./exec.sh
-
-./kill.sh
+# コンソールへの出力を詳しくする
+cargo run --release -- -v
 ```
 
 ### シグナル
@@ -111,10 +108,30 @@ cargo r -r -- --daemon
 
 ## システム起動時に自動起動
 
-一度実行すると `cron.txt` ができます。
+一度実行するとデータディレクトリ `$HOME/.local/share` に systemd 用の
+ファイルができます。
+中に書かれているコメントに従って `/etc/systemd/system/` 内にシンボリックリンクを
+作成し、リロードすると `shanghai.service` が利用できるようになります。
 
 ```sh
-crontab < cron.txt
+cd /etc/systemd/system
+ln -s path/to/shanghai.service
+systemctl daemon-reload
+```
+
+```sh
+# systemd 管理下のサービスとして起動と終了
+systemctl start shanghai
+systemctl status shanghai
+systemctl stop shanghai
+# ログ (stdout/stderr) の確認
+journalctl -u shanghai
+```
+
+systemd サービスとして使用可能になったら、enable コマンドで自動起動を有効化できます。
+
+```sh
+systemctl enable shanghai
 ```
 
 ## 設定ファイル (config.toml) のヘルプ

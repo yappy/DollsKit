@@ -138,7 +138,7 @@ mdbook-mermaid v0.15.0:
 全部一括でやってくれるコマンド。
 
 ```sh
-cargo install install-update
+cargo install cargo-update
 ```
 
 ```sh

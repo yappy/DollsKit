@@ -8,15 +8,15 @@ description.workspace = true
 [dependencies]
 customlog.workspace = true
 sys.workspace = true
+utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true
 log.workspace = true
 chrono.workspace = true
 
-# Daemon util
-daemonize = "0.5.0"
 # Command line parser
 getopts = "0.2.24"
+users = "0.11.0"
 
 [dev-dependencies]
