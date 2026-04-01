@@ -1,12 +1,12 @@
-name: growi-private
+name: growi
 
 services:
   app:
     ports: !override
-      - 127.0.0.1:3001:3000    # localhost only by default
+      - 127.0.0.1:3000:3000    # localhost only by default
     environment:
       # !!!!! Replace this with your own URL !!!!!
-      - APP_SITE_URL=https://home.yappy.mydns.jp
+      - APP_SITE_URL=https://wiki.yappy.mydns.jp
       - DEFAULT_EMAIL_PUBLISHED=false
 
       - FILE_UPLOAD=mongodb   # activate this line if you use MongoDB GridFS rather than AWS

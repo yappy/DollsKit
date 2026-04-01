@@ -1,12 +1,12 @@
 # symbolic link from: /etc/systemd/system/
 
 [Unit]
-Description=Docker GROWI private
+Description=Docker GROWI
 Requires=docker.service
 After=network.target
+Conflicts=growi-maintenance.service
 
 [Service]
-# service process = ExecStart
 # compose up -d is not needed
 Type=simple
 
@@ -15,11 +15,11 @@ WorkingDirectory=/root/DollsKit/root/growi
 
 ExecStart=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.private.yaml \
+  -f compose.yaml \
   up
 ExecStop=/usr/bin/docker compose \
   -f growi-docker-compose/docker-compose.yml \
-  -f compose.private.yaml \
+  -f compose.yaml \
   down
 Restart=always
 
