@@ -1,5 +1,32 @@
 # systemd
 
+## テンプレート
+
+```ini
+# man systemd.unit
+
+[Unit]
+Description=This is a sample
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=<path_to_executable>
+# ExecReload=
+# ExecStop=
+# Restart=no/on-success/on-failure/always
+# RestartSec=
+# TimeoutStartSec=
+# TimeoutStopSec=
+# WorkingDirectory=
+# User=
+# Group=
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ## 背景と概要
 
 systemd は init プロセス (カーネル初期化後に生成される最初のユーザプロセス)
