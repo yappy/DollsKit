@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["APP_NAME"],"fn":["cache_dir","config_dir","home_dir","share_dir"]};
