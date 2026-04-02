@@ -37,7 +37,7 @@ regex = "1.12.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 serde_with = { version = "3.18.0", features = ["json"] }
-toml = "1.1.1"
+toml = "1.1.2"
 
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.18"

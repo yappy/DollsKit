@@ -24,9 +24,9 @@ reqwest.workspace = true
 # URL encode
 percent-encoding = "2.3.2"
 # HMAC
-hmac = "0.12.1"
-sha1 = "0.10.6"
-sha2 = "0.10.9"
+hmac = "0.13.0"
+sha1 = "0.11.0"
+sha2 = "0.11.0"
 
 # Image convert
 image.workspace = true
