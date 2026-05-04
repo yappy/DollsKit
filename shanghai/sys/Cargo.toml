@@ -10,7 +10,7 @@ utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true
-bitflags = "2.11.0"
+bitflags = "2.11.1"
 rand.workspace = true
 regex.workspace = true
 log.workspace = true
@@ -39,7 +39,7 @@ actix-web = "4.13.0"
 actix-multipart = "0.7.2"
 # Discord
 serenity = { version = "0.12.5", default-features = false }
-poise = "0.6.1"
+poise = "0.6.2"
 
 # ChatGPT tokenizer
 tiktoken-rs = "0.9.1"
