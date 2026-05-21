@@ -9,10 +9,14 @@ set -euo pipefail
 # ------------------------------------------------------------------------------
 # Config (can be overriden by ENVVAR)
 LOG_FILE=${LOG_FILE:-"/root/log/growi_bkup.log"}
+ERR_FILE=${LOG_FILE:-"/root/log/growi_bkup_err.log"}
 # ------------------------------------------------------------------------------
 
 SELF_DIR=$(dirname "$(realpath "$0")")
 ROOT=${SELF_DIR}/../backup
 
 mkdir -p "$(dirname "${LOG_FILE}")"
-"${ROOT}/bkup_growi.py" 2>&1 | tee -a "${LOG_FILE}"
+
+"${ROOT}/bkup_growi.py" \
+    > >(tee -a "${LOG_FILE}") \
+    2> >(tee -a "${ERR_FILE}" >&2)
