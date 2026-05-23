@@ -11,7 +11,7 @@ use super::{InputContent, InputImageDetail};
 /// 会話履歴管理。
 pub struct ChatHistory {
     /// トークナイザ。
-    core: CoreBPE,
+    core: &'static CoreBPE,
 
     /// トークン数。
     total_token_limit: usize,
@@ -37,8 +37,8 @@ impl ChatHistory {
     ///
     /// * `model` - OpenAI API モデル名。
     pub fn new(model: &str) -> Self {
-        let core = tiktoken_rs::get_bpe_from_model(model).unwrap();
-        let total_token_limit = tiktoken_rs::model::get_context_size(model);
+        let core = tiktoken_rs::bpe_for_model(model).unwrap();
+        let total_token_limit = tiktoken_rs::model::get_context_size(model).unwrap();
 
         Self {
             core,
