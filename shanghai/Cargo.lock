@@ -2402,7 +2402,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.1.2",
+ "rustc-hash",
  "rustls 0.23.40",
  "socket2 0.6.4",
  "thiserror 2.0.18",
@@ -2423,7 +2423,7 @@ dependencies = [
  "lru-slab",
  "rand 0.9.4",
  "ring",
- "rustc-hash 2.1.2",
+ "rustc-hash",
  "rustls 0.23.40",
  "rustls-pki-types",
  "slab",
@@ -2793,12 +2793,6 @@ dependencies = [
  "untrusted",
  "windows-sys 0.52.0",
 ]
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
@@ -3185,7 +3179,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "reqwest 0.12.28",
- "rustc-hash 2.1.2",
+ "rustc-hash",
  "secrecy",
  "serde",
  "serde_cow",
@@ -3570,9 +3564,9 @@ dependencies = [
 
 [[package]]
 name = "tiktoken-rs"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fac4a168cfc1d8ed65bf17a6ee0843ad9a68f863c63c0fb2fa7eab67838782ee"
+checksum = "027853bbf8c7763b77c5c595f1c271c7d536ced7d6f83452911b944621e57fc2"
 dependencies = [
  "anyhow",
  "base64",
@@ -3580,7 +3574,7 @@ dependencies = [
  "fancy-regex",
  "lazy_static",
  "regex",
- "rustc-hash 1.1.0",
+ "rustc-hash",
 ]
 
 [[package]]
