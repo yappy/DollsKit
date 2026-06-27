@@ -27,9 +27,9 @@ customlog = { path = "./customlog"}
 utils = { path = "./utils" }
 
 static_assertions = "1.1.0"
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 thiserror = "2.0.18"
-log = { version = "0.4.32", features = ["std"] }
+log = { version = "0.4.33", features = ["std"] }
 chrono = { version = "0.4.45", features = ["clock", "iana-time-zone", "std"] }
 rand = "0.10.1"
 regex = "1.12.4"
