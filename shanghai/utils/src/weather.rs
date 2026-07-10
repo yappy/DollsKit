@@ -310,7 +310,7 @@ fn fill_by_element(
                 v.weather = Some(weather_code_to_string(weather_code)?.to_string());
             }
             if v.pop.is_none() && !pop.is_empty() {
-                v.pop = Some(format!("{}%", &pop));
+                v.pop = Some(format!("{}%", pop));
             }
         }
         AreaData::DetailedTempreture {
