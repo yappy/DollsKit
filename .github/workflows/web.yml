@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  url: https://yappy.mydns.jp/
+  url: https://yappy-house.com/
 
 jobs:
   update:
