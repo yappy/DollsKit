@@ -190,7 +190,7 @@ ssh (user@(default=現在のユーザ名))(IP アドレスやドメイン名) \
 
 ```txt
 Host shanghai4-remote (ssh コマンドに渡す好きな名前)
-HostName yappy.mydns.jp
+HostName yappy-house.com
 User (login user name)
 Port 56789
 ```
@@ -237,12 +237,12 @@ ssh shanghai4-remote
 例
 
 ```sh
-ssh yappy@yappy.mydns.jp -p [port] -L 3389:192.168.1.200:3389 -N
+ssh yappy@yappy-house.com -p [port] -L 3389:192.168.1.200:3389 -N
 ```
 
 * `.ssh/config` に設定を書いて呼び出し可能な ssh 接続設定
   * user: yappy
-  * host: yappy.mydns.jp を DNS 解決した IP アドレス
+  * host: yappy-house.com を DNS 解決した IP アドレス
   * port: `-p` で指定可能
 * `-L`: ポートフォワード設定
   * localhost のポート番号、ローカルのリモートデスクトップアプリがデフォルトで

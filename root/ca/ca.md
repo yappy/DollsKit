@@ -87,8 +87,8 @@ $SERVER["socket"] == "0.0.0.0:443" {
 
   # サーバ証明書の設定
   # サーバ証明書とサーバの秘密鍵をそれぞれ設定する
-  ssl.pemfile = "/.../yappy.mydns.jp/cert.pem"
-  ssl.privkey = "/.../yappy.mydns.jp/privkey.pem"
+  ssl.pemfile = "/.../yappy-house.com/cert.pem"
+  ssl.privkey = "/.../yappy-house.com/privkey.pem"
 
   # クライアント認証に使う CA
   # 先ほど作った root CA の自己署名証明書を設定する

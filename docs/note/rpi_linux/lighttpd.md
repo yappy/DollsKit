@@ -174,7 +174,7 @@ Select the webroot for (ドメイン名):
 1: Enter a new webroot
 -------------------------------------------------------------------------------
 Press 1 [enter] to confirm the selection (press 'c' to cancel): 1
-Input the webroot for yappy.mydns.jp: (Enter 'c' to cancel):/var/www/html/
+Input the webroot for yappy-house.com: (Enter 'c' to cancel):/var/www/html/
 (lighttpd のデフォルトドキュメントルートの場合)
 Waiting for verification...
 Cleaning up challenges
@@ -212,8 +212,8 @@ IMPORTANT NOTES:
   * 昔は手動で結合する必要があったが、lighttpd のアップデートで必要なくなった。
 
 ```text
-ssl.pemfile = "/etc/letsencrypt/live/yappy.mydns.jp/fullchain.pem"
-ssl.privkey = "/etc/letsencrypt/live/yappy.mydns.jp/privkey.pem"
+ssl.pemfile = "/etc/letsencrypt/live/yappy-house.com/fullchain.pem"
+ssl.privkey = "/etc/letsencrypt/live/yappy-house.com/privkey.pem"
 # なんかデフォルトだと TLS 1.2 が弾かれる。1.3 は OK。
 # TLS 1.3 の方がよいのも TLS 1.1 以下は滅ぼした方がよいのも理解するが、
 # TLS 1.2 無効はやりすぎで害が上回ると思う…。
@@ -242,7 +242,7 @@ $ certbot renew
 Saving debug log to /var/log/letsencrypt/letsencrypt.log
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Processing /etc/letsencrypt/renewal/yappy.mydns.jp.conf
+Processing /etc/letsencrypt/renewal/yappy-house.com.conf
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Certificate not yet due for renewal
 ```
