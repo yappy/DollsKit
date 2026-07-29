@@ -10,7 +10,7 @@ utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true
-bitflags = "2.13.0"
+bitflags = "2.13.1"
 rand.workspace = true
 regex.workspace = true
 log.workspace = true
