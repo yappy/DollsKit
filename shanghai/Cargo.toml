@@ -47,6 +47,6 @@ reqwest = { version = "0.13.4", features = ["json", "multipart", "query"] }
 image = "0.25.10"
 
 # For test
-serial_test = "3.5.0"
+serial_test = "4.0.1"
 tempfile = "3.27.0"
 hex-literal = "1.1.0"
