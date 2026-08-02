@@ -10,7 +10,7 @@ utils.workspace = true
 verinfo.workspace = true
 
 anyhow.workspace = true
-bitflags = "2.13.0"
+bitflags = "2.13.1"
 rand.workspace = true
 regex.workspace = true
 log.workspace = true
@@ -30,7 +30,7 @@ tokio-stream.workspace = true
 # HTTP client
 reqwest.workspace = true
 # BASE64
-base64 = "0.22.1"
+base64 = "0.23.0"
 
 image.workspace = true
 
