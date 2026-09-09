@@ -27,6 +27,27 @@ brew install beads           # macOS / Linux (recommended)
 npm install -g @beads/bd     # Node.js users
 ```
 
+## Shell Completion
+
+`bd completion SH` でスクリプトが stdout に出力される。
+
+```txt
+Usage:
+  bd completion [command]
+
+Available Commands:
+  bash        Generate the autocompletion script for bash
+  fish        Generate the autocompletion script for fish
+  powershell  Generate the autocompletion script for powershell
+  zsh         Generate the autocompletion script for zsh
+```
+
+bash なら以下のコマンドを `.bashrc` とかに書けば OK。
+
+```bash
+source <(bd completion bash)
+```
+
 ## 初期化
 
 ローカル git リポジトリの中で `bd init`。
