@@ -1,0 +1,1 @@
+{"id":"int-54d56971ad2d2eeb414f9083fe4a9400","kind":"field_change","created_at":"2026-09-10T15:04:19.46342869Z","actor":"yappy","issue_id":"DollsKit-j3t","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"poise 0.7.0 の新 API に合わせてイベントハンドラとヘルプコマンドを修正し、cargo check・fmt・test が成功した"}}
