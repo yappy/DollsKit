@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "DollsKit",
+  "project_id": "b6b4b28e-06db-4e8d-b434-3590796e3838"
+}
