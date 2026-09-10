@@ -36,13 +36,13 @@ regex = "1.13.1"
 
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-serde_with = { version = "3.22.0", features = ["json"] }
-toml = "1.1.4"
+serde_with = { version = "3.23.0", features = ["json"] }
+toml = "1.1.5"
 
 tokio = { version = "1.53.1", features = ["rt", "rt-multi-thread", "test-util", "macros", "signal", "fs", "process"] }
 tokio-stream = "0.1.19"
 
-reqwest = { version = "0.13.4", features = ["json", "multipart", "query"] }
+reqwest = { version = "0.13.5", features = ["json", "multipart", "query"] }
 
 image = "0.25.10"
 
