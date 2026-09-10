@@ -36,7 +36,7 @@ Stable 版の Rust 環境があればビルドできるはず。
 
 ### リンクの高速化
 
-[rust_tools.md](./docs/note/rust_tools.md) を参照。
+[rust_tools.md](./docs/note/rust/tools.md) を参照。
 
 ## 管理プログラムの実行開始
 
@@ -171,3 +171,16 @@ push および pull request 時に debug/release ビルドおよびテストを�
 1. `cargo doc` で Rust ドキュメントを自動生成
 1. `docs/` 以下を更新して commit
 1. push
+
+## AI 開発
+
+Codex のインストール方法: [codex.md](./docs/note/aidev/codex.md)
+
+Beads によるイシュートラッキングを導入しています。
+AI 向け指示ファイルは `bd` コマンドの存在を仮定しています。
+
+インストール方法は [beads.md](./docs/note/aidev/beads.md) を参照。
+
+`git clone` 後に一度だけ、`bd dolt bootstrap` を実行してください。
+以降は `bd dolt pull` で更新可能です。
+変更をアップロードするには `bd dolt push`。
