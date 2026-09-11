@@ -54,9 +54,15 @@ jobs:
           git add ./docs/doc
 
       - name: Git Commit
-        continue-on-error: true
         run: |
-          git commit -m "Update for ${GITHUB_REF} ${GITHUB_SHA}" -m "Automatic push by github actions"
+          # --quiet returns 0 for no changes, 1 for changes, and 2 or greater for errors.
+          status=0
+          git diff --staged --quiet || status=$?
+          case "${status}" in
+            0) echo "No document changes to commit." ;;
+            1) git commit -m "Update for ${GITHUB_REF} ${GITHUB_SHA}" -m "Automatic push by github actions" ;;
+            *) exit "${status}" ;;
+          esac
 
       - name: Git Push
         run: |
