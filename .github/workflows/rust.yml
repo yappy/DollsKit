@@ -16,7 +16,7 @@ jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Format
         working-directory: ${{ env.PROJ_ROOT }}
@@ -37,7 +37,7 @@ jobs:
   build-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build
         working-directory: ${{ env.PROJ_ROOT }}
