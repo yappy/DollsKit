@@ -11,12 +11,18 @@ permissions:
 
 env:
   url: https://yappy-house.com/
+  connect_timeout_seconds: 10
+  max_time_seconds: 60
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
 
     steps:
       - name: HTTPS Access
         run: |
-          curl -f ${{ env.url }}
+          curl --fail \
+            --connect-timeout "${{ env.connect_timeout_seconds }}" \
+            --max-time "${{ env.max_time_seconds }}" \
+            "${{ env.url }}"
