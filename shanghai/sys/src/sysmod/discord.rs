@@ -310,7 +310,7 @@ async fn discord_main(ctrl: Control) -> Result<()> {
             on_error: |err| Box::pin(on_error(err)),
             pre_command: |ctx| Box::pin(pre_command(ctx)),
             post_command: |ctx| Box::pin(post_command(ctx)),
-            event_handler: |ctx, ev, fctx, data| Box::pin(event_handler(ctx, ev, fctx, data)),
+            event_handler: |fctx, ev| Box::pin(event_handler(fctx, ev)),
             // prefix command
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: None,
@@ -620,14 +620,39 @@ If you use old style,
   @bot_name help command_name
 to show detailed command help.
 ";
-    let config = poise::builtins::HelpConfiguration {
-        // その人だけに見える返信にするかどうか
-        ephemeral: false,
-        show_subcommands: true,
-        extra_text_at_bottom: extra_text,
-        ..Default::default()
-    };
-    poise::builtins::help(ctx, command.as_deref(), config).await?;
+    let commands = command_list();
+    let mut output = String::new();
+    if let Some(command_name) = command.as_deref() {
+        let command = commands.iter().find(|command| command.name == command_name);
+        match command {
+            Some(command) => {
+                output.push_str(&format!("**{}**\n", command.name));
+                if let Some(description) = &command.description {
+                    output.push_str(description);
+                    output.push('\n');
+                }
+                if let Some(help_text) = &command.help_text {
+                    output.push_str(help_text);
+                    output.push('\n');
+                }
+            }
+            None => output.push_str(&format!("Unknown command: `{command_name}`\n")),
+        }
+    } else {
+        output.push_str("Available commands:\n");
+        for command in &commands {
+            if command.hide_in_help {
+                continue;
+            }
+            output.push_str(&format!("`{}`", command.name));
+            if let Some(description) = &command.description {
+                output.push_str(&format!(" - {description}"));
+            }
+            output.push('\n');
+        }
+    }
+    output.push_str(extra_text);
+    ctx.reply(output).await?;
 
     Ok(())
 }
@@ -1297,11 +1322,11 @@ async fn on_error(error: poise::FrameworkError<'_, PoiseData, PoiseError>) {
 /// Poise のコンテキストが渡されるので、Serenity ではなく Poise の
 /// FrameworkOptions 経由で設定する。
 async fn event_handler(
-    ctx: &Context,
+    framework: FrameworkContext<'_, PoiseData, PoiseError>,
     ev: &FullEvent,
-    _fctx: FrameworkContext<'_, PoiseData, PoiseError>,
-    data: &PoiseData,
 ) -> Result<(), PoiseError> {
+    let ctx = framework.serenity_context;
+    let data = framework.user_data;
     match ev {
         FullEvent::Ready { data_about_bot } => {
             info!("[discord] connected as {}", data_about_bot.user.name);
