@@ -205,7 +205,7 @@ impl FileLogger {
 /// Open with (create + append), return File and size.
 fn open_new_or_append(file_path: impl AsRef<Path>) -> Result<(File, usize), anyhow::Error> {
     if let Some(dir) = file_path.as_ref().parent()
-        && dir != ""
+        && !dir.is_empty()
     {
         std::fs::create_dir_all(dir)?;
     }
