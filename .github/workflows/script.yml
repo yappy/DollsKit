@@ -21,12 +21,12 @@ jobs:
           pip install flake8
       - name: Lint
         run: |
-          flake8 .
-  shellckeck:
+          ./scripts/flake8.sh
+  shellcheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Lint shell scripts
         run: |
-          ./shellcheck.sh
+          ./scripts/shellcheck.sh
