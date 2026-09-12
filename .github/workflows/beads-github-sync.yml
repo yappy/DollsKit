@@ -29,9 +29,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      #- name: Configure GitHub authentication
-      #  run: gh auth setup-git
-
       - name: Install bd
         shell: bash
         run: |
@@ -64,4 +61,7 @@ jobs:
         run: bd bootstrap --yes
 
       - name: Synchronize issues
-        run: python3 ./scripts/sync-beads-github.py --repo "${GITHUB_REPOSITORY}"
+        run: python3 scripts/sync-beads-github.py --repo "${GITHUB_REPOSITORY}"
+
+      - name: Push Beads database (update external_ref)
+        run: bd dolt push
