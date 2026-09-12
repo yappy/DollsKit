@@ -1,0 +1,67 @@
+name: Sync Beads to GitHub Issues
+
+on:
+  schedule:
+    # 04:23 JST = 19:23 UTC (the previous day).
+    - cron: "23 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: beads-github-sync
+  cancel-in-progress: false
+
+env:
+  BEADS_VERSION: "1.2.2"
+  GITHUB_OWNER: ${{ github.repository_owner }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      #- name: Configure GitHub authentication
+      #  run: gh auth setup-git
+
+      - name: Install bd
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${BEADS_VERSION#v}"
+          archive="beads_${version}_linux_amd64.tar.gz"
+          download_dir="${RUNNER_TEMP}/beads"
+          bin_dir="${RUNNER_TEMP}/bin"
+          mkdir -p "${download_dir}" "${bin_dir}"
+
+          gh release download "v${version}" \
+            --repo gastownhall/beads \
+            --pattern "${archive}" \
+            --pattern checksums.txt \
+            --dir "${download_dir}"
+
+          expected="$(awk -v file="${archive}" '$2 == file || $2 == "*" file { print $1; exit }' "${download_dir}/checksums.txt")"
+          actual="$(sha256sum "${download_dir}/${archive}" | awk '{ print $1 }')"
+          test -n "${expected}" && test "${expected}" = "${actual}"
+
+          tar -xzf "${download_dir}/${archive}" -C "${download_dir}"
+          bd_path="$(find "${download_dir}" -type f -name bd -print -quit)"
+          test -n "${bd_path}"
+          install -m 0755 "${bd_path}" "${bin_dir}/bd"
+          echo "${bin_dir}" >> "${GITHUB_PATH}"
+          "${bin_dir}/bd" version
+
+      - name: Bootstrap Beads database
+        run: bd bootstrap --yes
+
+      - name: Synchronize issues
+        run: python3 ./scripts/sync-beads-github.py --repo "${GITHUB_REPOSITORY}"

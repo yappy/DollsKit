@@ -5,6 +5,11 @@
 This is intentionally usable from a checkout on a developer machine.  The
 GitHub Actions workflow can later invoke the same command after installing
 ``bd`` and bootstrapping the Dolt database.
+
+``bd github`` requires following configurations.
+Configuration can be set via 'bd config' or environment variables:
+  github.token / GITHUB_TOKEN           - Personal access token
+  github.owner / GITHUB_OWNER           - Repository owner
 """
 
 import argparse
