@@ -160,10 +160,10 @@
 <a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">let </span>home = utils::dir::home_dir()<span class="question-mark">?</span>;
 <a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">let </span>home = home.to_str().context(<span class="string">"Invalid UTF-8"</span>)<span class="question-mark">?</span>;
 <a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>    <span class="kw">let </span>user = users::get_user_by_uid(users::get_current_uid()).context(<span class="string">"Cannot get user name"</span>)<span class="question-mark">?</span>;
+<a href=#163 id=163 data-nosnippet>163</a>    <span class="kw">let </span>user = uzers::get_user_by_uid(uzers::get_current_uid()).context(<span class="string">"Cannot get user name"</span>)<span class="question-mark">?</span>;
 <a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">let </span>user = user.name().to_str().context(<span class="string">"Invalid UTF-8 in user name"</span>)<span class="question-mark">?</span>;
 <a href=#165 id=165 data-nosnippet>165</a>    <span class="kw">let </span>group =
-<a href=#166 id=166 data-nosnippet>166</a>        users::get_group_by_gid(users::get_current_gid()).context(<span class="string">"Cannot get group name"</span>)<span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>        uzers::get_group_by_gid(uzers::get_current_gid()).context(<span class="string">"Cannot get group name"</span>)<span class="question-mark">?</span>;
 <a href=#167 id=167 data-nosnippet>167</a>    <span class="kw">let </span>group = group
 <a href=#168 id=168 data-nosnippet>168</a>        .name()
 <a href=#169 id=169 data-nosnippet>169</a>        .to_str()
