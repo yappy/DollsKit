@@ -160,10 +160,10 @@ fn create_systemd_files() -> Result<()> {
     let home = utils::dir::home_dir()?;
     let home = home.to_str().context("Invalid UTF-8")?;
 
-    let user = users::get_user_by_uid(users::get_current_uid()).context("Cannot get user name")?;
+    let user = uzers::get_user_by_uid(uzers::get_current_uid()).context("Cannot get user name")?;
     let user = user.name().to_str().context("Invalid UTF-8 in user name")?;
     let group =
-        users::get_group_by_gid(users::get_current_gid()).context("Cannot get group name")?;
+        uzers::get_group_by_gid(uzers::get_current_gid()).context("Cannot get group name")?;
     let group = group
         .name()
         .to_str()
