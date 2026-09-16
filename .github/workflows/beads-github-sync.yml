@@ -20,8 +20,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   # bd's Dolt Git transport does not use gh's authentication variables.
-  # Without these credentials external_ref updates cannot be persisted, so a
-  # fresh runner creates the same GitHub Issues again on the next invocation.
   DOLT_REMOTE_USER: x-access-token
   DOLT_REMOTE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
@@ -33,6 +31,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Configure Dolt Git credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global credential.helper '!f() { case "$1" in get) printf "username=%s\\npassword=%s\\n" "$DOLT_REMOTE_USER" "$DOLT_REMOTE_PASSWORD";; esac; }; f'
 
       - name: Install bd
         shell: bash
