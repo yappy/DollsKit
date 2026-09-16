@@ -118,6 +118,57 @@ def sync_beads(options: Options) -> None:
         run(command)
 
 
+def github_issue_api_path(url: str) -> str:
+    parsed = urlparse(url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) != 4 or parts[2] != "issues" or not parts[3].isdigit():
+        raise RuntimeError(f"Not a standard GitHub Issue URL: {url}")
+    return f"repos/{parts[0]}/{parts[1]}/issues/{parts[3]}"
+
+
+def github_issue_exists(url: str) -> bool:
+    """Return whether a synchronized GitHub Issue still exists.
+
+    A missing Issue must be distinguished from authentication, rate-limit, and
+    other API failures.  Only an explicit 404 is recoverable here; all other
+    failures stop the workflow instead of risking duplicate Issues.
+    """
+    command = ["gh", "api", "--silent", github_issue_api_path(url)]
+    result = subprocess.run(
+        command,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode == 0:
+        return True
+    detail = f"{result.stdout}\n{result.stderr}"
+    if "HTTP 404" in detail or "Not Found" in detail:
+        return False
+    raise RuntimeError(
+        f"Command failed ({result.returncode}): {' '.join(command)}\n"
+        f"{result.stderr.strip() or result.stdout.strip()}"
+    )
+
+
+def clear_deleted_external_refs(
+    issues: Iterable[dict[str, Any]], options: Options
+) -> None:
+    """Clear stale refs so bd github sync recreates deleted GitHub Issues."""
+    for issue in issues:
+        url = external_issue_url(issue)
+        if not url or github_issue_exists(url):
+            continue
+        issue_id = value(issue, "id", default="unknown")
+        command = ["bd", "update", issue_id, "--external-ref", ""]
+        if options.dry_run:
+            print(f"DRY-RUN RESET {issue_id}: deleted GitHub Issue {url}")
+        else:
+            run(command)
+            print(f"RESET {issue_id}: deleted GitHub Issue {url}")
+
+
 def external_issue_url(issue: dict[str, Any]) -> str | None:
     value = issue.get("external_ref")
     if not isinstance(value, str) or not value:
@@ -248,6 +299,7 @@ def main() -> int:
 
     before = bead_issues()
     prepare_labels(issue_labels(before), options)
+    clear_deleted_external_refs(before, options)
     sync_beads(options)
     issues = bead_issues()
     validate_external_refs(issues)
