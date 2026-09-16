@@ -130,8 +130,8 @@ def github_issue_exists(url: str) -> bool:
     """Return whether a synchronized GitHub Issue still exists.
 
     A missing Issue must be distinguished from authentication, rate-limit, and
-    other API failures.  Only an explicit 404 is recoverable here; all other
-    failures stop the workflow instead of risking duplicate Issues.
+    other API failures.  Explicit 404/410 responses are recoverable here; all
+    other failures stop the workflow instead of risking duplicate Issues.
     """
     command = ["gh", "api", "--silent", github_issue_api_path(url)]
     result = subprocess.run(
@@ -144,7 +144,7 @@ def github_issue_exists(url: str) -> bool:
     if result.returncode == 0:
         return True
     detail = f"{result.stdout}\n{result.stderr}"
-    if "HTTP 404" in detail or "Not Found" in detail:
+    if "HTTP 404" in detail or "HTTP 410" in detail or "Not Found" in detail:
         return False
     raise RuntimeError(
         f"Command failed ({result.returncode}): {' '.join(command)}\n"
