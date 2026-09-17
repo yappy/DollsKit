@@ -36,6 +36,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Variables expand later, when Git invokes the credential helper.
+          # shellcheck disable=SC2016
           git config --global credential.helper '!f() { case "$1" in get) printf "username=%s\\npassword=%s\\n" "$DOLT_REMOTE_USER" "$DOLT_REMOTE_PASSWORD";; esac; }; f'
 
       - name: Install bd
@@ -78,5 +80,9 @@ jobs:
       - name: Synchronize issues
         run: python3 scripts/sync-beads-github.py --repo "${GITHUB_REPOSITORY}"
 
-      - name: Push Beads database (update external_ref)
-        run: bd dolt push
+      - name: Commit and push Beads database (update external_ref)
+        run: |
+          set -euo pipefail
+          # bd 1.2.2 does not auto-commit writes made by `bd github sync`.
+          bd dolt commit -m "Persist GitHub external_ref updates"
+          bd dolt push
