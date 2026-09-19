@@ -69,24 +69,19 @@ pub struct OfflineModelInfo {
 /// <https://openai.com/pricing>
 const MODEL_LIST: &[OfflineModelInfo] = &[
     OfflineModelInfo {
-        name: "gpt-4o-mini",
-        context_window: 128000,
-        max_output_tokens: 4096,
+        name: "gpt-5.6-luna",
+        context_window: 400000,
+        max_output_tokens: 128000,
     },
     OfflineModelInfo {
-        name: "gpt-4o",
-        context_window: 128000,
-        max_output_tokens: 4096,
+        name: "gpt-5.6-terra",
+        context_window: 400000,
+        max_output_tokens: 128000,
     },
     OfflineModelInfo {
-        name: "gpt-4",
-        context_window: 8192,
-        max_output_tokens: 8192,
-    },
-    OfflineModelInfo {
-        name: "gpt-4-turbo",
-        context_window: 128000,
-        max_output_tokens: 4096,
+        name: "gpt-5.6-sol",
+        context_window: 400000,
+        max_output_tokens: 128000,
     },
 ];
 
@@ -94,7 +89,7 @@ const MODEL_LIST: &[OfflineModelInfo] = &[
 const MAX_OUTPUT_TOKENS_FACTOR: f32 = 1.05;
 
 /// `context_window` のうち出力用に予約する割合 (まともに決まっていない場合用)。
-/// `max_output_tokens` が意味をなしていない gpt-4 で適当に決めるための値。
+/// モデル固有の上限が不明な場合に適用する既定の割合。
 const OUTPUT_RESERVED_RATIO: f32 = 0.2;
 
 /// [MODEL_LIST] からモデル名で [OfflineModelInfo] を検索する。
