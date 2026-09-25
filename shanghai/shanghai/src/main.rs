@@ -76,21 +76,13 @@ fn init_log(verbose: bool) -> Result<FlushGuard> {
     Ok(guard)
 }
 
-/// 起動時に一度だけブートメッセージをツイートするタスク。
+/// 起動時に一度だけブートメッセージを通知するタスク。
 async fn boot_msg_task(ctrl: Control) -> Result<()> {
     let build_info = verinfo::version_info();
-    // 同一テキストをツイートしようとするとエラーになるので日時を含める
     let now = chrono::Local::now();
     let now = now.format("%F %T %:z");
     let msg = format!("[{now}] Boot...\n{build_info}");
 
-    /*{
-        let mut twitter = ctrl.sysmods().twitter.lock().await;
-        if let Err(why) = twitter.tweet(&msg).await {
-            error!("error on tweet");
-            error!("{why:#?}");
-        }
-    }*/
     {
         let mut discord = ctrl.sysmods().discord.lock().await;
         if let Err(why) = discord.say(&msg).await {

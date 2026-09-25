@@ -53,7 +53,6 @@ unattended-upgrades によりセキュリティアップデートを自動的に
   * [Rust テクニカルノート](./note/rust/technote.md)
 * Web API
   * [OpenAI API ノート](./note/webapi/openai.md)
-  * (旧情報) [Twitter API ノート](./note/webapi/twitter.md)
 * AI Development
   * [Codex](./note/aidev/codex.md)
   * [Beads](./note/aidev/beads.md)

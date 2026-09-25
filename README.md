@@ -73,16 +73,6 @@ cd ~/.config/shanghai
 cp config_default.toml config.toml
 ```
 
-### フォント
-
-※Twitter bot 向けの機能なので現在は有効にしても動作しません。
-
-デフォルト設定で指定されているフォントファイルは以下でインストールできます。
-
-```sh
-sudo apt install fonts-ipafont
-```
-
 ### 本実行
 
 ```sh
