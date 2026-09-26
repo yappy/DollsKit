@@ -17,7 +17,6 @@ use crate::sysmod::health::HealthConfig;
 use crate::sysmod::http::HttpConfig;
 use crate::sysmod::line::LineConfig;
 use crate::sysmod::openai::OpenAiConfig;
-use crate::sysmod::twitter::TwitterConfig;
 
 /// ロードする設定ファイル。
 const CONFIG_FILE: &str = "config.toml";
@@ -36,8 +35,6 @@ pub struct Config {
     pub health: HealthConfig,
     #[serde(default)]
     pub camera: CameraConfig,
-    #[serde(default)]
-    pub twitter: TwitterConfig,
     #[serde(default)]
     pub discord: DiscordConfig,
     #[serde(default)]

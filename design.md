@@ -15,7 +15,7 @@
   - フルバックアップ、GROWI の MongoDB バックアップ / 復元、cron、Docker、CA、DB SQL などを含みます。
 - `docs/`
   - GitHub Pages 向けの運用メモ。
-  - Raspberry Pi、Lighttpd、Docker、systemd、ストレージ、Windows リモート、Rust、OpenAI / Twitter API などのノートがあります。
+  - Raspberry Pi、Lighttpd、Docker、systemd、ストレージ、Windows リモート、Rust、OpenAI API などのノートがあります。
 - `.github/workflows/`
   - CI / ドキュメント生成 / HTTPS 監視用の GitHub Actions 定義があります。
 - `.gitmodules`
@@ -30,7 +30,7 @@
   - ログ初期化、systemd ファイル生成、設定ロード、タスクサーバ起動を担当します。
 - `sys`
   - 常駐管理機能の本体。
-  - Health、Camera、HTTP、Discord、LINE、Twitter、OpenAI などのシステムモジュールを持ちます。
+  - Health、Camera、HTTP、Discord、LINE、OpenAI などのシステムモジュールを持ちます。
 - `utils`
   - 天気データ処理、HTTP 補助、画像、ゲーム / ダイス、パーサなどの共通処理。
 - `customlog`
@@ -86,9 +86,6 @@
 - LINE
   - LINE webhook / bot 機能。
   - OpenAI 連携、会話履歴、画像入力バッファ、特権ユーザー判定などがあります。
-- Twitter
-  - Twitter API 連携。
-  - タイムラインチェック、ツイート、OpenAI 連携用ハッシュタグなどの設定があります。
 - OpenAI
   - OpenAI API wrapper。
   - Responses API、画像生成、音声生成、モデル情報、レート制限情報、function calling 風の内部関数群を扱います。
@@ -203,7 +200,7 @@ GitHub Actions では以下が設定されています。
 
 DollsKit は、汎用ライブラリや単体アプリというより、個人宅サーバの「実アプリ + インフラ運用手順 + バックアップ / 復旧スクリプト」をまとめた管理リポジトリです。
 
-Rust 側は常駐管理プログラムとして、ヘルスチェック、カメラ、HTTP webhook、Discord / LINE / Twitter bot、OpenAI API 連携を担当します。
+Rust 側は常駐管理プログラムとして、ヘルスチェック、カメラ、HTTP webhook、Discord / LINE bot、OpenAI API 連携を担当します。
 
 `root/` 側は実際のサーバ運用に必要な GROWI、バックアップ、cron、DB、証明書まわりの設定とスクリプトを担います。
 

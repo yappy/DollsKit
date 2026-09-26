@@ -153,7 +153,7 @@
 		"id": "9591d010ba328502133a9dd433d36de0f4100542",
 		"tree_id": "627347755cd0c78c138e9ff7a1a97401c6a58003",
 		"distinct": true,
-		"message": "push イベントで twitter に投稿する",
+		"message": "push イベントの通知を追加する",
 		"timestamp": "2022-12-05T21:31:30+09:00",
 		"url": "https://github.com/yappy/DollsKit/commit/9591d010ba328502133a9dd433d36de0f4100542",
 		"author": {

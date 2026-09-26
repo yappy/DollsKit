@@ -9,7 +9,7 @@ use chrono::{DateTime, Local, NaiveTime};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use tokio::{process::Command, select};
+use tokio::process::Command;
 
 /// [Health::history] の最大サイズ。
 ///
@@ -21,7 +21,7 @@ const HISTORY_QUEUE_SIZE: usize = 60 * 1024 * 2;
 pub struct HealthConfig {
     /// ヘルスチェック機能を有効化する。
     enabled: bool,
-    /// 起動時に1回だけタイムライン確認タスクを起動する。デバッグ用。
+    /// 起動時に1回だけ測定タスクを起動する。デバッグ用。
     debug_exec_once: bool,
 }
 
@@ -31,8 +31,6 @@ pub struct Health {
     config: HealthConfig,
     /// 定期実行の時刻リスト。
     wakeup_list_check: Vec<NaiveTime>,
-    /// 定期実行の時刻リスト。
-    wakeup_list_tweet: Vec<NaiveTime>,
     /// 測定データの履歴。最大サイズは [HISTORY_QUEUE_SIZE]。
     history: VecDeque<HistoryEntry>,
 }
@@ -41,10 +39,7 @@ impl Health {
     /// コンストラクタ。
     ///
     /// 設定の読み込みのみ行い、async task の初期化は [Self::on_start] で行う。
-    pub fn new(
-        wakeup_list_check: Vec<NaiveTime>,
-        wakeup_list_tweet: Vec<NaiveTime>,
-    ) -> Result<Self> {
+    pub fn new(wakeup_list_check: Vec<NaiveTime>) -> Result<Self> {
         info!("[health] initialize");
 
         let config: HealthConfig = config::get(|cfg| cfg.health.clone());
@@ -52,7 +47,6 @@ impl Health {
         Ok(Health {
             config,
             wakeup_list_check,
-            wakeup_list_tweet,
             history: VecDeque::with_capacity(HISTORY_QUEUE_SIZE),
         })
     }
@@ -71,6 +65,14 @@ impl Health {
             mem_info,
             disk_info,
         };
+        log::debug!(
+            "[health] CPU: {:.1}%, memory available: {:.1}/{:.1} MiB, disk available: {:.1}/{:.1} GiB",
+            enrty.cpu_info.cpu_percent_total,
+            enrty.mem_info.avail_mib,
+            enrty.mem_info.total_mib,
+            enrty.disk_info.avail_gib,
+            enrty.disk_info.total_gib,
+        );
 
         debug_assert!(self.history.len() <= HISTORY_QUEUE_SIZE);
         // サイズがいっぱいなら一番古いものを消す
@@ -83,70 +85,12 @@ impl Health {
         Ok(())
     }
 
-    /// ツイートタスク。
-    /// [Self::history] の最新データが存在すればツイートする。
-    async fn tweet_task(&self, ctrl: &Control) -> Result<()> {
-        if let Some(entry) = self.history.back() {
-            let HistoryEntry {
-                cpu_info,
-                mem_info,
-                disk_info,
-                ..
-            } = entry;
-
-            let mut text = String::new();
-
-            text.push_str(&format!("CPU: {:.1}%", cpu_info.cpu_percent_total));
-
-            if let Some(temp) = cpu_info.temp {
-                text.push_str(&format!("\nCPU Temp: {temp:.1}'C"));
-            }
-
-            text.push_str(&format!(
-                "\nMemory: {:.1}/{:.1} MB Avail ({:.1}%)",
-                mem_info.avail_mib,
-                mem_info.total_mib,
-                100.0 * mem_info.avail_mib / mem_info.total_mib,
-            ));
-
-            text.push_str(&format!(
-                "\nDisk: {:.1}/{:.1} GB Avail ({:.1}%)",
-                disk_info.avail_gib,
-                disk_info.total_gib,
-                100.0 * disk_info.avail_gib / disk_info.total_gib,
-            ));
-
-            let mut twitter = ctrl.sysmods().twitter.lock().await;
-            twitter.tweet(&text).await?;
-        }
-
-        Ok(())
-    }
-
     /// [Self::check_task] のエントリ関数。
     /// モジュールをロックしてメソッド呼び出しを行う。
     async fn check_task_entry(ctrl: Control) -> Result<()> {
         // wlock
         let mut health = ctrl.sysmods().health.lock().await;
         health.check_task(&ctrl).await
-        // unlock
-    }
-
-    /// [Self::tweet_task] のエントリ関数。
-    /// モジュールをロックしてメソッド呼び出しを行う。
-    async fn tweet_task_entry(ctrl: Control) -> Result<()> {
-        // check_task を先に実行する (可能性を高める) ために遅延させる
-        select! {
-            _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {}
-            _ = ctrl.wait_cancel_rx() => {
-                info!("[health-tweet] task cancel");
-                return Ok(());
-            }
-        }
-
-        // rlock
-        let health = ctrl.sysmods().health.lock().await;
-        health.tweet_task(&ctrl).await
         // unlock
     }
 }
@@ -157,19 +101,12 @@ impl SystemModule for Health {
         if self.config.enabled {
             if self.config.debug_exec_once {
                 taskserver::spawn_oneshot_task(ctrl, "health-check", Health::check_task_entry);
-                taskserver::spawn_oneshot_task(ctrl, "health-tweet", Health::tweet_task_entry);
             } else {
                 taskserver::spawn_periodic_task(
                     ctrl,
                     "health-check",
                     &self.wakeup_list_check,
                     Health::check_task_entry,
-                );
-                taskserver::spawn_periodic_task(
-                    ctrl,
-                    "health-tweet",
-                    &self.wakeup_list_tweet,
-                    Health::tweet_task_entry,
                 );
             }
         }

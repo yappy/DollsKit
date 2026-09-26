@@ -1,11 +1,10 @@
 use super::{WebResult, error_resp};
 use crate::sysmod::camera::{PicEntry, TakePicOption, create_thumbnail, take_a_pic};
-use crate::sysmod::twitter::LIMIT_PHOTO_COUNT;
-use crate::sysmod::{camera::resize, http::error_resp_msg, twitter::LIMIT_PHOTO_SIZE};
+use crate::sysmod::http::error_resp_msg;
 use crate::taskserver::Control;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, Responder, http::header::ContentType, web};
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow};
 use log::error;
 use serde::Deserialize;
 use std::{cmp, collections::BTreeMap};
@@ -80,10 +79,7 @@ async fn archive_get(ctrl: web::Data<Control>, query: web::Query<HistArGetQuery>
             query.page,
             page_by,
             "(Privileged) Picture Archive",
-            &[
-                ("twitter", "Post on Twitter (Max 4 pics or less)"),
-                ("delete", "Delete"),
-            ],
+            &[("delete", "Delete")],
         )
     };
 
@@ -276,7 +272,7 @@ async fn history_post(
 
 /// POST /priv/camera/archive
 ///
-/// * `cmd` - "twitter" or "delete"
+/// * `cmd` - "delete"
 /// * `target` - 対象の picture ID (複数回指定可)
 #[actix_web::post("/camera/archive")]
 async fn archive_post(
@@ -292,18 +288,6 @@ async fn archive_post(
     let (cmd, targets) = param.unwrap();
 
     match cmd.as_str() {
-        "twitter" => {
-            if targets.is_empty() || targets.len() > LIMIT_PHOTO_COUNT {
-                error_resp_msg(StatusCode::BAD_REQUEST, "invalid pic count")
-            } else if let Err(why) = twitter_post(&ctrl, &targets).await {
-                error_resp_msg(StatusCode::INTERNAL_SERVER_ERROR, &why.to_string())
-            } else {
-                // 成功したら archive GET へリダイレクト
-                HttpResponse::SeeOther()
-                    .append_header(("LOCATION", "./history"))
-                    .finish()
-            }
-        }
         "delete" => {
             if let Err(why) = delete_archive_pics(&ctrl, &targets).await {
                 error_resp_msg(StatusCode::BAD_REQUEST, &why.to_string())
@@ -342,52 +326,6 @@ async fn delete_archive_pics(ctrl: &Control, ids: &[String]) -> Result<()> {
     let mut camera = ctrl.sysmods().camera.lock().await;
     for id in ids {
         camera.delete_pic_archive(id).await?;
-    }
-
-    Ok(())
-}
-
-async fn twitter_post(ctrl: &Control, ids: &[String]) -> Result<()> {
-    assert!(ids.len() <= LIMIT_PHOTO_COUNT);
-
-    let mut binlist = Vec::new();
-    {
-        let camera = ctrl.sysmods().camera.lock().await;
-
-        let (_, archive) = camera.pic_list();
-        for id in ids {
-            if let Some(entry) = archive.get(id) {
-                let mut file = File::open(&entry.path_main).await?;
-                let mut bin = Vec::new();
-                let _ = file.read_to_end(&mut bin).await?;
-                binlist.push(bin);
-            } else {
-                bail!("ID not found");
-            }
-        }
-    }
-    let mut resized_list = Vec::new();
-    for bin in binlist {
-        let mut w = 1280_u32;
-        let mut h = 720_u32;
-        let mut resized = bin;
-        while resized.len() > LIMIT_PHOTO_SIZE {
-            resized = resize(&resized, w, h)?;
-            w /= 2;
-            h /= 2;
-        }
-        resized_list.push(resized);
-    }
-    {
-        let mut tw = ctrl.sysmods().twitter.lock().await;
-
-        let mut midlist: Vec<u64> = Vec::new();
-        for bin in resized_list {
-            let media_id = tw.media_upload(bin).await?;
-            midlist.push(media_id);
-        }
-        let text = ids.join("\n");
-        tw.tweet_custom(&text, None, &midlist).await?;
     }
 
     Ok(())
@@ -463,17 +401,6 @@ async fn take_post(ctrl: web::Data<Control>) -> WebResult {
         error!("{e:#}");
     }
     let pic = pic?;
-
-    /*
-    // twitter upload test
-    {
-        let mini = create_thumbnail(&pic)?;
-        let tw = ctrl.sysmods().twitter.lock().await;
-        let id = tw.media_upload(mini).await;
-        info!("{id:?}");
-        id?;
-    }
-     */
 
     let thumb = create_thumbnail(&pic)?;
 
