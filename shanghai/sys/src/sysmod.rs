@@ -7,11 +7,10 @@ pub mod http;
 pub mod line;
 pub mod openai;
 pub mod sysinfo;
-pub mod twitter;
 
 use self::{
     camera::Camera, discord::Discord, health::Health, http::HttpServer, openai::OpenAi,
-    sysinfo::SystemInfo, twitter::Twitter,
+    sysinfo::SystemInfo,
 };
 use crate::{rpienv, sysmod::line::Line, taskserver::Control};
 use anyhow::Result;
@@ -42,7 +41,6 @@ pub struct SystemModules {
     pub sysinfo: SysModArc<sysinfo::SystemInfo>,
     pub health: SysModArc<health::Health>,
     pub camera: SysModArc<camera::Camera>,
-    pub twitter: SysModArc<twitter::Twitter>,
     pub discord: SysModArc<discord::Discord>,
     pub line: SysModArc<line::Line>,
     pub openai: SysModArc<openai::OpenAi>,
@@ -63,13 +61,6 @@ impl SystemModules {
         let wakeup_health_ck: Vec<_> = (0..24)
             .flat_map(|hour| (0..60).map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap()))
             .collect();
-        let wakeup_health_tw = vec![
-            NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-            NaiveTime::from_hms_opt(6, 0, 0).unwrap(),
-            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
-            NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
-        ];
-
         let wakeup_camera = vec![
             NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
             NaiveTime::from_hms_opt(3, 0, 0).unwrap(),
@@ -80,14 +71,6 @@ impl SystemModules {
             NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
             NaiveTime::from_hms_opt(21, 0, 0).unwrap(),
         ];
-
-        let wakeup_twiter: Vec<_> = (0..24)
-            .flat_map(|hour| {
-                (0..60)
-                    .step_by(5)
-                    .map(move |min| NaiveTime::from_hms_opt(hour, min, 0).unwrap())
-            })
-            .collect();
 
         let wakeup_discord: Vec<_> = (0..24)
             .flat_map(|hour| {
@@ -100,12 +83,8 @@ impl SystemModules {
         let mut event_target_list: Vec<SysModArc<dyn SystemModule>> = vec![];
 
         let sysinfo = Arc::new(TokioMutex::new(SystemInfo::new()));
-        let health = Arc::new(TokioMutex::new(Health::new(
-            wakeup_health_ck,
-            wakeup_health_tw,
-        )?));
+        let health = Arc::new(TokioMutex::new(Health::new(wakeup_health_ck)?));
         let camera = Arc::new(TokioMutex::new(Camera::new(wakeup_camera)?));
-        let twitter = Arc::new(TokioMutex::new(Twitter::new(wakeup_twiter)?));
         let discord = Arc::new(TokioMutex::new(Discord::new(wakeup_discord)?));
         let line = Arc::new(TokioMutex::new(Line::new()?));
         let openai = Arc::new(TokioMutex::new(OpenAi::new()?));
@@ -114,7 +93,6 @@ impl SystemModules {
         event_target_list.push(sysinfo.clone());
         event_target_list.push(health.clone());
         event_target_list.push(camera.clone());
-        event_target_list.push(twitter.clone());
         event_target_list.push(discord.clone());
         event_target_list.push(line.clone());
         event_target_list.push(openai.clone());
@@ -125,7 +103,6 @@ impl SystemModules {
             sysinfo,
             health,
             camera,
-            twitter,
             discord,
             line,
             openai,
