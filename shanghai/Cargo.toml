@@ -28,7 +28,7 @@ utils = { path = "./utils" }
 
 static_assertions = "1.1.0"
 anyhow = "1.0.104"
-thiserror = "2.0.20"
+thiserror = "2.0.21"
 log = { version = "0.4.34", features = ["std"] }
 chrono = { version = "0.4.45", features = ["clock", "iana-time-zone", "std"] }
 rand = "0.10.3"
