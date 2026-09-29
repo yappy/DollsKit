@@ -64,23 +64,37 @@ pub struct OfflineModelInfo {
 
 /// モデル情報。一番上がデフォルト。
 ///
-/// <https://platform.openai.com/docs/models>
-///
-/// <https://openai.com/pricing>
+/// <https://developers.openai.com/api/docs/models>
+/// <https://developers.openai.com/api/docs/pricing>
 const MODEL_LIST: &[OfflineModelInfo] = &[
     OfflineModelInfo {
+        name: "gpt-6-luna",
+        context_window: 1050000,
+        max_output_tokens: 128000,
+    },
+    OfflineModelInfo {
+        name: "gpt-6-sol",
+        context_window: 1050000,
+        max_output_tokens: 128000,
+    },
+    OfflineModelInfo {
+        name: "gpt-6-astra",
+        context_window: 1050000,
+        max_output_tokens: 128000,
+    },
+    OfflineModelInfo {
         name: "gpt-5.6-luna",
-        context_window: 400000,
+        context_window: 1050000,
         max_output_tokens: 128000,
     },
     OfflineModelInfo {
         name: "gpt-5.6-terra",
-        context_window: 400000,
+        context_window: 1050000,
         max_output_tokens: 128000,
     },
     OfflineModelInfo {
         name: "gpt-5.6-sol",
-        context_window: 400000,
+        context_window: 1050000,
         max_output_tokens: 128000,
     },
 ];
