@@ -37,7 +37,14 @@ impl ChatHistory {
     ///
     /// * `model` - OpenAI API モデル名。
     pub fn new(model: &str) -> Self {
-        let core = tiktoken_rs::bpe_for_model(model).unwrap();
+        // tiktoken-rs 0.12.1 has a context-size entry for GPT-6, but no
+        // model-to-tokenizer entry yet. Use the o200k encoding supported by
+        // recent GPT models until tiktoken-rs adds an explicit GPT-6 mapping.
+        let core = if model.starts_with("gpt-6-") {
+            tiktoken_rs::bpe_for_tokenizer(tiktoken_rs::tokenizer::Tokenizer::O200kBase).unwrap()
+        } else {
+            tiktoken_rs::bpe_for_model(model).unwrap()
+        };
         let total_token_limit = tiktoken_rs::model::get_context_size(model).unwrap();
 
         Self {
