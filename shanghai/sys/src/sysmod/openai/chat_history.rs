@@ -36,7 +36,8 @@ impl ChatHistory {
     /// コンストラクタ。
     ///
     /// * `model` - OpenAI API モデル名。
-    pub fn new(model: &str) -> Self {
+    /// * `context_window` - アプリ側で管理するモデルの総トークン上限。
+    pub fn new(model: &str, context_window: usize) -> Self {
         // tiktoken-rs 0.12.1 has a context-size entry for GPT-6, but no
         // model-to-tokenizer entry yet. Use the o200k encoding supported by
         // recent GPT models until tiktoken-rs adds an explicit GPT-6 mapping.
@@ -45,12 +46,10 @@ impl ChatHistory {
         } else {
             tiktoken_rs::bpe_for_model(model).unwrap()
         };
-        let total_token_limit = tiktoken_rs::model::get_context_size(model).unwrap();
-
         Self {
             core,
-            total_token_limit,
-            token_limit: total_token_limit,
+            total_token_limit: context_window,
+            token_limit: context_window,
             token_count: 0,
             history: Default::default(),
         }
@@ -248,7 +247,7 @@ mod tests {
 
     #[test]
     fn token() {
-        let hist = ChatHistory::new("gpt-4o");
+        let hist = ChatHistory::new("gpt-4o", 128_000);
         let count = hist.token_count("こんにちは、管理人形さん。");
 
         // https://platform.openai.com/tokenizer
