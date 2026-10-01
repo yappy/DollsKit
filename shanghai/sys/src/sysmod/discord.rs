@@ -200,8 +200,7 @@ impl Discord {
             )
         };
 
-        let mut chat_history = ChatHistory::new(model_info.name);
-        assert!(chat_history.get_total_limit() == model_info.context_window);
+        let mut chat_history = ChatHistory::new(model_info.name, model_info.context_window);
         let inst_token: usize = self
             .config
             .prompt
