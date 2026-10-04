@@ -122,6 +122,18 @@ URL path で調べて除外すれば回避できる。
 例えば、upgrade (TCP コネクションを別プロトコルに切り替える) 対応オプションで
 web socket が動かない問題は修正できる。
 
+#### WebSocket をバックエンドへ中継する
+
+`mod_proxy` は `proxy.header = ( "upgrade" => "enable" )` を設定すると、
+WebSocket の Upgrade をバックエンドへ中継できる。対応は lighttpd 1.4.46 以降。
+[公式 WebSocket 設定資料](https://redmine.lighttpd.net/projects/lighttpd/wiki/WebSockets)を参照。
+Debian 系では `sudo lighttpd-enable-mod proxy` でモジュールを有効にする。
+
+SSH over WebSocket の構成では `/ssh-ws` を専用パスとし、wstunnel の待受を
+`127.0.0.1:18080` に限定して中継する。URI は書き換えずそのままバックエンドへ渡す。
+具体的な設定例、長時間接続の idle timeout、構文検査と反映手順は
+[WebSocket 経由の SSH 接続](./websocket_ssh.md)を参照。
+
 ## SSL/TLS (Let's Encrypt)
 
 `sudo apt install certbot`
