@@ -1,0 +1,18 @@
+# symbolic link from: /etc/systemd/system/
+
+[Unit]
+Description=SSH over WebSocket tunnel
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+ExecStart=/opt/wstunnel/wstunnel server --restrict-to 127.0.0.1:56789 ws://127.0.0.1:18080
+Restart=always
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

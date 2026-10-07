@@ -46,32 +46,18 @@ clone したディレクトリをビルド成果物ごと削除する場合は�
 `/opt/wstunnel/wstunnel` に配置する。配置先を変更する場合は、
 `sudo ./install-wstunnel.sh /path/to/wstunnel` のように引数で指定する。
 
-専用の非ログインユーザーを作る。
+サービス用のユーザーとグループは `DynamicUser=yes` により
+サービスの起動時に systemd が割り当て、停止時に解放する。
+手動で作成する必要はない。
+
+同梱の [`wstunnel-ssh.service`](wstunnel-ssh.service) へのシンボリックリンクを
+`/etc/systemd/system/` に作成する。以下はこのディレクトリで実行する。
+リポジトリを移動するとリンクが切れるため、配置場所を固定しておく。
+バイナリの配置先を変更した場合は、
+サービスファイルの `ExecStart` も合わせて変更する。
 
 ```sh
-sudo adduser --system --no-create-home --group --disabled-login wstunnel
-```
-
-`/etc/systemd/system/wstunnel-ssh.service` を作成する。
-
-```ini
-[Unit]
-Description=SSH over WebSocket tunnel
-After=network.target
-
-[Service]
-Type=simple
-User=wstunnel
-Group=wstunnel
-ExecStart=/opt/wstunnel/wstunnel server --restrict-to 127.0.0.1:56789 ws://127.0.0.1:18080
-Restart=always
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
+sudo ln -s "$(realpath wstunnel-ssh.service)" /etc/systemd/system/wstunnel-ssh.service
 ```
 
 サービスを起動して状態を確認する。
