@@ -37,6 +37,15 @@ TLS は既存の Lighttpd が終端する。wstunnel は loopback 上の平文 W
 
 [GitHub wstunnel](https://github.com/erebe/wstunnel)
 
+このディレクトリでソースからビルドする場合は、`./build-wstunnel.sh` を実行する。
+スクリプトの `WSTUNNEL_TAG` で指定したタグ（初期値は `v11.0.0`）を
+`wstunnel/` に checkout し、`wstunnel/target/release/wstunnel` を生成する。
+clone したディレクトリをビルド成果物ごと削除する場合は、
+`./clean-wstunnel.sh` を実行する。
+サーバーでは、`sudo ./install-wstunnel.sh` で生成したバイナリを
+`/opt/wstunnel/wstunnel` に配置する。配置先を変更する場合は、
+`sudo ./install-wstunnel.sh /path/to/wstunnel` のように引数で指定する。
+
 専用の非ログインユーザーを作る。
 
 ```sh
@@ -54,7 +63,7 @@ After=network.target
 Type=simple
 User=wstunnel
 Group=wstunnel
-ExecStart=/usr/local/bin/wstunnel server --restrict-to 127.0.0.1:56789 ws://127.0.0.1:18080
+ExecStart=/opt/wstunnel/wstunnel server --restrict-to 127.0.0.1:56789 ws://127.0.0.1:18080
 Restart=always
 NoNewPrivileges=true
 PrivateTmp=true
