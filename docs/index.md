@@ -45,7 +45,6 @@ unattended-upgrades によりセキュリティアップデートを自動的に
   * [追加ストレージ](./note/rpi_linux/storage.md)
   * [systemd](./note/rpi_linux/systemd.md)
   * [Lighttpd](./note/rpi_linux/lighttpd.md)
-  * [WebSocket 経由の SSH 接続](./note/rpi_linux/websocket_ssh.md)
   * [Docker](./note/rpi_linux/docker.md)
 * Windows
   * [SSH トンネルとリモートデスクトップ、Wake on LAN](./note/windows/remote.md)
