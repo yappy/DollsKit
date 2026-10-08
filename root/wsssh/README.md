@@ -108,7 +108,7 @@ sudo systemctl reload lighttpd.service
 
 [GitHub wstunnel](https://github.com/erebe/wstunnel)
 
-以下の例の `example.org` は Lighttpd の HTTPS ドメイン、
+以下の例の `yappy-house.com` は Lighttpd の HTTPS ドメイン、
 `yappy` は SSH ユーザー名に置き換える。
 
 `~/.ssh/config` に追加する。
@@ -118,9 +118,8 @@ Host home-ws
     HostName 127.0.0.1
     User yappy
     Port 56789
-    IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
-    ProxyCommand wstunnel client --log-lvl=off --tls-verify-certificate --http-upgrade-path-prefix ssh-ws -L stdio://%h:%p wss://example.org
+    ProxyCommand wstunnel client --log-lvl=off --tls-verify-certificate --http-upgrade-path-prefix ssh-ws -L stdio://%h:%p wss://yappy-house.com
 ```
 
 `--tls-verify-certificate` は必ず指定する。SSH 接続を開始する。
@@ -130,20 +129,3 @@ ssh home-ws
 ```
 
 OpenSSH のホスト鍵確認は通常どおり行う。
-
-## 動作確認
-
-1. サーバー上で `wstunnel-ssh.service` が active であり、`127.0.0.1:18080` のみで待ち受けることを確認する。
-2. Lighttpd の通常の Web ページと HTTPS 証明書が引き続き正常であることを確認する。
-3. 外部の「443 番のみ通る」ネットワークから `ssh home-ws` を実行する。
-4. 誤った SSH 鍵ではログインできないことを確認する。
-5. wstunnel の転送先を別ポートに変更した試験接続は、サーバー側の `--restrict-to` によって拒否されることを確認する。
-6. 従来の外部 SSH ポート転送も接続できることを確認する。
-
-## 障害時の確認と切り戻し
-
-- WebSocket のハンドシェイクに失敗する場合は、Lighttpd のバージョン、`mod_proxy`、`proxy.header`、`/ssh-ws` のパス一致を確認する。
-- Lighttpd が 502 を返す場合は、wstunnel サービスの状態と `127.0.0.1:18080` の待受を確認する。
-- SSH の認証で失敗する場合は、`HostName` / `Port`、サーバーの `sshd` 設定、公開鍵と `IdentityFile` を確認する。
-- 接続が一定時間後に切れる場合は、Lighttpd の read/write idle timeout と WebSocket ping を確認する。
-- 切り戻す場合は Lighttpd の `/ssh-ws` 設定だけを外して構文検査後に reload し、wstunnel サービスを停止する。既存の外部 SSH 経路には手を加えない。
