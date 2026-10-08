@@ -315,6 +315,44 @@ sudo unattended-upgrade --debug --dry-run
   * sshd 再起動
     * `service ssh restart`
 
+## ファイアウォール
+
+<https://www.raspberrypi.com/documentation/security/ufw.html>
+
+```sh
+echo "$SSH_CONNECTION"
+```
+
+で現在 ssh で使っているポートを確認できる。
+
+デフォルトは拒否、22 (ssh default) のみ許可するなら以下のようになる。
+ポートは必要に応じて変える・増やす。
+
+```sh
+apt install ufw
+ufw default deny incoming
+ufw allow 22/tcp
+# well-known port なら名前でも指定可
+# ufw allow ssh
+ufw status
+```
+
+enable にすると ssh が締め出される危険があるため、systemd のタイマー機能がおすすめ。
+
+```sh
+# 5分後に ufw disable を実行する
+sudo systemd-run --unit=ufw-rollback --on-active=5m /usr/sbin/ufw disable
+sudo ufw enable
+sudo ufw status verbose
+```
+
+**今のSSH接続は閉じずに、別の端末から新しくSSH接続できることを確認** する。
+成功したら自動解除を取り消す。
+
+```sh
+sudo systemctl stop ufw-rollback.timer
+```
+
 ## カメラモジュール
 
 ### カメラハードウェア
