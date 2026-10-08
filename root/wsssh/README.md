@@ -46,6 +46,21 @@ clone したディレクトリをビルド成果物ごと削除する場合は�
 `/opt/wstunnel/wstunnel` に配置する。配置先を変更する場合は、
 `sudo ./install-wstunnel.sh /path/to/wstunnel` のように引数で指定する。
 
+アンインストールするときは、以下のどちらかを実行する。バイナリの配置先を
+変更した場合は、同じパスを引数に指定する。
+
+```sh
+sudo ./uninstall-wstunnel.sh
+# 配置先を変更した場合の例
+sudo ./uninstall-wstunnel.sh /path/to/wstunnel
+```
+
+このスクリプトは指定した wstunnel バイナリを削除し、親ディレクトリが空なら
+そのディレクトリも削除する。ディレクトリに他のファイルがあれば残す。systemd の
+設定や状態は変更しない。Lighttpd に手動追加した `/ssh-ws` の proxy 設定は、
+設定ファイルから削除して構文検査後に reload する。
+`mod_proxy` は他の設定でも使われていないことを確認してから無効化する。
+
 サービス用のユーザーとグループは `DynamicUser=yes` により
 サービスの起動時に systemd が割り当て、停止時に解放する。
 手動で作成する必要はない。
