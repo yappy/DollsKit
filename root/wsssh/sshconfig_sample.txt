@@ -1,0 +1,6 @@
+Host home-ws
+HostName 127.0.0.1
+User yappy
+Port 56789
+IdentitiesOnly yes
+ProxyCommand /opt/wstunnel/wstunnel client --log-lvl=off --tls-verify-certificate --http-upgrade-path-prefix ssh-ws -L stdio://%h:%p wss://yappy-house.com
