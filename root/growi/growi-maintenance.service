@@ -14,11 +14,13 @@ Type=simple
 WorkingDirectory=/root/DollsKit/root/growi
 
 ExecStart=/usr/bin/docker compose \
+  --env-file /root/growi/growi.env \
   -f growi-docker-compose/docker-compose.yml \
   -f compose.yaml \
   up mongo
 
 ExecStop=/usr/bin/docker compose \
+  --env-file /root/growi/growi.env \
   -f growi-docker-compose/docker-compose.yml \
   -f compose.yaml \
   down
