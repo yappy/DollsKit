@@ -23,6 +23,14 @@ RCLONE_KEEP_COUNT = os.environ.get("RCLONE_KEEP_COUNT", "30")
 
 SELF_DIR = pathlib.Path(os.path.dirname(__file__))
 SCRIPT_DIR = SELF_DIR / "bkup" / "src"
+GROWI_DIR = SELF_DIR.parent / "growi"
+GROWI_ENV_FILE = pathlib.Path("/root/growi/growi.env")
+COMPOSE_ARGS = [
+    "docker", "compose",
+    "--env-file", str(GROWI_ENV_FILE),
+    "-f", str(GROWI_DIR / "growi-docker-compose" / "docker-compose.yml"),
+    "-f", str(GROWI_DIR / "compose.yaml"),
+]
 
 BKUP_ROOT = BKUP_MP / "growi"
 DUMP_DIR = BKUP_ROOT / "dump"
@@ -71,7 +79,7 @@ def wait_for_mongo(proj: str):
     for _ in range(TIMEOUT_SEC):
         print(f"Waiting for {SERVICE} ...")
         proc = subprocess.run([
-            "docker", "compose", "-p", proj, "ps", "--format", "json"
+            *COMPOSE_ARGS, "-p", proj, "ps", "--format", "json"
         ], check=True, text=True, stdout=subprocess.PIPE)
         for line in proc.stdout.splitlines():
             obj = json.loads(line)
@@ -91,15 +99,15 @@ def dbdump_main(proj: str):
     ar_path_cont = f"/tmp/{proj}.archive"
     ar_path_host = str(DUMP_DIR / f"{proj}.archive")
     exec_cmd([
-        "docker", "compose", "-p", proj, "exec", SERVICE,
+        *COMPOSE_ARGS, "-p", proj, "exec", SERVICE,
         "mongodump", "--quiet", f"--archive={ar_path_cont}"
     ])
     exec_cmd([
-        "docker", "compose", "-p", proj, "cp",
+        *COMPOSE_ARGS, "-p", proj, "cp",
         f"{SERVICE}:{ar_path_cont}", ar_path_host
     ])
     exec_cmd([
-        "docker", "compose", "-p", proj, "exec", SERVICE,
+        *COMPOSE_ARGS, "-p", proj, "exec", SERVICE,
         "rm", ar_path_cont
     ])
 
