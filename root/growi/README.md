@@ -44,6 +44,13 @@ root のみが読めるようにしてください（所有者 `root:root`、権
 GROWI の systemd unit と MongoDB のバックアップ・復元スクリプトは、このファイルを
 Docker Compose に渡します。unit の再読み込みや再起動より前に作成してください。
 
+手動で Compose コマンドを実行する場合は、同じ設定を使うラッパーを利用できます。
+たとえばアプリのログを追うには、GROWI のディレクトリで次を実行します。
+
+```sh
+./compose.sh logs -f app
+```
+
 展開後の環境変数を表示せずに Compose 設定を検証するには、GROWI のディレクトリで
 次を実行します。
 
