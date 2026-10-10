@@ -29,6 +29,20 @@ git clone --recursive
 git config --global submodule.recurse true
 ```
 
+## GROWI v8 へのアップグレード
+
+公式 Compose submodule を v8 対応版へ更新し、GROWI イメージを `growilabs/growi:8` に
+切り替えています。2026-10-10 時点の公式最新リリースは 8.0.7 です。
+
+v8 は MongoDB の change stream を使うため、MongoDB を replica set として起動する必要が
+あります。Compose 設定は単一ノードの `rs0` を起動時に初期化します。既存の standalone
+データを使う環境では、更新前に MongoDB のバックアップを取得し、復元できることを確認して
+ください。更新後の AI 連携は設定方法が変わっているため、旧 AI 連携を利用している場合は
+再設定が必要です。Elasticsearch v7 は非対応になりましたが、この構成は v9 を使用します。
+
+詳細は[公式 v8 アップグレードガイド](https://docs.growi.org/ja/admin-guide/upgrading/80x.html)
+を参照してください。
+
 ## docker compose
 
 `*.yaml`
