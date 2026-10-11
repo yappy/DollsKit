@@ -34,7 +34,7 @@ sudo systemctl enable --now pocket-id.service
 ```
 
 Pocket ID のデータは Compose の名前付き volume `pocket_id_data` に保存されます。バックアップ時は
-この volume と `/root/pocket-id/pocket-id.env` の両方を保管してください。
+この volume と `/root/pocketid/pocketid.env` の両方を保管してください。
 
 ## lighttpd リバースプロキシ
 

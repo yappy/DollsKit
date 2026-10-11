@@ -87,7 +87,7 @@ lighttpd が Pocket ID に転送します。証明書検証と OIDC issuer の�
 内部 IP や別名に置き換えません。Compose プロジェクト間の共有ネットワークや `dns:` の追加も
 不要です。Compose 設定の反映には GROWI `app` コンテナの再作成が必要です。
 
-Pocket ID 側の起動方法と lighttpd の設定例は [`../pocket-id/README.md`](../pocket-id/README.md)
+Pocket ID 側の起動方法と lighttpd の設定例は [`../pocketid/README.md`](../pocketid/README.md)
 を参照してください。
 
 ## systemd service definition
