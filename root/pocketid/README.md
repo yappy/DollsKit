@@ -25,12 +25,12 @@ ENCRYPTION_KEY=十分に長いランダムな秘密値
 ./compose.sh logs -f pocket-id
 ```
 
-systemd で管理する場合は、この unit を `/etc/systemd/system/pocket-id.service` に配置して
+systemd で管理する場合は、この unit を `/etc/systemd/system/pocketid.service` に配置して
 有効化します。
 
 ```sh
 sudo systemctl daemon-reload
-sudo systemctl enable --now pocket-id.service
+sudo systemctl enable --now pocketid.service
 ```
 
 Pocket ID のデータは Compose の名前付き volume `pocket_id_data` に保存されます。バックアップ時は
@@ -57,14 +57,54 @@ sudo systemctl reload lighttpd.service
 ```
 
 外部ブラウザーと GROWI の両方から `https://id.yappy-house.com` を使います。GROWI の Compose 設定
-には、そのホスト名だけホスト gateway に解決する `extra_hosts` を追加済みです。Pocket ID の
-`APP_URL` と GROWI の OIDC issuer は、ともに `https://id.yappy-house.com` にしてください。
+には、そのホスト名だけホスト gateway に解決する `extra_hosts` を追加済みです。
 
-## GROWI OIDC クライアント
+### 初回セットアップ
 
-Pocket ID に OIDC クライアントを作成し、GROWI の OIDC issuer として
-`https://id.yappy-house.com` を設定します。Redirect URI には GROWI の管理画面が表示する Callback
-URL をそのまま登録してください。GROWI の公開 URL は `https://wiki.yappy-house.com` のままです。
+lighttpd の設定を反映して Pocket ID に HTTPS でアクセスできることを確認したら、ブラウザーで
+`https://id.yappy-house.com/setup` を開き、画面の案内に従って初期管理者アカウントを作成します。
+以降は `https://id.yappy-house.com` から通常のログイン画面へアクセスできます。
+パスキーを登録しておきましょう。
+
+## Pocket ID のユーザーと GROWI 用クライアント
+
+管理者で Pocket ID にログインし、GROWI にログインさせるユーザーと OIDC クライアントを設定します。
+作業中は GROWI 側にも管理者アカウントでログインし、管理ページ > `認証機構設定` > `OIDC` を開いて
+Callback URL を確認してください。
+
+1. **ユーザーグループを作成**します。`Administration` → `User Groups` → `Add Group` を開き、例として
+   表示名 `GROWI users`、グループ名 `growi-users` を登録します。グループ名はトークンに含める場合に
+   アプリ側から見える値です。
+2. **ユーザーをグループに追加**します。`Administration` → `Users` からユーザーを開き、作成した
+   `growi-users` グループに追加します。GROWI の既存アカウントと紐付ける場合は、検証済みの紐付け
+   条件に合うユーザー情報を登録してください。
+3. **OIDC クライアントを作成**します。`Administration` → `OIDC Clients` → `Add OIDC Client` を開き、
+   名前を `GROWI` などとします。Callback URL には GROWI 管理画面に表示される値をそのまま登録します。
+   GROWI はクライアントシークレットを使うため、Public Client は無効のままにします。
+4. **クライアントの許可グループを設定**します。作成したクライアントの `Allowed User Groups` で
+   `growi-users` を許可します。新規クライアントは初期状態ではユーザーグループが許可されていないため、
+   ここを設定しないとユーザーはサインインできません。GROWI にログインさせる全ユーザーをこのグループに
+   追加してください。
+5. 保存後に表示される **Client ID と Client Secret** を控え、GROWI の OIDC 設定に登録します。
+   Issuer は `https://id.yappy-house.com` です。GROWI の公開 URL は
+   `https://wiki.yappy-house.com` のままです。
+6. GROWI の `Attribute Mapping` には、Pocket ID の `OIDC Data Preview` に表示された claim 名を
+   次のように設定します。
+
+   | GROWI の項目 | Attribute Mapping |
+   | --- | --- |
+   | Identifier | `sub` |
+   | Username | `preferred_username` |
+   | Name | `display_name` |
+   | Email | `email` |
+
+   値にはプレビュー JSON の中身ではなく、左列に示した claim 名を入力します。上記は提示された
+   プレビュー例に基づく設定です。Pocket ID で Name に `name` を使いたい場合は、Name のマッピングを
+   `name` にしても構いません。
+
+グループは Pocket ID 側でクライアントへのログインを許可するために使います。GROWI 内でグループ情報を
+利用する設定をしない限り、`groups` scope やカスタムクレームの追加は不要です。グループ情報を OIDC
+トークンに含める場合は、GROWI 側で `groups` scope を要求する設定も行ってください。
 
 既存アカウントを維持するため、OIDC ログインと既存アカウントの紐付けを確認するまで GROWI の
 ID/Password ログインを有効にしておきます。確認後に必要であれば GROWI の設定画面から無効化します。
