@@ -74,6 +74,22 @@ docker compose --env-file /root/growi/growi.env \
   -f compose.yaml config --quiet
 ```
 
+## Pocket ID OIDC
+
+Pocket ID は別 Compose プロジェクトとして起動します。GROWI の OIDC issuer には
+`https://id.yappy-house.com` を設定し、Pocket ID のクライアントには GROWI 管理画面に
+表示される Callback URL を登録してください。`APP_SITE_URL` は引き続き
+`https://wiki.yappy-house.com` です。
+
+GROWI の `app` コンテナには `id.yappy-house.com:host-gateway` を設定しています。
+これによりコンテナから公開 issuer のホスト名へ接続するときだけホストへ到達し、ホスト上の
+lighttpd が Pocket ID に転送します。証明書検証と OIDC issuer の一致を保つため、URL は
+内部 IP や別名に置き換えません。Compose プロジェクト間の共有ネットワークや `dns:` の追加も
+不要です。Compose 設定の反映には GROWI `app` コンテナの再作成が必要です。
+
+Pocket ID 側の起動方法と lighttpd の設定例は [`../pocket-id/README.md`](../pocket-id/README.md)
+を参照してください。
+
 ## systemd service definition
 
 `*.service`
