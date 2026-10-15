@@ -113,11 +113,8 @@ def sync_beads(options: Options) -> None:
     command = ["bd", "github", "sync", "--push-only"]
     if options.dry_run:
         command.append("--dry-run")
-    # Run twice because bd 1.2.2 creates new Issues as open and applies the
-    # closed state on a subsequent update.
-    for pass_number in (1, 2):
-        print(f"Beads -> GitHub sync ({pass_number}/2)")
-        run(command)
+    print("Beads -> GitHub sync")
+    run(command)
 
 
 def github_issue_api_path(url: str) -> str:
@@ -342,18 +339,33 @@ def update_issue(issue: dict[str, Any], options: Options) -> None:
     comments = comments_for(value(issue, "id"))
     body = truncate_body(issue, render_body(issue, comments), comments)
     current = run_json(
-        gh_command(["issue", "view", url, "--json", "body"], options.repo)
+        gh_command(["issue", "view", url, "--json", "body,state"], options.repo)
     )
     old_body = current.get("body", "") if isinstance(current, dict) else ""
     if old_body == body:
         print(f"UNCHANGED {issue.get('id')}")
-        return
-    command = gh_command(["issue", "edit", url, "--body", body], options.repo)
-    if options.dry_run:
-        print(f"DRY-RUN UPDATE {issue.get('id')}: body {len(old_body)} -> {len(body)} characters")
     else:
-        run(command)
-        print(f"UPDATED {issue.get('id')}")
+        command = gh_command(["issue", "edit", url, "--body", body], options.repo)
+        if options.dry_run:
+            print(f"DRY-RUN UPDATE {issue.get('id')}: body {len(old_body)} -> {len(body)} characters")
+        else:
+            run(command)
+            print(f"UPDATED {issue.get('id')}")
+
+    # Beads is the source of truth, including when bd skips an unchanged issue
+    # or creates a closed issue as open. Reconcile independently of the body.
+    state = current.get("state") if isinstance(current, dict) else None
+    if state not in ("OPEN", "CLOSED"):
+        raise RuntimeError(f"Unexpected GitHub Issue state for {url}: {state!r}")
+    expected_state = "CLOSED" if issue.get("status") == "closed" else "OPEN"
+    if state != expected_state:
+        action = "close" if expected_state == "CLOSED" else "reopen"
+        command = gh_command(["issue", action, url], options.repo)
+        if options.dry_run:
+            print(f"DRY-RUN STATE {issue.get('id')}: {state} -> {expected_state}")
+        else:
+            run(command)
+            print(f"STATE {issue.get('id')}: {state} -> {expected_state}")
 
 
 def parse_args() -> Options:
