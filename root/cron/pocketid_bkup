@@ -1,0 +1,15 @@
+#!/bin/bash
+set -euo pipefail
+
+# Link from /etc/cron.weekly/ with a run-parts-compatible name.
+LOG_FILE=${LOG_FILE:-"/root/log/pocketid_bkup.log"}
+ERR_FILE=${ERR_FILE:-"/root/log/pocketid_bkup_err.log"}
+
+SELF_DIR=$(dirname "$(realpath "$0")")
+ROOT=${SELF_DIR}/../backup
+
+mkdir -p "$(dirname "${LOG_FILE}")"
+
+"${ROOT}/bkup_pocketid.py" \
+    > >(tee -a "${LOG_FILE}") \
+    2> >(tee -a "${ERR_FILE}" >&2)

@@ -4,6 +4,10 @@ services:
   app:
     ports: !override
       - 127.0.0.1:3000:3000    # localhost only by default
+    extra_hosts:
+      # GROWI must reach Pocket ID via the public issuer URL while using
+      # lighttpd on the host as the TLS reverse proxy.
+      - "id.yappy-house.com:host-gateway"
     environment:
       # !!!!! Replace this with your own URL !!!!!
       - APP_SITE_URL=https://wiki.yappy-house.com

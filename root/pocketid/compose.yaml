@@ -1,0 +1,23 @@
+name: pocket-id
+
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1411:1411"
+    environment:
+      # !!!!! Replace this with your own URL !!!!!
+      APP_URL: https://id.yappy-house.com
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY_is_required}
+    volumes:
+      - pocket_id_data:/app/data
+    healthcheck:
+      test: ["CMD", "/app/pocket-id", "healthcheck"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pocket_id_data:

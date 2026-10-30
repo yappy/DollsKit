@@ -1,0 +1,16 @@
+# symbolic link from: /etc/systemd/system/
+
+[Unit]
+Description=Docker Pocket ID
+Requires=docker.service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/DollsKit/root/pocketid
+ExecStart=/usr/bin/docker compose --env-file /root/pocketid/pocketid.env -f compose.yaml up
+ExecStop=/usr/bin/docker compose --env-file /root/pocketid/pocketid.env -f compose.yaml down
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
