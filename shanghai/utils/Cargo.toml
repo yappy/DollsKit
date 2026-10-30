@@ -23,7 +23,7 @@ dirs = "7.0.0"
 reqwest.workspace = true
 # HMAC
 hmac = "0.13.0"
-sha2 = "0.11.0"
+sha2 = "0.11.1"
 
 # Image convert
 image.workspace = true
