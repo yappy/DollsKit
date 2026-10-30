@@ -167,6 +167,17 @@ static domain_name_servers=XXX.YYY.ZZZ.WWW
 
 `` dpkg --purge `dpkg --get-selections | grep deinstall | cut -f1` ``
 
+## ベータ版
+
+`rpi-update` という未テストの最新版にアップデートする危険コマンドがあるが、
+こちらはそれよりは安全。
+カーネル脆弱性のパッチが安定板に入るのが遅い時にこちらなら入っているかもしれない。
+
+* `sudo raspi-config`
+* `6 Advanced Options` > `A6 Beta Access`
+  * ベータか安定板を選択する
+* `sudo apt update`
+
 ## Debian-Backports
 
 主にgit や cmake が古い場合。気にならないならスキップで OK。
