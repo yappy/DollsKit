@@ -2,7 +2,7 @@
 
 SELF_DIR=$(dirname "$(realpath "$0")")
 WSTUNNEL_DIR="${SELF_DIR}/wstunnel"
-WSTUNNEL_TAG="v11.0.0"
+WSTUNNEL_TAG="v11.1.0"
 
 if [ -e "$WSTUNNEL_DIR" ]; then
     # if $WSTUNNEL_DIR exists, check HEAD = $WSTUNNEL_TAG
