@@ -278,6 +278,23 @@ certbot revoke --cert-path /path/to/cert.pem
 
 Yes と答え続ければ revoke 後に削除もやってくれる。
 
+## HTTP を HTTPS にリダイレクト
+
+一番似た設定例が `10-no-www.conf` にあるが、名前が不適なので
+`10-no-http.conf` 等の名前で保存して `lighttpd-enable-mod` する。
+
+```perl
+$HTTP["scheme"] == "http" {
+  $HTTP["querystring"] =~ ".+" {
+    url.redirect = ("" => "https://${url.authority}${url.path}?${qsa}")
+  } else {
+    url.redirect = ("" => "https://${url.authority}${url.path}")
+  }
+}
+```
+
+by Codex GPT6-Luna
+
 ## PHP
 
 * `apt install php-cgi`
